@@ -1,5 +1,5 @@
 {
   "name": "NexusAI - OpenAI Powered",
-  "description": "Professional AI client powered by OpenAI's latest models (GPT-4o, o1-preview, DALL-E 3). Features integrated model selection and granular control.",
+  "description": "Professional AI client powered by OpenAI's latest models (GPT-4o, GPT-4.1, GPT-Image). Features integrated model selection and granular control.",
   "requestFramePermissions": []
 }

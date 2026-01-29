@@ -4,7 +4,7 @@ export type AppMode = 'chat' | 'image' | 'canvas';
 
 export type Role = 'user' | 'assistant' | 'system';
 
-export type ReasoningEffort = 'low' | 'medium' | 'high';
+export type ReasoningEffort = 'minimal' | 'low' | 'medium' | 'high' | 'none';
 
 export interface Message {
   id: string;
@@ -33,6 +33,7 @@ export interface Memory {
 
 export interface AppSettings {
   model: string;
+  imageModel?: string;
   reasoningEffort: ReasoningEffort;
   temperature: number;
   topP: number;
@@ -43,18 +44,26 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  model: 'gemini-3-flash-preview',
+  model: 'gpt-4o-mini',
+  imageModel: 'gpt-image-1',
   reasoningEffort: 'medium',
   temperature: 0.7,
   topP: 0.95,
-  maxOutputTokens: 8192,
+  maxOutputTokens: 2048,
   systemInstruction: 'You are a helpful, expert AI assistant.',
   contextAboutUser: '',
   responsePreferences: ''
 };
 
 export const MODEL_OPTIONS = [
-  { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash', description: 'Fast, low latency' },
-  { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro', description: 'Complex reasoning, high intelligence' },
-  { id: 'gemini-2.5-flash-latest', name: 'Gemini 2.5 Flash', description: 'Balanced performance' },
+  { id: 'gpt-4o-mini', name: 'GPT-4o mini', description: 'Fast, low latency' },
+  { id: 'gpt-4o', name: 'GPT-4o', description: 'Multimodal, balanced performance' },
+  { id: 'gpt-4.1', name: 'GPT-4.1', description: 'Reliable reasoning and coding' },
+  { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', description: 'Legacy, cost-effective' },
+];
+
+export const IMAGE_MODEL_OPTIONS = [
+  { id: 'gpt-image-1', name: 'GPT Image 1', description: 'High quality image generation' },
+  { id: 'gpt-image-1-mini', name: 'GPT Image 1 Mini', description: 'Faster image generation' },
+  { id: 'dall-e-3', name: 'DALL·E 3', description: 'Creative image generation' }
 ];

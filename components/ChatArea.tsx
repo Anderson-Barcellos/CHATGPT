@@ -5,7 +5,7 @@ import { Send, Square, Bot, Sparkles, ChevronDown } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { generateStream, generateImage } from '../services/openaiService';
 import { MarkdownRenderer } from './MarkdownRenderer';
-import { MODEL_OPTIONS } from '../types';
+import { IMAGE_MODEL_OPTIONS, MODEL_OPTIONS } from '../types';
 
 // AI Logo
 const AssistantLogo = ({ className }: { className?: string }) => (
@@ -60,9 +60,9 @@ export const ChatArea: React.FC = () => {
 
     try {
       if (activeMode === 'image') {
-        updateMessageContent(activeConversationId, assistantMsg.id, "Generating artwork with Gemini...");
+        updateMessageContent(activeConversationId, assistantMsg.id, "Generating artwork with OpenAI...");
         const result = await generateImage(userPrompt, settings);
-        const content = `![Generated Image](${result.url})\n\n*Generated with Gemini*`;
+        const content = `![Generated Image](${result.url})\n\n*Generated with OpenAI*`;
         updateMessageContent(activeConversationId, assistantMsg.id, content);
       } else {
         await generateStream(
@@ -183,7 +183,7 @@ function Example() {
           />
           
           <div className="flex justify-between items-center px-2 pb-2">
-            <div className="flex gap-2 pl-2 items-center">
+             <div className="flex gap-2 pl-2 items-center">
                
                {/* Model Selector Dropdown */}
                <div className="relative group">
@@ -201,13 +201,27 @@ function Example() {
                  <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-blue-500 pointer-events-none" />
                </div>
 
-               <div className={`text-xs px-2 py-1 rounded-full border opacity-70 hidden sm:block ${
-                 activeMode === 'image' ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' : 
-                 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20'
-               }`}>
-                 {activeMode === 'image' ? 'Gemini Image' : 'Chat'}
-               </div>
-            </div>
+                {activeMode === 'image' ? (
+                  <div className="relative group hidden sm:block">
+                    <select
+                      value={settings.imageModel ?? 'gpt-image-1'}
+                      onChange={(e) => updateSettings({ imageModel: e.target.value })}
+                      className="appearance-none bg-purple-500/10 text-purple-500 border border-purple-500/20 rounded-full py-1.5 pl-3 pr-8 text-xs font-medium cursor-pointer hover:bg-purple-500/20 transition-colors"
+                    >
+                      {IMAGE_MODEL_OPTIONS.map(opt => (
+                        <option key={opt.id} value={opt.id} className="bg-card text-foreground">
+                          {opt.name}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-purple-500 pointer-events-none" />
+                  </div>
+                ) : (
+                  <div className="text-xs px-2 py-1 rounded-full border opacity-70 hidden sm:block bg-zinc-500/10 text-zinc-500 border-zinc-500/20">
+                    Chat
+                  </div>
+                )}
+             </div>
 
             <button 
               onClick={handleSubmit}
@@ -223,7 +237,7 @@ function Example() {
           </div>
         </div>
         <div className="text-center mt-2">
-           <p className="text-[10px] text-muted-foreground/60">Powered by Google Gemini. AI can make mistakes.</p>
+           <p className="text-[10px] text-muted-foreground/60">Powered by OpenAI. AI can make mistakes.</p>
         </div>
       </div>
     </div>

@@ -55,7 +55,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose 
                <div className="text-xs opacity-70 mt-1">Change model in the chat input area.</div>
             </div>
 
-            <div className="space-y-6">
+             <div className="space-y-6">
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <label className="text-sm font-medium text-muted-foreground">Temperature</label>
@@ -70,6 +70,24 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose 
                   onChange={(e) => updateSettings({ temperature: parseFloat(e.target.value) })}
                   className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary hover:accent-blue-400"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <label className="text-sm font-medium text-muted-foreground">Reasoning Effort</label>
+                  <span className="text-xs font-mono bg-primary/10 text-primary px-2 py-0.5 rounded">{settings.reasoningEffort}</span>
+                </div>
+                <select
+                  value={settings.reasoningEffort}
+                  onChange={(e) => updateSettings({ reasoningEffort: e.target.value as ReasoningEffort })}
+                  className="w-full bg-input border border-border rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                >
+                  <option value="none">None</option>
+                  <option value="minimal">Minimal</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
               </div>
 
               <div className="space-y-2">

@@ -1,9 +1,11 @@
-import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
 import { AppSettings, Memory, Message } from "../types";
 
-// Initialize Google GenAI Client
-// API key must be from process.env.API_KEY
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Initialize OpenAI Client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY ?? process.env.API_KEY ?? "",
+  dangerouslyAllowBrowser: true
+});
 
 export const buildSystemPrompt = (settings: AppSettings, memories: Memory[]): string => {
   const activeMemories = memories.filter(m => m.isActive).map(m => `- [${m.category}] ${m.content}`).join('\n');
@@ -35,46 +37,41 @@ export const generateStream = async (
   
   const systemInstruction = buildSystemPrompt(settings, memories);
 
-  // Convert history to Gemini format
-  const contents = history.map(msg => ({
-    role: msg.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: msg.content }]
-  }));
-
-  // Add the current user prompt
-  contents.push({
-    role: 'user',
-    parts: [{ text: currentPrompt }]
-  });
-
-  const config: any = {
-    systemInstruction: systemInstruction,
-    temperature: settings.temperature,
-    topP: settings.topP,
-    maxOutputTokens: settings.maxOutputTokens,
-  };
+  const input = [
+    ...history.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    })),
+    { role: 'user', content: currentPrompt }
+  ];
 
   try {
-    const responseStream = await ai.models.generateContentStream({
+    const stream = await openai.responses.create({
       model: settings.model,
-      contents: contents,
-      config: config
+      instructions: systemInstruction,
+      input,
+      temperature: settings.temperature,
+      top_p: settings.topP,
+      max_output_tokens: settings.maxOutputTokens,
+      reasoning: {
+        effort: settings.reasoningEffort
+      },
+      stream: true
     });
-    
+
     let fullText = '';
-    
-    for await (const chunk of responseStream) {
-      const text = chunk.text;
-      if (text) {
-        fullText += text;
+
+    for await (const event of stream) {
+      if (event.type === 'response.output_text.delta') {
+        fullText += event.delta;
         onChunk(fullText);
       }
     }
-    
+
     return fullText;
 
   } catch (error) {
-    console.error("Gemini API Error:", error);
+    console.error("OpenAI API Error:", error);
     throw error;
   }
 };
@@ -85,31 +82,24 @@ export const generateImage = async (
 ): Promise<{ url: string, mimeType: string }> => {
   
   try {
-    // Using gemini-2.5-flash-image for general image generation
-    const model = 'gemini-2.5-flash-image';
-    
-    const response = await ai.models.generateContent({
-      model,
-      contents: { parts: [{ text: prompt }] },
+    const response = await openai.images.generate({
+      model: settings.imageModel ?? "gpt-image-1",
+      prompt,
+      response_format: "b64_json"
     });
 
-    // Find the image part in the response
-    const candidate = response.candidates?.[0];
-    if (candidate && candidate.content && candidate.content.parts) {
-      for (const part of candidate.content.parts) {
-        if (part.inlineData) {
-          return {
-            url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`,
-            mimeType: part.inlineData.mimeType
-          };
-        }
-      }
+    const imageData = response.data?.[0]?.b64_json;
+    if (!imageData) {
+      throw new Error("No image data returned from OpenAI");
     }
-    
-    throw new Error("No image data returned from Gemini");
+
+    return {
+      url: `data:image/png;base64,${imageData}`,
+      mimeType: "image/png"
+    };
     
   } catch (error) {
-    console.error("Gemini Image Gen Error:", error);
+    console.error("OpenAI Image Gen Error:", error);
     throw error;
   }
 };
