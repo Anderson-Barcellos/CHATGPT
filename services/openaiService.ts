@@ -37,7 +37,8 @@ export const generateStream = async (
   
   const systemInstruction = buildSystemPrompt(settings, memories);
 
-  const input = [
+  const messages = [
+    { role: 'system', content: systemInstruction },
     ...history.map(msg => ({
       role: msg.role,
       content: msg.content
@@ -46,21 +47,21 @@ export const generateStream = async (
   ];
 
   try {
-    const stream = await openai.responses.create({
+    const stream = await openai.chat.completions.create({
       model: settings.model,
-      instructions: systemInstruction,
-      input,
+      messages,
       temperature: settings.temperature,
       top_p: settings.topP,
-      max_output_tokens: settings.maxOutputTokens,
+      max_tokens: settings.maxOutputTokens,
       stream: true
     });
 
     let fullText = '';
 
-    for await (const event of stream) {
-      if (event.type === 'response.output_text.delta') {
-        fullText += event.delta;
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content;
+      if (delta) {
+        fullText += delta;
         onChunk(fullText);
       }
     }
@@ -80,7 +81,7 @@ export const generateImage = async (
   
   try {
     const response = await openai.images.generate({
-      model: settings.imageModel ?? "gpt-image-1",
+      model: settings.imageModel ?? "dall-e-3",
       prompt,
       response_format: "b64_json"
     });
