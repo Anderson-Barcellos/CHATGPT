@@ -34,7 +34,6 @@ export interface Memory {
 export interface AppSettings {
   model: string;
   imageModel?: string;
-  reasoningEffort: ReasoningEffort;
   temperature: number;
   topP: number;
   maxOutputTokens: number;
@@ -46,7 +45,6 @@ export interface AppSettings {
 export const DEFAULT_SETTINGS: AppSettings = {
   model: 'gpt-4o-mini',
   imageModel: 'gpt-image-1',
-  reasoningEffort: 'medium',
   temperature: 0.7,
   topP: 0.95,
   maxOutputTokens: 2048,

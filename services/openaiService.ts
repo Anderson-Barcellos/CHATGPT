@@ -53,9 +53,6 @@ export const generateStream = async (
       temperature: settings.temperature,
       top_p: settings.topP,
       max_output_tokens: settings.maxOutputTokens,
-      reasoning: {
-        effort: settings.reasoningEffort
-      },
       stream: true
     });
 
