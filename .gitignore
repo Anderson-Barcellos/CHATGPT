@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Docker
+nginx/logs/
+nginx/ssl/*.pem
+
+# IDE
+.idea
+*.swp
+*.swo

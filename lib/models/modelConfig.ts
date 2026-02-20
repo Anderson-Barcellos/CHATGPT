@@ -1,0 +1,262 @@
+import { ModelInfo, TokenUsage } from "@/types";
+
+export const MODELS: Record<string, ModelInfo> = {
+  "gpt-5.1-chat-latest": {
+    id: "gpt-5.1-chat-latest",
+    name: "GPT-5.1 Instant",
+    family: "gpt-5.1",
+    description: "Chat instantaneo de ultima geracao",
+    contextWindow: 400000,
+    maxOutput: 120000,
+    pricing: { input: 5.0, output: 15.0, cachedInput: 2.5 },
+    capabilities: ["chat", "vision", "function-calling", "json-mode"],
+    supportsStreaming: true,
+    supportsSystemMessages: true,
+    supportsTemperature: true,
+    recommendedFor: ["Respostas rapidas", "Chat geral", "Multimodal"],
+    badge: "Rapido",
+  },
+  "gpt-5.1": {
+    id: "gpt-5.1",
+    name: "GPT-5.1 Thinking",
+    family: "gpt-5.1",
+    description: "Raciocinio avancado de ultima geracao",
+    contextWindow: 400000,
+    maxOutput: 128000,
+    pricing: { input: 5.0, output: 15.0, cachedInput: 2.5 },
+    capabilities: ["chat", "reasoning", "vision", "function-calling", "json-mode"],
+    supportsStreaming: true,
+    supportsSystemMessages: true,
+    supportsTemperature: false,
+    recommendedFor: ["Raciocinio + Chat", "Problemas complexos", "Analise profunda"],
+    badge: "Mais Novo",
+  },
+  "gpt-5.1-pro": {
+    id: "gpt-5.1-pro",
+    name: "GPT-5.1 Pro",
+    family: "gpt-5.1",
+    description: "Raciocinio maximo de ultima geracao",
+    contextWindow: 400000,
+    maxOutput: 128000,
+    pricing: { input: 15.0, output: 60.0, cachedInput: 7.5 },
+    capabilities: ["chat", "reasoning", "vision", "function-calling", "json-mode"],
+    supportsStreaming: true,
+    supportsSystemMessages: true,
+    supportsTemperature: false,
+    recommendedFor: ["Tarefas criticas", "Pesquisa avancada", "Analise exaustiva"],
+    badge: "Premium",
+  },
+  "gpt-4o": {
+    id: "gpt-4o",
+    name: "GPT-4o",
+    family: "gpt-4o",
+    description: "GPT-4 otimizado para velocidade",
+    contextWindow: 128000,
+    maxOutput: 16000,
+    pricing: { input: 2.5, output: 10.0, cachedInput: 1.25 },
+    capabilities: ["chat", "vision", "function-calling", "json-mode"],
+    supportsStreaming: true,
+    supportsSystemMessages: true,
+    supportsTemperature: true,
+    recommendedFor: ["Multimodal", "Visao + texto", "Uso geral"],
+  },
+  "gpt-4.1": {
+    id: "gpt-4.1",
+    name: "GPT-4.1",
+    family: "gpt-4.1",
+    description: "Modelo avancado e confiavel",
+    contextWindow: 1047576,
+    maxOutput: 32000,
+    pricing: { input: 2.5, output: 10.0, cachedInput: 1.25 },
+    capabilities: ["chat", "vision", "function-calling", "json-mode"],
+    supportsStreaming: true,
+    supportsSystemMessages: true,
+    supportsTemperature: true,
+    recommendedFor: ["Tarefas complexas", "Codigo", "Analise"],
+    badge: "Confiavel",
+  },
+  o3: {
+    id: "o3",
+    name: "o3",
+    family: "o-series",
+    description: "Raciocinio profundo para problemas complexos",
+    contextWindow: 200000,
+    maxOutput: 100000,
+    pricing: { input: 10.0, output: 40.0, cachedInput: 5.0 },
+    capabilities: ["reasoning", "chat", "vision"],
+    supportsStreaming: true,
+    supportsSystemMessages: false,
+    supportsTemperature: false,
+    recommendedFor: ["Matematica avancada", "Coding complexo", "Pesquisa cientifica"],
+    badge: "Raciocinio",
+  },
+  "o4-mini": {
+    id: "o4-mini",
+    name: "o4-mini",
+    family: "o-series",
+    description: "Raciocinio compacto e rapido",
+    contextWindow: 200000,
+    maxOutput: 100000,
+    pricing: { input: 1.1, output: 4.4, cachedInput: 0.55 },
+    capabilities: ["reasoning", "chat"],
+    supportsStreaming: true,
+    supportsSystemMessages: false,
+    supportsTemperature: false,
+    recommendedFor: ["Raciocinio economico", "Coding", "Alto volume"],
+    badge: "Novo",
+  },
+  "gpt-image-1.5": {
+    id: "gpt-image-1.5",
+    name: "GPT Image 1.5",
+    family: "gpt-image",
+    description: "Geracao de imagens de alta qualidade com IA",
+    contextWindow: 4000,
+    maxOutput: 0,
+    pricing: { input: 0.04, output: 0.0 },
+    capabilities: ["image-generation"],
+    supportsStreaming: false,
+    supportsSystemMessages: false,
+    supportsTemperature: false,
+    recommendedFor: ["Criacao de imagens", "Arte digital", "Ilustracoes"],
+    badge: "Novo",
+  },
+  "dall-e-3": {
+    id: "dall-e-3",
+    name: "DALL-E 3",
+    family: "dall-e",
+    description: "Modelo classico de geracao de imagens",
+    contextWindow: 4000,
+    maxOutput: 0,
+    pricing: { input: 0.04, output: 0.0 },
+    capabilities: ["image-generation"],
+    supportsStreaming: false,
+    supportsSystemMessages: false,
+    supportsTemperature: false,
+    recommendedFor: ["Criacao de imagens", "Arte digital", "Ilustracoes"],
+  },
+};
+
+export function isReasoningModel(modelId: string): boolean {
+  const model = MODELS[modelId];
+  return model?.capabilities.includes("reasoning") ?? false;
+}
+
+export function modelSupportsTemperature(modelId: string): boolean {
+  const model = MODELS[modelId];
+  return model?.supportsTemperature ?? true;
+}
+
+export function calculateCost(
+  inputTokens: number,
+  outputTokens: number,
+  modelId: string,
+  cachedTokens = 0
+): TokenUsage {
+  const model = MODELS[modelId];
+  if (!model) {
+    return { inputTokens, outputTokens, cachedTokens, totalCost: 0 };
+  }
+
+  const uncachedInput = inputTokens - cachedTokens;
+  const inputCost = (uncachedInput / 1_000_000) * model.pricing.input;
+  const cachedCost = model.pricing.cachedInput
+    ? (cachedTokens / 1_000_000) * model.pricing.cachedInput
+    : 0;
+  const outputCost = (outputTokens / 1_000_000) * model.pricing.output;
+
+  return {
+    inputTokens,
+    outputTokens,
+    cachedTokens,
+    totalCost: inputCost + cachedCost + outputCost,
+  };
+}
+
+export function estimateCost(
+  promptText: string,
+  expectedOutputTokens: number,
+  modelId: string
+): { estimatedInputTokens: number; estimatedCost: number } {
+  const estimatedInputTokens = Math.ceil(promptText.length / 4);
+  const usage = calculateCost(estimatedInputTokens, expectedOutputTokens, modelId);
+  return { estimatedInputTokens, estimatedCost: usage.totalCost };
+}
+
+export function fitsInContextWindow(
+  inputTokens: number,
+  outputTokens: number,
+  modelId: string
+): { fits: boolean; usage: number; available: number } {
+  const model = MODELS[modelId];
+  if (!model) return { fits: false, usage: 0, available: 0 };
+
+  const totalTokens = inputTokens + outputTokens;
+  return { fits: totalTokens <= model.contextWindow, usage: totalTokens, available: model.contextWindow };
+}
+
+export function getModelsByCapability(capability: string): ModelInfo[] {
+  return Object.values(MODELS).filter((model) =>
+    model.capabilities.includes(capability as any)
+  );
+}
+
+export function getModelsByFamily(family: string): ModelInfo[] {
+  return Object.values(MODELS).filter((model) => model.family === family);
+}
+
+export function getChatModels(): ModelInfo[] {
+  return Object.values(MODELS).filter(
+    (m) => m.capabilities.includes("chat") || m.capabilities.includes("reasoning")
+  );
+}
+
+export function getBestModelForTask(
+  task: string,
+  budget: "low" | "medium" | "high" | "unlimited" = "medium"
+): { modelId: string; reason: string; confidence: "high" | "medium" | "low" } {
+  const maxInput: Record<string, number> = {
+    low: 3,
+    medium: 8,
+    high: 20,
+    unlimited: Infinity,
+  };
+
+  const chatModels = getChatModels().filter(
+    (m) => m.pricing.input <= maxInput[budget]
+  );
+
+  const lowerTask = task.toLowerCase();
+  const needsReasoning =
+    lowerTask.includes("math") ||
+    lowerTask.includes("code") ||
+    lowerTask.includes("reason") ||
+    lowerTask.includes("analys");
+
+  const candidates = needsReasoning
+    ? chatModels.filter((m) => m.capabilities.includes("reasoning"))
+    : chatModels;
+
+  const pool = candidates.length > 0 ? candidates : chatModels;
+  const best = pool.sort((a, b) => a.pricing.input - b.pricing.input)[0];
+
+  return {
+    modelId: best?.id ?? "gpt-5.1-chat-latest",
+    reason: needsReasoning
+      ? `${best?.name} oferece raciocinio dentro do orcamento`
+      : `${best?.name} e o melhor custo-beneficio para esta tarefa`,
+    confidence: needsReasoning && candidates.length > 0 ? "high" : "medium",
+  };
+}
+
+export function formatCost(cost: number): string {
+  if (cost < 0.001) return `$${(cost * 1000).toFixed(4)}`;
+  if (cost < 0.01) return `$${cost.toFixed(4)}`;
+  if (cost < 1) return `$${cost.toFixed(3)}`;
+  return `$${cost.toFixed(2)}`;
+}
+
+export function formatTokenCount(tokens: number): string {
+  if (tokens < 1000) return `${tokens}`;
+  if (tokens < 1_000_000) return `${(tokens / 1000).toFixed(1)}K`;
+  return `${(tokens / 1_000_000).toFixed(1)}M`;
+}

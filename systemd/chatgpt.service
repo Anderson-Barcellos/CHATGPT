@@ -1,0 +1,35 @@
+[Unit]
+Description=Celer - Cliente IA Multi-Modal
+Documentation=https://ultrassom.ai/chat
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/CHATGPT
+Environment="NODE_ENV=production"
+Environment="PORT=3040"
+Environment="NEXT_PUBLIC_BASE_PATH=/chat"
+Environment="NEXT_PUBLIC_APP_URL=https://ultrassom.ai/chat"
+EnvironmentFile=/root/CHATGPT/.env.production
+ExecStartPre=/bin/bash -c '/usr/bin/fuser -k 3040/tcp 2>/dev/null; sleep 1; exit 0'
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+RestartSec=15
+StartLimitInterval=120
+StartLimitBurst=5
+StandardOutput=append:/var/log/chatgpt/app.log
+StandardError=append:/var/log/chatgpt/error.log
+
+# Limites de recursos
+LimitNOFILE=65536
+LimitNPROC=512
+
+# Timeout para parar o serviço
+TimeoutStopSec=30
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStartSec=30
+
+[Install]
+WantedBy=multi-user.target

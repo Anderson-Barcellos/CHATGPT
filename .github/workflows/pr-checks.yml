@@ -1,0 +1,107 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  checks:
+    name: Run Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npx tsc --noEmit
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Build check
+        run: npm run build
+        env:
+          OPENAI_API_KEY: dummy-key-for-build
+
+      - name: Check for secrets
+        run: |
+          if grep -r "sk-[a-zA-Z0-9]\{32,\}" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --exclude-dir=node_modules .; then
+            echo "❌ Potential API key found in code!"
+            exit 1
+          fi
+          echo "✅ No hardcoded secrets detected"
+
+      - name: Bundle size check
+        run: |
+          MAIN_SIZE=$(du -sh .next | cut -f1)
+          echo "📦 Build size: $MAIN_SIZE"
+          
+          LARGE_FILES=$(find .next/static -name "*.js" -size +500k 2>/dev/null || true)
+          if [ ! -z "$LARGE_FILES" ]; then
+            echo "⚠️  Large bundles detected:"
+            echo "$LARGE_FILES"
+          fi
+
+      - name: PR Comment
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const { readdir, stat } = require('fs/promises');
+            const path = require('path');
+            
+            async function getDirSize(dir) {
+              const files = await readdir(dir, { withFileTypes: true });
+              const sizes = await Promise.all(files.map(async file => {
+                const filePath = path.join(dir, file.name);
+                if (file.isDirectory()) return getDirSize(filePath);
+                const { size } = await stat(filePath);
+                return size;
+              }));
+              return sizes.flat(Infinity).reduce((a, b) => a + b, 0);
+            }
+            
+            try {
+              const buildSize = await getDirSize('.next');
+              const sizeMB = (buildSize / 1024 / 1024).toFixed(2);
+              
+              const comment = `## 🚀 Build Report
+              
+              ✅ All checks passed!
+              
+              **Build size:** ${sizeMB} MB
+              
+              <details>
+              <summary>Details</summary>
+              
+              - ✅ TypeScript check passed
+              - ✅ ESLint passed
+              - ✅ Build successful
+              - ✅ No hardcoded secrets
+              
+              </details>`;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } catch (error) {
+              console.log('Could not create comment:', error);
+            }
