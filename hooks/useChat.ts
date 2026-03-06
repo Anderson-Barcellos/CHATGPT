@@ -118,12 +118,13 @@ export function useChat() {
       addMessage(userMessage);
 
       const assistantMessageId = crypto.randomUUID();
+      const usesReasoning = isReasoningModel(parameters.model);
       addMessage({
         id: assistantMessageId,
         role: "assistant",
         content: "",
         timestamp: new Date(),
-        reasoningSummary: "",
+        ...(usesReasoning && { reasoningStatus: "thinking" as const }),
       });
 
       try {
@@ -259,6 +260,7 @@ export function useChat() {
                     reasoningSummary += event.delta || "";
                     updateMessage(assistantMessageId, {
                       reasoningSummary,
+                      reasoningStatus: "thinking",
                     });
                   }
 
@@ -266,6 +268,7 @@ export function useChat() {
                     reasoningText += event.delta || "";
                     updateMessage(assistantMessageId, {
                       reasoningText,
+                      reasoningStatus: "thinking",
                     });
                   }
                 } catch {
@@ -276,6 +279,12 @@ export function useChat() {
 
             boundaryIndex = buffer.indexOf("\n\n");
           }
+        }
+
+        if (usesReasoning) {
+          updateMessage(assistantMessageId, {
+            reasoningStatus: "complete",
+          });
         }
 
         try {
@@ -299,12 +308,18 @@ export function useChat() {
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
-          updateMessage(assistantMessageId, { content: "⏹️ Geração cancelada." });
+          updateMessage(assistantMessageId, {
+            content: "⏹️ Geração cancelada.",
+            ...(usesReasoning && { reasoningStatus: "complete" as const }),
+          });
         } else {
           const message =
             err instanceof Error ? err.message : "Erro desconhecido";
           setError(message);
-          updateMessage(assistantMessageId, { content: `❌ ${message}` });
+          updateMessage(assistantMessageId, {
+            content: `❌ ${message}`,
+            ...(usesReasoning && { reasoningStatus: "complete" as const }),
+          });
         }
       } finally {
         setIsLoading(false);

@@ -6,6 +6,8 @@ export interface UrlCitation {
   url: string;
 }
 
+export type ReasoningStatus = "thinking" | "complete";
+
 export interface Message {
   id: string;
   role: MessageRole;
@@ -13,6 +15,7 @@ export interface Message {
   timestamp: Date;
   reasoningSummary?: string;
   reasoningText?: string;
+  reasoningStatus?: ReasoningStatus;
   imageBase64?: string;
   imageMimeType?: string;
   isGeneratingImage?: boolean;

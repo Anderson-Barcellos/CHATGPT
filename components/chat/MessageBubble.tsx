@@ -2,16 +2,13 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { MessageContent } from "./MessageContent";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
+import { ReasoningPanel } from "./ReasoningPanel";
 import { Message } from "@/types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
-import { User, ChevronDown, Brain, Pencil, X, Send, ImagePlus, Globe, ExternalLink, Trash2, MoreHorizontal } from "lucide-react";
+import { User, Pencil, X, Send, Globe, ExternalLink, Trash2, MoreHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,11 +17,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { OpenAIIcon } from "@/components/ui/icons";
 import { MessageActions } from "@/components/chat/MessageActions";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 
 interface MessageBubbleProps {
   message: Message;
@@ -198,88 +190,7 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
             </div>
           )}
 
-          {message.reasoningSummary !== undefined && message.reasoningSummary !== null && (
-            <div className="mt-3">
-              {message.reasoningSummary.trim().length === 0 && !message.content && !message.imageBase64 ? (
-                <div className={cn(
-                  "flex items-center gap-2 rounded-lg px-3 py-2.5 border",
-                  message.isGeneratingImage
-                    ? "bg-violet-500/10 border-violet-500/20"
-                    : "bg-cyan-500/10 border-cyan-500/20"
-                )}>
-                  {message.isGeneratingImage ? (
-                    <ImagePlus className="h-4 w-4 text-violet-500 animate-pulse" />
-                  ) : (
-                    <Brain className="h-4 w-4 text-cyan-500 animate-pulse" />
-                  )}
-                  <span className={cn(
-                    "text-xs font-medium animate-pulse",
-                    message.isGeneratingImage
-                      ? "text-violet-600 dark:text-violet-400"
-                      : "text-cyan-600 dark:text-cyan-400"
-                  )}>
-                    {message.isGeneratingImage ? "Gerando imagem..." : "Raciocinando..."}
-                  </span>
-                  <div className="flex gap-1 ml-1">
-                    {[0, 1, 2].map((i) => (
-                      <span
-                        key={i}
-                        className={cn(
-                          "inline-block h-1.5 w-1.5 rounded-full animate-bounce",
-                          message.isGeneratingImage ? "bg-violet-500/60" : "bg-cyan-500/60"
-                        )}
-                        style={{ animationDelay: `${i * 0.2}s`, animationDuration: "1.2s" }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ) : message.reasoningSummary.trim().length > 0 ? (
-                <Collapsible>
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto w-full justify-between p-2 text-xs hover:bg-muted/50 gap-2"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <Brain className="h-3.5 w-3.5 text-cyan-500" />
-                        Raciocinio (resumo)
-                      </div>
-                      <ChevronDown className="h-3 w-3" />
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-1 rounded-md bg-muted/50 p-3 text-xs leading-relaxed">
-                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                      {message.reasoningSummary}
-                    </ReactMarkdown>
-                  </CollapsibleContent>
-                </Collapsible>
-              ) : null}
-            </div>
-          )}
-
-          {message.reasoningText && message.reasoningText.trim().length > 0 && (
-            <Collapsible className="mt-3">
-              <CollapsibleTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-auto w-full justify-between p-2 text-xs hover:bg-muted/50 gap-2"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <Brain className="h-3.5 w-3.5 text-cyan-500" />
-                    Raciocinio (completo)
-                  </div>
-                  <ChevronDown className="h-3 w-3" />
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-1 rounded-md bg-muted/50 p-3 text-xs leading-relaxed">
-                <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                  {message.reasoningText}
-                </ReactMarkdown>
-              </CollapsibleContent>
-            </Collapsible>
-          )}
+          {!message.isGeneratingImage && <ReasoningPanel message={message} />}
         </Card>
 
         <div className={cn(
