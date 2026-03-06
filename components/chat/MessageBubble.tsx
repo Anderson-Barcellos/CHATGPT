@@ -9,8 +9,9 @@ import rehypeKatex from "rehype-katex";
 import { Message } from "@/types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
-import { User, ChevronDown, Brain, Pencil, X, Send, ImagePlus, Globe, ExternalLink, Trash2 } from "lucide-react";
+import { User, ChevronDown, Brain, Pencil, X, Send, ImagePlus, Globe, ExternalLink, Trash2, MoreHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,12 +25,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 interface MessageBubbleProps {
   message: Message;
@@ -53,9 +48,14 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const editRef = useRef<HTMLTextAreaElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deleteTitle = isUser ? "Excluir este turno?" : "Excluir esta resposta?";
+  const deleteDescription = isUser
+    ? "Isso remove a tua mensagem e a resposta gerada a partir dela. Use editar se tu quiser refazer esse ponto da conversa."
+    : "Isso remove somente esta resposta do assistente desta conversa.";
+  const deleteLabel = isUser ? "Excluir turno" : "Excluir resposta";
 
   const handleTouchStart = useCallback(() => {
     if (isEditing) return;
@@ -119,56 +119,6 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
           onTouchMove={handleTouchEnd}
           onContextMenu={(onEdit || onDelete) ? (e) => { e.preventDefault(); setMenuOpen(true); } : undefined}
         >
-          {!isEditing && (onEdit || onDelete) && (
-            <div className={cn(
-              "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all",
-              isUser ? "-left-9" : "-right-9"
-            )}>
-              <DropdownMenu open={menuOpen} onOpenChange={(open) => { setMenuOpen(open); if (!open) setConfirmDelete(false); }}>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                  >
-                    <ChevronDown className="h-3.5 w-3.5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align={isUser ? "end" : "start"} className="w-40">
-                  {isUser && onEdit && (
-                    <DropdownMenuItem
-                      onClick={() => { setEditContent(message.content); setIsEditing(true); setMenuOpen(false); }}
-                      className="gap-2 text-xs"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                      Editar
-                    </DropdownMenuItem>
-                  )}
-                  {onDelete && (
-                    confirmDelete ? (
-                      <DropdownMenuItem
-                        onClick={() => { onDelete(message.id); setMenuOpen(false); setConfirmDelete(false); }}
-                        className="gap-2 text-xs text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        Confirmar exclusao?
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem
-                        onClick={(e) => { e.preventDefault(); setConfirmDelete(true); }}
-                        className="gap-2 text-xs text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        Excluir
-                      </DropdownMenuItem>
-                    )
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
-
-
           {isEditing ? (
             <div className="flex flex-col gap-2">
               <textarea
@@ -185,6 +135,9 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
                 }}
                 className="w-full resize-none bg-background/50 rounded-lg p-2 text-sm text-foreground outline-none ring-1 ring-primary/30 focus:ring-primary/60 min-h-[40px]"
               />
+              <p className="text-[11px] leading-relaxed text-muted-foreground/80">
+                Ao salvar, o chat refaz a conversa a partir desta mensagem.
+              </p>
               <div className="flex justify-end gap-1.5">
                 <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={handleCancelEdit}>
                   <X className="h-3 w-3 mr-1" />Cancelar
@@ -334,10 +287,54 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
           isUser ? "justify-end" : "justify-start"
         )}>
           <span>{formatTime(message.timestamp)}</span>
+          {!isEditing && (onEdit || onDelete) && (
+            <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  className={cn(
+                    "rounded-full text-muted-foreground/70 hover:text-foreground",
+                    "opacity-70 transition-opacity md:opacity-0 md:group-hover:opacity-100"
+                  )}
+                >
+                  <MoreHorizontal className="h-3 w-3" />
+                  <span className="sr-only">Acoes da mensagem</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align={isUser ? "end" : "start"} className="w-52">
+                {isUser && onEdit && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setEditContent(message.content);
+                      setIsEditing(true);
+                      setMenuOpen(false);
+                    }}
+                    className="gap-2 text-xs"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Editar e refazer daqui
+                  </DropdownMenuItem>
+                )}
+                {onDelete && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setDeleteDialogOpen(true);
+                      setMenuOpen(false);
+                    }}
+                    className="gap-2 text-xs text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    {isUser ? "Excluir este turno" : "Excluir esta resposta"}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           {!isUser && message.content && (
             <MessageActions
               content={message.content}
-              className="opacity-0 group-hover:opacity-100 transition-opacity"
+              className="opacity-70 transition-opacity md:opacity-0 md:group-hover:opacity-100"
             />
           )}
         </div>
@@ -347,6 +344,17 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 mt-0.5">
           <User className="h-4 w-4 text-primary" />
         </div>
+      )}
+
+      {onDelete && (
+        <ConfirmDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          title={deleteTitle}
+          description={deleteDescription}
+          confirmLabel={deleteLabel}
+          onConfirm={() => onDelete(message.id)}
+        />
       )}
     </div>
   );

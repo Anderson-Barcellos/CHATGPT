@@ -24,6 +24,8 @@ import { useConversations } from "@/hooks/useConversations";
 import { useComponentPreloader } from "@/lib/performance/lazy";
 import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import { cn } from "@/lib/utils";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { MODELS } from "@/lib/models/modelConfig";
 
 const MODE_CONFIG = {
   chat: { gradient: "from-cyan-500 to-blue-600" },
@@ -43,6 +45,7 @@ export function ChatShell() {
   const { activeMode } = useUIStore();
   useComponentPreloader();
   const { activeConversationId, messages } = useChatStore();
+  const { parameters } = useSettingsStore();
   const { conversations } = useConversations();
 
   const activeConversation = useMemo(() => {
@@ -88,6 +91,7 @@ export function ChatShell() {
   }, []);
 
   const currentMode = MODE_CONFIG[activeMode as keyof typeof MODE_CONFIG];
+  const currentModel = MODELS[parameters.model];
 
   const handleSplashComplete = useCallback(() => {
     sessionStorage.setItem("gpt-splash-shown", "1");
@@ -173,8 +177,11 @@ export function ChatShell() {
                         <h1 className="text-sm font-semibold tracking-wide">
                           <span className="text-gradient-gpt">GPT</span>
                         </h1>
-                        <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/70">
-                          Workspace
+                        <p className="max-w-[180px] truncate text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70 md:max-w-[320px]">
+                          {activeConversation?.title || "Workspace"}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground/55">
+                          {currentModel?.name || parameters.model}
                         </p>
                       </div>
                     </div>

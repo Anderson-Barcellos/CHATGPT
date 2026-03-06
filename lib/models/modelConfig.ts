@@ -1,6 +1,36 @@
-import { ModelInfo, TokenUsage } from "@/types";
+import { ModelCapability, ModelFamily, ModelInfo, TokenUsage } from "@/types";
 
 export const MODELS: Record<string, ModelInfo> = {
+  "gpt-5.4": {
+    id: "gpt-5.4",
+    name: "GPT-5.4",
+    family: "gpt-5",
+    description: "Modelo frontier para trabalho profissional complexo",
+    contextWindow: 1050000,
+    maxOutput: 128000,
+    pricing: { input: 2.5, output: 15.0, cachedInput: 0.25 },
+    capabilities: ["chat", "reasoning", "vision", "function-calling", "json-mode"],
+    supportsStreaming: true,
+    supportsSystemMessages: true,
+    supportsTemperature: false,
+    recommendedFor: ["Analise profunda", "Tarefas profissionais complexas", "Raciocinio avancado"],
+    badge: "Frontier",
+  },
+  "gpt-5.3-chat-latest": {
+    id: "gpt-5.3-chat-latest",
+    name: "GPT-5.3 Chat",
+    family: "gpt-5",
+    description: "Modelo instantaneo usado no ChatGPT para chat geral",
+    contextWindow: 128000,
+    maxOutput: 16384,
+    pricing: { input: 1.75, output: 14.0, cachedInput: 0.175 },
+    capabilities: ["chat", "vision", "function-calling", "json-mode"],
+    supportsStreaming: true,
+    supportsSystemMessages: true,
+    supportsTemperature: true,
+    recommendedFor: ["Chat geral", "Respostas rapidas", "Teste das melhorias do ChatGPT"],
+    badge: "ChatGPT",
+  },
   "gpt-5.1-chat-latest": {
     id: "gpt-5.1-chat-latest",
     name: "GPT-5.1 Instant",
@@ -194,13 +224,13 @@ export function fitsInContextWindow(
   return { fits: totalTokens <= model.contextWindow, usage: totalTokens, available: model.contextWindow };
 }
 
-export function getModelsByCapability(capability: string): ModelInfo[] {
+export function getModelsByCapability(capability: ModelCapability): ModelInfo[] {
   return Object.values(MODELS).filter((model) =>
-    model.capabilities.includes(capability as any)
+    model.capabilities.includes(capability)
   );
 }
 
-export function getModelsByFamily(family: string): ModelInfo[] {
+export function getModelsByFamily(family: ModelFamily): ModelInfo[] {
   return Object.values(MODELS).filter((model) => model.family === family);
 }
 

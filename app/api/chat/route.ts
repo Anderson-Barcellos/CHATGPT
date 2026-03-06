@@ -16,11 +16,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       input,
-      model = "gpt-5.1-chat-latest",
+      model = "gpt-5.3-chat-latest",
       instructions,
       maxOutputTokens,
-      temperature = 0.7,
-      topP = 1,
       stream = true,
       reasoning
     } = body;

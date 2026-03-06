@@ -196,7 +196,7 @@ The model decides when to generate images. Stream events include:
 ### 2. State Management Layers
 - **UI State** (uiStore): Theme, active mode, artifact viewer state
 - **Chat State** (chatStore): Messages, active conversation ID
-- **Settings** (settingsStore): Model params, custom instructions, memories (default model: `gpt-5.1`, temperature: `0.8`, topP: `0.95`)
+- **Settings** (settingsStore): Model params, custom instructions, memories (default model: `gpt-5.3-chat-latest`, temperature: `0.8`, topP: `0.95`)
 - **Client Persistent** (Dexie/IndexedDB): Settings, memories
 - **Server Persistent** (`data/conversations.json`): Conversations (filesystem JSON, accessed via `/api/conversations`)
 
@@ -538,7 +538,7 @@ sudo systemctl status chatgpt
 - Removed CanvasContainer, MonacoEditor, DiffViewer, SettingsPanel (dead components)
 - Settings "Instruções Adicionais" field is now optional (empty default)
 - Intelligent prompt base system always active
-- Default model: gpt-5.1, temperature: 0.8, topP: 0.95
+- Default model: gpt-5.3-chat-latest, temperature: 0.8, topP: 0.95
 
 ## 🔗 Related Documentation
 

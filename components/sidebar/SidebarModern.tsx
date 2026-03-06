@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useConversations } from "@/hooks/useConversations";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -76,6 +77,23 @@ export function SidebarModern({ onOpenSettings }: SidebarModernProps) {
   const { conversations = [], createConversation, deleteConversation } = useConversations();
   const { activeConversationId, setActiveConversationId } = useChatStore();
 
+  const handleDeleteConversation = useCallback(async (id: string) => {
+    const remaining = conversations.filter((conv) => conv.id !== id);
+
+    if (id === activeConversationId) {
+      const nextConversation = remaining[0];
+
+      if (nextConversation) {
+        setActiveConversationId(nextConversation.id);
+      } else {
+        const newId = await createConversation("Nova conversa");
+        setActiveConversationId(newId);
+      }
+    }
+
+    await deleteConversation(id);
+  }, [activeConversationId, conversations, createConversation, deleteConversation, setActiveConversationId]);
+
   const filteredConversations = conversations.filter(conv =>
     conv.title.toLowerCase().includes(debouncedSearch.toLowerCase())
   );
@@ -134,7 +152,7 @@ export function SidebarModern({ onOpenSettings }: SidebarModernProps) {
                   conversation={conv}
                   isActive={conv.id === activeConversationId}
                   onClick={() => setActiveConversationId(conv.id)}
-                  onDelete={() => deleteConversation(conv.id)}
+                  onDelete={() => handleDeleteConversation(conv.id)}
                 />
               ))}
               {filteredConversations.length === 0 && (
@@ -161,7 +179,7 @@ export function SidebarModern({ onOpenSettings }: SidebarModernProps) {
                       conversation={conv}
                       isActive={conv.id === activeConversationId}
                       onClick={() => setActiveConversationId(conv.id)}
-                      onDelete={() => deleteConversation(conv.id)}
+                      onDelete={() => handleDeleteConversation(conv.id)}
                     />
                   ))}
                 </CollapsibleContent>
@@ -190,7 +208,7 @@ export function SidebarModern({ onOpenSettings }: SidebarModernProps) {
 
 function ConversationItem({ conversation, isActive, onClick, onDelete }: ConversationItemProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleTouchStart = useCallback(() => {
@@ -211,10 +229,10 @@ function ConversationItem({ conversation, isActive, onClick, onDelete }: Convers
   return (
     <div
       className={cn(
-        "group flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm cursor-pointer",
+        "group relative flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm cursor-pointer",
         "transition-all duration-150",
         isActive
-          ? "bg-white/20 text-foreground shadow-sm"
+          ? "bg-white/20 text-foreground shadow-sm ring-1 ring-primary/15"
           : "hover:bg-white/10 text-muted-foreground hover:text-foreground"
       )}
       onClick={onClick}
@@ -223,10 +241,18 @@ function ConversationItem({ conversation, isActive, onClick, onDelete }: Convers
       onTouchMove={handleTouchEnd}
       onContextMenu={(e) => { e.preventDefault(); setMenuOpen(true); }}
     >
+      <div
+        className={cn(
+          "absolute left-1 top-2 bottom-2 w-0.5 rounded-full transition-opacity",
+          isActive ? "bg-primary/80 opacity-100" : "opacity-0"
+        )}
+      />
       <MessageCircle className={cn("h-3.5 w-3.5 shrink-0", isActive && "text-primary")} />
       <div className="flex-1 min-w-0">
-        <span className="block truncate text-xs font-medium">{conversation.title}</span>
-        <span className="text-xs text-muted-foreground/60">
+        <span className={cn("block truncate text-xs", isActive ? "font-semibold" : "font-medium")}>
+          {conversation.title}
+        </span>
+        <span className="text-[11px] text-muted-foreground/55">
           {relativeDate(conversation.updatedAt)}
         </span>
       </div>
@@ -234,37 +260,38 @@ function ConversationItem({ conversation, isActive, onClick, onDelete }: Convers
         <Star className="h-3 w-3 text-yellow-500 shrink-0" />
       )}
       <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
-        <DropdownMenu open={menuOpen} onOpenChange={(open) => { setMenuOpen(open); if (!open) setConfirmDelete(false); }}>
+        <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenuTrigger asChild>
             <Button
               size="icon"
               variant="ghost"
-              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+              className="h-7 w-7 opacity-60 transition-opacity text-muted-foreground hover:text-foreground md:opacity-0 md:group-hover:opacity-100"
             >
               <MoreVertical className="h-3.5 w-3.5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            {confirmDelete ? (
-              <DropdownMenuItem
-                onClick={() => { onDelete(); setMenuOpen(false); setConfirmDelete(false); }}
-                className="gap-2 text-xs text-destructive focus:text-destructive"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Confirmar exclusao?
-              </DropdownMenuItem>
-            ) : (
-              <DropdownMenuItem
-                onClick={(e) => { e.preventDefault(); setConfirmDelete(true); }}
-                className="gap-2 text-xs text-destructive focus:text-destructive"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Excluir conversa
-              </DropdownMenuItem>
-            )}
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem
+              onClick={() => {
+                setDeleteDialogOpen(true);
+                setMenuOpen(false);
+              }}
+              className="gap-2 text-xs text-destructive focus:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Excluir conversa
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Excluir esta conversa?"
+        description={`A conversa "${conversation.title}" sera removida da lista. Se ela estiver aberta, vamos te levar para outra conversa em seguida.`}
+        confirmLabel="Excluir conversa"
+        onConfirm={onDelete}
+      />
     </div>
   );
 }

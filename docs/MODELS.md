@@ -1,14 +1,16 @@
 # Model Configuration
 
-**Last updated:** 2026-01-30  
+**Last updated:** 2026-03-06  
 **Source:** `lib/models/modelConfig.ts`
 
-## Available Models (8 chat + 1 image)
+## Available Models (9 chat + 2 image)
 
-### GPT-5.1 Series (newest)
+### GPT-5 Series
 
 | ID | Name | Reasoning | Temperature | Context | Pricing (in/out per 1M) | Badge |
 |----|------|-----------|-------------|---------|--------------------------|-------|
+| `gpt-5.4` | GPT-5.4 | Yes | No | 1.05M | $2.5 / $15 | Frontier |
+| `gpt-5.3-chat-latest` | GPT-5.3 Chat | No | Yes | 128K | $1.75 / $14 | ChatGPT |
 | `gpt-5.1-chat-latest` | GPT-5.1 Instant | No | Yes | 256K | $5 / $15 | Rapido |
 | `gpt-5.1` | GPT-5.1 Thinking | Yes | No | 256K | $5 / $15 | Mais Novo |
 | `gpt-5.1-pro` | GPT-5.1 Pro | Yes | No | 256K | $15 / $60 | Premium |
@@ -31,6 +33,7 @@
 
 | ID | Name | Context | Pricing |
 |----|------|---------|---------|
+| `gpt-image-1.5` | GPT Image 1.5 | 4K | $0.04/image |
 | `dall-e-3` | DALL-E 3 | 4K | $0.04/image |
 
 ## Reasoning vs Temperature Logic

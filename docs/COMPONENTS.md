@@ -95,7 +95,7 @@ Actions: `setActiveConversationId`, `setMessages`, `addMessage`, `updateMessage`
 | `customInstructions` | `CustomInstructions \| null` | User context + response preferences |
 | `memories` | `Memory[]` | Active memories for context injection |
 
-Default model: `gpt-4.1`, temperature: 0.8, topP: 0.95, maxOutputTokens: 32768
+Default model: `gpt-5.3-chat-latest`, temperature: 0.8, topP: 0.95, maxOutputTokens: 16384
 
 ---
 

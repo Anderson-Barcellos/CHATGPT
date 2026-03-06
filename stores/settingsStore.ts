@@ -14,7 +14,7 @@ interface SettingsState {
   getActiveMemories: () => Memory[];
 }
 
-const DEFAULT_MODEL = "gpt-5.1";
+const DEFAULT_MODEL = "gpt-5.3-chat-latest";
 
 const defaultParameters: ModelParameters = {
   model: DEFAULT_MODEL,

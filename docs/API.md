@@ -22,7 +22,7 @@ Chat completion with streaming.
     { "role": "assistant", "content": "Hi there!" },
     { "role": "user", "content": "How are you?" }
   ],
-  "model": "gpt-5.1-chat-latest",
+  "model": "gpt-5.3-chat-latest",
   "instructions": "You are a helpful assistant.",
   "maxOutputTokens": 32768,
   "temperature": 0.7,
@@ -38,7 +38,7 @@ Chat completion with streaming.
 | Field | Type | Default | Notes |
 |-------|------|---------|-------|
 | `input` | array | **required** | Conversation history in OpenAI Responses API format |
-| `model` | string | `gpt-5.1-chat-latest` | Model ID from modelConfig |
+| `model` | string | `gpt-5.3-chat-latest` | Model ID from modelConfig |
 | `instructions` | string | — | System prompt (built by contextBuilder) |
 | `maxOutputTokens` | number | 1024 | Max response tokens |
 | `temperature` | number | 0.7 | Omit for reasoning models |
@@ -86,7 +86,7 @@ Code analysis and transformation.
   "language": "javascript",
   "targetLanguage": "typescript",
   "instructions": "Use modern ES6+ syntax",
-  "model": "gpt-5.1-chat-latest",
+  "model": "gpt-5.3-chat-latest",
   "maxOutputTokens": 4096,
   "temperature": 0.7,
   "topP": 1,
@@ -102,7 +102,7 @@ Code analysis and transformation.
 | `language` | string | — | Source language hint |
 | `targetLanguage` | string | — | **Required** when action is `convert` |
 | `instructions` | string | — | Additional instructions |
-| `model` | string | `gpt-5.1-chat-latest` | Model ID |
+| `model` | string | `gpt-5.3-chat-latest` | Model ID |
 | `stream` | boolean | true | SSE streaming |
 
 ### Actions
