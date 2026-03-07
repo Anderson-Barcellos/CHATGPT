@@ -2,8 +2,10 @@
 
 import { Message } from "@/types";
 import ReactMarkdown from "react-markdown";
+import type { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import remarkBreaks from "remark-breaks";
 import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
@@ -52,7 +54,10 @@ function detectRichContent(content: string): {
 }
 
 function cleanCitationMarkers(text: string): string {
-  return text.replace(/【\d+[:\d]*†[^】]*】/g, "").replace(/\[\d+\]\s*/g, "");
+  return text
+    .replace(/【\d+[:\d]*†[^】]*】/g, "")
+    // Remove referencia numerica sem engolir quebras de linha.
+    .replace(/\[\d+\][ \t]*/g, "");
 }
 
 export function MessageContent({ message, className }: MessageContentProps) {
@@ -60,17 +65,38 @@ export function MessageContent({ message, className }: MessageContentProps) {
   const content = cleanCitationMarkers(message.content);
   const richContent = detectRichContent(content);
 
+  const renderCode: Components["code"] = ({
+    className,
+    children,
+    ...props
+  }) => {
+    const match = /language-(\w+)/.exec(className || "");
+    const language = match ? match[1] : "";
+    const isInline = !className || !match;
+
+    if (!isInline && language) {
+      return <CodeBlock language={language} value={String(children).replace(/\n$/, "")} />;
+    }
+
+    return (
+      <code className={className} {...props}>
+        {children}
+      </code>
+    );
+  };
+
   if (message.imageBase64) {
     return (
       <div className={cn("space-y-3", className)}>
         {content && content.trim().length > 0 && (
-          <div className="prose prose-slate dark:prose-invert max-w-none prose-sm text-left">
-            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]}>
+          <div className="prose prose-slate dark:prose-invert max-w-full prose-sm text-left">
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath, remarkBreaks]} rehypePlugins={[rehypeHighlight, rehypeKatex]}>
               {content}
             </ReactMarkdown>
           </div>
         )}
         <div className="rounded-lg overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element -- data URI dinamica sem beneficio de otimizacao do next/image */}
           <img
             src={`data:${message.imageMimeType || "image/png"};base64,${message.imageBase64}`}
             alt="Generated image"
@@ -100,31 +126,12 @@ export function MessageContent({ message, className }: MessageContentProps) {
           Abrir no painel
         </Button>
 
-        <div className="prose prose-slate dark:prose-invert max-w-none prose-sm text-left">
+        <div className="prose prose-slate dark:prose-invert max-w-full prose-sm text-left">
           <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath]}
+            remarkPlugins={[remarkGfm, remarkMath, remarkBreaks]}
             rehypePlugins={[rehypeHighlight, rehypeKatex]}
             components={{
-              code: ({ className, children, ...props }: any) => {
-                const match = /language-(\w+)/.exec(className || '');
-                const language = match ? match[1] : '';
-                const isInline = !className || !match;
-
-                if (!isInline && language) {
-                  return (
-                    <CodeBlock
-                      language={language}
-                      value={String(children).replace(/\n$/, '')}
-                    />
-                  );
-                }
-
-                return (
-                  <code className={className} {...props}>
-                    {children}
-                  </code>
-                );
-              },
+              code: renderCode,
             }}
           >
             {content}
@@ -136,31 +143,12 @@ export function MessageContent({ message, className }: MessageContentProps) {
 
   // Regular markdown content
   return (
-    <div className={cn("prose prose-slate dark:prose-invert max-w-none prose-sm text-left", className)}>
+    <div className={cn("prose prose-slate dark:prose-invert max-w-full prose-sm text-left", className)}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkMath]}
+        remarkPlugins={[remarkGfm, remarkMath, remarkBreaks]}
         rehypePlugins={[rehypeHighlight, rehypeKatex, rehypeRaw]}
         components={{
-          code: ({ className, children, ...props }: any) => {
-            const match = /language-(\w+)/.exec(className || '');
-            const language = match ? match[1] : '';
-            const isInline = !className || !match;
-            
-            if (!isInline && language) {
-              return (
-                <CodeBlock
-                  language={language}
-                  value={String(children).replace(/\n$/, '')}
-                />
-              );
-            }
-            
-            return (
-              <code className={className} {...props}>
-                {children}
-              </code>
-            );
-          },
+          code: renderCode,
           a: ({ href, children }) => (
             <a 
               href={href} 

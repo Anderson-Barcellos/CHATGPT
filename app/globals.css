@@ -134,6 +134,14 @@ body {
   }
 }
 
+[data-radix-scroll-area-viewport] > div {
+  display: block !important;
+}
+
+[data-slot="card"] .prose pre {
+  overflow-x: auto;
+}
+
 body {
   background:
     radial-gradient(circle at 20% 20%, oklch(0.82 0.04 230 / 0.45), transparent 34%),
