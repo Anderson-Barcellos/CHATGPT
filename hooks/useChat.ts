@@ -12,7 +12,12 @@ import {
   updateConversationTitle,
   createConversation,
 } from "@/lib/storage/conversations";
-import { Message, ReasoningSummary, UrlCitation } from "@/types";
+import {
+  Message,
+  ReasoningSummary,
+  SendMessageOptions,
+  UrlCitation,
+} from "@/types";
 import { useCustomInstructions } from "@/hooks/useCustomInstructions";
 import { useMemories } from "@/hooks/useMemories";
 import { buildSystemPrompt } from "@/lib/openai/contextBuilder";
@@ -20,6 +25,7 @@ import { apiUrl } from "@/lib/utils";
 import { isReasoningModel, modelSupportsTemperature } from "@/lib/models/modelConfig";
 import { conversationKeys } from "@/hooks/queries/useConversationQuery";
 import { toast } from "sonner";
+import { createMessageArtifact } from "@/lib/artifacts/messageArtifacts";
 
 function buildReasoningConfig(
   model: string,
@@ -41,11 +47,69 @@ function buildReasoningConfig(
   return Object.keys(reasoning).length ? reasoning : undefined;
 }
 
+function isClinicalReportRequest(content: string): boolean {
+  const normalized = content.toLowerCase();
+  const clinicalKeywords = [
+    "ultrasson",
+    "ultrason",
+    "ecodoppler",
+    "doppler",
+    "laudo",
+    "relatorio",
+    "relatório",
+    "impressao diagnostica",
+    "impressão diagnóstica",
+    "achados",
+    "achados sonograficos",
+    "achados sonográficos",
+    "descricao tecnica",
+    "descrição técnica",
+    "exame",
+    "punho",
+    "ombro",
+    "joelho",
+    "membro inferior",
+    "membro superior",
+    "venoso",
+    "arterial",
+  ];
+
+  return clinicalKeywords.some((keyword) => normalized.includes(keyword));
+}
+
+function appendDocumentModeInstructions(
+  systemMessage: string,
+  content: string
+): string {
+  const documentInstructions = `## Document Mode
+- The user explicitly wants a polished document, not a conversational answer.
+- Return a complete, publication-ready markdown document.
+- Start with a clear title, then use structured sections with descriptive headings.
+- Prefer flowing paragraphs with strong readability.
+- Use lists, tables, callouts, or code blocks only when they improve clarity.
+- Keep formatting elegant and consistent, as if preparing a professional PDF-ready document.
+- Do not add a chatty intro, outro, or follow-up question.
+- Deliver the final document directly.`;
+
+  const clinicalReportInstructions = `## Clinical Report Style
+- When the request is for a medical imaging report, ultrasound report, Doppler report, or technical clinical write-up, prefer the style of a polished diagnostic report rather than an essay.
+- Use a professional medical tone, objective phrasing, and concise technical language.
+- Favor a clear exam title followed by sections such as "Descrição Técnica", "Achados", "Achados Sonográficos", "Conclusão" or "Impressão Diagnóstica" when appropriate to the case.
+- Keep paragraphs and itemization clinically organized, with emphasis on findings, technique, and diagnostic impression.
+- Avoid decorative prose, motivational phrasing, or generic explanatory filler.
+- If the user is rewriting or adapting an existing report, preserve the original medical structure and terminology as much as possible while improving readability and consistency.`;
+
+  return `${systemMessage}\n\n---\n\n${documentInstructions}${
+    isClinicalReportRequest(content) ? `\n\n${clinicalReportInstructions}` : ""
+  }`;
+}
+
 export function useChat() {
   const queryClient = useQueryClient();
   const {
     messages,
     setMessages,
+    setIsStreaming,
     addMessage,
     updateMessage,
     truncateFromMessage,
@@ -95,24 +159,39 @@ export function useChat() {
   }, [activeConversationId, setMessages]);
 
   const sendMessage = useCallback(
-    async (content: string) => {
-      if (!content.trim() || isLoading) return;
-      
-      // Aguarda o activeConversationId estar pronto
+    async (content: string, options: SendMessageOptions = {}) => {
+      const hasAttachments = (options.attachments?.length ?? 0) > 0;
+      if (!content.trim() && !hasAttachments) return false;
+      if (isLoading) return false;
+
       if (!activeConversationId) {
         console.warn("[useChat] activeConversationId não está pronto ainda");
-        return;
+        return false;
       }
 
       setIsLoading(true);
+      setIsStreaming(true);
       setError(null);
       abortControllerRef.current = new AbortController();
+
+      const storageAttachments = options.attachments?.map((a) => ({
+        ...a,
+        dataUrl: a.type === "image" ? a.thumbnailUrl : undefined,
+        thumbnailUrl: a.thumbnailUrl,
+        extractedText: a.extractedText ? `[${a.extractedText.length} caracteres]` : undefined,
+      }));
 
       const userMessage: Message = {
         id: crypto.randomUUID(),
         role: "user",
         content: content.trim(),
         timestamp: new Date(),
+        attachments: options.attachments,
+      };
+
+      const userMessageForStorage: Message = {
+        ...userMessage,
+        attachments: storageAttachments,
       };
 
       addMessage(userMessage);
@@ -124,6 +203,7 @@ export function useChat() {
         role: "assistant",
         content: "",
         timestamp: new Date(),
+        ...(options.documentMode && { preferredDisplayMode: "document" as const }),
         ...(usesReasoning && { reasoningStatus: "thinking" as const }),
       });
 
@@ -134,11 +214,14 @@ export function useChat() {
           parameters.reasoningEffort,
           parameters.reasoningSummary
         );
-        const { systemMessage } = buildSystemPrompt(
+        const { systemMessage: baseSystemMessage } = buildSystemPrompt(
           parameters.systemPrompt,
           { id: "default", contextAboutUser, responsePreferences: "" },
           memories
         );
+        const systemMessage = options.documentMode
+          ? appendDocumentModeInstructions(baseSystemMessage, content)
+          : baseSystemMessage;
 
         const response = await fetch(apiUrl("/api/chat"), {
           method: "POST",
@@ -287,9 +370,32 @@ export function useChat() {
           });
         }
 
+        if (accumulated.trim().length > 0) {
+          const artifact = options.documentMode
+            ? createMessageArtifact(accumulated, {
+                force: true,
+                displayMode: "document",
+              })
+            : undefined;
+          if (artifact) {
+            updateMessage(assistantMessageId, { artifact });
+          }
+        }
+
         try {
           const finalMessages = useChatStore.getState().messages;
-          await saveConversationMessages(activeConversationId, finalMessages);
+          const messagesForStorage = finalMessages.map((m) => {
+            if (!m.attachments?.length) return m;
+            return {
+              ...m,
+              attachments: m.attachments.map((a) => ({
+                ...a,
+                dataUrl: a.type === "image" ? a.thumbnailUrl : undefined,
+                extractedText: a.extractedText ? `[${a.extractedText.length} chars]` : undefined,
+              })),
+            };
+          });
+          await saveConversationMessages(activeConversationId, messagesForStorage);
 
           const userMsgs = finalMessages.filter((m) => m.role === "user");
           if (userMsgs.length === 1) {
@@ -323,8 +429,11 @@ export function useChat() {
         }
       } finally {
         setIsLoading(false);
+        setIsStreaming(false);
         abortControllerRef.current = null;
       }
+
+      return true;
     },
     [
       activeConversationId,
@@ -341,6 +450,7 @@ export function useChat() {
       parameters.temperature,
       parameters.topP,
       queryClient,
+      setIsStreaming,
       updateMessage,
     ]
   );
@@ -371,8 +481,9 @@ export function useChat() {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       setIsLoading(false);
+      setIsStreaming(false);
     }
-  }, []);
+  }, [setIsStreaming]);
 
   return {
     messages,

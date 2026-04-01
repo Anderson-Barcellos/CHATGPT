@@ -36,12 +36,8 @@ export function ChatShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [showSplash, setShowSplash] = useState(() => {
-    if (typeof window !== "undefined") {
-      return !sessionStorage.getItem("gpt-splash-shown");
-    }
-    return false;
-  });
+  const [hasMounted, setHasMounted] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
   const { activeMode } = useUIStore();
   useComponentPreloader();
   const { activeConversationId, messages } = useChatStore();
@@ -63,6 +59,12 @@ export function ChatShell() {
   }, [activeConversationId, messages, conversations]);
 
   const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+    setShowSplash(!sessionStorage.getItem("gpt-splash-shown"));
+  }, []);
+
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
@@ -101,7 +103,12 @@ export function ChatShell() {
   return (
     <>
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-      <div className={cn("h-dvh overflow-hidden bg-deep-space text-foreground/90", showSplash && "invisible")}>
+      <div
+        className={cn(
+          "h-dvh overflow-hidden bg-deep-space text-foreground/90",
+          (!hasMounted || showSplash) && "invisible"
+        )}
+      >
         <div
           className="flex w-full p-0 md:p-4 md:pb-[max(1rem,env(safe-area-inset-bottom))] transition-[height] duration-150"
           style={{ height: "calc(100dvh - var(--kb-offset, 0px))" }}
@@ -158,7 +165,7 @@ export function ChatShell() {
 
             <div className="flex h-full flex-1 flex-col overflow-hidden">
               <header className="border-b border-white/5 bg-background/40 backdrop-blur-xl pt-[env(safe-area-inset-top)] md:pt-0">
-                <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center justify-between px-4 py-2.5">
                   <div className="flex items-center gap-2">
                     {isMobile && (
                       <Button
@@ -171,23 +178,26 @@ export function ChatShell() {
                       </Button>
                     )}
 
-                    <div className="flex items-center gap-2">
-                      <GPTLogo size={28} />
+                    <div className="flex items-center gap-2.5">
+                      <GPTLogo size={26} />
                       <div className="leading-tight">
-                        <h1 className="text-sm font-semibold tracking-wide">
-                          <span className="text-gradient-gpt">GPT</span>
-                        </h1>
+                        <div className="flex items-center gap-1.5">
+                          <h1 className="text-sm font-semibold tracking-wide">
+                            <span className="text-gradient-gpt">GPT</span>
+                          </h1>
+                          <span
+                            className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"
+                            title={currentModel?.name || parameters.model}
+                          />
+                        </div>
                         <p className="max-w-[180px] truncate text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70 md:max-w-[320px]">
                           {activeConversation?.title || "Workspace"}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground/55">
-                          {currentModel?.name || parameters.model}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1">
                     <ExportMenu conversation={activeConversation} size="icon" />
 
                     <Button

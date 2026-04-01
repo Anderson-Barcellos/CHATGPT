@@ -7,12 +7,44 @@ export interface UrlCitation {
 }
 
 export type ReasoningStatus = "thinking" | "complete";
+export type ArtifactContentType = "markdown" | "html" | "mixed";
+export type MessageArtifactKind = "document";
+export type MessageArtifactDisplayMode = "default" | "document";
+
+export type FileAttachmentType = "image" | "pdf" | "text";
+
+export interface FileAttachment {
+  id: string;
+  name: string;
+  type: FileAttachmentType;
+  mimeType: string;
+  size: number;
+  dataUrl?: string;
+  extractedText?: string;
+  thumbnailUrl?: string;
+}
+
+export interface SendMessageOptions {
+  documentMode?: boolean;
+  attachments?: FileAttachment[];
+}
+
+export interface MessageArtifact {
+  id: string;
+  kind: MessageArtifactKind;
+  title: string;
+  summary: string;
+  content: string;
+  type: ArtifactContentType;
+  displayMode?: MessageArtifactDisplayMode;
+}
 
 export interface Message {
   id: string;
   role: MessageRole;
   content: string;
   timestamp: Date;
+  preferredDisplayMode?: MessageArtifactDisplayMode;
   reasoningSummary?: string;
   reasoningText?: string;
   reasoningStatus?: ReasoningStatus;
@@ -21,6 +53,8 @@ export interface Message {
   isGeneratingImage?: boolean;
   isSearching?: boolean;
   citations?: UrlCitation[];
+  artifact?: MessageArtifact;
+  attachments?: FileAttachment[];
 }
 
 export interface Conversation {

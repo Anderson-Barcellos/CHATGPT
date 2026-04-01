@@ -1,12 +1,27 @@
 "use client";
 
-import { KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState, DragEvent, ClipboardEvent } from "react";
 import { useChat } from "@/hooks/useChat";
+import { useSpeechToText } from "@/hooks/useSpeechToText";
+import { useFileAttachments } from "@/hooks/useFileAttachments";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { MODELS, isReasoningModel as checkReasoning, modelSupportsTemperature, getChatModels } from "@/lib/models/modelConfig";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Send, Square, Brain, ChevronDown } from "lucide-react";
+import {
+  Send,
+  Square,
+  Brain,
+  ChevronDown,
+  FileText,
+  Mic,
+  LoaderCircle,
+  Paperclip,
+  X,
+  ImageIcon,
+  FileIcon,
+  Upload,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ReasoningEffort } from "@/types";
 import {
@@ -26,11 +41,36 @@ const REASONING_OPTIONS: { value: ReasoningEffort; label: string; desc: string }
   { value: "xhigh", label: "Maximo", desc: "Analise exaustiva" },
 ];
 
+function formatRecordingDuration(durationMs: number) {
+  const totalSeconds = Math.max(0, Math.floor(durationMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+}
 
 export function InputArea() {
   const [input, setInput] = useState("");
+  const [documentMode, setDocumentMode] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { sendMessage, stopGeneration, isLoading, error } = useChat();
+  const { attachments, isProcessing, errors: fileErrors, addFiles, removeFile, clearFiles } = useFileAttachments();
+  const {
+    audioLevel,
+    error: speechError,
+    isSupported: speechSupported,
+    recordingDurationMs,
+    status: speechStatus,
+    toggleRecording,
+  } = useSpeechToText();
   const { parameters, updateParameters } = useSettingsStore();
 
   const modelList = useMemo(() => getChatModels(), []);
@@ -41,6 +81,35 @@ export function InputArea() {
 
   const currentModel = MODELS[parameters.model];
   const currentReasoning = REASONING_OPTIONS.find((r) => r.value === parameters.reasoningEffort);
+  const isRecording = speechStatus === "recording";
+  const isTranscribing = speechStatus === "transcribing";
+  const disabled = isLoading || isTranscribing;
+  const hasContent = input.trim().length > 0 || attachments.length > 0;
+
+  const audioMeterBars = useMemo(() => {
+    return Array.from({ length: 16 }, (_, index) => {
+      if (isTranscribing) return 0.28 + ((index + 1) % 5) * 0.12;
+      if (isRecording) {
+        const sway = 0.74 + Math.sin(index * 0.8) * 0.18;
+        return Math.max(0.16, Math.min(1, audioLevel * sway + 0.12));
+      }
+      return 0.1;
+    });
+  }, [audioLevel, isRecording, isTranscribing]);
+
+  const speechStatusLabel = useMemo(() => {
+    if (isRecording) return "Gravando";
+    if (isTranscribing) return "Transcrevendo";
+    if (speechStatus === "error") return "Falha";
+    return "Voz";
+  }, [isRecording, isTranscribing, speechStatus]);
+
+  const speechHint = useMemo(() => {
+    if (isRecording) return "Toque no microfone de novo para encerrar e transcrever.";
+    if (isTranscribing) return "Convertendo teu audio em texto com gpt-4o-transcribe.";
+    if (!speechSupported) return "Este navegador nao oferece suporte completo para gravacao.";
+    return null;
+  }, [isRecording, isTranscribing, speechSupported]);
 
   const handleModelChange = useCallback((newModel: string) => {
     const newIsReasoning = checkReasoning(newModel);
@@ -53,14 +122,35 @@ export function InputArea() {
   }, [updateParameters]);
 
   const handleSubmit = useCallback(async () => {
-    if (!input.trim()) return;
-    await sendMessage(input);
-    setInput("");
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
+    if (!hasContent) return;
+    const sent = await sendMessage(input, { documentMode, attachments: attachments.length > 0 ? attachments : undefined });
+    if (sent) {
+      setInput("");
+      setDocumentMode(false);
+      clearFiles();
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
+      textareaRef.current?.focus();
     }
-    textareaRef.current?.focus();
-  }, [input, sendMessage]);
+  }, [attachments, clearFiles, documentMode, hasContent, input, sendMessage]);
+
+  const handleMicrophoneClick = useCallback(async () => {
+    const transcript = await toggleRecording();
+    if (!transcript) return;
+    setInput((current) => {
+      const trimmedCurrent = current.trim();
+      if (!trimmedCurrent) return transcript;
+      return `${current}${current.endsWith("\n") ? "" : "\n"}${transcript}`;
+    });
+    requestAnimationFrame(() => {
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+        textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+        textareaRef.current.focus();
+      }
+    });
+  }, [toggleRecording]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -68,6 +158,65 @@ export function InputArea() {
       handleSubmit();
     }
   };
+
+  const handleFileSelect = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      addFiles(e.target.files);
+      e.target.value = "";
+    }
+  }, [addFiles]);
+
+  const handleDragEnter = useCallback((e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    if (e.dataTransfer.types.includes("Files")) {
+      setIsDragging(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current = 0;
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      addFiles(e.dataTransfer.files);
+    }
+  }, [addFiles]);
+
+  const handlePaste = useCallback((e: ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData.items;
+    const imageFiles: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith("image/")) {
+        const file = items[i].getAsFile();
+        if (file) imageFiles.push(file);
+      }
+    }
+    if (imageFiles.length > 0) {
+      e.preventDefault();
+      addFiles(imageFiles);
+    }
+  }, [addFiles]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -88,30 +237,72 @@ export function InputArea() {
     return () => el.removeEventListener("focus", handleFocus);
   }, []);
 
-  const disabled = isLoading;
-
   return (
     <div className="border-t border-white/5 bg-background/40 backdrop-blur-2xl pb-[env(safe-area-inset-bottom)] md:pb-0">
       <div className="mx-auto w-full max-w-5xl px-4 py-4">
         {error && (
           <Alert variant="destructive" className="mb-2">
+            <AlertDescription className="text-xs">{error}</AlertDescription>
+          </Alert>
+        )}
+        {speechError && !error && (
+          <Alert variant="destructive" className="mb-2">
+            <AlertDescription className="text-xs">{speechError}</AlertDescription>
+          </Alert>
+        )}
+        {fileErrors.length > 0 && (
+          <Alert variant="destructive" className="mb-2">
             <AlertDescription className="text-xs">
-              {error}
+              {fileErrors.map((e) => `${e.fileName}: ${e.error}`).join(" | ")}
             </AlertDescription>
           </Alert>
         )}
 
-        <div className={cn(
-          "rounded-2xl border border-white/10 bg-background/70 backdrop-blur-xl shadow-lg",
-          "transition-shadow duration-200",
-          "focus-within:shadow-xl focus-within:border-primary/30"
-        )}>
+        <div
+          className={cn(
+            "relative rounded-2xl border border-white/10 bg-background/70 backdrop-blur-xl shadow-lg",
+            "transition-all duration-200",
+            "focus-within:shadow-xl focus-within:border-primary/30",
+            isDragging && "border-primary/50 shadow-xl shadow-primary/10 bg-primary/5"
+          )}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
+          {isDragging && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-primary/8 backdrop-blur-sm border-2 border-dashed border-primary/40">
+              <div className="flex flex-col items-center gap-2 text-primary">
+                <Upload className="h-8 w-8 animate-bounce" />
+                <span className="text-sm font-medium">Solte os arquivos aqui</span>
+              </div>
+            </div>
+          )}
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,.txt,.md,.csv,.json,.xml,.log,.yaml,.yml,.toml,.ini,.sh,.py,.js,.ts,.tsx,.jsx,.html,.css"
+            onChange={handleFileInputChange}
+            className="hidden"
+          />
+
           <textarea
             ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Mensagem para o GPT..."
+            onPaste={handlePaste}
+            placeholder={
+              isRecording
+                ? "Gravando teu audio..."
+                : documentMode
+                ? "Descreva o documento que tu quer elaborar..."
+                : attachments.length > 0
+                ? "Adicione uma mensagem sobre os arquivos..."
+                : "Mensagem para o GPT..."
+            }
             className={cn(
               "w-full resize-none bg-transparent px-4 pt-3 pb-2 text-sm",
               "outline-none placeholder:text-muted-foreground/50",
@@ -121,8 +312,119 @@ export function InputArea() {
             disabled={disabled}
           />
 
+          {attachments.length > 0 && (
+            <div className="flex flex-wrap gap-2 px-3 pb-2">
+              {attachments.map((att) => (
+                <div
+                  key={att.id}
+                  className="group relative flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs transition-colors hover:bg-white/10"
+                >
+                  {att.type === "image" && att.thumbnailUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element -- thumbnail data URI */
+                    <img
+                      src={att.thumbnailUrl}
+                      alt={att.name}
+                      className="h-8 w-8 rounded-lg object-cover"
+                    />
+                  ) : att.type === "pdf" ? (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/15">
+                      <FileIcon className="h-4 w-4 text-rose-400" />
+                    </div>
+                  ) : (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/15">
+                      <FileText className="h-4 w-4 text-blue-400" />
+                    </div>
+                  )}
+                  <div className="min-w-0 max-w-[120px]">
+                    <p className="truncate font-medium text-foreground/80">{att.name}</p>
+                    <p className="text-[10px] text-muted-foreground/60">{formatFileSize(att.size)}</p>
+                  </div>
+                  <button
+                    onClick={() => removeFile(att.id)}
+                    className="ml-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-muted-foreground/70 transition-colors hover:bg-destructive/20 hover:text-destructive"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              {isProcessing && (
+                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-muted-foreground">
+                  <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                  Processando...
+                </div>
+              )}
+            </div>
+          )}
+
+          {(isRecording || isTranscribing) && (
+            <div className="px-4 pb-2">
+              <div className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2.5">
+                <div className="flex h-7 items-end gap-1">
+                  {audioMeterBars.map((bar, index) => (
+                    <span
+                      key={index}
+                      className={cn(
+                        "w-1 rounded-full transition-[height,opacity,background-color] duration-150",
+                        isRecording ? "bg-rose-400/85" : "bg-cyan-400/85",
+                        isTranscribing && "animate-pulse"
+                      )}
+                      style={{
+                        height: `${Math.max(5, Math.round(bar * 24))}px`,
+                        opacity: isTranscribing ? 0.75 : 0.35 + bar * 0.65,
+                      }}
+                    />
+                  ))}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em]",
+                        isRecording
+                          ? "bg-rose-500/12 text-rose-200 ring-1 ring-rose-400/30"
+                          : "bg-cyan-500/12 text-cyan-100 ring-1 ring-cyan-400/25"
+                      )}
+                    >
+                      {speechStatusLabel}
+                    </span>
+                    {isRecording && (
+                      <span className="text-[11px] font-medium tabular-nums text-foreground/80">
+                        {formatRecordingDuration(recordingDurationMs)}
+                      </span>
+                    )}
+                  </div>
+                  {speechHint && (
+                    <div className="mt-1 text-[11px] text-muted-foreground">
+                      {speechHint}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center justify-between gap-2 px-3 pb-3">
             <div className="flex flex-wrap items-center gap-1.5">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                disabled={disabled || isProcessing}
+                onClick={handleFileSelect}
+                className={cn(
+                  "h-7 w-7 rounded-full text-muted-foreground hover:text-foreground",
+                  attachments.length > 0
+                    ? "bg-primary/15 text-primary ring-1 ring-primary/30 hover:bg-primary/20"
+                    : "bg-white/5"
+                )}
+              >
+                {isProcessing ? (
+                  <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Paperclip className="h-3.5 w-3.5" />
+                )}
+              </Button>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -165,17 +467,17 @@ export function InputArea() {
 
               {hasReasoning && (
                 <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={disabled}
-                    className="h-7 gap-1 rounded-full px-3 text-[11px] font-medium text-muted-foreground hover:text-foreground bg-white/5"
-                  >
-                    <Brain className="h-3 w-3" />
-                    <span>{currentReasoning?.label || "Medio"}</span>
-                    <ChevronDown className="h-3 w-3" />
-                  </Button>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={disabled}
+                      className="h-7 gap-1 rounded-full px-3 text-[11px] font-medium text-muted-foreground hover:text-foreground bg-white/5"
+                    >
+                      <Brain className="h-3 w-3" />
+                      <span>{currentReasoning?.label || "Medio"}</span>
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-48">
                     <DropdownMenuLabel>Raciocinio</DropdownMenuLabel>
@@ -196,6 +498,48 @@ export function InputArea() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={disabled}
+                onClick={() => setDocumentMode((current) => !current)}
+                className={cn(
+                  "h-7 gap-1 rounded-full px-3 text-[11px] font-medium transition-colors",
+                  documentMode
+                    ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/30 hover:bg-cyan-500/20"
+                    : "bg-white/5 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <FileText className="h-3 w-3" />
+                <span className="hidden sm:inline">Documento</span>
+              </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={isLoading || isTranscribing || (!speechSupported && !isRecording)}
+                onClick={handleMicrophoneClick}
+                className={cn(
+                  "h-7 gap-1 rounded-full px-3 text-[11px] font-medium transition-colors",
+                  isRecording
+                    ? "bg-rose-500/15 text-rose-100 ring-1 ring-rose-400/30 hover:bg-rose-500/20"
+                    : isTranscribing
+                    ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/30 hover:bg-cyan-500/20"
+                    : speechStatus === "error"
+                    ? "bg-amber-500/12 text-amber-100 ring-1 ring-amber-400/25 hover:bg-amber-500/18"
+                    : "bg-white/5 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {isTranscribing ? (
+                  <LoaderCircle className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Mic className="h-3 w-3" />
+                )}
+                <span className="hidden sm:inline">{speechStatusLabel}</span>
+              </Button>
             </div>
 
             <div className="flex items-center gap-1.5">
@@ -213,7 +557,7 @@ export function InputArea() {
                 <Button
                   onClick={handleSubmit}
                   size="sm"
-                  disabled={!input.trim()}
+                  disabled={!hasContent || isRecording || isProcessing}
                   className={cn(
                     "h-9 rounded-xl px-4 text-xs",
                     "bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-600 hover:via-blue-700 hover:to-indigo-700 text-white",
@@ -228,7 +572,7 @@ export function InputArea() {
         </div>
 
         <p className="mt-1.5 text-center text-[10px] text-muted-foreground/50">
-          Enter para enviar · Shift+Enter para nova linha
+          Enter para enviar · Shift+Enter para nova linha · Arraste arquivos ou cole imagens
         </p>
       </div>
     </div>

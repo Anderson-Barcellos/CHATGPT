@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
-import { User, Pencil, X, Send, Globe, ExternalLink, Trash2, MoreHorizontal } from "lucide-react";
+import { User, Pencil, X, Send, Globe, ExternalLink, Trash2, MoreHorizontal, FileIcon, FileText } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -101,7 +101,7 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
       <div className={cn("max-w-[95%] sm:max-w-[80%] min-w-0", isUser && "order-first")}>
         <Card
           className={cn(
-            "relative px-4 py-3 text-[13px] leading-relaxed text-left overflow-hidden",
+            "relative min-w-0 gap-0 overflow-hidden break-words px-4 py-3 text-left text-[13px] leading-relaxed",
             isUser
               ? "bg-gradient-to-br from-cyan-500 to-indigo-600 text-white shadow-lg shadow-cyan-500/20 rounded-2xl rounded-br-md"
               : "glass text-foreground/90 rounded-2xl rounded-bl-md"
@@ -111,6 +111,58 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
           onTouchMove={handleTouchEnd}
           onContextMenu={(onEdit || onDelete) ? (e) => { e.preventDefault(); setMenuOpen(true); } : undefined}
         >
+          {message.attachments && message.attachments.length > 0 && !isEditing && (
+            <div className="mb-2 space-y-2">
+              {message.attachments.some((a) => a.type === "image") && (
+                <div className={cn(
+                  "flex flex-wrap gap-1.5",
+                  message.attachments.filter((a) => a.type === "image").length === 1 ? "max-w-[280px]" : ""
+                )}>
+                  {message.attachments
+                    .filter((a) => a.type === "image")
+                    .map((att) => (
+                      /* eslint-disable-next-line @next/next/no-img-element -- data URI thumbnail */
+                      <img
+                        key={att.id}
+                        src={att.dataUrl || att.thumbnailUrl}
+                        alt={att.name}
+                        className={cn(
+                          "rounded-lg object-cover shadow-sm",
+                          message.attachments!.filter((a) => a.type === "image").length === 1
+                            ? "w-full max-h-[240px]"
+                            : "h-20 w-20"
+                        )}
+                      />
+                    ))}
+                </div>
+              )}
+              {message.attachments.some((a) => a.type !== "image") && (
+                <div className="flex flex-wrap gap-1.5">
+                  {message.attachments
+                    .filter((a) => a.type !== "image")
+                    .map((att) => (
+                      <div
+                        key={att.id}
+                        className={cn(
+                          "flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px]",
+                          isUser
+                            ? "bg-white/15 text-white/90"
+                            : "bg-white/8 text-foreground/75"
+                        )}
+                      >
+                        {att.type === "pdf" ? (
+                          <FileIcon className="h-3 w-3 shrink-0" />
+                        ) : (
+                          <FileText className="h-3 w-3 shrink-0" />
+                        )}
+                        <span className="max-w-[140px] truncate">{att.name}</span>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {isEditing ? (
             <div className="flex flex-col gap-2">
               <textarea
@@ -242,9 +294,9 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          {!isUser && message.content && (
+          {!isUser && (message.content || message.artifact?.content) && (
             <MessageActions
-              content={message.content}
+              content={message.artifact?.content ?? message.content}
               className="opacity-70 transition-opacity md:opacity-0 md:group-hover:opacity-100"
             />
           )}
