@@ -123,6 +123,7 @@ export function InputArea() {
 
   const handleSubmit = useCallback(async () => {
     if (!hasContent) return;
+    if (navigator.vibrate) navigator.vibrate(10);
     const sent = await sendMessage(input, { documentMode, attachments: attachments.length > 0 ? attachments : undefined });
     if (sent) {
       setInput("");
@@ -131,7 +132,6 @@ export function InputArea() {
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
       }
-      textareaRef.current?.focus();
     }
   }, [attachments, clearFiles, documentMode, hasContent, input, sendMessage]);
 
@@ -165,6 +165,7 @@ export function InputArea() {
 
   const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
+      if (navigator.vibrate) navigator.vibrate(15);
       addFiles(e.target.files);
       e.target.value = "";
     }
@@ -411,6 +412,7 @@ export function InputArea() {
                 size="icon"
                 disabled={disabled || isProcessing}
                 onClick={handleFileSelect}
+                data-compact-touch
                 className={cn(
                   "h-7 w-7 rounded-full text-muted-foreground hover:text-foreground",
                   attachments.length > 0

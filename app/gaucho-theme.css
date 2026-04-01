@@ -46,9 +46,18 @@
     background: var(--glass-bg-strong);
   }
 
-  .glass-hover:hover {
-    box-shadow: 0 12px 36px oklch(0.65 0.18 240 / 0.25);
-    transform: translateY(-1px);
+  /* On touch devices, use active state instead of hover (no hover jank) */
+  @media (hover: hover) {
+    .glass-hover:hover {
+      box-shadow: 0 12px 36px oklch(0.65 0.18 240 / 0.25);
+      transform: translateY(-1px);
+    }
+  }
+  @media (hover: none) {
+    .glass-hover:active {
+      box-shadow: 0 8px 24px oklch(0.65 0.18 240 / 0.20);
+      transform: scale(0.98);
+    }
   }
 
 
