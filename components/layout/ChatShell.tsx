@@ -81,21 +81,13 @@ export function ChatShell() {
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    let rafId: number | null = null;
     const update = () => {
-      if (rafId !== null) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        const offset = Math.max(0, window.innerHeight - vv.height);
-        document.documentElement.style.setProperty("--kb-offset", `${offset}px`);
-        rafId = null;
-      });
+      const offset = Math.max(0, window.innerHeight - vv.height);
+      document.documentElement.style.setProperty("--kb-offset", `${offset}px`);
     };
     vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
     return () => {
       vv.removeEventListener("resize", update);
-      vv.removeEventListener("scroll", update);
-      if (rafId !== null) cancelAnimationFrame(rafId);
       document.documentElement.style.setProperty("--kb-offset", "0px");
     };
   }, []);
@@ -113,7 +105,7 @@ export function ChatShell() {
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
       <div
         className={cn(
-          "h-dvh overflow-hidden bg-deep-space text-foreground/90 overscroll-none",
+          "h-dvh overflow-hidden bg-deep-space text-foreground/90",
           (!hasMounted || showSplash) && "invisible"
         )}
       >

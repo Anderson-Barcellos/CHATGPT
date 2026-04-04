@@ -132,51 +132,14 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
 
-  /* Kill 300ms tap delay on all interactive elements */
-  a, button, input, textarea, select, [role="button"], [tabindex] {
-    touch-action: manipulation;
-  }
+[data-radix-scroll-area-viewport] > div {
+  display: block !important;
+}
 
-  /* GPU-hint for animated containers */
-  [data-radix-sheet-content],
-  .animate-in {
-    will-change: transform, opacity;
-  }
-
-  /* Ensure minimum touch targets on mobile */
-  @media (pointer: coarse) {
-    button, [role="button"] {
-      min-height: 44px;
-      min-width: 44px;
-    }
-    /* Exception: icon-only pills inside toolbars can be smaller visually
-       but keep the hit area via padding */
-    button[data-compact-touch] {
-      min-height: 36px;
-      min-width: 36px;
-    }
-  }
-
-  [data-radix-scroll-area-viewport] > div {
-    display: block !important;
-  }
-
-  /* Smooth scrolling for scroll areas on mobile */
-  [data-radix-scroll-area-viewport] {
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
-    overscroll-behavior-y: contain;
-  }
-
-  [data-slot="card"] .prose pre {
-    overflow-x: auto;
-  }
-
-  [data-slot="card"] .prose {
-    overflow-wrap: break-word;
-    word-break: break-word;
-  }
+[data-slot="card"] .prose pre {
+  overflow-x: auto;
 }
 
 body {
