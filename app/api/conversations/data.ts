@@ -1,52 +1,23 @@
-import { promises as fs } from "fs";
-import path from "path";
 import { Conversation } from "@/types";
+import { readDataFile, withDataFileLock, writeDataFile } from "@/lib/server/jsonFileStore";
+import { deserializeConversation, serializeConversation } from "@/lib/storage/serializers";
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const FILE_PATH = path.join(DATA_DIR, "conversations.json");
-
-let lockChain = Promise.resolve();
-function withLock<T>(fn: () => Promise<T>): Promise<T> {
-  const next = lockChain.then(fn, fn);
-  lockChain = next.then(() => {}, () => {});
-  return next;
-}
-
-async function ensureFile() {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  try {
-    await fs.access(FILE_PATH);
-  } catch {
-    await fs.writeFile(FILE_PATH, JSON.stringify([]), "utf-8");
-  }
-}
+const FILE_NAME = "conversations.json";
 
 async function readAll(): Promise<Conversation[]> {
-  await ensureFile();
-  const raw = await fs.readFile(FILE_PATH, "utf-8");
-  try {
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      return parsed.map((c) => ({
-        ...c,
-        createdAt: new Date(c.createdAt),
-        updatedAt: new Date(c.updatedAt),
-      }));
-    }
-    return [];
-  } catch {
-    return [];
-  }
+  const parsed = await readDataFile(FILE_NAME, [] as unknown[]);
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed.map((conversation) =>
+    deserializeConversation(conversation as Conversation)
+  );
 }
 
 async function writeAll(conversations: Conversation[]) {
-  await ensureFile();
-  const serializable = conversations.map((c) => ({
-    ...c,
-    createdAt: c.createdAt instanceof Date ? c.createdAt.toISOString() : c.createdAt,
-    updatedAt: c.updatedAt instanceof Date ? c.updatedAt.toISOString() : c.updatedAt,
-  }));
-  await fs.writeFile(FILE_PATH, JSON.stringify(serializable, null, 2), "utf-8");
+  await writeDataFile(
+    FILE_NAME,
+    conversations.map((conversation) => serializeConversation(conversation))
+  );
 }
 
 export async function listConversations(): Promise<Conversation[]> {
@@ -59,7 +30,7 @@ export async function getConversation(id: string): Promise<Conversation | undefi
 }
 
 export function createConversation(title?: string): Promise<Conversation> {
-  return withLock(async () => {
+  return withDataFileLock(FILE_NAME, async () => {
     const conversations = await readAll();
     const now = new Date().toISOString();
     const conv: Conversation = {
@@ -79,7 +50,7 @@ export function updateConversation(
   id: string,
   updates: Partial<Conversation>
 ): Promise<Conversation | undefined> {
-  return withLock(async () => {
+  return withDataFileLock(FILE_NAME, async () => {
     const conversations = await readAll();
     const idx = conversations.findIndex((c) => c.id === id);
     if (idx === -1) return undefined;
@@ -87,7 +58,7 @@ export function updateConversation(
     const updated = {
       ...conversations[idx],
       ...updates,
-      updatedAt: updates.updatedAt ? new Date(updates.updatedAt as any) : new Date(now),
+      updatedAt: updates.updatedAt ? new Date(updates.updatedAt) : new Date(now),
     } as Conversation;
     conversations[idx] = updated;
     await writeAll(conversations);
@@ -96,7 +67,7 @@ export function updateConversation(
 }
 
 export function deleteConversation(id: string): Promise<boolean> {
-  return withLock(async () => {
+  return withDataFileLock(FILE_NAME, async () => {
     const conversations = await readAll();
     const filtered = conversations.filter((c) => c.id !== id);
     if (filtered.length === conversations.length) return false;

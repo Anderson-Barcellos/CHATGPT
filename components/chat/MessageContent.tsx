@@ -1,100 +1,139 @@
 "use client";
 
+import { useState } from "react";
 import { Message } from "@/types";
-import ReactMarkdown from "react-markdown";
-import type { Components } from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import remarkBreaks from "remark-breaks";
-import rehypeHighlight from "rehype-highlight";
-import rehypeKatex from "rehype-katex";
-import rehypeRaw from "rehype-raw";
 import "katex/dist/katex.min.css";
-import { CodeBlock } from "./CodeBlock";
 import { Button } from "@/components/ui/button";
-import { PanelRightOpen } from "lucide-react";
+import { PanelRightOpen, Maximize2, Minimize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/uiStore";
+import { DocumentCanvas } from "@/components/artifacts/DocumentCanvas";
+import { ChatMarkdown } from "./ChatMarkdown";
+import { MessageArtifactCard } from "./MessageArtifactCard";
+import {
+  cleanCitationMarkers,
+  detectRichContent,
+} from "@/lib/artifacts/messageArtifacts";
 
 interface MessageContentProps {
   message: Message;
   className?: string;
 }
 
-// Detect if content should be rendered in rich viewer
-function detectRichContent(content: string): {
-  isRich: boolean;
-  type: "markdown" | "html" | "mixed";
-} {
-  // Check for HTML tags
-  const hasHtml = /<(html|body|script|style|svg|canvas)/i.test(content);
-  
-  // Check for complex markdown (tables, mermaid, etc)
-  const hasComplexMarkdown = 
-    content.includes('```mermaid') ||
-    content.includes('```html') ||
-    content.includes('```svg') ||
-    content.includes('<table>') ||
-    content.includes('|---|---|') || // Markdown tables
-    content.split('```').length > 4; // Multiple code blocks
-  
-  // Check for document markers
-  const hasDocumentMarkers = 
-    content.includes('# ') && // Headers
-    content.includes('## ') &&
-    (content.includes('### ') || content.includes('- [ ]')); // Complex structure
-  
-  if (hasHtml) {
-    return { isRich: true, type: "html" };
-  } else if (hasComplexMarkdown || hasDocumentMarkers) {
-    return { isRich: true, type: "markdown" };
-  }
-  
-  return { isRich: false, type: "markdown" };
-}
-
-function cleanCitationMarkers(text: string): string {
-  return text
-    .replace(/【\d+[:\d]*†[^】]*】/g, "")
-    // Remove referencia numerica sem engolir quebras de linha.
-    .replace(/\[\d+\][ \t]*/g, "");
-}
-
 export function MessageContent({ message, className }: MessageContentProps) {
   const { openArtifact } = useUIStore();
+  const artifact = message.artifact;
+  const prefersDocumentMode = message.preferredDisplayMode === "document";
+  const isDocumentArtifact = artifact?.displayMode === "document";
+  const isDocumentPresentation = isDocumentArtifact || prefersDocumentMode;
+  const [showArtifactInline, setShowArtifactInline] = useState(isDocumentPresentation);
+  const [expandInlineArtifact, setExpandInlineArtifact] = useState(isDocumentPresentation);
   const content = cleanCitationMarkers(message.content);
   const richContent = detectRichContent(content);
+  const artifactContent = artifact?.content ?? content;
 
-  const renderCode: Components["code"] = ({
-    className,
-    children,
-    ...props
-  }) => {
-    const match = /language-(\w+)/.exec(className || "");
-    const language = match ? match[1] : "";
-    const isInline = !className || !match;
+  const markdown = (
+    <ChatMarkdown
+      content={artifactContent}
+    />
+  );
 
-    if (!isInline && language) {
-      return <CodeBlock language={language} value={String(children).replace(/\n$/, "")} />;
-    }
-
+  if (artifact && message.role === "assistant" && !message.imageBase64) {
     return (
-      <code className={className} {...props}>
-        {children}
-      </code>
+      <div className={cn("space-y-2.5 md:space-y-3", className)}>
+        <MessageArtifactCard
+          artifact={artifact}
+          showInline={showArtifactInline}
+          onOpen={() => openArtifact(artifact.content, artifact.type, artifact.title)}
+          onToggleInline={() =>
+            setShowArtifactInline((current) => {
+              const nextValue = !current;
+              if (!nextValue) {
+                setExpandInlineArtifact(false);
+              }
+              return nextValue;
+            })
+          }
+        />
+
+        {showArtifactInline && (
+          <div
+            className={cn(
+              "relative overflow-hidden rounded-xl border p-2.5 md:rounded-2xl md:p-3",
+              isDocumentArtifact
+                ? "border-cyan-400/15 bg-linear-to-br from-white/[0.08] via-background/75 to-cyan-500/[0.05] shadow-[0_20px_60px_rgba(6,182,212,0.08)]"
+                : "border-border/70 bg-background/55"
+            )}
+          >
+            <div
+              className={cn(
+                "relative overflow-hidden rounded-lg border px-2.5 py-2 transition-[max-height] duration-300 md:rounded-xl md:px-3",
+                isDocumentArtifact
+                  ? "border-white/10 bg-background/80 md:px-6 md:py-5"
+                  : "border-border/60 bg-background/75",
+                expandInlineArtifact ? "max-h-[60vh] md:max-h-[70vh]" : "max-h-48 md:max-h-56"
+              )}
+            >
+              {isDocumentArtifact ? (
+                <DocumentCanvas
+                  title={artifact.title}
+                  eyebrow="Documento no balao"
+                  description={artifact.summary}
+                  compact
+                  className="border-black/5 bg-transparent p-2 dark:border-white/8 md:p-3"
+                  bodyClassName="md:py-6"
+                >
+                  <ChatMarkdown
+                    content={artifactContent}
+                    className="max-w-none"
+                  />
+                </DocumentCanvas>
+              ) : (
+                <ChatMarkdown
+                  content={artifactContent}
+                  className="max-w-none"
+                />
+              )}
+              {!expandInlineArtifact && (
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background via-background/75 to-transparent" />
+              )}
+            </div>
+
+            <div className="mt-2 flex flex-wrap items-center gap-1.5 md:gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 gap-1 rounded-full px-2.5 text-[11px] md:h-7 md:gap-1.5 md:px-3 md:text-xs"
+                onClick={() => setExpandInlineArtifact((current) => !current)}
+              >
+                {expandInlineArtifact ? (
+                  <Minimize2 className="h-3.5 w-3.5" />
+                ) : (
+                  <Maximize2 className="h-3.5 w-3.5" />
+                )}
+                {expandInlineArtifact ? "Recolher texto" : "Expandir texto"}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-6 gap-1 rounded-full px-2.5 text-[11px] md:h-7 md:gap-1.5 md:px-3 md:text-xs"
+                onClick={() => openArtifact(artifact.content, artifact.type, artifact.title)}
+              >
+                <PanelRightOpen className="h-3.5 w-3.5" />
+                Abrir no painel
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     );
-  };
+  }
 
   if (message.imageBase64) {
     return (
-      <div className={cn("space-y-3", className)}>
-        {content && content.trim().length > 0 && (
-          <div className="prose prose-slate dark:prose-invert max-w-full prose-sm text-left">
-            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath, remarkBreaks]} rehypePlugins={[rehypeHighlight, rehypeKatex]}>
-              {content}
-            </ReactMarkdown>
-          </div>
-        )}
+      <div className={cn("space-y-2.5 md:space-y-3", className)}>
+        {content && content.trim().length > 0 && markdown}
         <div className="rounded-lg overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element -- data URI dinamica sem beneficio de otimizacao do next/image */}
           <img
@@ -107,9 +146,79 @@ export function MessageContent({ message, className }: MessageContentProps) {
     );
   }
 
+  if (message.role === "assistant" && isDocumentPresentation) {
+    return (
+      <div className={cn("space-y-2.5 md:space-y-3", className)}>
+        <div className="relative overflow-hidden rounded-xl border border-cyan-400/15 bg-linear-to-br from-white/[0.08] via-background/75 to-cyan-500/[0.05] p-2.5 shadow-[0_20px_60px_rgba(6,182,212,0.08)] md:rounded-2xl md:p-3">
+          <div className="relative overflow-hidden rounded-lg border border-white/10 bg-background/80 px-2.5 py-2 md:rounded-xl md:px-6 md:py-5">
+            <DocumentCanvas
+              title={artifact?.title || "Documento em elaboracao"}
+              eyebrow={artifact ? "Documento no balao" : "Modo documento ativo"}
+              description={
+                artifact?.summary ||
+                "A resposta esta sendo estruturada como documento enquanto o modelo termina de escrever."
+              }
+              compact
+              className="border-black/5 bg-transparent p-2 dark:border-white/8 md:p-3"
+              bodyClassName="md:py-6"
+            >
+              {artifactContent.trim().length > 0 ? (
+                <ChatMarkdown
+                  content={artifactContent}
+                  className="max-w-none"
+                />
+              ) : (
+                <p className="text-[13px] leading-6 text-muted-foreground md:text-sm md:leading-7">
+                  Montando o documento...
+                </p>
+              )}
+            </DocumentCanvas>
+            {!expandInlineArtifact && artifact && (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background via-background/75 to-transparent" />
+            )}
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 md:gap-2">
+            {artifact && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 gap-1 rounded-full px-2.5 text-[11px] md:h-7 md:gap-1.5 md:px-3 md:text-xs"
+                onClick={() => setExpandInlineArtifact((current) => !current)}
+              >
+                {expandInlineArtifact ? (
+                  <Minimize2 className="h-3.5 w-3.5" />
+                ) : (
+                  <Maximize2 className="h-3.5 w-3.5" />
+                )}
+                {expandInlineArtifact ? "Recolher texto" : "Expandir texto"}
+              </Button>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-6 gap-1 rounded-full px-2.5 text-[11px] md:h-7 md:gap-1.5 md:px-3 md:text-xs"
+              onClick={() =>
+                openArtifact(
+                  artifactContent,
+                  artifact?.type ?? "markdown",
+                  artifact?.title ?? "Documento"
+                )
+              }
+            >
+              <PanelRightOpen className="h-3.5 w-3.5" />
+              Abrir no painel
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (richContent.isRich) {
     return (
-      <div className={cn("space-y-3", className)}>
+      <div className={cn("space-y-2.5 md:space-y-3", className)}>
         <Button
           variant="outline"
           size="sm"
@@ -120,56 +229,16 @@ export function MessageContent({ message, className }: MessageContentProps) {
               richContent.type === "html" ? "HTML Interativo" : "Documento"
             )
           }
-          className="h-7 gap-1.5 text-xs rounded-full border-primary/20 hover:bg-primary/5"
+          className="h-6 gap-1 text-[11px] rounded-full border-primary/20 hover:bg-primary/5 md:h-7 md:gap-1.5 md:text-xs"
         >
           <PanelRightOpen className="h-3 w-3" />
           Abrir no painel
         </Button>
 
-        <div className="prose prose-slate dark:prose-invert max-w-full prose-sm text-left">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath, remarkBreaks]}
-            rehypePlugins={[rehypeHighlight, rehypeKatex]}
-            components={{
-              code: renderCode,
-            }}
-          >
-            {content}
-          </ReactMarkdown>
-        </div>
+        {markdown}
       </div>
     );
   }
 
-  // Regular markdown content
-  return (
-    <div className={cn("prose prose-slate dark:prose-invert max-w-full prose-sm text-left", className)}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkMath, remarkBreaks]}
-        rehypePlugins={[rehypeHighlight, rehypeKatex, rehypeRaw]}
-        components={{
-          code: renderCode,
-          a: ({ href, children }) => (
-            <a 
-              href={href} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              {children}
-            </a>
-          ),
-          table: ({ children }) => (
-            <div className="overflow-x-auto my-4">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                {children}
-              </table>
-            </div>
-          ),
-        }}
-      >
-        {content}
-      </ReactMarkdown>
-    </div>
-  );
+  return <div className={className}>{markdown}</div>;
 }

@@ -67,7 +67,7 @@ export function useCreateConversationMutation() {
 
       return { previousConversations, tempId };
     },
-    onError: (err, variables, context) => {
+    onError: (_err, _variables, context) => {
       if (context?.previousConversations) {
         queryClient.setQueryData(
           conversationKeys.lists(),
@@ -75,7 +75,7 @@ export function useCreateConversationMutation() {
         );
       }
     },
-    onSuccess: (newId, variables, context) => {
+    onSuccess: (newId) => {
       queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
       queryClient.invalidateQueries({
         queryKey: conversationKeys.detail(newId),
@@ -105,7 +105,7 @@ export function useDeleteConversationMutation() {
 
       return { previousConversations };
     },
-    onError: (err, variables, context) => {
+    onError: (_err, _variables, context) => {
       if (context?.previousConversations) {
         queryClient.setQueryData(
           conversationKeys.lists(),
@@ -149,7 +149,7 @@ export function useUpdateConversationMessagesMutation() {
 
       return { previousConversation };
     },
-    onError: (err, variables, context) => {
+    onError: (_err, variables, context) => {
       if (context?.previousConversation) {
         queryClient.setQueryData(
           conversationKeys.detail(variables.id),

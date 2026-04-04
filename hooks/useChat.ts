@@ -22,7 +22,12 @@ import { useCustomInstructions } from "@/hooks/useCustomInstructions";
 import { useMemories } from "@/hooks/useMemories";
 import { buildSystemPrompt } from "@/lib/openai/contextBuilder";
 import { apiUrl } from "@/lib/utils";
-import { isReasoningModel, modelSupportsTemperature } from "@/lib/models/modelConfig";
+import {
+  isReasoningModel,
+  modelSupportsCodeInterpreter,
+  modelSupportsTemperature,
+  modelSupportsVerbosity,
+} from "@/lib/models/modelConfig";
 import { conversationKeys } from "@/hooks/queries/useConversationQuery";
 import { toast } from "sonner";
 import { createMessageArtifact } from "@/lib/artifacts/messageArtifacts";
@@ -118,7 +123,7 @@ export function useChat() {
     setActiveConversationId,
   } = useChatStore();
   const { parameters } = useSettingsStore();
-  const { contextAboutUser } = useCustomInstructions();
+  const { contextAboutUser, responsePreferences } = useCustomInstructions();
   const { memories } = useMemories();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -174,24 +179,12 @@ export function useChat() {
       setError(null);
       abortControllerRef.current = new AbortController();
 
-      const storageAttachments = options.attachments?.map((a) => ({
-        ...a,
-        dataUrl: a.type === "image" ? a.thumbnailUrl : undefined,
-        thumbnailUrl: a.thumbnailUrl,
-        extractedText: a.extractedText ? `[${a.extractedText.length} caracteres]` : undefined,
-      }));
-
       const userMessage: Message = {
         id: crypto.randomUUID(),
         role: "user",
         content: content.trim(),
         timestamp: new Date(),
         attachments: options.attachments,
-      };
-
-      const userMessageForStorage: Message = {
-        ...userMessage,
-        attachments: storageAttachments,
       };
 
       addMessage(userMessage);
@@ -208,7 +201,7 @@ export function useChat() {
       });
 
       try {
-        const input = buildInputFromMessages([...messages, userMessage]);
+        const input = buildInputFromMessages(useChatStore.getState().messages);
         const reasoning = buildReasoningConfig(
           parameters.model,
           parameters.reasoningEffort,
@@ -216,7 +209,7 @@ export function useChat() {
         );
         const { systemMessage: baseSystemMessage } = buildSystemPrompt(
           parameters.systemPrompt,
-          { id: "default", contextAboutUser, responsePreferences: "" },
+          { id: "default", contextAboutUser, responsePreferences },
           memories
         );
         const systemMessage = options.documentMode
@@ -234,6 +227,12 @@ export function useChat() {
             ...(modelSupportsTemperature(parameters.model) && {
               temperature: parameters.temperature,
               topP: parameters.topP,
+            }),
+            ...(modelSupportsVerbosity(parameters.model) && {
+              verbosity: parameters.verbosity,
+            }),
+            ...(modelSupportsCodeInterpreter(parameters.model) && {
+              codeInterpreterEnabled: parameters.codeInterpreterEnabled,
             }),
             stream: true,
             reasoning,
@@ -441,15 +440,17 @@ export function useChat() {
       contextAboutUser,
       isLoading,
       memories,
-      messages,
       parameters.maxOutputTokens,
       parameters.model,
+      parameters.codeInterpreterEnabled,
       parameters.reasoningEffort,
       parameters.reasoningSummary,
       parameters.systemPrompt,
       parameters.temperature,
       parameters.topP,
+      parameters.verbosity,
       queryClient,
+      responsePreferences,
       setIsStreaming,
       updateMessage,
     ]

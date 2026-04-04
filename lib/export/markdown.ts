@@ -1,4 +1,10 @@
 import { Conversation, ModelParameters } from "@/types";
+import {
+  isReasoningModel,
+  modelSupportsCodeInterpreter,
+  modelSupportsTemperature,
+  modelSupportsVerbosity,
+} from "@/lib/models/modelConfig";
 
 export interface MarkdownExportOptions {
   includeMetadata?: boolean;
@@ -30,10 +36,20 @@ export function exportToMarkdown(
     if (modelParameters) {
       markdown += `\n## Model Configuration\n\n`;
       markdown += `- **Model:** ${modelParameters.model}\n`;
-      markdown += `- **Temperature:** ${modelParameters.temperature}\n`;
       markdown += `- **Max Tokens:** ${modelParameters.maxOutputTokens}\n`;
-      markdown += `- **Top P:** ${modelParameters.topP}\n`;
-      markdown += `- **Reasoning Effort:** ${modelParameters.reasoningEffort}\n`;
+      if (modelSupportsTemperature(modelParameters.model)) {
+        markdown += `- **Temperature:** ${modelParameters.temperature}\n`;
+        markdown += `- **Top P:** ${modelParameters.topP}\n`;
+      }
+      if (isReasoningModel(modelParameters.model)) {
+        markdown += `- **Reasoning Effort:** ${modelParameters.reasoningEffort}\n`;
+      }
+      if (modelSupportsVerbosity(modelParameters.model)) {
+        markdown += `- **Verbosity:** ${modelParameters.verbosity}\n`;
+      }
+      if (modelSupportsCodeInterpreter(modelParameters.model)) {
+        markdown += `- **Code Interpreter:** ${modelParameters.codeInterpreterEnabled ? "On" : "Off"}\n`;
+      }
       if (modelParameters.systemPrompt) {
         markdown += `\n**System Prompt:**\n\`\`\`\n${modelParameters.systemPrompt}\n\`\`\`\n`;
       }

@@ -1,6 +1,6 @@
 # API Reference
 
-**Last updated:** 2026-01-30  
+**Last updated:** 2026-04-01  
 **Base URL:** `https://ultrassom.ai/chat`
 
 All endpoints are Next.js API routes under `app/api/`.
@@ -27,6 +27,8 @@ Chat completion with streaming.
   "maxOutputTokens": 32768,
   "temperature": 0.7,
   "topP": 1,
+  "verbosity": "medium",
+  "codeInterpreterEnabled": false,
   "stream": true,
   "reasoning": {
     "effort": "medium",
@@ -43,6 +45,8 @@ Chat completion with streaming.
 | `maxOutputTokens` | number | 1024 | Max response tokens |
 | `temperature` | number | 0.7 | Omit for reasoning models |
 | `topP` | number | 1 | Omit for reasoning models |
+| `verbosity` | string | — | Sent as `text.verbosity` for GPT-5 models that support it |
+| `codeInterpreterEnabled` | boolean | false | Adds the built-in `code_interpreter` tool with `container.type = "auto"` |
 | `stream` | boolean | true | SSE streaming |
 | `reasoning` | object | — | Only sent for reasoning models |
 
@@ -71,90 +75,60 @@ Returns the raw OpenAI response object as JSON.
 
 ---
 
-## POST /api/canvas
+## GET /api/memories
 
-Code analysis and transformation.
+Lista as memórias persistidas no servidor.
 
-**File:** `app/api/canvas/route.ts`
+**File:** `app/api/memories/route.ts`
+
+### Response
+
+```json
+[
+  {
+    "id": "mem-1",
+    "content": "Prefere respostas narrativas.",
+    "category": "preferences",
+    "isActive": true,
+    "priority": 10,
+    "createdAt": "2026-04-02T00:00:00.000Z",
+    "updatedAt": "2026-04-02T00:00:00.000Z"
+  }
+]
+```
+
+## POST /api/memories
+
+Cria uma nova memória.
 
 ### Request
 
 ```json
 {
-  "code": "function add(a, b) { return a + b; }",
-  "action": "refactor",
-  "language": "javascript",
-  "targetLanguage": "typescript",
-  "instructions": "Use modern ES6+ syntax",
-  "model": "gpt-5.3-chat-latest",
-  "maxOutputTokens": 4096,
-  "temperature": 0.7,
-  "topP": 1,
-  "stream": true,
-  "reasoning": { "effort": "medium" }
+  "content": "Prefere respostas narrativas.",
+  "category": "preferences",
+  "isActive": true,
+  "priority": 10
 }
 ```
 
-| Field | Type | Default | Notes |
-|-------|------|---------|-------|
-| `code` | string | **required** | Source code to process |
-| `action` | string | **required** | One of: `analyze`, `refactor`, `test`, `document`, `convert`, `fix` |
-| `language` | string | — | Source language hint |
-| `targetLanguage` | string | — | **Required** when action is `convert` |
-| `instructions` | string | — | Additional instructions |
-| `model` | string | `gpt-5.3-chat-latest` | Model ID |
-| `stream` | boolean | true | SSE streaming |
+## PUT /api/memories/[id]
 
-### Actions
+Atualiza uma memória existente.
 
-| Action | Description |
-|--------|-------------|
-| `analyze` | Code quality, bugs, security assessment |
-| `refactor` | Improve readability and performance |
-| `test` | Generate unit tests |
-| `document` | Generate JSDoc/docstrings |
-| `convert` | Convert to another language |
-| `fix` | Debug and fix errors |
+## DELETE /api/memories/[id]
 
-### Response
-
-Same SSE format as `/api/chat`.
+Remove uma memória existente.
 
 ---
 
-## POST /api/images
+## GET /api/persona
 
-DALL-E 3 image generation.
+Retorna as instruções customizadas persistidas no servidor.
 
-**File:** `app/api/images/route.ts`
+## PUT /api/persona
 
-### Request
-
-```json
-{
-  "prompt": "A gaucho riding a horse at sunset",
-  "size": "1024x1024",
-  "quality": "high"
-}
-```
-
-| Field | Type | Default | Notes |
-|-------|------|---------|-------|
-| `prompt` | string | **required** | Image description |
-| `size` | string | `1024x1024` | `1024x1024`, `1536x1024`, `1024x1536` |
-| `quality` | string | `medium` | `low`, `medium`, `high` |
-
-### Response
-
-```json
-{
-  "imageBase64": "iVBORw0KGgo...",
-  "mimeType": "image/png",
-  "revisedPrompt": "A gaucho in traditional clothing..."
-}
-```
-
----
+Atualiza `contextAboutUser` e `responsePreferences`.
 
 ## GET /api/health
 
@@ -187,15 +161,14 @@ Health check endpoint.
 
 ## Rate Limiting
 
-Configured in `middleware.ts`. Limits per endpoint:
+Configured in `proxy.ts`. Limits per endpoint:
 
 | Endpoint | Default limit |
 |----------|--------------|
 | `/api/chat` | 20 req/min |
-| `/api/canvas` | 10 req/min |
-| `/api/images` | 5 req/min |
+| `/api/transcribe` | 10 req/min |
 
-Configurable via environment variables: `RATE_LIMIT_CHAT_RPM`, `RATE_LIMIT_CANVAS_RPM`, `RATE_LIMIT_IMAGES_RPM`.
+Configurable via environment variables: `RATE_LIMIT_CHAT_RPM`, `RATE_LIMIT_TRANSCRIBE_RPM`.
 
 Rate limit headers returned:
 - `X-RateLimit-Limit`
@@ -204,4 +177,4 @@ Rate limit headers returned:
 
 ## Authentication (optional)
 
-Enable with `API_KEY_AUTH_ENABLED=true`. Send key via `X-Api-Key` header. Keys defined in `API_KEYS` env var (comma-separated).
+Enable with `AUTH_ENABLED=true`. Browser access is protected with an HTTP-only JWT cookie issued by `/api/auth/login`.

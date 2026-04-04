@@ -1,5 +1,11 @@
 import { Conversation, ModelParameters } from "@/types";
 import { exportToMarkdown } from "./markdown";
+import {
+  isReasoningModel,
+  modelSupportsCodeInterpreter,
+  modelSupportsTemperature,
+  modelSupportsVerbosity,
+} from "@/lib/models/modelConfig";
 
 export interface ClipboardExportOptions {
   format?: "markdown" | "plain" | "html";
@@ -64,7 +70,7 @@ export async function copyToClipboard(
     } else {
       await navigator.clipboard.writeText(textContent);
     }
-  } catch (error) {
+  } catch {
     const textarea = document.createElement("textarea");
     textarea.value = textContent;
     textarea.style.position = "fixed";
@@ -92,8 +98,20 @@ function exportToPlainText(
 
     if (modelParameters) {
       text += `\nModel: ${modelParameters.model}\n`;
-      text += `Temperature: ${modelParameters.temperature}\n`;
       text += `Max Tokens: ${modelParameters.maxOutputTokens}\n`;
+      if (modelSupportsTemperature(modelParameters.model)) {
+        text += `Temperature: ${modelParameters.temperature}\n`;
+        text += `Top P: ${modelParameters.topP}\n`;
+      }
+      if (isReasoningModel(modelParameters.model)) {
+        text += `Reasoning Effort: ${modelParameters.reasoningEffort}\n`;
+      }
+      if (modelSupportsVerbosity(modelParameters.model)) {
+        text += `Verbosity: ${modelParameters.verbosity}\n`;
+      }
+      if (modelSupportsCodeInterpreter(modelParameters.model)) {
+        text += `Code Interpreter: ${modelParameters.codeInterpreterEnabled ? "On" : "Off"}\n`;
+      }
     }
 
     text += `\n${"-".repeat(50)}\n\n`;
@@ -142,15 +160,27 @@ function exportToHTML(
       html += `<h3 style="margin-top: 15px;">Model Configuration</h3>`;
       html += `<ul style="list-style: none; padding-left: 0;">`;
       html += `<li><strong>Model:</strong> ${escapeHtml(modelParameters.model)}</li>`;
-      html += `<li><strong>Temperature:</strong> ${modelParameters.temperature}</li>`;
       html += `<li><strong>Max Tokens:</strong> ${modelParameters.maxOutputTokens}</li>`;
+      if (modelSupportsTemperature(modelParameters.model)) {
+        html += `<li><strong>Temperature:</strong> ${modelParameters.temperature}</li>`;
+        html += `<li><strong>Top P:</strong> ${modelParameters.topP}</li>`;
+      }
+      if (isReasoningModel(modelParameters.model)) {
+        html += `<li><strong>Reasoning Effort:</strong> ${escapeHtml(modelParameters.reasoningEffort)}</li>`;
+      }
+      if (modelSupportsVerbosity(modelParameters.model)) {
+        html += `<li><strong>Verbosity:</strong> ${escapeHtml(modelParameters.verbosity)}</li>`;
+      }
+      if (modelSupportsCodeInterpreter(modelParameters.model)) {
+        html += `<li><strong>Code Interpreter:</strong> ${modelParameters.codeInterpreterEnabled ? "On" : "Off"}</li>`;
+      }
       html += `</ul>`;
     }
 
     html += '</div><hr style="border: none; border-top: 1px solid #e5e5e5; margin: 20px 0;">';
   }
 
-  conversation.messages.forEach((message, index) => {
+  conversation.messages.forEach((message) => {
     const isUser = message.role === "user";
     const bgColor = isUser ? "#f0f0f0" : "#e6f3ff";
     const roleColor = isUser ? "#047857" : "#1d4ed8";
@@ -190,7 +220,7 @@ function exportToHTML(
 }
 
 function convertMarkdownToHTML(markdown: string): string {
-  let html = markdown
+  const html = markdown
     .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
     .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
     .replace(/^# (.*?)$/gm, '<h1>$1</h1>')

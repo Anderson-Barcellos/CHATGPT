@@ -5,7 +5,7 @@ import { useChat } from "@/hooks/useChat";
 import { useSpeechToText } from "@/hooks/useSpeechToText";
 import { useFileAttachments } from "@/hooks/useFileAttachments";
 import { useSettingsStore } from "@/stores/settingsStore";
-import { MODELS, isReasoningModel as checkReasoning, modelSupportsTemperature, getChatModels } from "@/lib/models/modelConfig";
+import { MODELS, isReasoningModel as checkReasoning, getChatModels } from "@/lib/models/modelConfig";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -18,7 +18,6 @@ import {
   LoaderCircle,
   Paperclip,
   X,
-  ImageIcon,
   FileIcon,
   Upload,
 } from "lucide-react";
@@ -106,19 +105,13 @@ export function InputArea() {
 
   const speechHint = useMemo(() => {
     if (isRecording) return "Toque no microfone de novo para encerrar e transcrever.";
-    if (isTranscribing) return "Convertendo teu audio em texto com gpt-4o-transcribe.";
-    if (!speechSupported) return "Este navegador nao oferece suporte completo para gravacao.";
+    if (isTranscribing) return "Convertendo teu áudio em texto...";
+    if (!speechSupported) return "Este navegador não oferece suporte completo para gravação.";
     return null;
   }, [isRecording, isTranscribing, speechSupported]);
 
   const handleModelChange = useCallback((newModel: string) => {
-    const newIsReasoning = checkReasoning(newModel);
-    const newSupportsTemp = modelSupportsTemperature(newModel);
-    updateParameters({
-      model: newModel,
-      ...(!newIsReasoning && { reasoningEffort: "none" }),
-      ...(newSupportsTemp && !checkReasoning(newModel) && { temperature: 0.7 }),
-    });
+    updateParameters({ model: newModel });
   }, [updateParameters]);
 
   const handleSubmit = useCallback(async () => {
@@ -239,28 +232,35 @@ export function InputArea() {
 
   return (
     <div className="border-t border-white/5 bg-background/40 backdrop-blur-2xl pb-[env(safe-area-inset-bottom)] md:pb-0">
-      <div className="mx-auto w-full max-w-5xl px-4 py-4">
+      <div className="mx-auto w-full max-w-5xl px-3 py-3 md:px-4 md:py-4">
         {error && (
-          <Alert variant="destructive" className="mb-2">
+          <Alert variant="destructive" className="mb-1.5 md:mb-2">
             <AlertDescription className="text-xs">{error}</AlertDescription>
           </Alert>
         )}
         {speechError && !error && (
-          <Alert variant="destructive" className="mb-2">
+          <Alert variant="destructive" className="mb-1.5 md:mb-2">
             <AlertDescription className="text-xs">{speechError}</AlertDescription>
           </Alert>
         )}
         {fileErrors.length > 0 && (
-          <Alert variant="destructive" className="mb-2">
+          <Alert variant="destructive" className="mb-1.5 md:mb-2">
             <AlertDescription className="text-xs">
               {fileErrors.map((e) => `${e.fileName}: ${e.error}`).join(" | ")}
+            </AlertDescription>
+          </Alert>
+        )}
+        {documentMode && (
+          <Alert className="mb-1.5 border-cyan-500/20 bg-cyan-500/8 text-cyan-50 md:mb-2">
+            <AlertDescription className="text-xs text-foreground/80">
+              O modelo vai responder em formato de documento pronto para leitura e exportação.
             </AlertDescription>
           </Alert>
         )}
 
         <div
           className={cn(
-            "relative rounded-2xl border border-white/10 bg-background/70 backdrop-blur-xl shadow-lg",
+            "relative rounded-xl border border-white/10 bg-background/70 shadow-lg backdrop-blur-xl md:rounded-2xl",
             "transition-all duration-200",
             "focus-within:shadow-xl focus-within:border-primary/30",
             isDragging && "border-primary/50 shadow-xl shadow-primary/10 bg-primary/5"
@@ -304,34 +304,34 @@ export function InputArea() {
                 : "Mensagem para o GPT..."
             }
             className={cn(
-              "w-full resize-none bg-transparent px-4 pt-3 pb-2 text-sm",
+              "w-full resize-none bg-transparent px-3 pt-2.5 pb-1.5 text-[13px] md:px-4 md:pt-3 md:pb-2 md:text-sm",
               "outline-none placeholder:text-muted-foreground/50",
-              "min-h-[44px] max-h-[200px]"
+              "min-h-[40px] max-h-[200px] md:min-h-[44px]"
             )}
             rows={1}
             disabled={disabled}
           />
 
           {attachments.length > 0 && (
-            <div className="flex flex-wrap gap-2 px-3 pb-2">
+            <div className="flex flex-wrap gap-1.5 px-2.5 pb-2 md:gap-2 md:px-3">
               {attachments.map((att) => (
                 <div
                   key={att.id}
-                  className="group relative flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs transition-colors hover:bg-white/10"
+                  className="group relative flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-[11px] transition-colors hover:bg-white/10 md:gap-2 md:rounded-xl md:px-2.5 md:text-xs"
                 >
                   {att.type === "image" && att.thumbnailUrl ? (
                     /* eslint-disable-next-line @next/next/no-img-element -- thumbnail data URI */
                     <img
                       src={att.thumbnailUrl}
                       alt={att.name}
-                      className="h-8 w-8 rounded-lg object-cover"
+                      className="h-7 w-7 rounded-lg object-cover md:h-8 md:w-8"
                     />
                   ) : att.type === "pdf" ? (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/15">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-500/15 md:h-8 md:w-8">
                       <FileIcon className="h-4 w-4 text-rose-400" />
                     </div>
                   ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/15">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/15 md:h-8 md:w-8">
                       <FileText className="h-4 w-4 text-blue-400" />
                     </div>
                   )}
@@ -348,7 +348,7 @@ export function InputArea() {
                 </div>
               ))}
               {isProcessing && (
-                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[11px] text-muted-foreground md:rounded-xl md:px-3 md:py-2 md:text-xs">
                   <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
                   Processando...
                 </div>
@@ -357,9 +357,9 @@ export function InputArea() {
           )}
 
           {(isRecording || isTranscribing) && (
-            <div className="px-4 pb-2">
-              <div className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2.5">
-                <div className="flex h-7 items-end gap-1">
+            <div className="px-3 pb-2 md:px-4">
+              <div className="flex items-center gap-2.5 rounded-xl border border-white/8 bg-white/[0.03] px-2.5 py-2 md:gap-3 md:rounded-2xl md:px-3 md:py-2.5">
+                <div className="flex h-6 items-end gap-1 md:h-7">
                   {audioMeterBars.map((bar, index) => (
                     <span
                       key={index}
@@ -369,7 +369,7 @@ export function InputArea() {
                         isTranscribing && "animate-pulse"
                       )}
                       style={{
-                        height: `${Math.max(5, Math.round(bar * 24))}px`,
+                        height: `${Math.max(5, Math.round(bar * 22))}px`,
                         opacity: isTranscribing ? 0.75 : 0.35 + bar * 0.65,
                       }}
                     />
@@ -379,7 +379,7 @@ export function InputArea() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span
                       className={cn(
-                        "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em]",
+                        "rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] md:text-[10px] md:tracking-[0.16em]",
                         isRecording
                           ? "bg-rose-500/12 text-rose-200 ring-1 ring-rose-400/30"
                           : "bg-cyan-500/12 text-cyan-100 ring-1 ring-cyan-400/25"
@@ -388,13 +388,13 @@ export function InputArea() {
                       {speechStatusLabel}
                     </span>
                     {isRecording && (
-                      <span className="text-[11px] font-medium tabular-nums text-foreground/80">
+                      <span className="text-[10px] font-medium tabular-nums text-foreground/80 md:text-[11px]">
                         {formatRecordingDuration(recordingDurationMs)}
                       </span>
                     )}
                   </div>
                   {speechHint && (
-                    <div className="mt-1 text-[11px] text-muted-foreground">
+                    <div className="mt-1 text-[10px] text-muted-foreground md:text-[11px]">
                       {speechHint}
                     </div>
                   )}
@@ -403,14 +403,15 @@ export function InputArea() {
             </div>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-2 px-3 pb-3">
-            <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center justify-between gap-1.5 px-2.5 pb-2.5 md:gap-2 md:px-3 md:pb-3">
+            <div className="flex flex-wrap items-center gap-1">
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
                 disabled={disabled || isProcessing}
                 onClick={handleFileSelect}
+                aria-label="Adicionar arquivos"
                 className={cn(
                   "h-7 w-7 rounded-full text-muted-foreground hover:text-foreground",
                   attachments.length > 0
@@ -431,9 +432,11 @@ export function InputArea() {
                     variant="ghost"
                     size="sm"
                     disabled={disabled}
-                    className="h-7 gap-1 rounded-full px-3 text-[11px] font-medium text-muted-foreground hover:text-foreground bg-white/5"
+                    aria-label="Selecionar modelo"
+                    className="h-7 gap-1 rounded-full px-2.5 text-[10px] font-medium text-muted-foreground hover:text-foreground bg-white/5 md:px-3 md:text-[11px]"
+                    data-compact-touch
                   >
-                    <span className="max-w-[100px] truncate">{currentModel?.name || parameters.model}</span>
+                    <span className="max-w-[88px] truncate md:max-w-[100px]">{currentModel?.name || parameters.model}</span>
                     <ChevronDown className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -472,7 +475,9 @@ export function InputArea() {
                       variant="ghost"
                       size="sm"
                       disabled={disabled}
-                      className="h-7 gap-1 rounded-full px-3 text-[11px] font-medium text-muted-foreground hover:text-foreground bg-white/5"
+                      aria-label="Ajustar nível de raciocínio"
+                      className="h-7 gap-1 rounded-full px-2.5 text-[10px] font-medium text-muted-foreground hover:text-foreground bg-white/5 md:px-3 md:text-[11px]"
+                      data-compact-touch
                     >
                       <Brain className="h-3 w-3" />
                       <span>{currentReasoning?.label || "Medio"}</span>
@@ -505,12 +510,14 @@ export function InputArea() {
                 size="sm"
                 disabled={disabled}
                 onClick={() => setDocumentMode((current) => !current)}
+                aria-label="Alternar modo documento"
                 className={cn(
-                  "h-7 gap-1 rounded-full px-3 text-[11px] font-medium transition-colors",
+                  "h-7 gap-1 rounded-full px-2.5 text-[10px] font-medium transition-colors md:px-3 md:text-[11px]",
                   documentMode
                     ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/30 hover:bg-cyan-500/20"
                     : "bg-white/5 text-muted-foreground hover:text-foreground"
                 )}
+                data-compact-touch
               >
                 <FileText className="h-3 w-3" />
                 <span className="hidden sm:inline">Documento</span>
@@ -522,8 +529,9 @@ export function InputArea() {
                 size="sm"
                 disabled={isLoading || isTranscribing || (!speechSupported && !isRecording)}
                 onClick={handleMicrophoneClick}
+                aria-label={isRecording ? "Encerrar gravação" : "Gravar áudio"}
                 className={cn(
-                  "h-7 gap-1 rounded-full px-3 text-[11px] font-medium transition-colors",
+                  "h-7 gap-1 rounded-full px-2.5 text-[10px] font-medium transition-colors md:px-3 md:text-[11px]",
                   isRecording
                     ? "bg-rose-500/15 text-rose-100 ring-1 ring-rose-400/30 hover:bg-rose-500/20"
                     : isTranscribing
@@ -532,6 +540,7 @@ export function InputArea() {
                     ? "bg-amber-500/12 text-amber-100 ring-1 ring-amber-400/25 hover:bg-amber-500/18"
                     : "bg-white/5 text-muted-foreground hover:text-foreground"
                 )}
+                data-compact-touch
               >
                 {isTranscribing ? (
                   <LoaderCircle className="h-3 w-3 animate-spin" />
@@ -548,7 +557,8 @@ export function InputArea() {
                   onClick={stopGeneration}
                   variant="destructive"
                   size="sm"
-                  className="h-9 rounded-xl px-3 text-xs"
+                  aria-label="Parar geração"
+                  className="h-8 rounded-lg px-2.5 text-[11px] md:h-9 md:rounded-xl md:px-3 md:text-xs"
                 >
                   <Square className="mr-1.5 h-3.5 w-3.5" />
                   Parar
@@ -558,8 +568,9 @@ export function InputArea() {
                   onClick={handleSubmit}
                   size="sm"
                   disabled={!hasContent || isRecording || isProcessing}
+                  aria-label="Enviar mensagem"
                   className={cn(
-                    "h-9 rounded-xl px-4 text-xs",
+                    "h-8 rounded-lg px-3 text-[11px] md:h-9 md:rounded-xl md:px-4 md:text-xs",
                     "bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-600 hover:via-blue-700 hover:to-indigo-700 text-white",
                     "disabled:opacity-30"
                   )}
@@ -571,7 +582,7 @@ export function InputArea() {
           </div>
         </div>
 
-        <p className="mt-1.5 text-center text-[10px] text-muted-foreground/50">
+        <p className="mt-1 text-center text-[9px] text-muted-foreground/50 md:mt-1.5 md:text-[10px]">
           Enter para enviar · Shift+Enter para nova linha · Arraste arquivos ou cole imagens
         </p>
       </div>

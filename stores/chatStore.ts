@@ -4,8 +4,10 @@ import { Message } from "@/types";
 interface ChatState {
   activeConversationId: string | null;
   messages: Message[];
+  isStreaming: boolean;
   setActiveConversationId: (id: string) => void;
   setMessages: (messages: Message[]) => void;
+  setIsStreaming: (isStreaming: boolean) => void;
   addMessage: (message: Message) => void;
   updateMessage: (id: string, updates: Partial<Message>) => void;
   truncateFromMessage: (id: string) => void;
@@ -17,8 +19,10 @@ interface ChatState {
 export const useChatStore = create<ChatState>((set) => ({
   activeConversationId: null,
   messages: [],
+  isStreaming: false,
   setActiveConversationId: (id) => set({ activeConversationId: id }),
   setMessages: (messages) => set({ messages }),
+  setIsStreaming: (isStreaming) => set({ isStreaming }),
   addMessage: (message) =>
     set((state) => ({ messages: [...state.messages, message] })),
   updateMessage: (id, updates) =>

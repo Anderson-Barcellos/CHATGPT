@@ -49,7 +49,6 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
           phase === "brand" && "opacity-100 translate-y-0",
           phase === "shrink" && "opacity-0 -translate-y-4"
         )}
-        style={{ fontFamily: "'Inter', sans-serif" }}
       >
         GPT
       </h1>
@@ -63,7 +62,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
           phase === "shrink" && "opacity-0"
         )}
       >
-        Nothing buys time
+        Chat pessoal em ritmo de mate
       </p>
     </div>
   );

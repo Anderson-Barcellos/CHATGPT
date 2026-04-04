@@ -47,6 +47,10 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+html {
+  zoom: 0.9;
+}
+
 html, body {
   height: 100dvh;
   overflow: hidden;

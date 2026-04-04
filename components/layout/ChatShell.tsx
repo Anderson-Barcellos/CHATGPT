@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useSyncExternalStore,
+} from "react";
 import { SidebarModern } from "@/components/sidebar/SidebarModern";
 import { ChatContainer } from "@/components/chat/ChatContainer";
 import { InputArea } from "@/components/chat/InputArea";
@@ -10,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   Menu,
-  ChevronLeft,
   ChevronRight,
   Settings,
 } from "lucide-react";
@@ -36,8 +41,7 @@ export function ChatShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [hasMounted, setHasMounted] = useState(false);
-  const [showSplash, setShowSplash] = useState(false);
+  const [splashDismissed, setSplashDismissed] = useState(false);
   const { activeMode } = useUIStore();
   useComponentPreloader();
   const { activeConversationId, messages } = useChatStore();
@@ -59,11 +63,15 @@ export function ChatShell() {
   }, [activeConversationId, messages, conversations]);
 
   const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    setHasMounted(true);
-    setShowSplash(!sessionStorage.getItem("gpt-splash-shown"));
-  }, []);
+  const isHydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false
+  );
+  const showSplash =
+    isHydrated &&
+    !splashDismissed &&
+    !window.sessionStorage.getItem("gpt-splash-shown");
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -97,7 +105,7 @@ export function ChatShell() {
 
   const handleSplashComplete = useCallback(() => {
     sessionStorage.setItem("gpt-splash-shown", "1");
-    setShowSplash(false);
+    setSplashDismissed(true);
   }, []);
 
   return (
@@ -106,7 +114,7 @@ export function ChatShell() {
       <div
         className={cn(
           "h-dvh overflow-hidden bg-deep-space text-foreground/90",
-          (!hasMounted || showSplash) && "invisible"
+          (!isHydrated || showSplash) && "invisible"
         )}
       >
         <div
@@ -136,24 +144,17 @@ export function ChatShell() {
                       <GPTLogo size={36} />
                     </div>
                   ) : (
-                    <>
-                      <SidebarModern onOpenSettings={() => setSettingsOpen(true)} />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-2 top-4 z-10 h-7 w-7 opacity-40 hover:opacity-100 transition-opacity"
-                        onClick={() => setSidebarCollapsed(true)}
-                      >
-                        <ChevronLeft className="h-3.5 w-3.5" />
-                      </Button>
-                    </>
+                    <SidebarModern
+                      onOpenSettings={() => setSettingsOpen(true)}
+                      onCollapse={() => setSidebarCollapsed(true)}
+                    />
                   )}
                 </div>
               </aside>
             )}
 
             <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-              <SheetContent side="left" className="w-[85vw] max-w-sm p-0 glass">
+              <SheetContent side="left" className="w-[82vw] max-w-sm p-0 glass">
                 <SidebarModern
                   onOpenSettings={() => {
                     setSidebarOpen(false);
@@ -165,24 +166,25 @@ export function ChatShell() {
 
             <div className="flex h-full flex-1 flex-col overflow-hidden">
               <header className="border-b border-white/5 bg-background/40 backdrop-blur-xl pt-[env(safe-area-inset-top)] md:pt-0">
-                <div className="flex items-center justify-between px-4 py-2.5">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5">
+                  <div className="flex items-center gap-1.5 md:gap-2">
                     {isMobile && (
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => setSidebarOpen(true)}
-                        className="h-8 w-8"
+                        className="h-8 w-8 rounded-xl"
+                        data-compact-touch
                       >
                         <Menu className="h-4 w-4" />
                       </Button>
                     )}
 
-                    <div className="flex items-center gap-2.5">
-                      <GPTLogo size={26} />
+                    <div className="flex items-center gap-2 md:gap-2.5">
+                      <GPTLogo size={isMobile ? 22 : 26} />
                       <div className="leading-tight">
-                        <div className="flex items-center gap-1.5">
-                          <h1 className="text-sm font-semibold tracking-wide">
+                        <div className="flex items-center gap-1">
+                          <h1 className="text-[13px] font-semibold tracking-wide md:text-sm">
                             <span className="text-gradient-gpt">GPT</span>
                           </h1>
                           <span
@@ -190,21 +192,22 @@ export function ChatShell() {
                             title={currentModel?.name || parameters.model}
                           />
                         </div>
-                        <p className="max-w-[180px] truncate text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70 md:max-w-[320px]">
+                        <p className="max-w-[150px] truncate text-[9px] uppercase tracking-[0.16em] text-muted-foreground/70 md:max-w-[320px] md:text-[10px] md:tracking-[0.18em]">
                           {activeConversation?.title || "Workspace"}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-0.5 md:gap-1">
                     <ExportMenu conversation={activeConversation} size="icon" />
 
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => setSettingsOpen(true)}
-                      className="h-8 w-8"
+                      className="h-8 w-8 rounded-xl"
+                      data-compact-touch
                     >
                       <Settings className="h-4 w-4" />
                     </Button>

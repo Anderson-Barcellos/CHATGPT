@@ -24,6 +24,7 @@ import {
   Search,
   Trash2,
   ChevronDown,
+  ChevronLeft,
   Clock,
   Archive,
   Star,
@@ -40,14 +41,17 @@ import { cn } from "@/lib/utils";
 import { useChatStore } from "@/stores/chatStore";
 import { useDebouncedSearch } from "@/lib/performance/debounce";
 import type { Conversation } from "@/types";
+import { toast } from "sonner";
 
 interface SidebarModernProps {
   onOpenSettings?: () => void;
+  onCollapse?: () => void;
 }
 
 interface ConversationItemProps {
   conversation: Conversation & { favorite?: boolean };
   isActive: boolean;
+  disabled?: boolean;
   onClick: () => void;
   onDelete: () => void;
 }
@@ -71,20 +75,54 @@ function relativeDate(date: Date): string {
   }
 }
 
-export function SidebarModern({ onOpenSettings }: SidebarModernProps) {
+export function SidebarModern({ onOpenSettings, onCollapse }: SidebarModernProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebouncedSearch(searchQuery, 200);
-  const { conversations = [], createConversation, deleteConversation } = useConversations();
-  const { activeConversationId, setActiveConversationId } = useChatStore();
+  const {
+    conversations = [],
+    isLoading,
+    error,
+    createConversation,
+    deleteConversation,
+  } = useConversations();
+  const { activeConversationId, isStreaming, setActiveConversationId } = useChatStore();
+
+  const showStreamingGuard = useCallback(() => {
+    toast.info("Aguarde a resposta terminar para trocar de conversa.");
+  }, []);
+
+  const handleSelectConversation = useCallback((id: string) => {
+    if (id === activeConversationId) return;
+    if (isStreaming) {
+      showStreamingGuard();
+      return;
+    }
+    setActiveConversationId(id);
+  }, [activeConversationId, isStreaming, setActiveConversationId, showStreamingGuard]);
+
+  const handleCreateConversation = useCallback(async () => {
+    if (isStreaming) {
+      showStreamingGuard();
+      return;
+    }
+
+    const id = await createConversation("Nova conversa");
+    setActiveConversationId(id);
+  }, [createConversation, isStreaming, setActiveConversationId, showStreamingGuard]);
 
   const handleDeleteConversation = useCallback(async (id: string) => {
+    if (isStreaming) {
+      showStreamingGuard();
+      return;
+    }
+
     const remaining = conversations.filter((conv) => conv.id !== id);
 
     if (id === activeConversationId) {
       const nextConversation = remaining[0];
 
       if (nextConversation) {
-        setActiveConversationId(nextConversation.id);
+        handleSelectConversation(nextConversation.id);
       } else {
         const newId = await createConversation("Nova conversa");
         setActiveConversationId(newId);
@@ -92,7 +130,16 @@ export function SidebarModern({ onOpenSettings }: SidebarModernProps) {
     }
 
     await deleteConversation(id);
-  }, [activeConversationId, conversations, createConversation, deleteConversation, setActiveConversationId]);
+  }, [
+    activeConversationId,
+    conversations,
+    createConversation,
+    deleteConversation,
+    handleSelectConversation,
+    isStreaming,
+    setActiveConversationId,
+    showStreamingGuard,
+  ]);
 
   const filteredConversations = conversations.filter(conv =>
     conv.title.toLowerCase().includes(debouncedSearch.toLowerCase())
@@ -108,24 +155,41 @@ export function SidebarModern({ onOpenSettings }: SidebarModernProps) {
           <h2 className="font-semibold text-sm text-gradient-gpt tracking-wide">GPT</h2>
           <p className="text-xs text-muted-foreground/70 uppercase tracking-[0.2em]">Conversas</p>
         </div>
-        <TooltipProvider delayDuration={300}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-9 w-9 shrink-0 rounded-xl bg-white/5 hover:bg-white/10"
-                onClick={async () => {
-                  const id = await createConversation("Nova conversa");
-                  setActiveConversationId(id);
-                }}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right"><p>Nova conversa</p></TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <div className="flex items-center gap-1.5">
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-9 w-9 shrink-0 rounded-xl bg-white/5 hover:bg-white/10"
+                  onClick={handleCreateConversation}
+                  disabled={isStreaming}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right"><p>Nova conversa</p></TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          {onCollapse && (
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-9 w-9 shrink-0 rounded-xl bg-white/5 hover:bg-white/10"
+                    onClick={onCollapse}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right"><p>Recolher sidebar</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col gap-3 px-3 pt-3 overflow-hidden">
@@ -146,16 +210,35 @@ export function SidebarModern({ onOpenSettings }: SidebarModernProps) {
                 <Clock className="h-3 w-3" />
                 Recentes
               </p>
-              {filteredConversations.slice(0, 5).map((conv) => (
+              {isLoading && (
+                <div className="space-y-2 px-2 py-2">
+                  {Array.from({ length: 4 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="h-14 rounded-xl border border-white/6 bg-white/[0.04] animate-pulse"
+                    />
+                  ))}
+                </div>
+              )}
+              {!isLoading && error && (
+                <div className="px-2 py-6 text-center">
+                  <MessageCircle className="h-8 w-8 mx-auto mb-2 text-destructive/60" />
+                  <p className="text-xs text-muted-foreground/70">
+                    Falha ao carregar as conversas.
+                  </p>
+                </div>
+              )}
+              {!isLoading && !error && filteredConversations.slice(0, 5).map((conv) => (
                 <ConversationItem
                   key={conv.id}
                   conversation={conv}
                   isActive={conv.id === activeConversationId}
-                  onClick={() => setActiveConversationId(conv.id)}
+                  disabled={isStreaming}
+                  onClick={() => handleSelectConversation(conv.id)}
                   onDelete={() => handleDeleteConversation(conv.id)}
                 />
               ))}
-              {filteredConversations.length === 0 && (
+              {!isLoading && !error && filteredConversations.length === 0 && (
                 <div className="px-2 py-6 text-center">
                   <MessageCircle className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
                   <p className="text-xs text-muted-foreground/60">
@@ -178,7 +261,8 @@ export function SidebarModern({ onOpenSettings }: SidebarModernProps) {
                       key={conv.id}
                       conversation={conv}
                       isActive={conv.id === activeConversationId}
-                      onClick={() => setActiveConversationId(conv.id)}
+                      disabled={isStreaming}
+                      onClick={() => handleSelectConversation(conv.id)}
                       onDelete={() => handleDeleteConversation(conv.id)}
                     />
                   ))}
@@ -199,25 +283,32 @@ export function SidebarModern({ onOpenSettings }: SidebarModernProps) {
           )}
         >
           <Settings className="h-4 w-4" />
-          Configuracoes
+          Configurações
         </button>
       </div>
     </div>
   );
 }
 
-function ConversationItem({ conversation, isActive, onClick, onDelete }: ConversationItemProps) {
+function ConversationItem({
+  conversation,
+  isActive,
+  disabled = false,
+  onClick,
+  onDelete,
+}: ConversationItemProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleTouchStart = useCallback(() => {
+    if (disabled) return;
     longPressTimer.current = setTimeout(() => {
       longPressTimer.current = null;
       setMenuOpen(true);
       if (navigator.vibrate) navigator.vibrate(30);
     }, 500);
-  }, []);
+  }, [disabled]);
 
   const handleTouchEnd = useCallback(() => {
     if (longPressTimer.current) {
@@ -233,13 +324,18 @@ function ConversationItem({ conversation, isActive, onClick, onDelete }: Convers
         "transition-all duration-150",
         isActive
           ? "bg-white/20 text-foreground shadow-sm ring-1 ring-primary/15"
-          : "hover:bg-white/10 text-muted-foreground hover:text-foreground"
+          : "hover:bg-white/10 text-muted-foreground hover:text-foreground",
+        disabled && "cursor-not-allowed opacity-75"
       )}
       onClick={onClick}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       onTouchMove={handleTouchEnd}
-      onContextMenu={(e) => { e.preventDefault(); setMenuOpen(true); }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        if (!disabled) setMenuOpen(true);
+      }}
+      aria-disabled={disabled}
     >
       <div
         className={cn(
@@ -266,6 +362,7 @@ function ConversationItem({ conversation, isActive, onClick, onDelete }: Convers
               size="icon"
               variant="ghost"
               className="h-7 w-7 opacity-60 transition-opacity text-muted-foreground hover:text-foreground md:opacity-0 md:group-hover:opacity-100"
+              disabled={disabled}
             >
               <MoreVertical className="h-3.5 w-3.5" />
             </Button>
@@ -277,6 +374,7 @@ function ConversationItem({ conversation, isActive, onClick, onDelete }: Convers
                 setMenuOpen(false);
               }}
               className="gap-2 text-xs text-destructive focus:text-destructive"
+              disabled={disabled}
             >
               <Trash2 className="h-3.5 w-3.5" />
               Excluir conversa

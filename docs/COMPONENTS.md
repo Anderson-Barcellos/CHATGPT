@@ -1,6 +1,6 @@
 # Components, Hooks & Stores
 
-**Last updated:** 2026-01-30
+**Last updated:** 2026-04-01
 
 ## Component Tree
 
@@ -26,17 +26,18 @@ layout.tsx
                   │   ├── Reasoning dropdown (conditional)
                   │   └── Send / Stop buttons
                   └── SettingsDrawer (Sheet)
-                      ├── ModelSelector (family groups, pricing, recommendations)
-                      ├── Parameter sliders (temperature, topP, maxTokens)
-                      ├── CustomInstructions (context + preferences)
-                      ├── MemoryManager (CRUD, categories, priority)
-                      └── PromptPreview (assembled system prompt)
+                      ├── Temperature slider (conditional)
+                      ├── Max tokens slider
+                      ├── Verbosity selector (GPT-5 only)
+                      ├── Code Interpreter switch (conditional)
+                      ├── Memory tab
+                      └── Persona tab
 ```
 
 ## Key Components
 
 ### ChatShell (`components/layout/ChatShell.tsx`)
-Main application shell. Manages sidebar toggle, mode tabs (chat/image/canvas), settings drawer.
+Main application shell. Manages sidebar toggle, splash screen, settings drawer, export button, and artifact panel.
 
 ### ChatContainer (`components/chat/ChatContainer.tsx`)
 Renders the message list or WelcomeScreen when empty. Handles auto-scroll, scroll-to-bottom button, and suggestion chip injection via native setter pattern.
@@ -64,7 +65,7 @@ Conversation list with:
 - Delete with hover color change
 
 ### SettingsDrawer (`components/settings/SettingsDrawer.tsx`)
-Full settings panel in a shadcn Sheet. Contains ModelSelector, parameter sliders, CustomInstructions, MemoryManager, PromptPreview.
+Full settings panel for tuning, memory, and persona. The tuning tab now renders controls conditionally from the current model capabilities.
 
 ---
 
@@ -74,7 +75,7 @@ Full settings panel in a shadcn Sheet. Contains ModelSelector, parameter sliders
 
 | State | Type | Purpose |
 |-------|------|---------|
-| `activeMode` | `"chat" \| "image" \| "canvas"` | Current mode tab |
+| `activeMode` | `"chat" \| "image"` | Current mode tab |
 | `imageSize` | string | DALL-E image dimensions |
 | `imageQuality` | string | DALL-E quality level |
 
@@ -91,11 +92,12 @@ Actions: `setActiveConversationId`, `setMessages`, `addMessage`, `updateMessage`
 
 | State | Type | Purpose |
 |-------|------|---------|
-| `parameters` | `ModelParameters` | Model, temperature, topP, maxOutputTokens, reasoning, systemPrompt |
+| `parameters` | `ModelParameters` | Active model + effective settings for that model |
+| `modelSettingsById` | `Record<string, ModelScopedParameters>` | Per-model tuning memory |
 | `customInstructions` | `CustomInstructions \| null` | User context + response preferences |
 | `memories` | `Memory[]` | Active memories for context injection |
 
-Default model: `gpt-5.3-chat-latest`, temperature: 0.8, topP: 0.95, maxOutputTokens: 16384
+Default model: `gpt-5.3-chat-latest`, temperature: 0.8, topP: 0.95, maxOutputTokens: 16384, verbosity: medium, code interpreter: off
 
 ---
 
@@ -114,33 +116,13 @@ Core chat logic. Manages message send/receive cycle with SSE streaming.
 
 Internally handles: `buildInputFromMessages`, `buildReasoningConfig`, `buildSystemPrompt`, SSE parsing, IndexedDB persistence.
 
-### useImageGen (`hooks/useImageGen.ts`)
-
-| Return | Type | Purpose |
-|--------|------|---------|
-| `isGenerating` | boolean | Image generation in progress |
-| `error` | `string \| null` | Last error |
-| `generateImage(prompt, opts)` | function | Generate DALL-E image |
-| `stopGeneration()` | function | Abort generation |
-
-### useModelCapabilities (`hooks/useModelCapabilities.ts`)
-
-| Return | Type | Purpose |
-|--------|------|---------|
-| `currentModel` | `ModelInfo` | Full model info object |
-| `estimatedCost` | `TokenUsage` | Estimated cost for current prompt |
-| `contextCheck` | `{ fits, usage, available }` | Token limit check |
-| `warnings` | `string[]` | Context/cost warnings |
-| `recommendations` | `ModelRecommendation[]` | Cheaper/better model suggestions |
-| `canReason` | boolean | Model supports reasoning |
-| `getBestModel(task, budget?)` | function | Auto-recommend model |
-
 ### useCustomInstructions (`hooks/useCustomInstructions.ts`)
 
 | Return | Type | Purpose |
 |--------|------|---------|
-| `instructions` | `CustomInstructions` | Current instructions |
-| `updateInstructions(updates)` | function | Save to IndexedDB + store |
+| `contextAboutUser` | `string` | Extra context about the user |
+| `responsePreferences` | `string` | Style and formatting preferences |
+| `saveContextAboutUser()` | function | Save current draft to the server |
 
 ### useMemories (`hooks/useMemories.ts`)
 
@@ -179,13 +161,14 @@ Plus custom:
 |------|-----------|
 | `Message` | id, role, content, timestamp, reasoningSummary?, reasoningText?, imageBase64? |
 | `Conversation` | id, title, messages[], createdAt, updatedAt |
-| `ModelParameters` | model, maxOutputTokens, temperature, topP, frequencyPenalty, presencePenalty, systemPrompt, reasoningEffort, reasoningSummary |
+| `ModelParameters` | model, maxOutputTokens, temperature, topP, systemPrompt, reasoningEffort, reasoningSummary, verbosity, codeInterpreterEnabled |
+| `ModelScopedParameters` | maxOutputTokens, temperature, topP, reasoningEffort, reasoningSummary, verbosity, codeInterpreterEnabled |
 | `CustomInstructions` | id, contextAboutUser, responsePreferences |
 | `Memory` | id, content, category, isActive, priority, createdAt, updatedAt |
-| `ModelInfo` | id, name, family, description, contextWindow, maxOutput, pricing, capabilities[], supportsTemperature, supportsStreaming, badge? |
+| `ModelInfo` | id, name, family, description, contextWindow, maxOutput, pricing, capabilities[], supportsTemperature, supportsVerbosity, supportsCodeInterpreter, supportsStreaming, badge? |
 | `ModelFamily` | `"gpt-5.1" \| "gpt-5" \| "gpt-4.1" \| "gpt-4o" \| "o-series" \| "dall-e"` |
 | `ReasoningEffort` | `"none" \| "low" \| "medium" \| "high" \| "xhigh"` |
 | `ReasoningSummary` | `"off" \| "auto" \| "concise" \| "detailed"` |
-| `AppMode` | `"chat" \| "image" \| "canvas"` |
+| `AppMode` | `"chat" \| "image"` |
 | `TokenUsage` | inputTokens, outputTokens, cachedTokens?, totalCost |
 | `ModelRecommendation` | modelId, reason, confidence |

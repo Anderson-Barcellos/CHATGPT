@@ -10,15 +10,37 @@ function ScrollArea({
   children,
   ...props
 }: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+  const viewportRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    const vp = viewportRef.current
+    if (!vp) return
+    const child = vp.firstElementChild as HTMLElement | null
+    if (child && child.style.display === "table") {
+      child.style.display = "block"
+      child.style.minWidth = "0"
+    }
+    const obs = new MutationObserver(() => {
+      const c = vp.firstElementChild as HTMLElement | null
+      if (c && c.style.display === "table") {
+        c.style.display = "block"
+        c.style.minWidth = "0"
+      }
+    })
+    obs.observe(vp, { childList: true, subtree: false })
+    return () => obs.disconnect()
+  }, [])
+
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
-      className={cn("relative", className)}
+      className={cn("relative overflow-hidden", className)}
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
+        ref={viewportRef}
         data-slot="scroll-area-viewport"
-        className="focus-visible:ring-ring/50 size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1"
+        className="focus-visible:ring-ring/50 size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1 overflow-x-hidden [&>div]:!block"
       >
         {children}
       </ScrollAreaPrimitive.Viewport>

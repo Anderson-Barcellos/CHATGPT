@@ -1,14 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
-import { X, Brain, Sliders, User, Plus, Trash2, Sparkles, Image, FileText } from "lucide-react";
+import { useState } from "react";
+import { X, Brain, Sliders, User, Plus, Trash2, Sparkles, Image as ImageIcon } from "lucide-react";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useMemories } from "@/hooks/useMemories";
 import { useCustomInstructions } from "@/hooks/useCustomInstructions";
 import { toast } from "sonner";
-import { MODELS } from "@/lib/models/modelConfig";
+import {
+  MODELS,
+  modelSupportsCodeInterpreter,
+  modelSupportsTemperature,
+  modelSupportsVerbosity,
+} from "@/lib/models/modelConfig";
 import { cn } from "@/lib/utils";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 
 const IMAGE_SIZES = [
   { id: "1024x1024", label: "Quadrada 1024" },
@@ -23,20 +30,38 @@ const IMAGE_QUALITIES = [
   { id: "high", label: "Alta" },
 ];
 
+const VERBOSITY_OPTIONS = [
+  { id: "low", label: "Baixo", description: "Resposta mais enxuta." },
+  { id: "medium", label: "Médio", description: "Equilíbrio entre clareza e detalhe." },
+  { id: "high", label: "Alto", description: "Mais contexto e explicação." },
+] as const;
+
 interface SettingsDrawerProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
 export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
-  const { parameters } = useSettingsStore();
+  const { parameters, updateParameters } = useSettingsStore();
   const { activeMode, imageQuality, imageSize, setImageQuality, setImageSize } = useUIStore();
   const { memories = [], addMemory, updateMemory, deleteMemory } = useMemories();
-  const { contextAboutUser, updateContextAboutUser, saveContextAboutUser, isSaving } = useCustomInstructions();
+  const {
+    contextAboutUser,
+    responsePreferences,
+    updateContextAboutUser,
+    updateResponsePreferences,
+    saveContextAboutUser,
+    isSaving,
+  } = useCustomInstructions();
   const [activeTab, setActiveTab] = useState<"tuning" | "memory" | "persona">("tuning");
   const [newMemory, setNewMemory] = useState("");
 
   const currentModel = MODELS[parameters.model];
+  const showTemperature = modelSupportsTemperature(parameters.model);
+  const showVerbosity = modelSupportsVerbosity(parameters.model);
+  const showCodeInterpreter = modelSupportsCodeInterpreter(parameters.model);
+  const maxTokensLimit = currentModel?.maxOutput ?? parameters.maxOutputTokens;
+  const minTokensLimit = Math.min(256, maxTokensLimit);
 
   const handleAddMemory = () => {
     if (newMemory.trim()) {
@@ -114,28 +139,123 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                 </p>
               </div>
 
-              <div className="space-y-3">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Parâmetros Fixos
-                </h3>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { label: "Temperature", value: parameters.temperature },
-                    { label: "Top P", value: parameters.topP },
-                    { label: "Max Tokens", value: parameters.maxOutputTokens.toLocaleString() },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="bg-muted/40 rounded-lg p-2.5 text-center">
-                      <p className="text-[10px] text-muted-foreground">{label}</p>
-                      <p className="text-sm font-mono font-semibold">{value}</p>
+              {activeMode === "chat" && (
+                <>
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Tuning do Modelo
+                    </h3>
+                    <div className="bg-muted/40 rounded-xl p-4 space-y-4">
+                      {showTemperature && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-medium">Temperature</p>
+                              <p className="text-[11px] text-muted-foreground">
+                                Controla criatividade e variação de resposta.
+                              </p>
+                            </div>
+                            <span className="text-sm font-mono font-semibold">
+                              {parameters.temperature.toFixed(2)}
+                            </span>
+                          </div>
+                          <Slider
+                            min={0}
+                            max={2}
+                            step={0.05}
+                            value={[parameters.temperature]}
+                            onValueChange={([value]) =>
+                              updateParameters({ temperature: value })
+                            }
+                          />
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-medium">Max Tokens</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              Limita o tamanho máximo da resposta do modelo atual.
+                            </p>
+                          </div>
+                          <span className="text-sm font-mono font-semibold">
+                            {parameters.maxOutputTokens.toLocaleString()}
+                          </span>
+                        </div>
+                        <Slider
+                          min={minTokensLimit}
+                          max={maxTokensLimit}
+                          step={256}
+                          value={[parameters.maxOutputTokens]}
+                          onValueChange={([value]) =>
+                            updateParameters({ maxOutputTokens: value })
+                          }
+                        />
+                        <p className="text-[11px] text-muted-foreground">
+                          Limite do modelo: {maxTokensLimit.toLocaleString()} tokens.
+                        </p>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
+
+                  {showVerbosity && (
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Verbosity
+                      </h3>
+                      <div className="grid grid-cols-3 gap-2">
+                        {VERBOSITY_OPTIONS.map((option) => (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => updateParameters({ verbosity: option.id })}
+                            className={cn(
+                              "rounded-xl border p-3 text-left transition-colors",
+                              parameters.verbosity === option.id
+                                ? "border-primary bg-primary/10 text-foreground"
+                                : "border-border bg-muted/30 text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            <p className="text-sm font-medium">{option.label}</p>
+                            <p className="mt-1 text-[11px] leading-relaxed">
+                              {option.description}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {showCodeInterpreter && (
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Ferramentas
+                      </h3>
+                      <div className="flex items-start justify-between gap-4 rounded-xl border border-border bg-muted/30 p-4">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">Code Interpreter</p>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            Expõe um container Python para o modelo usar quando achar necessário.
+                            Pode aumentar custo e latência em tarefas analíticas.
+                          </p>
+                        </div>
+                        <Switch
+                          checked={parameters.codeInterpreterEnabled}
+                          onCheckedChange={(checked) =>
+                            updateParameters({ codeInterpreterEnabled: checked })
+                          }
+                        />
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
 
               {activeMode === "image" && (
                 <div className="space-y-3">
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <Image className="h-3 w-3" />
+                    <ImageIcon className="h-3 w-3" />
                     Geração de Imagem
                   </h3>
                   <div className="space-y-2">
@@ -246,6 +366,19 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                   onChange={(e) => updateContextAboutUser(e.target.value)}
                   placeholder="Contexto adicional sobre você (opcional)..."
                   rows={6}
+                  className="w-full bg-background border border-border rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <Sparkles className="h-3.5 w-3.5" /> Preferências de Resposta
+                </label>
+                <textarea
+                  value={responsePreferences}
+                  onChange={(e) => updateResponsePreferences(e.target.value)}
+                  placeholder="Como tu prefere que a IA responda (opcional)..."
+                  rows={4}
                   className="w-full bg-background border border-border rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none transition-all"
                 />
               </div>

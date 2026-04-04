@@ -57,6 +57,10 @@ export interface Message {
   attachments?: FileAttachment[];
 }
 
+export interface SerializedMessage extends Omit<Message, "timestamp"> {
+  timestamp: string;
+}
+
 export interface Conversation {
   id: string;
   title: string;
@@ -65,17 +69,30 @@ export interface Conversation {
   updatedAt: Date;
 }
 
+export interface SerializedConversation
+  extends Omit<Conversation, "messages" | "createdAt" | "updatedAt"> {
+  messages: SerializedMessage[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type ReasoningEffort = "none" | "low" | "medium" | "high" | "xhigh";
 export type ReasoningSummary = "off" | "auto" | "concise" | "detailed";
+export type ResponseVerbosity = "low" | "medium" | "high";
 
-export interface ModelParameters {
-  model: string;
+export interface ModelScopedParameters {
   maxOutputTokens: number;
   temperature: number;
   topP: number;
-  systemPrompt: string;
   reasoningEffort: ReasoningEffort;
   reasoningSummary: ReasoningSummary;
+  verbosity: ResponseVerbosity;
+  codeInterpreterEnabled: boolean;
+}
+
+export interface ModelParameters extends ModelScopedParameters {
+  model: string;
+  systemPrompt: string;
 }
 
 export interface CustomInstructions {
@@ -101,6 +118,11 @@ export interface Memory {
   priority: number;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface SerializedMemory extends Omit<Memory, "createdAt" | "updatedAt"> {
+  createdAt: string;
+  updatedAt: string;
 }
 
 export const MEMORY_CATEGORIES: Record<MemoryCategory, string> = {
@@ -147,6 +169,8 @@ export interface ModelInfo {
   supportsStreaming: boolean;
   supportsSystemMessages: boolean;
   supportsTemperature: boolean;
+  supportsVerbosity: boolean;
+  supportsCodeInterpreter: boolean;
   recommendedFor: string[];
   badge?: string;
 }

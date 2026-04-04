@@ -88,23 +88,23 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
   return (
     <div
       className={cn(
-        "group flex gap-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-300",
+        "group flex gap-2 animate-in fade-in-0 slide-in-from-bottom-2 duration-300 md:gap-3",
         isUser ? "justify-end" : "justify-start"
       )}
     >
       {!isUser && (
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 mt-0.5">
-          <OpenAIIcon className="h-4 w-4 text-primary" />
+        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 md:h-8 md:w-8">
+          <OpenAIIcon className="h-3.5 w-3.5 text-primary md:h-4 md:w-4" />
         </div>
       )}
 
-      <div className={cn("max-w-[95%] sm:max-w-[80%] min-w-0", isUser && "order-first")}>
+      <div className={cn("max-w-[93%] min-w-0 sm:max-w-[80%]", isUser && "order-first")}>
         <Card
           className={cn(
-            "relative min-w-0 gap-0 overflow-hidden break-words px-4 py-3 text-left text-[13px] leading-relaxed",
+            "relative min-w-0 gap-0 overflow-hidden break-words px-3 py-2.5 text-left text-[12px] leading-[1.55] md:px-4 md:py-3 md:text-[13px] md:leading-relaxed",
             isUser
-              ? "bg-gradient-to-br from-cyan-500 to-indigo-600 text-white shadow-lg shadow-cyan-500/20 rounded-2xl rounded-br-md"
-              : "glass text-foreground/90 rounded-2xl rounded-bl-md"
+              ? "rounded-xl rounded-br-md bg-gradient-to-br from-cyan-500 to-indigo-600 text-white shadow-lg shadow-cyan-500/20 md:rounded-2xl"
+              : "glass rounded-xl rounded-bl-md text-foreground/90 md:rounded-2xl"
           )}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
@@ -112,7 +112,7 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
           onContextMenu={(onEdit || onDelete) ? (e) => { e.preventDefault(); setMenuOpen(true); } : undefined}
         >
           {message.attachments && message.attachments.length > 0 && !isEditing && (
-            <div className="mb-2 space-y-2">
+            <div className="mb-2 space-y-1.5 md:space-y-2">
               {message.attachments.some((a) => a.type === "image") && (
                 <div className={cn(
                   "flex flex-wrap gap-1.5",
@@ -129,8 +129,8 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
                         className={cn(
                           "rounded-lg object-cover shadow-sm",
                           message.attachments!.filter((a) => a.type === "image").length === 1
-                            ? "w-full max-h-[240px]"
-                            : "h-20 w-20"
+                            ? "w-full max-h-[220px] md:max-h-[240px]"
+                            : "h-16 w-16 md:h-20 md:w-20"
                         )}
                       />
                     ))}
@@ -144,7 +144,7 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
                       <div
                         key={att.id}
                         className={cn(
-                          "flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px]",
+                          "flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] md:text-[11px]",
                           isUser
                             ? "bg-white/15 text-white/90"
                             : "bg-white/8 text-foreground/75"
@@ -183,10 +183,10 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
                 Ao salvar, o chat refaz a conversa a partir desta mensagem.
               </p>
               <div className="flex justify-end gap-1.5">
-                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={handleCancelEdit}>
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] md:h-7 md:text-xs" onClick={handleCancelEdit}>
                   <X className="h-3 w-3 mr-1" />Cancelar
                 </Button>
-                <Button size="sm" className="h-7 px-2 text-xs" onClick={handleSaveEdit} disabled={!editContent.trim()}>
+                <Button size="sm" className="h-6 px-2 text-[11px] md:h-7 md:text-xs" onClick={handleSaveEdit} disabled={!editContent.trim()}>
                   <Send className="h-3 w-3 mr-1" />Enviar
                 </Button>
               </div>
@@ -304,8 +304,8 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
       </div>
 
       {isUser && (
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 mt-0.5">
-          <User className="h-4 w-4 text-primary" />
+        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 md:h-8 md:w-8">
+          <User className="h-3.5 w-3.5 text-primary md:h-4 md:w-4" />
         </div>
       )}
 

@@ -1,8 +1,15 @@
-import { db } from "@/lib/storage/db";
-import { Memory, MemoryCategory } from "@/types";
+import { apiUrl } from "@/lib/utils";
+import { Memory, MemoryCategory, SerializedMemory } from "@/types";
+import { deserializeMemory } from "@/lib/storage/serializers";
 
 export async function listMemories(): Promise<Memory[]> {
-  return db.memories.toArray();
+  const response = await fetch(apiUrl("/api/memories"), { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  const data = (await response.json()) as SerializedMemory[];
+  return Array.isArray(data) ? data.map(deserializeMemory) : [];
 }
 
 export async function addMemory(input: {
@@ -10,34 +17,43 @@ export async function addMemory(input: {
   category: MemoryCategory;
   isActive: boolean;
   priority: number;
-}): Promise<string> {
-  const id = crypto.randomUUID();
-  const now = new Date();
+}): Promise<Memory> {
+  const response = await fetch(apiUrl("/api/memories"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
 
-  const memory: Memory = {
-    id,
-    content: input.content,
-    category: input.category,
-    isActive: input.isActive,
-    priority: input.priority,
-    createdAt: now,
-    updatedAt: now,
-  };
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
 
-  await db.memories.put(memory);
-  return id;
+  return deserializeMemory((await response.json()) as SerializedMemory);
 }
 
 export async function updateMemory(
   id: string,
   updates: Partial<Memory>
-): Promise<void> {
-  await db.memories.update(id, {
-    ...updates,
-    updatedAt: new Date(),
+): Promise<Memory> {
+  const response = await fetch(apiUrl(`/api/memories/${id}`), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updates),
   });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return deserializeMemory((await response.json()) as SerializedMemory);
 }
 
 export async function deleteMemory(id: string): Promise<void> {
-  await db.memories.delete(id);
+  const response = await fetch(apiUrl(`/api/memories/${id}`), {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
 }

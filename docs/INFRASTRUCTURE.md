@@ -158,13 +158,10 @@ sudo systemctl restart chatgpt
 | `NODE_ENV` | `development` | Environment mode |
 | `RATE_LIMIT_ENABLED` | `false` | Enable rate limiting |
 | `RATE_LIMIT_CHAT_RPM` | `20` | Chat requests per minute |
-| `RATE_LIMIT_CANVAS_RPM` | `10` | Canvas requests per minute |
-| `RATE_LIMIT_IMAGES_RPM` | `5` | Image requests per minute |
-| `API_KEY_AUTH_ENABLED` | `false` | Require X-Api-Key header |
-| `API_KEYS` | — | Comma-separated valid API keys |
-| `CORS_ALLOWED_ORIGINS` | — | Comma-separated allowed origins |
+| `RATE_LIMIT_TRANSCRIBE_RPM` | `10` | Transcription requests per minute |
+| `AUTH_ENABLED` | `false` | Protect app and APIs with JWT cookie auth |
+| `AUTH_PASSWORD` | — | Password accepted by `/api/auth/login` |
 | `ENABLE_REQUEST_LOGGING` | `false` | Log all API requests |
-| `REDIS_URL` | — | Redis URL for distributed rate limiting |
 
 ## Next.js Configuration
 
@@ -177,7 +174,6 @@ Key settings:
 - `poweredByHeader: false` — strip X-Powered-By
 - `reactStrictMode: true`
 - `optimizePackageImports` for lucide-react, @radix-ui, react-syntax-highlighter, @tanstack/react-query
-- Custom webpack chunking (framework, lib, commons, shared)
 - Image domains: `**.openai.com`, `chat.ultrassom.ai`
 
 ## SSL / HTTPS

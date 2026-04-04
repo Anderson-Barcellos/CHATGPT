@@ -1,76 +1,83 @@
 "use client";
 
-import { useLiveQuery } from "dexie-react-hooks";
 import { addMemory, deleteMemory, listMemories, updateMemory } from "@/lib/storage/memories";
 import { Memory, MemoryCategory } from "@/types";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSettingsStore } from "@/stores/settingsStore";
 
+let memoriesBootstrapPromise: Promise<void> | null = null;
+
 export function useMemories() {
+  const { memories, setMemories } = useSettingsStore();
   const [error, setError] = useState<string | null>(null);
-  
-  // useLiveQuery com tratamento de erros
-  const memories = useLiveQuery(
-    async () => {
-      try {
-        return await listMemories();
-      } catch (err) {
-        console.error("[useMemories] Erro ao listar memórias:", err);
-        setError("Erro ao carregar memórias");
-        return [];
-      }
-    },
-    [],
-    [] // valor padrão se falhar
-  );
+  const hasBootstrappedRef = useRef(false);
 
   useEffect(() => {
-    if (memories && memories.length > 0) {
-      try {
-        useSettingsStore.getState().setMemories(memories);
-      } catch (err) {
-        console.error("[useMemories] Erro ao sincronizar memórias:", err);
-      }
-    }
-  }, [memories]);
+    if (hasBootstrappedRef.current) return;
+    hasBootstrappedRef.current = true;
 
-  const add = async (input: {
+    if (!memoriesBootstrapPromise) {
+      memoriesBootstrapPromise = listMemories()
+        .then((loadedMemories) => {
+          setMemories(loadedMemories);
+        })
+        .catch((err) => {
+          console.error("[useMemories] Erro ao listar memórias:", err);
+          setError("Erro ao carregar memórias");
+        })
+        .finally(() => {
+          memoriesBootstrapPromise = null;
+        });
+    }
+  }, [setMemories]);
+
+  const add = useCallback(async (input: {
     content: string;
     category: MemoryCategory;
     isActive: boolean;
     priority: number;
   }) => {
     try {
-      return await addMemory(input);
+      const memory = await addMemory(input);
+      setMemories([memory, ...useSettingsStore.getState().memories]);
+      return memory.id;
     } catch (err) {
       console.error("[useMemories] Erro ao adicionar memória:", err);
       setError("Erro ao adicionar memória");
       throw err;
     }
-  };
+  }, [setMemories]);
 
-  const update = async (id: string, updates: Partial<Memory>) => {
+  const update = useCallback(async (id: string, updates: Partial<Memory>) => {
     try {
-      return await updateMemory(id, updates);
+      const memory = await updateMemory(id, updates);
+      setMemories(
+        useSettingsStore
+          .getState()
+          .memories.map((item) => (item.id === id ? memory : item))
+      );
     } catch (err) {
       console.error("[useMemories] Erro ao atualizar memória:", err);
       setError("Erro ao atualizar memória");
       throw err;
     }
-  };
+  }, [setMemories]);
 
-  const remove = async (id: string) => {
+  const remove = useCallback(async (id: string) => {
     try {
-      return await deleteMemory(id);
+      await deleteMemory(id);
+      setMemories(
+        useSettingsStore.getState().memories.filter((memory) => memory.id !== id)
+      );
     } catch (err) {
       console.error("[useMemories] Erro ao remover memória:", err);
       setError("Erro ao remover memória");
       throw err;
     }
-  };
+  }, [setMemories]);
 
   return {
-    memories: (memories ?? []).slice().sort((a, b) => b.priority - a.priority),
+    memories: memories.slice().sort((a, b) => b.priority - a.priority),
     addMemory: add,
     updateMemory: update,
     deleteMemory: remove,

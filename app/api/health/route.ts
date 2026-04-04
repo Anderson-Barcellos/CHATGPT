@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { readDataFile } from "@/lib/server/jsonFileStore";
 
 interface HealthStatus {
   status: "healthy" | "degraded" | "unhealthy";
@@ -24,23 +25,39 @@ interface CheckResult {
   status: "ok" | "error" | "warning";
   message?: string;
   latency?: number;
-  details?: any;
+  details?: Record<string, boolean | number | string>;
 }
 
-async function checkDatabase(): Promise<CheckResult> {
+async function checkStorage(): Promise<CheckResult> {
   const start = Date.now();
   try {
-    const { db } = await import("@/lib/storage/db");
-    await db.conversations.count();
+    const [conversations, memories, persona] = await Promise.all([
+      readDataFile("conversations.json", [] as unknown[]),
+      readDataFile("memories.json", [] as unknown[]),
+      readDataFile("persona.json", {
+        id: "default",
+        contextAboutUser: "",
+        responsePreferences: "",
+      }),
+    ]);
+
     return {
       status: "ok",
-      message: "Database accessible",
+      message: "Storage accessible",
       latency: Date.now() - start,
+      details: {
+        conversations: Array.isArray(conversations) ? conversations.length : 0,
+        memories: Array.isArray(memories) ? memories.length : 0,
+        hasPersona:
+          !!persona &&
+          typeof persona === "object" &&
+          "contextAboutUser" in persona,
+      },
     };
-  } catch (error) {
+  } catch {
     return {
       status: "warning",
-      message: "Database check failed (may be client-only)",
+      message: "Storage check failed",
       latency: Date.now() - start,
     };
   }
@@ -98,7 +115,7 @@ function checkMemory(): CheckResult {
         heapPercentage: Math.round((heapUsedMB / heapTotalMB) * 100),
       },
     };
-  } catch (error) {
+  } catch {
     return {
       status: "error",
       message: "Failed to check memory",
@@ -109,7 +126,7 @@ function checkMemory(): CheckResult {
 export async function GET() {
   try {
     const [database, openai] = await Promise.all([
-      checkDatabase(),
+      checkStorage(),
       checkOpenAI(),
     ]);
 

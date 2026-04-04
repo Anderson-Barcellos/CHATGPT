@@ -1,5 +1,11 @@
 import jsPDF from "jspdf";
 import { Conversation, ModelParameters } from "@/types";
+import {
+  isReasoningModel,
+  modelSupportsCodeInterpreter,
+  modelSupportsTemperature,
+  modelSupportsVerbosity,
+} from "@/lib/models/modelConfig";
 
 export interface PDFExportOptions {
   includeMetadata?: boolean;
@@ -105,9 +111,23 @@ export async function exportToPDF(
       addSpacer();
       addText("Model Configuration", 11, true);
       addText(`Model: ${modelParameters.model}`, 9);
-      addText(`Temperature: ${modelParameters.temperature}`, 9);
       addText(`Max Tokens: ${modelParameters.maxOutputTokens}`, 9);
-      addText(`Reasoning: ${modelParameters.reasoningEffort}`, 9);
+      if (modelSupportsTemperature(modelParameters.model)) {
+        addText(`Temperature: ${modelParameters.temperature}`, 9);
+        addText(`Top P: ${modelParameters.topP}`, 9);
+      }
+      if (isReasoningModel(modelParameters.model)) {
+        addText(`Reasoning: ${modelParameters.reasoningEffort}`, 9);
+      }
+      if (modelSupportsVerbosity(modelParameters.model)) {
+        addText(`Verbosity: ${modelParameters.verbosity}`, 9);
+      }
+      if (modelSupportsCodeInterpreter(modelParameters.model)) {
+        addText(
+          `Code Interpreter: ${modelParameters.codeInterpreterEnabled ? "On" : "Off"}`,
+          9
+        );
+      }
     }
 
     addSpacer(10);
@@ -151,7 +171,7 @@ export async function exportToPDF(
           50
         );
         yPosition += 55;
-      } catch (error) {
+      } catch {
         addText("[Image could not be embedded]", 9, false, [150, 150, 150]);
       }
     }

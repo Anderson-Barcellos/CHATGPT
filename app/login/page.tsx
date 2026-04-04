@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Lock, LogIn } from "lucide-react";
 import { apiUrl } from "@/lib/utils";
 
@@ -9,7 +8,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,12 +24,11 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        router.push("/");
-        router.refresh();
+        window.location.replace(process.env.NEXT_PUBLIC_BASE_PATH || "/");
       } else {
         setError(data.error || "Erro ao fazer login");
       }
-    } catch (error) {
+    } catch {
       setError("Erro ao conectar com o servidor");
     } finally {
       setLoading(false);
@@ -93,11 +90,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 p-4 bg-muted/30 rounded-lg">
-            <p className="text-xs text-muted-foreground text-center">
-              Configure AUTH_ENABLED=true e AUTH_PASSWORD no .env
-            </p>
-          </div>
         </div>
       </div>
     </div>

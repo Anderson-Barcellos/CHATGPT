@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { toast } from "sonner";
 import {
   Sheet,
   SheetContent,
@@ -21,16 +22,11 @@ import {
   Minimize2,
   FileText,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useUIStore, ArtifactContentType } from "@/stores/uiStore";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import rehypeHighlight from "rehype-highlight";
-import rehypeKatex from "rehype-katex";
-import rehypeRaw from "rehype-raw";
-import "katex/dist/katex.min.css";
+import { useUIStore } from "@/stores/uiStore";
 import { CodeBlock } from "@/components/chat/CodeBlock";
+import { ChatMarkdown } from "@/components/chat/ChatMarkdown";
+import { downloadArtifactPDF } from "@/lib/export/artifactPdf";
+import { DocumentCanvas } from "@/components/artifacts/DocumentCanvas";
 
 function HtmlPreview({ content }: { content: string }) {
   const srcDoc = `<!DOCTYPE html>
@@ -60,74 +56,21 @@ function HtmlPreview({ content }: { content: string }) {
       srcDoc={srcDoc}
       className="w-full h-full border-0 rounded-lg bg-slate-900"
       title="HTML Preview"
-      sandbox="allow-scripts"
+      sandbox=""
     />
-  );
-}
-
-function MarkdownPreview({ content }: { content: string }) {
-  return (
-    <div className="prose prose-slate dark:prose-invert max-w-none prose-sm">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeHighlight, rehypeKatex, rehypeRaw]}
-        components={{
-          code: ({ className, children, ...props }: any) => {
-            const match = /language-(\w+)/.exec(className || "");
-            const language = match ? match[1] : "";
-            const isInline = !className || !match;
-
-            if (!isInline && language) {
-              return (
-                <CodeBlock
-                  language={language}
-                  value={String(children).replace(/\n$/, "")}
-                />
-              );
-            }
-
-            return (
-              <code className={className} {...props}>
-                {children}
-              </code>
-            );
-          },
-          table: ({ children }) => (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                {children}
-              </table>
-            </div>
-          ),
-          a: ({ href, children }) => (
-            <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-              {children}
-            </a>
-          ),
-          img: ({ src, alt }) => (
-            <img src={src} alt={alt} className="rounded-lg shadow-md max-w-full h-auto" loading="lazy" />
-          ),
-        }}
-      >
-        {content}
-      </ReactMarkdown>
-    </div>
   );
 }
 
 export function ArtifactPanel() {
   const { artifactOpen, artifactContent, artifactType, artifactTitle, closeArtifact } = useUIStore();
-  const [activeTab, setActiveTab] = useState<"preview" | "source">("preview");
   const [copied, setCopied] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-
-  useEffect(() => {
-    if (artifactOpen) setActiveTab("preview");
-  }, [artifactOpen]);
-
-  useEffect(() => {
-    if (!artifactOpen) setIsFullscreen(false);
-  }, [artifactOpen]);
+  const documentEyebrow =
+    artifactType === "html" ? "Visualizacao interativa" : "Documento pronto para leitura";
+  const documentDescription =
+    artifactType === "html"
+      ? "Conteudo HTML em modo de leitura, preservando a estrutura do artefato."
+      : "Leitura em coluna unica com tipografia editorial e exportacao em PDF alinhada ao preview.";
 
   const handleCopy = useCallback(async () => {
     try {
@@ -151,13 +94,26 @@ export function ArtifactPanel() {
     URL.revokeObjectURL(url);
   }, [artifactContent, artifactType, artifactTitle]);
 
-  if (isFullscreen) {
+  const handleDownloadPDF = useCallback(async () => {
+    try {
+      await downloadArtifactPDF(artifactContent, {
+        title: artifactTitle || "Documento",
+        contentType: artifactType,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Falha ao exportar o documento em PDF.";
+      toast.error("PDF nao exportado", { description: message });
+    }
+  }, [artifactContent, artifactTitle, artifactType]);
+
+  if (artifactOpen && isFullscreen) {
     return (
       <div className="fixed inset-0 z-[60] flex flex-col bg-background">
-        <div className="flex items-center justify-between border-b border-white/10 bg-background/80 backdrop-blur-xl px-4 py-3">
+        <div className="flex items-center justify-between border-b border-white/10 bg-background/70 backdrop-blur-xl px-4 py-3">
           <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold truncate">{artifactTitle || "Documento"}</span>
+            <FileText className="h-4 w-4 text-primary/80" />
+            <span className="text-sm font-medium text-foreground/90 truncate">{artifactTitle || "Documento"}</span>
           </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCopy}>
@@ -166,22 +122,42 @@ export function ArtifactPanel() {
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleDownload}>
               <Download className="h-4 w-4" />
             </Button>
+            <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={handleDownloadPDF}>
+              PDF
+            </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsFullscreen(false)}>
               <Minimize2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab as any} className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="mx-4 mt-3 w-fit">
-            <TabsTrigger value="preview"><Eye className="mr-1.5 h-3.5 w-3.5" />Preview</TabsTrigger>
-            <TabsTrigger value="source"><Code className="mr-1.5 h-3.5 w-3.5" />Fonte</TabsTrigger>
+        <Tabs defaultValue="preview" className="flex-1 flex flex-col overflow-hidden">
+          <TabsList className="mx-4 mt-3 w-fit rounded-full bg-white/[0.04] p-1">
+            <TabsTrigger value="preview" className="rounded-full text-xs data-[state=active]:bg-background/80">
+              <Eye className="mr-1.5 h-3.5 w-3.5" />
+              Preview
+            </TabsTrigger>
+            <TabsTrigger value="source" className="rounded-full text-xs data-[state=active]:bg-background/80">
+              <Code className="mr-1.5 h-3.5 w-3.5" />
+              Fonte
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="preview" className="flex-1 overflow-auto p-4">
             {artifactType === "html" ? (
               <HtmlPreview content={artifactContent} />
             ) : (
-              <MarkdownPreview content={artifactContent} />
+              <DocumentCanvas
+                title={artifactTitle || "Documento"}
+                eyebrow={documentEyebrow}
+                description={documentDescription}
+                className="border-black/5 bg-transparent dark:border-white/8 dark:bg-transparent"
+                bodyClassName="md:py-9"
+              >
+                <ChatMarkdown
+                  content={artifactContent}
+                  className="max-w-none"
+                />
+              </DocumentCanvas>
             )}
           </TabsContent>
           <TabsContent value="source" className="flex-1 overflow-auto p-4">
@@ -193,23 +169,31 @@ export function ArtifactPanel() {
   }
 
   return (
-    <Sheet open={artifactOpen} onOpenChange={(open) => { if (!open) closeArtifact(); }}>
+    <Sheet
+      open={artifactOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          setIsFullscreen(false);
+          closeArtifact();
+        }
+      }}
+    >
       <SheetContent
         side="right"
         showCloseButton={false}
-        className="w-[92vw] sm:max-w-2xl p-0 flex flex-col glass border-l border-white/10"
+        className="w-[96vw] sm:max-w-4xl p-0 flex flex-col glass border-l border-white/10"
       >
         <SheetHeader className="flex-none border-b border-white/5 px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                <FileText className="h-4 w-4 text-primary" />
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/8">
+                <FileText className="h-4 w-4 text-primary/85" />
               </div>
               <div className="min-w-0">
-                <SheetTitle className="text-sm truncate">
+                <SheetTitle className="text-sm font-medium truncate">
                   {artifactTitle || "Documento"}
                 </SheetTitle>
-                <SheetDescription className="text-xs uppercase tracking-widest text-muted-foreground/60">
+                <SheetDescription className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/55">
                   {artifactType === "html" ? "HTML Interativo" : "Documento Rico"}
                 </SheetDescription>
               </div>
@@ -222,6 +206,9 @@ export function ArtifactPanel() {
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleDownload}>
                 <Download className="h-3.5 w-3.5" />
               </Button>
+              <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={handleDownloadPDF}>
+                PDF
+              </Button>
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsFullscreen(true)}>
                 <Maximize2 className="h-3.5 w-3.5" />
               </Button>
@@ -229,17 +216,13 @@ export function ArtifactPanel() {
           </div>
         </SheetHeader>
 
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab as any}
-          className="flex-1 flex flex-col overflow-hidden"
-        >
-          <TabsList className="mx-4 mt-3 w-fit">
-            <TabsTrigger value="preview">
+        <Tabs defaultValue="preview" className="flex-1 flex flex-col overflow-hidden">
+          <TabsList className="mx-4 mt-3 w-fit rounded-full bg-white/[0.04] p-1">
+            <TabsTrigger value="preview" className="rounded-full">
               <Eye className="mr-1.5 h-3.5 w-3.5" />
               Preview
             </TabsTrigger>
-            <TabsTrigger value="source">
+            <TabsTrigger value="source" className="rounded-full">
               <Code className="mr-1.5 h-3.5 w-3.5" />
               Fonte
             </TabsTrigger>
@@ -253,7 +236,18 @@ export function ArtifactPanel() {
             ) : (
               <ScrollArea className="h-full">
                 <div className="p-4">
-                  <MarkdownPreview content={artifactContent} />
+                  <DocumentCanvas
+                    title={artifactTitle || "Documento"}
+                    eyebrow={documentEyebrow}
+                    description={documentDescription}
+                    className="border-black/5 bg-transparent dark:border-white/8 dark:bg-transparent"
+                    bodyClassName="md:py-9"
+                  >
+                    <ChatMarkdown
+                      content={artifactContent}
+                      className="max-w-none"
+                    />
+                  </DocumentCanvas>
                 </div>
               </ScrollArea>
             )}

@@ -24,6 +24,7 @@ export interface JSONExportData {
       reasoningText?: string;
       imageBase64?: string;
       imageMimeType?: string;
+      artifact?: Conversation["messages"][number]["artifact"];
     }>;
   };
   metadata?: {
@@ -67,6 +68,7 @@ export function exportToJSON(
         reasoningText: msg.reasoningText,
         imageBase64: includeImages ? msg.imageBase64 : undefined,
         imageMimeType: includeImages ? msg.imageMimeType : undefined,
+        artifact: msg.artifact,
       })),
     },
   };
@@ -139,6 +141,7 @@ export function importFromJSON(data: JSONExportData): Conversation {
       reasoningText: msg.reasoningText,
       imageBase64: msg.imageBase64,
       imageMimeType: msg.imageMimeType,
+      artifact: msg.artifact,
     })),
   };
 }

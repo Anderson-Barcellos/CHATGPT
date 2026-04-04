@@ -13,8 +13,27 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsStreaming: true,
     supportsSystemMessages: true,
     supportsTemperature: false,
+    supportsVerbosity: true,
+    supportsCodeInterpreter: true,
     recommendedFor: ["Analise profunda", "Tarefas profissionais complexas", "Raciocinio avancado"],
     badge: "Frontier",
+  },
+  "gpt-5.4-mini": {
+    id: "gpt-5.4-mini",
+    name: "GPT-5.4 Mini",
+    family: "gpt-5",
+    description: "Mini mais forte da linha GPT-5.4 para coding, subagentes e alto volume",
+    contextWindow: 400000,
+    maxOutput: 128000,
+    pricing: { input: 0.75, output: 4.5, cachedInput: 0.075 },
+    capabilities: ["chat", "reasoning", "vision", "function-calling", "json-mode"],
+    supportsStreaming: true,
+    supportsSystemMessages: true,
+    supportsTemperature: false,
+    supportsVerbosity: true,
+    supportsCodeInterpreter: true,
+    recommendedFor: ["Coding rapido", "Subagentes", "Alto volume com raciocinio"],
+    badge: "Mini",
   },
   "gpt-5.3-chat-latest": {
     id: "gpt-5.3-chat-latest",
@@ -28,6 +47,8 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsStreaming: true,
     supportsSystemMessages: true,
     supportsTemperature: true,
+    supportsVerbosity: true,
+    supportsCodeInterpreter: true,
     recommendedFor: ["Chat geral", "Respostas rapidas", "Teste das melhorias do ChatGPT"],
     badge: "ChatGPT",
   },
@@ -43,6 +64,8 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsStreaming: true,
     supportsSystemMessages: true,
     supportsTemperature: true,
+    supportsVerbosity: true,
+    supportsCodeInterpreter: true,
     recommendedFor: ["Respostas rapidas", "Chat geral", "Multimodal"],
     badge: "Rapido",
   },
@@ -58,6 +81,8 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsStreaming: true,
     supportsSystemMessages: true,
     supportsTemperature: false,
+    supportsVerbosity: true,
+    supportsCodeInterpreter: true,
     recommendedFor: ["Raciocinio + Chat", "Problemas complexos", "Analise profunda"],
     badge: "Mais Novo",
   },
@@ -73,6 +98,8 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsStreaming: true,
     supportsSystemMessages: true,
     supportsTemperature: false,
+    supportsVerbosity: true,
+    supportsCodeInterpreter: true,
     recommendedFor: ["Tarefas criticas", "Pesquisa avancada", "Analise exaustiva"],
     badge: "Premium",
   },
@@ -88,6 +115,8 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsStreaming: true,
     supportsSystemMessages: true,
     supportsTemperature: true,
+    supportsVerbosity: false,
+    supportsCodeInterpreter: true,
     recommendedFor: ["Multimodal", "Visao + texto", "Uso geral"],
   },
   "gpt-4.1": {
@@ -102,6 +131,8 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsStreaming: true,
     supportsSystemMessages: true,
     supportsTemperature: true,
+    supportsVerbosity: false,
+    supportsCodeInterpreter: true,
     recommendedFor: ["Tarefas complexas", "Codigo", "Analise"],
     badge: "Confiavel",
   },
@@ -117,6 +148,8 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsStreaming: true,
     supportsSystemMessages: false,
     supportsTemperature: false,
+    supportsVerbosity: false,
+    supportsCodeInterpreter: true,
     recommendedFor: ["Matematica avancada", "Coding complexo", "Pesquisa cientifica"],
     badge: "Raciocinio",
   },
@@ -132,6 +165,8 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsStreaming: true,
     supportsSystemMessages: false,
     supportsTemperature: false,
+    supportsVerbosity: false,
+    supportsCodeInterpreter: true,
     recommendedFor: ["Raciocinio economico", "Coding", "Alto volume"],
     badge: "Novo",
   },
@@ -147,6 +182,8 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsStreaming: false,
     supportsSystemMessages: false,
     supportsTemperature: false,
+    supportsVerbosity: false,
+    supportsCodeInterpreter: false,
     recommendedFor: ["Criacao de imagens", "Arte digital", "Ilustracoes"],
     badge: "Novo",
   },
@@ -162,6 +199,8 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsStreaming: false,
     supportsSystemMessages: false,
     supportsTemperature: false,
+    supportsVerbosity: false,
+    supportsCodeInterpreter: false,
     recommendedFor: ["Criacao de imagens", "Arte digital", "Ilustracoes"],
   },
 };
@@ -174,6 +213,16 @@ export function isReasoningModel(modelId: string): boolean {
 export function modelSupportsTemperature(modelId: string): boolean {
   const model = MODELS[modelId];
   return model?.supportsTemperature ?? true;
+}
+
+export function modelSupportsVerbosity(modelId: string): boolean {
+  const model = MODELS[modelId];
+  return model?.supportsVerbosity ?? false;
+}
+
+export function modelSupportsCodeInterpreter(modelId: string): boolean {
+  const model = MODELS[modelId];
+  return model?.supportsCodeInterpreter ?? false;
 }
 
 export function calculateCost(

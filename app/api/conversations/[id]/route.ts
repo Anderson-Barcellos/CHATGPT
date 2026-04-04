@@ -4,37 +4,58 @@ import {
   updateConversation,
   deleteConversation,
 } from "../data";
+import { isAuthEnabled, isAuthenticatedRequest } from "@/lib/server/auth";
+import { deserializeMessage, serializeConversation } from "@/lib/storage/serializers";
+
+function unauthorized() {
+  return NextResponse.json(
+    { error: "Unauthorized", message: "Faça login para continuar." },
+    { status: 401 }
+  );
+}
 
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _req: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (isAuthEnabled() && !(await isAuthenticatedRequest(request))) {
+    return unauthorized();
+  }
+
   const { id } = await params;
   const conversation = await getConversation(id);
   if (!conversation) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  return NextResponse.json(conversation);
+  return NextResponse.json(serializeConversation(conversation));
 }
 
 export async function PUT(
-  req: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (isAuthEnabled() && !(await isAuthenticatedRequest(request))) {
+    return unauthorized();
+  }
+
   try {
     const { id } = await params;
-    const body = await req.json().catch(() => ({}));
+    const body = await request.json().catch(() => ({}));
     const updates = {
       ...(body.title !== undefined && { title: body.title }),
-      ...(body.messages !== undefined && { messages: body.messages }),
+      ...(body.messages !== undefined && {
+        messages: Array.isArray(body.messages)
+          ? body.messages.map(deserializeMessage)
+          : undefined,
+      }),
     };
     const updated = await updateConversation(id, updates);
     if (!updated) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    return NextResponse.json(updated);
+    return NextResponse.json(serializeConversation(updated));
   } catch (err) {
     console.error("[conversations] PUT error", err);
     return NextResponse.json({ error: "Failed to update" }, { status: 500 });
@@ -42,9 +63,13 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (isAuthEnabled() && !(await isAuthenticatedRequest(request))) {
+    return unauthorized();
+  }
+
   try {
     const { id } = await params;
     const ok = await deleteConversation(id);

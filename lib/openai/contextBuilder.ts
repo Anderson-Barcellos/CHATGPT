@@ -3,7 +3,7 @@ import { buildSystemPrompt as buildBasePrompt } from "@/lib/prompts/systemPrompt
 import { FIXED_PERSONA_PROMPT } from "@/lib/prompts/personaPrompt";
 
 export function buildSystemPrompt(
-  _basePrompt: string,
+  basePrompt: string,
   instructions: CustomInstructions,
   memories: Memory[]
 ) {
@@ -13,8 +13,18 @@ export function buildSystemPrompt(
 
   sections.push(FIXED_PERSONA_PROMPT);
 
+  if (basePrompt.trim()) {
+    sections.push(`## Extra System Instructions\n${basePrompt.trim()}`);
+  }
+
   if (instructions.contextAboutUser.trim()) {
     sections.push(`## Additional Context About the User\n${instructions.contextAboutUser.trim()}`);
+  }
+
+  if (instructions.responsePreferences.trim()) {
+    sections.push(
+      `## Response Preferences\n${instructions.responsePreferences.trim()}`
+    );
   }
 
   const activeMemories = memories

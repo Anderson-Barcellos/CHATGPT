@@ -1,5 +1,4 @@
 import sharp from "sharp";
-import { writeFileSync } from "fs";
 
 // Static version of CelerLogo SVG (no CSS animations)
 const svg = `<svg width="650" height="650" viewBox="0 0 650 650" fill="none" xmlns="http://www.w3.org/2000/svg">

@@ -1,5 +1,6 @@
 import { apiUrl } from "@/lib/utils";
-import { Conversation, Message } from "@/types";
+import { Conversation, Message, SerializedConversation } from "@/types";
+import { deserializeConversation } from "@/lib/storage/serializers";
 
 const BASE = () => apiUrl("/api/conversations");
 
@@ -17,7 +18,11 @@ export async function listConversations(): Promise<Conversation[]> {
     const res = await fetch(BASE(), { cache: "no-store" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await safeJson(res);
-    return Array.isArray(data) ? data : [];
+    return Array.isArray(data)
+      ? data.map((conversation) =>
+          deserializeConversation(conversation as SerializedConversation)
+        )
+      : [];
   } catch (err) {
     console.error("[conversations] list failed:", err);
     return [];
@@ -29,7 +34,9 @@ export async function getConversation(id: string): Promise<Conversation | undefi
     const res = await fetch(`${BASE()}/${id}`, { cache: "no-store" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await safeJson(res);
-    return data ?? undefined;
+    return data
+      ? deserializeConversation(data as SerializedConversation)
+      : undefined;
   } catch (err) {
     console.error("[conversations] get failed:", err);
     return undefined;
@@ -45,7 +52,10 @@ export async function createConversation(title?: string): Promise<string> {
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await safeJson(res);
-    return data?.id ?? `temp-${Date.now()}`;
+    const conversation = data
+      ? deserializeConversation(data as SerializedConversation)
+      : undefined;
+    return conversation?.id ?? `temp-${Date.now()}`;
   } catch (err) {
     console.error("[conversations] create failed:", err);
     return `temp-${Date.now()}`;
@@ -89,4 +99,3 @@ export async function updateConversationTitle(
     console.error("[conversations] title update failed:", err);
   }
 }
-

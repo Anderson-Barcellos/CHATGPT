@@ -3,13 +3,13 @@ import { OpenAIIcon } from "@/components/ui/icons";
 
 export function TypingIndicator() {
   return (
-    <div className="flex items-start gap-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-        <OpenAIIcon className="h-4 w-4 text-primary" />
+    <div className="flex items-start gap-2 md:gap-3">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 md:h-8 md:w-8">
+        <OpenAIIcon className="h-3.5 w-3.5 text-primary md:h-4 md:w-4" />
       </div>
       <div
         className={cn(
-          "flex items-center gap-1.5 rounded-2xl px-4 py-3",
+          "flex items-center gap-1.5 rounded-xl px-3 py-2.5 md:rounded-2xl md:px-4 md:py-3",
           "bg-card border shadow-sm"
         )}
       >

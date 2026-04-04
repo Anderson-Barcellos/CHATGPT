@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   FileText,
   FileJson,
@@ -8,7 +8,6 @@ import {
   Copy,
   Download,
   Loader2,
-  CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +19,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuShortcut,
 } from "@/components/ui/dropdown-menu";
-import { Conversation, ModelParameters } from "@/types";
+import { Conversation } from "@/types";
 import { useExport, ExportFormat } from "@/hooks/useExport";
 import { useSettingsStore } from "@/stores/settingsStore";
 
@@ -42,7 +41,7 @@ export function ExportMenu({
   const { getModelParameters, getCustomInstructions, getActiveMemories } =
     useSettingsStore();
 
-  const handleExport = async (format: ExportFormat) => {
+  const handleExport = useCallback(async (format: ExportFormat) => {
     if (!conversation) return;
 
     const modelParams = getModelParameters();
@@ -61,9 +60,15 @@ export function ExportMenu({
     });
 
     setOpen(false);
-  };
+  }, [
+    conversation,
+    exportConversation,
+    getActiveMemories,
+    getCustomInstructions,
+    getModelParameters,
+  ]);
 
-  const handleExportAll = async () => {
+  const handleExportAll = useCallback(async () => {
     if (!conversation) return;
 
     const modelParams = getModelParameters();
@@ -82,7 +87,13 @@ export function ExportMenu({
     });
 
     setOpen(false);
-  };
+  }, [
+    conversation,
+    exportAll,
+    getActiveMemories,
+    getCustomInstructions,
+    getModelParameters,
+  ]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -114,7 +125,7 @@ export function ExportMenu({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [conversation]);
+  }, [handleExport]);
 
   const isDisabled = disabled || !conversation || conversation.messages.length === 0;
 
@@ -127,11 +138,11 @@ export function ExportMenu({
           ) : (
             <Download className={`h-4 w-4 ${size !== "icon" ? "mr-2" : ""}`} />
           )}
-          {size !== "icon" && (isExporting ? "Exporting..." : "Export")}
+          {size !== "icon" && (isExporting ? "Exportando..." : "Exportar")}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>Export Conversation</DropdownMenuLabel>
+        <DropdownMenuLabel>Exportar conversa</DropdownMenuLabel>
         <DropdownMenuSeparator />
 
         <DropdownMenuItem
@@ -168,7 +179,7 @@ export function ExportMenu({
           disabled={isExporting}
         >
           <Copy className="h-4 w-4 mr-2" />
-          Copy to Clipboard
+          Copiar para a área de transferência
           <DropdownMenuShortcut>⇧⌘C</DropdownMenuShortcut>
         </DropdownMenuItem>
 
@@ -176,7 +187,7 @@ export function ExportMenu({
 
         <DropdownMenuItem onClick={handleExportAll} disabled={isExporting}>
           <Download className="h-4 w-4 mr-2" />
-          Export All Formats
+          Exportar tudo
         </DropdownMenuItem>
 
         {isExporting && progress.progress !== undefined && (
@@ -184,7 +195,7 @@ export function ExportMenu({
             <DropdownMenuSeparator />
             <div className="px-2 py-2 text-sm text-muted-foreground">
               <div className="flex items-center justify-between mb-1">
-                <span>Progress</span>
+                <span>Progresso</span>
                 <span>{progress.progress}%</span>
               </div>
               <div className="h-2 bg-secondary rounded-full overflow-hidden">

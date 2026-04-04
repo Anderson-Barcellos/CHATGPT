@@ -51,47 +51,49 @@ interface WelcomeScreenProps {
 }
 
 function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
-  const subtitle = SUBTITLES[Math.floor(Math.random() * SUBTITLES.length)];
+  const [subtitle] = useState(
+    () => SUBTITLES[Math.floor(Math.random() * SUBTITLES.length)]
+  );
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 md:py-16">
-      <div className="relative mb-6">
-        <GPTLogo size={140} className="animate-float" />
-        <div className="absolute -inset-8 -z-10 rounded-full bg-gradient-to-br from-cyan-500/15 via-blue-500/10 to-indigo-500/15 blur-3xl" />
+    <div className="flex flex-1 flex-col items-center justify-center px-3 py-6 md:px-4 md:py-16">
+      <div className="relative mb-4 md:mb-6">
+        <GPTLogo size={120} className="animate-float" />
+        <div className="absolute -inset-6 -z-10 rounded-full bg-gradient-to-br from-cyan-500/15 via-blue-500/10 to-indigo-500/15 blur-3xl md:-inset-8" />
       </div>
 
-      <h2 className="mb-2 text-3xl md:text-4xl font-semibold tracking-tight">
+      <h2 className="mb-1.5 text-[1.7rem] font-semibold tracking-tight md:mb-2 md:text-4xl">
         <span className="text-gradient-gpt">GPT</span>
       </h2>
-      <p className="mb-10 max-w-sm text-center text-base text-muted-foreground/80">
+      <p className="mb-7 max-w-[18rem] text-center text-sm text-muted-foreground/80 md:mb-10 md:max-w-sm md:text-base">
         {getGreeting()}, Anders! {subtitle}
       </p>
 
-      <div className="grid w-full max-w-3xl grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="grid w-full max-w-3xl grid-cols-2 gap-2.5 sm:grid-cols-3 md:gap-3">
         {SUGGESTIONS.map(({ icon: Icon, label, desc, prompt, accent, iconColor }) => (
           <button
             key={label}
             onClick={() => onSuggestionClick(prompt)}
             className={cn(
-              "group flex flex-col items-start gap-2 rounded-2xl border border-white/10 p-4 text-left",
+              "group flex flex-col items-start gap-1.5 rounded-xl border border-white/10 p-3 text-left md:gap-2 md:rounded-2xl md:p-4",
               "glass-hover",
               "transition-all duration-200",
               "hover:shadow-lg hover:shadow-primary/10",
               "active:scale-[0.98]"
             )}
           >
-            <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br", accent)}>
+            <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br md:h-9 md:w-9 md:rounded-xl", accent)}>
               <Icon className={cn("h-4 w-4", iconColor)} />
             </div>
-            <span className="text-sm font-semibold">{label}</span>
+            <span className="text-[13px] font-semibold md:text-sm">{label}</span>
             <span className="text-xs text-muted-foreground/80 leading-tight">{desc}</span>
           </button>
         ))}
       </div>
 
-      <div className="mt-10 flex items-center gap-2 text-xs text-muted-foreground/60">
+      <div className="mt-7 flex items-center gap-2 text-[11px] text-muted-foreground/60 md:mt-10 md:text-xs">
         <Sparkles className="h-3 w-3" />
-        <span>Powered by OpenAI</span>
+        <span>Com tecnologia OpenAI</span>
       </div>
     </div>
   );
@@ -236,7 +238,7 @@ export function ChatContainer() {
   return (
     <div className="relative flex-1 overflow-hidden">
       <ScrollArea ref={scrollAreaRef} className="h-full">
-        <div ref={contentRef} className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6">
+        <div ref={contentRef} className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-3 py-4 md:gap-6 md:px-4 md:py-6">
           {messages.length === 0 ? (
             <WelcomeScreen onSuggestionClick={handleSuggestion} />
           ) : (
@@ -259,8 +261,8 @@ export function ChatContainer() {
           size="icon"
           variant="secondary"
           className={cn(
-            "absolute bottom-4 left-1/2 -translate-x-1/2 z-10",
-            "h-10 w-10 rounded-full shadow-lg",
+            "absolute bottom-3 left-1/2 -translate-x-1/2 z-10 md:bottom-4",
+            "h-9 w-9 rounded-full shadow-lg md:h-10 md:w-10",
             "bg-background/90 backdrop-blur-sm border",
             "transition-all duration-200 hover:scale-110"
           )}

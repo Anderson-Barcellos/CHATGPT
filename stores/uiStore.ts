@@ -1,7 +1,5 @@
 import { create } from "zustand";
-import { AppMode } from "@/types";
-
-export type ArtifactContentType = "markdown" | "html" | "mixed";
+import { AppMode, ArtifactContentType } from "@/types";
 
 interface ArtifactState {
   artifactOpen: boolean;

@@ -10,15 +10,15 @@ import { useCustomInstructions } from "@/hooks/useCustomInstructions";
 export function PromptPreview() {
   const { memories } = useMemories();
   const { parameters } = useSettingsStore();
-  const { contextAboutUser } = useCustomInstructions();
+  const { contextAboutUser, responsePreferences } = useCustomInstructions();
 
   const preview = useMemo(() => {
     return buildSystemPrompt(
       parameters.systemPrompt,
-      { id: "default", contextAboutUser, responsePreferences: "" },
+      { id: "default", contextAboutUser, responsePreferences },
       memories
     ).systemMessage;
-  }, [contextAboutUser, memories, parameters.systemPrompt]);
+  }, [contextAboutUser, memories, parameters.systemPrompt, responsePreferences]);
 
   const tokenCount = useMemo(() => estimateTokens(preview), [preview]);
 
