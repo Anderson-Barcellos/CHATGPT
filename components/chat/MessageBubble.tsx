@@ -101,7 +101,7 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
       <div className={cn("max-w-[93%] min-w-0 sm:max-w-[80%]", isUser && "order-first")}>
         <Card
           className={cn(
-            "relative min-w-0 gap-0 overflow-hidden break-words px-2.5 py-2 text-left text-[11px] leading-[1.5] md:px-4 md:py-3 md:text-[13px] md:leading-relaxed",
+            "relative min-w-0 gap-0 overflow-hidden break-words px-2.5 py-2 text-left text-[12px] leading-relaxed md:px-4 md:py-3 md:text-[13px]",
             isUser
               ? "rounded-xl rounded-br-md bg-gradient-to-br from-cyan-500 to-indigo-600 text-white shadow-lg shadow-cyan-500/20 md:rounded-2xl"
               : "glass rounded-xl rounded-bl-md text-foreground/90 md:rounded-2xl"
