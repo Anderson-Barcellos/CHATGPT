@@ -166,7 +166,7 @@ export function ChatShell() {
 
             <div className="flex h-full flex-1 flex-col overflow-hidden">
               <header className="border-b border-white/5 bg-background/40 backdrop-blur-xl pt-[env(safe-area-inset-top)] md:pt-0">
-                <div className="flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5">
+                <div className="flex items-center justify-between px-2.5 py-1.5 md:px-4 md:py-2.5">
                   <div className="flex items-center gap-1.5 md:gap-2">
                     {isMobile && (
                       <Button
@@ -184,7 +184,7 @@ export function ChatShell() {
                       <GPTLogo size={isMobile ? 22 : 26} />
                       <div className="leading-tight">
                         <div className="flex items-center gap-1">
-                          <h1 className="text-[13px] font-semibold tracking-wide md:text-sm">
+                          <h1 className="text-[12px] font-semibold tracking-wide md:text-sm">
                             <span className="text-gradient-gpt">GPT</span>
                           </h1>
                           <span
@@ -192,7 +192,7 @@ export function ChatShell() {
                             title={currentModel?.name || parameters.model}
                           />
                         </div>
-                        <p className="max-w-[150px] truncate text-[9px] uppercase tracking-[0.16em] text-muted-foreground/70 md:max-w-[320px] md:text-[10px] md:tracking-[0.18em]">
+                        <p className="max-w-[130px] truncate text-[8px] uppercase tracking-[0.16em] text-muted-foreground/70 md:max-w-[320px] md:text-[10px] md:tracking-[0.18em]">
                           {activeConversation?.title || "Workspace"}
                         </p>
                       </div>

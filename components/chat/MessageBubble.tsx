@@ -93,15 +93,15 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
       )}
     >
       {!isUser && (
-        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 md:h-8 md:w-8">
-          <OpenAIIcon className="h-3.5 w-3.5 text-primary md:h-4 md:w-4" />
+        <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 md:h-8 md:w-8">
+          <OpenAIIcon className="h-3 w-3 text-primary md:h-4 md:w-4" />
         </div>
       )}
 
       <div className={cn("max-w-[93%] min-w-0 sm:max-w-[80%]", isUser && "order-first")}>
         <Card
           className={cn(
-            "relative min-w-0 gap-0 overflow-hidden break-words px-3 py-2.5 text-left text-[12px] leading-[1.55] md:px-4 md:py-3 md:text-[13px] md:leading-relaxed",
+            "relative min-w-0 gap-0 overflow-hidden break-words px-2.5 py-2 text-left text-[11px] leading-[1.5] md:px-4 md:py-3 md:text-[13px] md:leading-relaxed",
             isUser
               ? "rounded-xl rounded-br-md bg-gradient-to-br from-cyan-500 to-indigo-600 text-white shadow-lg shadow-cyan-500/20 md:rounded-2xl"
               : "glass rounded-xl rounded-bl-md text-foreground/90 md:rounded-2xl"
@@ -304,8 +304,8 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
       </div>
 
       {isUser && (
-        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 md:h-8 md:w-8">
-          <User className="h-3.5 w-3.5 text-primary md:h-4 md:w-4" />
+        <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 md:h-8 md:w-8">
+          <User className="h-3 w-3 text-primary md:h-4 md:w-4" />
         </div>
       )}
 

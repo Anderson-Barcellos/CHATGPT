@@ -403,8 +403,8 @@ export function InputArea() {
             </div>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-1.5 px-2.5 pb-2.5 md:gap-2 md:px-3 md:pb-3">
-            <div className="flex flex-wrap items-center gap-1">
+          <div className="flex flex-wrap items-center justify-between gap-1 px-2 pb-2 md:gap-2 md:px-3 md:pb-3">
+            <div className="flex flex-wrap items-center gap-0.5 md:gap-1">
               <Button
                 type="button"
                 variant="ghost"
@@ -413,7 +413,7 @@ export function InputArea() {
                 onClick={handleFileSelect}
                 aria-label="Adicionar arquivos"
                 className={cn(
-                  "h-7 w-7 rounded-full text-muted-foreground hover:text-foreground",
+                  "h-6 w-6 rounded-full text-muted-foreground hover:text-foreground md:h-7 md:w-7",
                   attachments.length > 0
                     ? "bg-primary/15 text-primary ring-1 ring-primary/30 hover:bg-primary/20"
                     : "bg-white/5"
@@ -433,10 +433,9 @@ export function InputArea() {
                     size="sm"
                     disabled={disabled}
                     aria-label="Selecionar modelo"
-                    className="h-7 gap-1 rounded-full px-2.5 text-[10px] font-medium text-muted-foreground hover:text-foreground bg-white/5 md:px-3 md:text-[11px]"
-                    data-compact-touch
+                    className="h-6 gap-0.5 rounded-full px-2 text-[9px] font-medium text-muted-foreground hover:text-foreground bg-white/5 md:h-7 md:gap-1 md:px-3 md:text-[11px]"
                   >
-                    <span className="max-w-[88px] truncate md:max-w-[100px]">{currentModel?.name || parameters.model}</span>
+                    <span className="max-w-[72px] truncate md:max-w-[100px]">{currentModel?.name || parameters.model}</span>
                     <ChevronDown className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -476,10 +475,9 @@ export function InputArea() {
                       size="sm"
                       disabled={disabled}
                       aria-label="Ajustar nível de raciocínio"
-                      className="h-7 gap-1 rounded-full px-2.5 text-[10px] font-medium text-muted-foreground hover:text-foreground bg-white/5 md:px-3 md:text-[11px]"
-                      data-compact-touch
+                      className="h-6 gap-0.5 rounded-full px-2 text-[9px] font-medium text-muted-foreground hover:text-foreground bg-white/5 md:h-7 md:gap-1 md:px-3 md:text-[11px]"
                     >
-                      <Brain className="h-3 w-3" />
+                      <Brain className="h-2.5 w-2.5 md:h-3 md:w-3" />
                       <span>{currentReasoning?.label || "Medio"}</span>
                       <ChevronDown className="h-3 w-3" />
                     </Button>
@@ -512,14 +510,13 @@ export function InputArea() {
                 onClick={() => setDocumentMode((current) => !current)}
                 aria-label="Alternar modo documento"
                 className={cn(
-                  "h-7 gap-1 rounded-full px-2.5 text-[10px] font-medium transition-colors md:px-3 md:text-[11px]",
+                  "h-6 gap-0.5 rounded-full px-2 text-[9px] font-medium transition-colors md:h-7 md:gap-1 md:px-3 md:text-[11px]",
                   documentMode
                     ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/30 hover:bg-cyan-500/20"
                     : "bg-white/5 text-muted-foreground hover:text-foreground"
                 )}
-                data-compact-touch
               >
-                <FileText className="h-3 w-3" />
+                <FileText className="h-2.5 w-2.5 md:h-3 md:w-3" />
                 <span className="hidden sm:inline">Documento</span>
               </Button>
 
@@ -531,7 +528,7 @@ export function InputArea() {
                 onClick={handleMicrophoneClick}
                 aria-label={isRecording ? "Encerrar gravação" : "Gravar áudio"}
                 className={cn(
-                  "h-7 gap-1 rounded-full px-2.5 text-[10px] font-medium transition-colors md:px-3 md:text-[11px]",
+                  "h-6 gap-0.5 rounded-full px-2 text-[9px] font-medium transition-colors md:h-7 md:gap-1 md:px-3 md:text-[11px]",
                   isRecording
                     ? "bg-rose-500/15 text-rose-100 ring-1 ring-rose-400/30 hover:bg-rose-500/20"
                     : isTranscribing
@@ -540,12 +537,11 @@ export function InputArea() {
                     ? "bg-amber-500/12 text-amber-100 ring-1 ring-amber-400/25 hover:bg-amber-500/18"
                     : "bg-white/5 text-muted-foreground hover:text-foreground"
                 )}
-                data-compact-touch
               >
                 {isTranscribing ? (
-                  <LoaderCircle className="h-3 w-3 animate-spin" />
+                  <LoaderCircle className="h-2.5 w-2.5 animate-spin md:h-3 md:w-3" />
                 ) : (
-                  <Mic className="h-3 w-3" />
+                  <Mic className="h-2.5 w-2.5 md:h-3 md:w-3" />
                 )}
                 <span className="hidden sm:inline">{speechStatusLabel}</span>
               </Button>
@@ -558,7 +554,7 @@ export function InputArea() {
                   variant="destructive"
                   size="sm"
                   aria-label="Parar geração"
-                  className="h-8 rounded-lg px-2.5 text-[11px] md:h-9 md:rounded-xl md:px-3 md:text-xs"
+                  className="h-7 rounded-lg px-2 text-[10px] md:h-9 md:rounded-xl md:px-3 md:text-xs"
                 >
                   <Square className="mr-1.5 h-3.5 w-3.5" />
                   Parar
@@ -570,7 +566,7 @@ export function InputArea() {
                   disabled={!hasContent || isRecording || isProcessing}
                   aria-label="Enviar mensagem"
                   className={cn(
-                    "h-8 rounded-lg px-3 text-[11px] md:h-9 md:rounded-xl md:px-4 md:text-xs",
+                    "h-7 rounded-lg px-2.5 text-[10px] md:h-9 md:rounded-xl md:px-4 md:text-xs",
                     "bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-600 hover:via-blue-700 hover:to-indigo-700 text-white",
                     "disabled:opacity-30"
                   )}
