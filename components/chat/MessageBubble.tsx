@@ -294,9 +294,15 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          {!isUser && (message.content || message.artifact?.content) && (
+          {!isUser &&
+            (message.content ||
+              (message.artifact?.kind === "document" ? message.artifact.content : "")) && (
             <MessageActions
-              content={message.artifact?.content ?? message.content}
+              content={
+                message.artifact?.kind === "document"
+                  ? message.artifact.content
+                  : message.content
+              }
               className="opacity-70 transition-opacity md:opacity-0 md:group-hover:opacity-100"
             />
           )}

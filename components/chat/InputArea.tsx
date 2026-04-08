@@ -14,6 +14,7 @@ import {
   Brain,
   ChevronDown,
   FileText,
+  ClipboardList,
   Mic,
   LoaderCircle,
   Paperclip,
@@ -22,7 +23,12 @@ import {
   Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ReasoningEffort } from "@/types";
+import type { ReasoningEffort, ResponseMode } from "@/types";
+import {
+  QUIZ_FORCED_MODEL,
+  QUIZ_FORCED_REASONING_EFFORT,
+  QUIZ_MIN_QUESTION_COUNT,
+} from "@/lib/artifacts/quizArtifacts";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,7 +61,7 @@ function formatFileSize(bytes: number): string {
 
 export function InputArea() {
   const [input, setInput] = useState("");
-  const [documentMode, setDocumentMode] = useState(false);
+  const [responseMode, setResponseMode] = useState<ResponseMode>("default");
   const [isDragging, setIsDragging] = useState(false);
   const dragCounter = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -116,17 +122,20 @@ export function InputArea() {
 
   const handleSubmit = useCallback(async () => {
     if (!hasContent) return;
-    const sent = await sendMessage(input, { documentMode, attachments: attachments.length > 0 ? attachments : undefined });
+    const sent = await sendMessage(input, {
+      responseMode,
+      attachments: attachments.length > 0 ? attachments : undefined,
+    });
     if (sent) {
       setInput("");
-      setDocumentMode(false);
+      setResponseMode("default");
       clearFiles();
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
       }
       textareaRef.current?.focus();
     }
-  }, [attachments, clearFiles, documentMode, hasContent, input, sendMessage]);
+  }, [attachments, clearFiles, hasContent, input, responseMode, sendMessage]);
 
   const handleMicrophoneClick = useCallback(async () => {
     const transcript = await toggleRecording();
@@ -222,6 +231,7 @@ export function InputArea() {
     const el = textareaRef.current;
     if (!el) return;
     const handleFocus = () => {
+      if (window.innerWidth < 768) return;
       setTimeout(() => {
         el.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }, 350);
@@ -231,8 +241,12 @@ export function InputArea() {
   }, []);
 
   return (
-    <div className="border-t border-white/5 bg-background/40 backdrop-blur-2xl pb-[env(safe-area-inset-bottom)] md:pb-0">
-      <div className="mx-auto w-full max-w-5xl px-3 py-3 md:px-4 md:py-4">
+    <div className="relative border-t border-white/5 bg-background/40 backdrop-blur-2xl">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[max(env(safe-area-inset-bottom),0.35rem)] bg-background/80 md:hidden"
+      />
+      <div className="relative mx-auto w-full max-w-5xl px-3 pt-2.5 pb-2 [padding-bottom:calc(env(safe-area-inset-bottom)+0.5rem)] md:px-4 md:py-4">
         {error && (
           <Alert variant="destructive" className="mb-1.5 md:mb-2">
             <AlertDescription className="text-xs">{error}</AlertDescription>
@@ -250,10 +264,17 @@ export function InputArea() {
             </AlertDescription>
           </Alert>
         )}
-        {documentMode && (
+        {responseMode === "document" && (
           <Alert className="mb-1.5 border-cyan-500/20 bg-cyan-500/8 text-cyan-50 md:mb-2">
             <AlertDescription className="text-xs text-foreground/80">
               O modelo vai responder em formato de documento pronto para leitura e exportação.
+            </AlertDescription>
+          </Alert>
+        )}
+        {responseMode === "quiz" && (
+          <Alert className="mb-1.5 border-indigo-500/20 bg-indigo-500/8 text-indigo-50 md:mb-2">
+            <AlertDescription className="text-xs text-foreground/80">
+              O quiz usa {QUIZ_FORCED_MODEL} com reasoning {QUIZ_FORCED_REASONING_EFFORT} e gera no minimo {QUIZ_MIN_QUESTION_COUNT} questoes para tu responder no painel.
             </AlertDescription>
           </Alert>
         )}
@@ -297,8 +318,10 @@ export function InputArea() {
             placeholder={
               isRecording
                 ? "Gravando teu audio..."
-                : documentMode
+                : responseMode === "document"
                 ? "Descreva o documento que tu quer elaborar..."
+                : responseMode === "quiz"
+                ? `Descreva o assunto do quiz que tu quer gerar. O modo quiz entrega no minimo ${QUIZ_MIN_QUESTION_COUNT} questoes...`
                 : attachments.length > 0
                 ? "Adicione uma mensagem sobre os arquivos..."
                 : "Mensagem para o GPT..."
@@ -507,17 +530,43 @@ export function InputArea() {
                 variant="ghost"
                 size="sm"
                 disabled={disabled}
-                onClick={() => setDocumentMode((current) => !current)}
+                onClick={() =>
+                  setResponseMode((current) =>
+                    current === "document" ? "default" : "document"
+                  )
+                }
                 aria-label="Alternar modo documento"
                 className={cn(
                   "h-6 gap-0.5 rounded-full px-2 text-[9px] font-medium transition-colors md:h-7 md:gap-1 md:px-3 md:text-[11px]",
-                  documentMode
+                  responseMode === "document"
                     ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/30 hover:bg-cyan-500/20"
                     : "bg-white/5 text-muted-foreground hover:text-foreground"
                 )}
               >
                 <FileText className="h-2.5 w-2.5 md:h-3 md:w-3" />
                 <span className="hidden sm:inline">Documento</span>
+              </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={disabled}
+                onClick={() =>
+                  setResponseMode((current) =>
+                    current === "quiz" ? "default" : "quiz"
+                  )
+                }
+                aria-label="Alternar modo quiz"
+                className={cn(
+                  "h-6 gap-0.5 rounded-full px-2 text-[9px] font-medium transition-colors md:h-7 md:gap-1 md:px-3 md:text-[11px]",
+                  responseMode === "quiz"
+                    ? "bg-indigo-500/15 text-indigo-100 ring-1 ring-indigo-400/30 hover:bg-indigo-500/20"
+                    : "bg-white/5 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <ClipboardList className="h-2.5 w-2.5 md:h-3 md:w-3" />
+                <span className="hidden sm:inline">Quiz</span>
               </Button>
 
               <Button

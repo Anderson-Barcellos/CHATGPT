@@ -1,5 +1,6 @@
 export type MessageRole = "user" | "assistant";
 export type AppMode = "chat" | "image";
+export type ResponseMode = "default" | "document" | "quiz";
 
 export interface UrlCitation {
   title: string;
@@ -8,8 +9,8 @@ export interface UrlCitation {
 
 export type ReasoningStatus = "thinking" | "complete";
 export type ArtifactContentType = "markdown" | "html" | "mixed";
-export type MessageArtifactKind = "document";
-export type MessageArtifactDisplayMode = "default" | "document";
+export type MessageArtifactKind = "document" | "quiz";
+export type MessageArtifactDisplayMode = "default" | "document" | "quiz";
 
 export type FileAttachmentType = "image" | "pdf" | "text";
 
@@ -25,25 +26,66 @@ export interface FileAttachment {
 }
 
 export interface SendMessageOptions {
-  documentMode?: boolean;
+  responseMode?: ResponseMode;
   attachments?: FileAttachment[];
 }
 
-export interface MessageArtifact {
+export interface QuizOption {
+  id: string;
+  label: string;
+}
+
+export interface QuizQuestion {
+  id: string;
+  prompt: string;
+  options: QuizOption[];
+  correctOptionId: string;
+  explanation: string;
+}
+
+export interface QuizSession {
+  answersByQuestionId: Record<string, string>;
+  status: "draft" | "submitted";
+  score?: number;
+  submittedAt?: string;
+}
+
+export interface QuizArtifactPayload {
+  id: string;
+  title: string;
+  topic: string;
+  instructions: string;
+  questions: QuizQuestion[];
+  session: QuizSession;
+}
+
+interface BaseMessageArtifact {
   id: string;
   kind: MessageArtifactKind;
   title: string;
   summary: string;
-  content: string;
-  type: ArtifactContentType;
   displayMode?: MessageArtifactDisplayMode;
 }
+
+export interface DocumentMessageArtifact extends BaseMessageArtifact {
+  kind: "document";
+  content: string;
+  type: ArtifactContentType;
+}
+
+export interface QuizMessageArtifact extends BaseMessageArtifact {
+  kind: "quiz";
+  quiz: QuizArtifactPayload;
+}
+
+export type MessageArtifact = DocumentMessageArtifact | QuizMessageArtifact;
 
 export interface Message {
   id: string;
   role: MessageRole;
   content: string;
   timestamp: Date;
+  responseMode?: ResponseMode;
   preferredDisplayMode?: MessageArtifactDisplayMode;
   reasoningSummary?: string;
   reasoningText?: string;

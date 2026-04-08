@@ -31,6 +31,10 @@ import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import { cn } from "@/lib/utils";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { MODELS } from "@/lib/models/modelConfig";
+import {
+  APP_DESKTOP_SIDEBAR_WIDTH_CLASS,
+  APP_PANEL_SHEET_CLASS,
+} from "@/lib/layout/panels";
 
 const MODE_CONFIG = {
   chat: { gradient: "from-cyan-500 to-blue-600" },
@@ -86,20 +90,6 @@ export function ChatShell() {
     onSwipeLeft: useCallback(() => setSidebarOpen(false), []),
   });
 
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const update = () => {
-      const offset = Math.max(0, window.innerHeight - vv.height);
-      document.documentElement.style.setProperty("--kb-offset", `${offset}px`);
-    };
-    vv.addEventListener("resize", update);
-    return () => {
-      vv.removeEventListener("resize", update);
-      document.documentElement.style.setProperty("--kb-offset", "0px");
-    };
-  }, []);
-
   const currentMode = MODE_CONFIG[activeMode as keyof typeof MODE_CONFIG];
   const currentModel = MODELS[parameters.model];
 
@@ -113,13 +103,16 @@ export function ChatShell() {
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
       <div
         className={cn(
-          "h-dvh overflow-hidden bg-deep-space text-foreground/90",
+          "relative h-dvh overflow-hidden text-foreground/90",
           (!isHydrated || showSplash) && "invisible"
         )}
       >
         <div
-          className="flex w-full p-0 md:p-4 md:pb-[max(1rem,env(safe-area-inset-bottom))] transition-[height] duration-150"
-          style={{ height: "calc(100dvh - var(--kb-offset, 0px))" }}
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 bg-deep-space"
+        />
+        <div
+          className="relative z-10 flex h-full w-full p-0 md:p-4 md:pb-[max(1rem,env(safe-area-inset-bottom))]"
         >
           <div className="relative flex h-full w-full overflow-hidden rounded-none md:rounded-[28px] border-0 md:border md:border-white/10 bg-background/60 md:shadow-[0_20px_80px_rgba(2,6,23,0.25)] backdrop-blur-2xl">
             {!isMobile && (
@@ -127,7 +120,7 @@ export function ChatShell() {
                 className={cn(
                   "hidden md:flex transition-all duration-300 border-r border-white/5",
                   "glass",
-                  sidebarCollapsed ? "w-16" : "w-72"
+                  sidebarCollapsed ? "w-16" : APP_DESKTOP_SIDEBAR_WIDTH_CLASS
                 )}
               >
                 <div className="relative h-full w-full">
@@ -154,7 +147,11 @@ export function ChatShell() {
             )}
 
             <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-              <SheetContent side="left" className="w-[82vw] max-w-sm p-0 glass">
+              <SheetContent
+                side="left"
+                showCloseButton={false}
+                className={APP_PANEL_SHEET_CLASS}
+              >
                 <SidebarModern
                   onOpenSettings={() => {
                     setSidebarOpen(false);

@@ -1,36 +1,155 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Celer Chat
 
-## Getting Started
+Multimodal chat application built with `Next.js 16`, `React 19`, `TypeScript`, `Zustand`, `TanStack Query`, and the OpenAI `Responses API`.
 
-First, run the development server:
+The project focuses on a ChatGPT-like experience with conversation history, reasoning display, model selection, prompt tuning, persistent memory, artifact rendering, and polished mobile/PWA behavior.
+
+## Highlights
+
+- Real-time chat experience with streaming responses
+- Dedicated reasoning panel with explicit state transitions
+- Conversation history with editing and deletion flows
+- Model picker with support for `gpt-5.4` and `gpt-5.3-chat-latest`
+- Persistent memory and custom instructions stored server-side
+- Artifact rendering and export flows, including PDF generation
+- Mobile-first shell refinements for Safari and installed PWA usage
+- Local persistence for conversations, memories, and persona bootstrap data
+
+## Tech Stack
+
+- `Next.js 16` with App Router
+- `React 19`
+- `TypeScript`
+- `Tailwind CSS 4`
+- `Zustand`
+- `@tanstack/react-query`
+- `Radix UI`
+- `OpenAI Node SDK`
+- `Vitest`
+
+## Project Structure
+
+```text
+app/
+  api/
+    auth/                Authentication endpoints
+    chat/                Server-side OpenAI proxy
+    conversations/       Conversation CRUD
+    memories/            Memory CRUD
+    persona/             Custom instructions endpoint
+    transcribe/          Audio transcription endpoint
+components/
+  artifacts/             Artifact viewers and export entry points
+  chat/                  Main chat experience
+  layout/                Application shell
+  settings/              Persona and memory settings
+  sidebar/               Conversation navigation
+hooks/
+  useChat.ts             Streaming chat orchestration
+lib/
+  artifacts/             Artifact generation/parsing helpers
+  export/                PDF and export utilities
+  models/                Model catalog and selector metadata
+data/
+  conversations.json     Local conversation persistence
+  memories.json          Local memory persistence
+  persona.json           Persona bootstrap persistence
+```
+
+## Current Product Areas
+
+### Chat
+
+- Streaming responses with reasoning state handling
+- Markdown rendering with code, math, and rich formatting support
+- Message actions for editing, exporting, and artifact handling
+- Improved mobile composer behavior and safe-area handling
+
+### Sidebar and Navigation
+
+- Conversation list with clearer active state
+- Safer delete flow for the currently open conversation
+- Shared panel sizing between conversation sidebar and settings drawer
+
+### Settings
+
+- Persona/custom instructions persisted through `/api/persona`
+- Memory management persisted through `/api/memories`
+- Inline editing and autosave behavior for settings workflows
+
+### Artifacts and Export
+
+- Right-side artifact panel for document-like outputs
+- PDF export tuned for cleaner layout and OpenAI-branded header
+- Support for document and quiz-oriented artifact rendering
+
+## API Endpoints
+
+- `GET/POST /api/chat`
+- `GET/POST /api/conversations`
+- `GET/PATCH/DELETE /api/conversations/[id]`
+- `GET/POST /api/memories`
+- `PATCH/DELETE /api/memories/[id]`
+- `GET/PUT /api/persona`
+- `POST /api/transcribe`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/check`
+- `GET /api/health`
+
+## Local Development
+
+### Requirements
+
+- `Node.js 20+`
+- `npm`
+
+### Install
+
+```bash
+npm install
+```
+
+### Run in development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The development server uses port `3040` by default.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run dev
+npm run build
+npm run start
+npm run lint
+npm test -- --run
+npx tsc --noEmit
+```
 
-## Learn More
+## Validation Checklist
 
-To learn more about Next.js, take a look at the following resources:
+Before shipping a change, the repo is typically validated with:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm test -- --run
+npm run build
+npx tsc --noEmit
+npm run lint
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Run only the commands that are applicable to the current change if you are doing a narrow, documentation-only update.
 
-## Deploy on Vercel
+## Infrastructure Notes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- The canonical service configuration is documented in `systemd/chatgpt.service`
+- Additional infrastructure notes live in `docs/INFRASTRUCTURE.md`
+- If you are also managing Apache or reverse proxy behavior, check the repo's infrastructure docs before changing ports or service bindings
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Notes
+
+- Local JSON files in `data/` are used for simple persistence during development and server-side flows
+- The repository also contains project-specific operational guidance in `AGENTS.md`
+- If you need to adjust the OpenAI model catalog, start with `lib/models/modelConfig.ts`

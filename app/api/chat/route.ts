@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { NextRequest, NextResponse } from "next/server";
-import type { ResponseVerbosity } from "@/types";
+import type { ResponseMode, ResponseVerbosity } from "@/types";
 import {
   MODELS,
   isReasoningModel,
@@ -9,6 +9,11 @@ import {
   modelSupportsVerbosity,
 } from "@/lib/models/modelConfig";
 import { isAuthenticatedRequest, isAuthEnabled } from "@/lib/server/auth";
+import {
+  QUIZ_FORCED_MODEL,
+  QUIZ_FORCED_REASONING_EFFORT,
+  quizResponseSchema,
+} from "@/lib/artifacts/quizArtifacts";
 
 type ChatRequestBody = {
   input?: OpenAI.Responses.ResponseInput;
@@ -21,6 +26,7 @@ type ChatRequestBody = {
   stream?: boolean;
   reasoning?: OpenAI.Responses.ResponseCreateParams["reasoning"];
   codeInterpreterEnabled?: boolean;
+  responseMode?: ResponseMode;
 };
 
 const ALLOWED_MODELS = new Set(
@@ -34,7 +40,15 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-function buildTools(model: string, codeInterpreterEnabled: boolean) {
+function buildTools(
+  model: string,
+  codeInterpreterEnabled: boolean,
+  responseMode: ResponseMode
+) {
+  if (responseMode === "quiz") {
+    return [];
+  }
+
   const tools: OpenAI.Responses.Tool[] = [
     { type: "image_generation" },
     {
@@ -65,9 +79,11 @@ function buildRequestParams(body: ChatRequestBody) {
     verbosity,
     reasoning,
     codeInterpreterEnabled = false,
+    responseMode = "default",
   } = body;
 
-  const modelMaxOutput = MODELS[model]?.maxOutput;
+  const effectiveModel = responseMode === "quiz" ? QUIZ_FORCED_MODEL : model;
+  const modelMaxOutput = MODELS[effectiveModel]?.maxOutput;
   const effectiveMaxTokens = maxOutputTokens ?? modelMaxOutput ?? 4096;
   const clampedMaxTokens = modelMaxOutput
     ? Math.min(Math.max(Math.round(effectiveMaxTokens), 1), modelMaxOutput)
@@ -77,14 +93,14 @@ function buildRequestParams(body: ChatRequestBody) {
     OpenAI.Responses.ResponseCreateParamsStreaming,
     "stream"
   > = {
-    model,
+    model: effectiveModel,
     instructions,
     input: input!,
     max_output_tokens: clampedMaxTokens,
-    tools: buildTools(model, codeInterpreterEnabled),
+    tools: buildTools(effectiveModel, codeInterpreterEnabled, responseMode),
   };
 
-  if (modelSupportsTemperature(model)) {
+  if (modelSupportsTemperature(effectiveModel)) {
     if (temperature !== undefined) {
       requestParams.temperature = temperature;
     }
@@ -93,11 +109,24 @@ function buildRequestParams(body: ChatRequestBody) {
     }
   }
 
-  if (isReasoningModel(model) && reasoning) {
-    requestParams.reasoning = reasoning;
+  if (isReasoningModel(effectiveModel) && reasoning) {
+    requestParams.reasoning =
+      responseMode === "quiz"
+        ? {
+            ...reasoning,
+            effort: QUIZ_FORCED_REASONING_EFFORT,
+          }
+        : reasoning;
   }
 
-  if (modelSupportsVerbosity(model) && verbosity) {
+  if (responseMode === "quiz") {
+    requestParams.text = {
+      ...requestParams.text,
+      format: quizResponseSchema,
+    };
+  }
+
+  if (responseMode !== "quiz" && modelSupportsVerbosity(effectiveModel) && verbosity) {
     requestParams.text = {
       ...requestParams.text,
       verbosity,
@@ -121,19 +150,21 @@ export async function POST(request: NextRequest) {
       input,
       model = "gpt-5.3-chat-latest",
       stream = true,
+      responseMode = "default",
     } = body;
+    const effectiveModel = responseMode === "quiz" ? QUIZ_FORCED_MODEL : model;
 
     if (!input) {
       return Response.json({ error: "Input é obrigatório" }, { status: 400 });
     }
 
-    if (!ALLOWED_MODELS.has(model)) {
+    if (!ALLOWED_MODELS.has(effectiveModel)) {
       return Response.json({ error: "Modelo não permitido" }, { status: 400 });
     }
 
     const requestParams = buildRequestParams(body);
 
-    if (stream) {
+    if (stream && responseMode !== "quiz") {
       const streamResponse = await openai.responses.create({
         ...requestParams,
         stream: true,

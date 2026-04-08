@@ -75,7 +75,10 @@ function relativeDate(date: Date): string {
   }
 }
 
-export function SidebarModern({ onOpenSettings, onCollapse }: SidebarModernProps) {
+export function SidebarModern({
+  onOpenSettings,
+  onCollapse,
+}: SidebarModernProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebouncedSearch(searchQuery, 200);
   const {

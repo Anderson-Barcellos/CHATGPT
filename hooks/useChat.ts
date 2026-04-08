@@ -15,6 +15,7 @@ import {
 import {
   Message,
   ReasoningSummary,
+  ResponseMode,
   SendMessageOptions,
   UrlCitation,
 } from "@/types";
@@ -31,6 +32,12 @@ import {
 import { conversationKeys } from "@/hooks/queries/useConversationQuery";
 import { toast } from "sonner";
 import { createMessageArtifact } from "@/lib/artifacts/messageArtifacts";
+import {
+  createQuizArtifact,
+  QUIZ_FORCED_MODEL,
+  QUIZ_FORCED_REASONING_EFFORT,
+  QUIZ_MIN_QUESTION_COUNT,
+} from "@/lib/artifacts/quizArtifacts";
 
 function buildReasoningConfig(
   model: string,
@@ -109,6 +116,27 @@ function appendDocumentModeInstructions(
   }`;
 }
 
+function appendQuizModeInstructions(systemMessage: string): string {
+  const quizInstructions = `## Quiz Mode
+- The user wants a multiple-choice quiz rendered in an interactive canvas.
+- Always use Brazilian Portuguese unless the user explicitly asks for another language.
+- Generate at least ${QUIZ_MIN_QUESTION_COUNT} multiple-choice questions unless the user explicitly asks for more.
+- If the user asks for fewer than ${QUIZ_MIN_QUESTION_COUNT} questions, still return ${QUIZ_MIN_QUESTION_COUNT}.
+- Default to 4 options per question when the user does not specify quantity.
+- Each question must have exactly one correct answer.
+- Explanations should be brief, accurate, and useful after grading.
+- Return only the structured JSON requested by the response schema.
+- Do not include markdown, prose outside the schema, or conversational wrappers.`;
+
+  return `${systemMessage}\n\n---\n\n${quizInstructions}`;
+}
+
+function getPreferredDisplayMode(responseMode: ResponseMode) {
+  if (responseMode === "document") return "document" as const;
+  if (responseMode === "quiz") return "quiz" as const;
+  return undefined;
+}
+
 export function useChat() {
   const queryClient = useQueryClient();
   const {
@@ -165,6 +193,7 @@ export function useChat() {
 
   const sendMessage = useCallback(
     async (content: string, options: SendMessageOptions = {}) => {
+      const responseMode = options.responseMode ?? "default";
       const hasAttachments = (options.attachments?.length ?? 0) > 0;
       if (!content.trim() && !hasAttachments) return false;
       if (isLoading) return false;
@@ -184,27 +213,36 @@ export function useChat() {
         role: "user",
         content: content.trim(),
         timestamp: new Date(),
+        responseMode,
         attachments: options.attachments,
       };
 
       addMessage(userMessage);
 
       const assistantMessageId = crypto.randomUUID();
-      const usesReasoning = isReasoningModel(parameters.model);
+      const usesReasoning = isReasoningModel(parameters.model) && responseMode !== "quiz";
+      const preferredDisplayMode = getPreferredDisplayMode(responseMode);
       addMessage({
         id: assistantMessageId,
         role: "assistant",
         content: "",
         timestamp: new Date(),
-        ...(options.documentMode && { preferredDisplayMode: "document" as const }),
+        responseMode,
+        ...(preferredDisplayMode && { preferredDisplayMode }),
         ...(usesReasoning && { reasoningStatus: "thinking" as const }),
       });
 
       try {
         const input = buildInputFromMessages(useChatStore.getState().messages);
+        const requestModel =
+          responseMode === "quiz" ? QUIZ_FORCED_MODEL : parameters.model;
+        const requestReasoningEffort =
+          responseMode === "quiz"
+            ? QUIZ_FORCED_REASONING_EFFORT
+            : parameters.reasoningEffort;
         const reasoning = buildReasoningConfig(
-          parameters.model,
-          parameters.reasoningEffort,
+          requestModel,
+          requestReasoningEffort,
           parameters.reasoningSummary
         );
         const { systemMessage: baseSystemMessage } = buildSystemPrompt(
@@ -212,30 +250,34 @@ export function useChat() {
           { id: "default", contextAboutUser, responsePreferences },
           memories
         );
-        const systemMessage = options.documentMode
-          ? appendDocumentModeInstructions(baseSystemMessage, content)
-          : baseSystemMessage;
+        const systemMessage =
+          responseMode === "document"
+            ? appendDocumentModeInstructions(baseSystemMessage, content)
+            : responseMode === "quiz"
+            ? appendQuizModeInstructions(baseSystemMessage)
+            : baseSystemMessage;
 
         const response = await fetch(apiUrl("/api/chat"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             input,
-            model: parameters.model,
+            model: requestModel,
             instructions: systemMessage,
             maxOutputTokens: parameters.maxOutputTokens,
-            ...(modelSupportsTemperature(parameters.model) && {
+            ...(modelSupportsTemperature(requestModel) && {
               temperature: parameters.temperature,
               topP: parameters.topP,
             }),
-            ...(modelSupportsVerbosity(parameters.model) && {
+            ...(modelSupportsVerbosity(requestModel) && {
               verbosity: parameters.verbosity,
             }),
-            ...(modelSupportsCodeInterpreter(parameters.model) && {
+            ...(modelSupportsCodeInterpreter(requestModel) && {
               codeInterpreterEnabled: parameters.codeInterpreterEnabled,
             }),
-            stream: true,
+            stream: responseMode !== "quiz",
             reasoning,
+            responseMode,
           }),
           signal: abortControllerRef.current.signal,
         });
@@ -245,121 +287,127 @@ export function useChat() {
           throw new Error(errorData.error || "Erro ao chamar a API");
         }
 
-        const reader = response.body?.getReader();
-        if (!reader) throw new Error("Stream indisponível");
-
-        const decoder = new TextDecoder();
         let buffer = "";
         let accumulated = "";
         let reasoningSummary = "";
         let reasoningText = "";
         const citations: UrlCitation[] = [];
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+        if (responseMode === "quiz") {
+          const payload = (await response.json()) as { output_text?: string };
+          accumulated = payload.output_text?.trim() || "";
+        } else {
+          const reader = response.body?.getReader();
+          if (!reader) throw new Error("Stream indisponível");
 
-          buffer += decoder.decode(value, { stream: true });
+          const decoder = new TextDecoder();
 
-          let boundaryIndex = buffer.indexOf("\n\n");
-          while (boundaryIndex !== -1) {
-            const rawEvent = buffer.slice(0, boundaryIndex).trim();
-            buffer = buffer.slice(boundaryIndex + 2);
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-            if (rawEvent.length > 0) {
-              const dataLine = rawEvent
-                .split("\n")
-                .find((line) => line.startsWith("data: "));
+            buffer += decoder.decode(value, { stream: true });
 
-              if (dataLine) {
-                const payload = dataLine.replace("data: ", "").trim();
+            let boundaryIndex = buffer.indexOf("\n\n");
+            while (boundaryIndex !== -1) {
+              const rawEvent = buffer.slice(0, boundaryIndex).trim();
+              buffer = buffer.slice(boundaryIndex + 2);
 
-                if (payload === "[DONE]") {
-                  boundaryIndex = buffer.indexOf("\n\n");
-                  continue;
-                }
+              if (rawEvent.length > 0) {
+                const dataLine = rawEvent
+                  .split("\n")
+                  .find((line) => line.startsWith("data: "));
 
-                try {
-                  const event = JSON.parse(payload);
+                if (dataLine) {
+                  const payload = dataLine.replace("data: ", "").trim();
 
-                  if (event.type === "response.output_text.delta") {
-                    accumulated += event.delta || "";
-                    updateMessage(assistantMessageId, { content: accumulated });
+                  if (payload === "[DONE]") {
+                    boundaryIndex = buffer.indexOf("\n\n");
+                    continue;
                   }
 
-                  if (
-                    event.type === "response.output_item.added" &&
-                    event.item?.type === "image_generation_call"
-                  ) {
-                    updateMessage(assistantMessageId, { isGeneratingImage: true });
-                  }
+                  try {
+                    const event = JSON.parse(payload);
 
-                  if (event.type === "response.image_generation_call.partial_image") {
-                    updateMessage(assistantMessageId, {
-                      imageBase64: event.partial_image_b64,
-                      imageMimeType: "image/png",
-                      isGeneratingImage: true,
-                    });
-                  }
+                    if (event.type === "response.output_text.delta") {
+                      accumulated += event.delta || "";
+                      updateMessage(assistantMessageId, { content: accumulated });
+                    }
 
-                  if (
-                    event.type === "response.output_item.done" &&
-                    event.item?.type === "image_generation_call" &&
-                    event.item?.result
-                  ) {
-                    updateMessage(assistantMessageId, {
-                      imageBase64: event.item.result,
-                      imageMimeType: "image/png",
-                    });
-                  }
+                    if (
+                      event.type === "response.output_item.added" &&
+                      event.item?.type === "image_generation_call"
+                    ) {
+                      updateMessage(assistantMessageId, { isGeneratingImage: true });
+                    }
 
-                  if (
-                    event.type === "response.output_item.added" &&
-                    event.item?.type === "web_search_call"
-                  ) {
-                    updateMessage(assistantMessageId, { isSearching: true });
-                  }
+                    if (event.type === "response.image_generation_call.partial_image") {
+                      updateMessage(assistantMessageId, {
+                        imageBase64: event.partial_image_b64,
+                        imageMimeType: "image/png",
+                        isGeneratingImage: true,
+                      });
+                    }
 
-                  if (
-                    event.type === "response.output_item.done" &&
-                    event.item?.type === "web_search_call"
-                  ) {
-                    updateMessage(assistantMessageId, { isSearching: false });
-                  }
+                    if (
+                      event.type === "response.output_item.done" &&
+                      event.item?.type === "image_generation_call" &&
+                      event.item?.result
+                    ) {
+                      updateMessage(assistantMessageId, {
+                        imageBase64: event.item.result,
+                        imageMimeType: "image/png",
+                      });
+                    }
 
-                  if (event.type === "response.output_text.annotation.added") {
-                    const ann = event.annotation;
-                    if (ann?.type === "url_citation" && ann.url) {
-                      const exists = citations.some((c) => c.url === ann.url);
-                      if (!exists) {
-                        citations.push({ title: ann.title || "", url: ann.url });
-                        updateMessage(assistantMessageId, { citations: [...citations] });
+                    if (
+                      event.type === "response.output_item.added" &&
+                      event.item?.type === "web_search_call"
+                    ) {
+                      updateMessage(assistantMessageId, { isSearching: true });
+                    }
+
+                    if (
+                      event.type === "response.output_item.done" &&
+                      event.item?.type === "web_search_call"
+                    ) {
+                      updateMessage(assistantMessageId, { isSearching: false });
+                    }
+
+                    if (event.type === "response.output_text.annotation.added") {
+                      const ann = event.annotation;
+                      if (ann?.type === "url_citation" && ann.url) {
+                        const exists = citations.some((c) => c.url === ann.url);
+                        if (!exists) {
+                          citations.push({ title: ann.title || "", url: ann.url });
+                          updateMessage(assistantMessageId, { citations: [...citations] });
+                        }
                       }
                     }
-                  }
 
-                  if (event.type === "response.reasoning_summary_text.delta") {
-                    reasoningSummary += event.delta || "";
-                    updateMessage(assistantMessageId, {
-                      reasoningSummary,
-                      reasoningStatus: "thinking",
-                    });
-                  }
+                    if (event.type === "response.reasoning_summary_text.delta") {
+                      reasoningSummary += event.delta || "";
+                      updateMessage(assistantMessageId, {
+                        reasoningSummary,
+                        reasoningStatus: "thinking",
+                      });
+                    }
 
-                  if (event.type === "response.reasoning_text.delta") {
-                    reasoningText += event.delta || "";
-                    updateMessage(assistantMessageId, {
-                      reasoningText,
-                      reasoningStatus: "thinking",
-                    });
+                    if (event.type === "response.reasoning_text.delta") {
+                      reasoningText += event.delta || "";
+                      updateMessage(assistantMessageId, {
+                        reasoningText,
+                        reasoningStatus: "thinking",
+                      });
+                    }
+                  } catch {
+                    // Ignora chunks parciais
                   }
-                } catch {
-                  // Ignora chunks parciais
                 }
               }
-            }
 
-            boundaryIndex = buffer.indexOf("\n\n");
+              boundaryIndex = buffer.indexOf("\n\n");
+            }
           }
         }
 
@@ -370,14 +418,22 @@ export function useChat() {
         }
 
         if (accumulated.trim().length > 0) {
-          const artifact = options.documentMode
-            ? createMessageArtifact(accumulated, {
+          const artifact =
+            responseMode === "quiz"
+              ? createQuizArtifact(accumulated)
+              : responseMode === "document"
+              ? createMessageArtifact(accumulated, {
                 force: true,
                 displayMode: "document",
               })
-            : undefined;
+              : undefined;
           if (artifact) {
-            updateMessage(assistantMessageId, { artifact });
+            updateMessage(assistantMessageId, {
+              content: artifact.summary,
+              artifact,
+            });
+          } else if (responseMode === "quiz") {
+            throw new Error("Nao consegui montar o quiz interativo a partir da resposta do modelo.");
           }
         }
 
@@ -459,9 +515,14 @@ export function useChat() {
   const editAndResend = useCallback(
     async (messageId: string, newContent: string) => {
       if (!newContent.trim() || isLoading) return;
+      const originalMessage = useChatStore
+        .getState()
+        .messages.find((message) => message.id === messageId);
       truncateFromMessage(messageId);
       await new Promise((r) => setTimeout(r, 0));
-      await sendMessage(newContent);
+      await sendMessage(newContent, {
+        responseMode: originalMessage?.responseMode,
+      });
     },
     [isLoading, truncateFromMessage, sendMessage]
   );

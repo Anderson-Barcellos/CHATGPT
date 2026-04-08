@@ -168,9 +168,10 @@ function markdownToHtml(md: string): string {
   return html;
 }
 
-const CHATGPT_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 41 41" fill="none"><path d="M37.532 16.87a9.963 9.963 0 0 0-.856-8.184 10.078 10.078 0 0 0-10.855-4.835A9.964 9.964 0 0 0 18.306.5a10.079 10.079 0 0 0-9.614 6.977 9.967 9.967 0 0 0-6.664 4.834 10.08 10.08 0 0 0 1.24 11.817 9.965 9.965 0 0 0 .856 8.185 10.079 10.079 0 0 0 10.855 4.835 9.965 9.965 0 0 0 7.516 3.35 10.078 10.078 0 0 0 9.617-6.981 9.967 9.967 0 0 0 6.663-4.834 10.079 10.079 0 0 0-1.243-11.813zM22.498 37.886a7.474 7.474 0 0 1-4.799-1.735c.061-.033.168-.091.237-.134l7.964-4.6a1.294 1.294 0 0 0 .655-1.134V19.054l3.366 1.944a.12.12 0 0 1 .066.092v9.299a7.505 7.505 0 0 1-7.49 7.496zM6.392 31.006a7.471 7.471 0 0 1-.894-5.023c.06.036.162.099.237.141l7.964 4.6a1.297 1.297 0 0 0 1.308 0l9.724-5.614v3.888a.12.12 0 0 1-.048.103l-8.051 4.649a7.504 7.504 0 0 1-10.24-2.744zM4.297 13.62A7.469 7.469 0 0 1 8.2 10.333c0 .068-.004.19-.004.274v9.201a1.294 1.294 0 0 0 .654 1.132l9.723 5.614-3.366 1.944a.12.12 0 0 1-.114.012L7.044 23.86a7.504 7.504 0 0 1-2.747-10.24zm27.658 6.437-9.724-5.615 3.367-1.943a.121.121 0 0 1 .113-.012l8.051 4.649a7.498 7.498 0 0 1-1.158 13.528v-9.476a1.293 1.293 0 0 0-.649-1.131zm3.35-5.043c-.059-.037-.162-.099-.236-.141l-7.965-4.6a1.298 1.298 0 0 0-1.308 0l-9.723 5.614v-3.888a.12.12 0 0 1 .048-.103l8.05-4.645a7.497 7.497 0 0 1 11.135 7.763zm-21.063 6.929-3.367-1.944a.12.12 0 0 1-.065-.092v-9.299a7.497 7.497 0 0 1 12.293-5.756 6.94 6.94 0 0 0-.236.134l-7.965 4.6a1.294 1.294 0 0 0-.654 1.132l-.006 11.225zm1.829-3.943 4.33-2.501 4.332 2.5v5l-4.331 2.5-4.331-2.5V18z" fill="currentColor"/></svg>`;
+const OPENAI_KNOT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" role="img" aria-hidden="true"><path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/></svg>`;
 
-const LEXEND_FONT_URL = "https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap";
+const INTER_FONT_URL =
+  "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap";
 
 const EXPORT_STYLES = `
   * { box-sizing: border-box; }
@@ -179,16 +180,16 @@ const EXPORT_STYLES = `
     margin: 0;
     padding: 0;
     background: #ffffff;
-    font-family: 'Lexend', 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     color: #000000;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
   .pdf-document {
-    max-width: 680px;
+    max-width: 760px;
     margin: 0 auto;
-    padding: 48px 56px;
+    padding: 30px 34px 34px;
     background: #ffffff;
   }
 
@@ -196,36 +197,36 @@ const EXPORT_STYLES = `
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 32px;
+    margin-bottom: 22px;
     color: #000000;
   }
 
   .pdf-logo svg { flex-shrink: 0; }
 
   .pdf-logo span {
-    font-size: 14pt;
+    font-size: 12.5pt;
     font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
   }
 
   .pdf-title {
-    margin: 0 0 28px;
-    font-size: 26pt;
+    margin: 0 0 20px;
+    font-size: 22pt;
     font-weight: 700;
-    line-height: 1.15;
+    line-height: 1.12;
     color: #000000;
     letter-spacing: -0.02em;
   }
 
   .pdf-body {
-    font-size: 10.5pt;
-    line-height: 1.72;
+    font-size: 9.75pt;
+    line-height: 1.58;
     color: #1a1a1a;
   }
 
   .pdf-body h1 {
-    margin: 44px 0 16px;
-    font-size: 21pt;
+    margin: 28px 0 12px;
+    font-size: 18pt;
     font-weight: 700;
     line-height: 1.15;
     color: #000000;
@@ -233,8 +234,8 @@ const EXPORT_STYLES = `
   }
 
   .pdf-body h2 {
-    margin: 36px 0 12px;
-    font-size: 15pt;
+    margin: 24px 0 10px;
+    font-size: 13.5pt;
     font-weight: 600;
     line-height: 1.2;
     color: #000000;
@@ -242,8 +243,8 @@ const EXPORT_STYLES = `
   }
 
   .pdf-body h3 {
-    margin: 28px 0 10px;
-    font-size: 12.5pt;
+    margin: 20px 0 8px;
+    font-size: 11.25pt;
     font-weight: 600;
     line-height: 1.3;
     color: #1a1a1a;
@@ -251,9 +252,8 @@ const EXPORT_STYLES = `
   }
 
   .pdf-body p {
-    margin: 0 0 14px;
-    text-align: justify;
-    text-justify: inter-word;
+    margin: 0 0 10px;
+    text-align: left;
   }
 
   .pdf-body strong {
@@ -270,33 +270,33 @@ const EXPORT_STYLES = `
 
   .pdf-body ul,
   .pdf-body ol {
-    margin: 14px 0;
-    padding-left: 24px;
+    margin: 10px 0 12px;
+    padding-left: 20px;
   }
 
-  .pdf-body li { margin-bottom: 6px; }
+  .pdf-body li { margin-bottom: 4px; }
 
   .pdf-body blockquote {
-    margin: 20px 0;
-    padding: 12px 16px;
+    margin: 16px 0;
+    padding: 10px 14px;
     border-left: 3px solid #cccccc;
     background: transparent;
     color: #333333;
   }
 
-  .pdf-body blockquote p { margin: 0 0 8px; }
+  .pdf-body blockquote p { margin: 0 0 6px; }
   .pdf-body blockquote p:last-child { margin-bottom: 0; }
 
   .pdf-body .code-block {
-    margin: 16px 0;
-    padding: 14px 16px;
+    margin: 14px 0;
+    padding: 12px 14px;
     border-radius: 6px;
     background: #f5f5f5;
     border: 1px solid #e0e0e0;
     color: #1a1a1a;
     font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
-    font-size: 9pt;
-    line-height: 1.55;
+    font-size: 8.5pt;
+    line-height: 1.45;
     white-space: pre-wrap;
     word-break: break-word;
     overflow-wrap: anywhere;
@@ -310,37 +310,37 @@ const EXPORT_STYLES = `
     border: 1px solid #e0e0e0;
     color: #1a1a1a;
     font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
-    font-size: 9pt;
+    font-size: 8.5pt;
   }
 
   .pdf-body table {
     width: 100%;
-    margin: 18px 0;
+    margin: 14px 0;
     border-collapse: collapse;
     border: 1px solid #d0d0d0;
     break-inside: avoid;
   }
 
   .pdf-body th {
-    padding: 8px 12px;
+    padding: 7px 10px;
     background: #f5f5f5;
     color: #000000;
     text-align: left;
-    font-size: 9.5pt;
+    font-size: 9pt;
     font-weight: 600;
     border: 1px solid #d0d0d0;
   }
 
   .pdf-body td {
-    padding: 8px 12px;
+    padding: 7px 10px;
     border: 1px solid #d0d0d0;
-    font-size: 10pt;
+    font-size: 9.25pt;
   }
 
   .pdf-body tr.even td { background: #fafafa; }
 
   .pdf-body hr {
-    margin: 24px 0;
+    margin: 18px 0;
     border: none;
     border-top: 1px solid #e0e0e0;
   }
@@ -354,7 +354,7 @@ const EXPORT_STYLES = `
     max-width: 100%;
     height: auto;
     border-radius: 4px;
-    margin: 16px 0;
+    margin: 12px 0;
     break-inside: avoid;
   }`;
 
@@ -369,8 +369,8 @@ function buildStyledHTML(
   return `<style>${EXPORT_STYLES}</style>
 <div class="pdf-document">
   <div class="pdf-logo">
-    ${CHATGPT_LOGO_SVG}
-    <span>ChatGPT</span>
+    ${OPENAI_KNOT_SVG}
+    <span>OpenAI</span>
   </div>
   <h1 class="pdf-title">${escapeHtml(title)}</h1>
   <div class="pdf-body">
@@ -392,7 +392,7 @@ function buildExportDocumentHTML(
     <title>${escapeHtml(title)}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-    <link rel="stylesheet" href="${LEXEND_FONT_URL}" />
+    <link rel="stylesheet" href="${INTER_FONT_URL}" />
   </head>
   <body>
     ${buildStyledHTML(content, contentType, title)}
@@ -502,7 +502,7 @@ export async function downloadArtifactPDF(
 
     await html2pdf()
       .set({
-        margin: [12, 10, 16, 10],
+        margin: [7, 7, 9, 7],
         filename: `${sanitizeFilename(baseName)}.pdf`,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: {
@@ -516,7 +516,7 @@ export async function downloadArtifactPDF(
 
             const fontLink = clonedDocument.createElement("link");
             fontLink.rel = "stylesheet";
-            fontLink.href = LEXEND_FONT_URL;
+            fontLink.href = INTER_FONT_URL;
             clonedDocument.head.appendChild(fontLink);
 
             const style = clonedDocument.createElement("style");

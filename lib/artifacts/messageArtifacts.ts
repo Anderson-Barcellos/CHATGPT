@@ -1,6 +1,6 @@
 import {
   ArtifactContentType,
-  MessageArtifact,
+  DocumentMessageArtifact,
   MessageArtifactDisplayMode,
 } from "@/types";
 
@@ -183,7 +183,7 @@ interface CreateMessageArtifactOptions {
 export function createMessageArtifact(
   content: string,
   options: CreateMessageArtifactOptions = {}
-): MessageArtifact | undefined {
+): DocumentMessageArtifact | undefined {
   if (!options.force && !shouldCreateArtifact(content)) {
     return undefined;
   }

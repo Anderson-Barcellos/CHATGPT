@@ -5,7 +5,6 @@ import type { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import remarkBreaks from "remark-breaks";
-import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
 import { CodeBlock } from "@/components/chat/CodeBlock";
@@ -58,8 +57,8 @@ export function ChatMarkdown({
         remarkPlugins={[remarkGfm, remarkMath, remarkBreaks]}
         rehypePlugins={
           allowHtml
-            ? [rehypeHighlight, rehypeKatex, rehypeRaw]
-            : [rehypeHighlight, rehypeKatex]
+            ? [rehypeKatex, rehypeRaw]
+            : [rehypeKatex]
         }
         components={{
           code: renderCode,

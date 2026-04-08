@@ -21,12 +21,17 @@ import {
   Maximize2,
   Minimize2,
   FileText,
+  ClipboardList,
 } from "lucide-react";
 import { useUIStore } from "@/stores/uiStore";
 import { CodeBlock } from "@/components/chat/CodeBlock";
 import { ChatMarkdown } from "@/components/chat/ChatMarkdown";
 import { downloadArtifactPDF } from "@/lib/export/artifactPdf";
 import { DocumentCanvas } from "@/components/artifacts/DocumentCanvas";
+import { QuizCanvas } from "@/components/artifacts/QuizCanvas";
+import { useArtifactSessionPersistence } from "@/hooks/useArtifactSessionPersistence";
+import { getQuizSourceContent } from "@/lib/artifacts/quizArtifacts";
+import { QuizMessageArtifact } from "@/types";
 
 function HtmlPreview({ content }: { content: string }) {
   const srcDoc = `<!DOCTYPE html>
@@ -62,17 +67,68 @@ function HtmlPreview({ content }: { content: string }) {
 }
 
 export function ArtifactPanel() {
-  const { artifactOpen, artifactContent, artifactType, artifactTitle, closeArtifact } = useUIStore();
+  const { artifactOpen, activeArtifact, artifactMessageId, closeArtifact } = useUIStore();
   const [copied, setCopied] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const persistArtifactSession = useArtifactSessionPersistence();
+
+  const artifactTitle = activeArtifact?.title || "Documento";
+  const documentArtifact = activeArtifact?.kind === "document" ? activeArtifact : null;
+  const quizArtifact = activeArtifact?.kind === "quiz" ? activeArtifact : null;
+  const isDocumentArtifact = documentArtifact !== null;
+  const isQuizArtifact = quizArtifact !== null;
+  const artifactContent = documentArtifact
+    ? documentArtifact.content
+    : quizArtifact
+      ? getQuizSourceContent(quizArtifact.quiz)
+      : "";
+  const artifactSourceLanguage = documentArtifact
+    ? documentArtifact.type === "html"
+      ? "html"
+      : "markdown"
+    : "json";
+  const canDownloadPdf = documentArtifact !== null;
+  const downloadExtension = documentArtifact
+    ? documentArtifact.type === "html"
+      ? "html"
+      : "md"
+    : "json";
+  const downloadMime = documentArtifact
+    ? documentArtifact.type === "html"
+      ? "text/html"
+      : "text/markdown"
+    : "application/json";
   const documentEyebrow =
-    artifactType === "html" ? "Visualizacao interativa" : "Documento pronto para leitura";
+    documentArtifact?.type === "html"
+      ? "Visualizacao interativa"
+      : isQuizArtifact
+      ? "Quiz interativo"
+      : "Documento pronto para leitura";
   const documentDescription =
-    artifactType === "html"
+    documentArtifact?.type === "html"
       ? "Conteudo HTML em modo de leitura, preservando a estrutura do artefato."
+      : isQuizArtifact
+      ? "Responda as questoes, envie no final e mantenha a nota salva nesta conversa."
       : "Leitura em coluna unica com tipografia editorial e exportacao em PDF alinhada ao preview.";
 
+  const handleQuizSessionChange = useCallback(
+    async (session: QuizMessageArtifact["quiz"]["session"]) => {
+      if (!artifactMessageId || !quizArtifact) return;
+
+      await persistArtifactSession(artifactMessageId, {
+        ...quizArtifact,
+        quiz: {
+          ...quizArtifact.quiz,
+          session,
+        },
+      });
+    },
+    [artifactMessageId, persistArtifactSession, quizArtifact]
+  );
+
   const handleCopy = useCallback(async () => {
+    if (!activeArtifact) return;
+
     try {
       await navigator.clipboard.writeText(artifactContent);
       setCopied(true);
@@ -80,40 +136,50 @@ export function ArtifactPanel() {
     } catch (err) {
       console.error("Copy failed:", err);
     }
-  }, [artifactContent]);
+  }, [activeArtifact, artifactContent]);
 
   const handleDownload = useCallback(() => {
-    const ext = artifactType === "html" ? "html" : "md";
-    const mime = artifactType === "html" ? "text/html" : "text/markdown";
-    const blob = new Blob([artifactContent], { type: mime });
+    if (!activeArtifact) return;
+
+    const blob = new Blob([artifactContent], { type: downloadMime });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${artifactTitle || "document"}.${ext}`;
+    a.download = `${artifactTitle || "document"}.${downloadExtension}`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [artifactContent, artifactType, artifactTitle]);
+  }, [activeArtifact, artifactContent, artifactTitle, downloadExtension, downloadMime]);
 
   const handleDownloadPDF = useCallback(async () => {
+    if (!documentArtifact) return;
+
     try {
       await downloadArtifactPDF(artifactContent, {
         title: artifactTitle || "Documento",
-        contentType: artifactType,
+        contentType: documentArtifact.type,
       });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Falha ao exportar o documento em PDF.";
       toast.error("PDF nao exportado", { description: message });
     }
-  }, [artifactContent, artifactTitle, artifactType]);
+  }, [artifactContent, artifactTitle, documentArtifact]);
+
+  if (!activeArtifact) {
+    return null;
+  }
 
   if (artifactOpen && isFullscreen) {
     return (
       <div className="fixed inset-0 z-[60] flex flex-col bg-background">
         <div className="flex items-center justify-between border-b border-white/10 bg-background/70 backdrop-blur-xl px-4 py-3">
           <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-primary/80" />
-            <span className="text-sm font-medium text-foreground/90 truncate">{artifactTitle || "Documento"}</span>
+            {isQuizArtifact ? (
+              <ClipboardList className="h-4 w-4 text-primary/80" />
+            ) : (
+              <FileText className="h-4 w-4 text-primary/80" />
+            )}
+            <span className="text-sm font-medium text-foreground/90 truncate">{artifactTitle}</span>
           </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCopy}>
@@ -122,9 +188,11 @@ export function ArtifactPanel() {
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleDownload}>
               <Download className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={handleDownloadPDF}>
-              PDF
-            </Button>
+            {canDownloadPdf && (
+              <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={handleDownloadPDF}>
+                PDF
+              </Button>
+            )}
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsFullscreen(false)}>
               <Minimize2 className="h-4 w-4" />
             </Button>
@@ -143,11 +211,16 @@ export function ArtifactPanel() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="preview" className="flex-1 overflow-auto p-4">
-            {artifactType === "html" ? (
+            {isQuizArtifact ? (
+              <QuizCanvas
+                artifact={quizArtifact!}
+                onSessionChange={handleQuizSessionChange}
+              />
+            ) : documentArtifact!.type === "html" ? (
               <HtmlPreview content={artifactContent} />
             ) : (
               <DocumentCanvas
-                title={artifactTitle || "Documento"}
+                title={artifactTitle}
                 eyebrow={documentEyebrow}
                 description={documentDescription}
                 className="border-black/5 bg-transparent dark:border-white/8 dark:bg-transparent"
@@ -161,7 +234,7 @@ export function ArtifactPanel() {
             )}
           </TabsContent>
           <TabsContent value="source" className="flex-1 overflow-auto p-4">
-            <CodeBlock language={artifactType === "html" ? "html" : "markdown"} value={artifactContent} showLineNumbers />
+            <CodeBlock language={artifactSourceLanguage} value={artifactContent} showLineNumbers />
           </TabsContent>
         </Tabs>
       </div>
@@ -187,14 +260,22 @@ export function ArtifactPanel() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/8">
-                <FileText className="h-4 w-4 text-primary/85" />
+                {isQuizArtifact ? (
+                  <ClipboardList className="h-4 w-4 text-primary/85" />
+                ) : (
+                  <FileText className="h-4 w-4 text-primary/85" />
+                )}
               </div>
               <div className="min-w-0">
                 <SheetTitle className="text-sm font-medium truncate">
-                  {artifactTitle || "Documento"}
+                  {artifactTitle}
                 </SheetTitle>
                 <SheetDescription className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/55">
-                  {artifactType === "html" ? "HTML Interativo" : "Documento Rico"}
+                  {isQuizArtifact
+                    ? "Quiz Interativo"
+                    : documentArtifact!.type === "html"
+                    ? "HTML Interativo"
+                    : "Documento Rico"}
                 </SheetDescription>
               </div>
             </div>
@@ -206,9 +287,11 @@ export function ArtifactPanel() {
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleDownload}>
                 <Download className="h-3.5 w-3.5" />
               </Button>
-              <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={handleDownloadPDF}>
-                PDF
-              </Button>
+              {canDownloadPdf && (
+                <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={handleDownloadPDF}>
+                  PDF
+                </Button>
+              )}
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsFullscreen(true)}>
                 <Maximize2 className="h-3.5 w-3.5" />
               </Button>
@@ -229,7 +312,16 @@ export function ArtifactPanel() {
           </TabsList>
 
           <TabsContent value="preview" className="flex-1 overflow-hidden mt-0">
-            {artifactType === "html" ? (
+            {isQuizArtifact ? (
+              <ScrollArea className="h-full">
+                <div className="p-4">
+                  <QuizCanvas
+                    artifact={quizArtifact!}
+                    onSessionChange={handleQuizSessionChange}
+                  />
+                </div>
+              </ScrollArea>
+            ) : documentArtifact!.type === "html" ? (
               <div className="h-full p-4">
                 <HtmlPreview content={artifactContent} />
               </div>
@@ -257,7 +349,7 @@ export function ArtifactPanel() {
             <ScrollArea className="h-full">
               <div className="p-4">
                 <CodeBlock
-                  language={artifactType === "html" ? "html" : "markdown"}
+                  language={artifactSourceLanguage}
                   value={artifactContent}
                   showLineNumbers
                 />

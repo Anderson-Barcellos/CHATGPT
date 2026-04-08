@@ -1,11 +1,10 @@
 import { create } from "zustand";
-import { AppMode, ArtifactContentType } from "@/types";
+import { AppMode, MessageArtifact } from "@/types";
 
 interface ArtifactState {
   artifactOpen: boolean;
-  artifactContent: string;
-  artifactType: ArtifactContentType;
-  artifactTitle: string;
+  activeArtifact: MessageArtifact | null;
+  artifactMessageId: string | null;
 }
 
 interface UIState extends ArtifactState {
@@ -15,7 +14,7 @@ interface UIState extends ArtifactState {
   setActiveMode: (mode: AppMode) => void;
   setImageSize: (size: string) => void;
   setImageQuality: (quality: string) => void;
-  openArtifact: (content: string, type: ArtifactContentType, title?: string) => void;
+  openArtifact: (artifact: MessageArtifact, messageId?: string) => void;
   closeArtifact: () => void;
 }
 
@@ -24,14 +23,17 @@ export const useUIStore = create<UIState>((set) => ({
   imageSize: "auto",
   imageQuality: "high",
   artifactOpen: false,
-  artifactContent: "",
-  artifactType: "markdown",
-  artifactTitle: "",
+  activeArtifact: null,
+  artifactMessageId: null,
   setActiveMode: (mode) => set({ activeMode: mode }),
   setImageSize: (size) => set({ imageSize: size }),
   setImageQuality: (quality) => set({ imageQuality: quality }),
-  openArtifact: (content, type, title) =>
-    set({ artifactOpen: true, artifactContent: content, artifactType: type, artifactTitle: title || "" }),
+  openArtifact: (artifact, messageId) =>
+    set({
+      artifactOpen: true,
+      activeArtifact: artifact,
+      artifactMessageId: messageId || null,
+    }),
   closeArtifact: () =>
-    set({ artifactOpen: false, artifactContent: "", artifactType: "markdown", artifactTitle: "" }),
+    set({ artifactOpen: false, activeArtifact: null, artifactMessageId: null }),
 }));

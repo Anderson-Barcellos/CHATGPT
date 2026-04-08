@@ -1,6 +1,6 @@
 # Infrastructure
 
-**Last updated:** 2026-01-30  
+**Last updated:** 2026-04-07  
 **Domain:** https://ultrassom.ai/chat  
 **Port:** 3040
 
@@ -12,7 +12,7 @@ Internet
   ▼
 Apache2 (HTTPS, port 443)
   │  ultrassom.ai-optimized.conf
-  │  ProxyPass /chat → http://localhost:3040/chat
+  │  ProxyPass /chat + /chat/api/* → http://localhost:3040/chat
   ▼
 Next.js 16 (Node.js, port 3040)
   │  basePath: /chat
@@ -42,6 +42,12 @@ OpenAI API (external)
     ProxyTimeout 300
 </Location>
 
+# Explicit API endpoints handled by the same Next.js service
+<LocationMatch "^/chat/api/(chat|conversations(?:/.*)?|memories(?:/.*)?|persona|auth/(login|check|logout)|transcribe|health)$">
+    ProxyPass http://localhost:3040/chat/api
+    ProxyTimeout 300
+</LocationMatch>
+
 # Static assets (1-year cache)
 <Location /chat/_next>
     ProxyPass http://localhost:3040/chat/_next
@@ -54,6 +60,7 @@ OpenAI API (external)
 - Do NOT add a trailing-slash rewrite for `/chat` — it causes a redirect loop with Next.js basePath.
 - The `X-Forwarded-Host` header is set to `ultrassom.ai`.
 - WebSocket support is configured for HMR in development.
+- All `/chat/api/*` routes are served by the same Node/Next.js process on port `3040`; there is no separate systemd unit per API route.
 
 ### Port registry
 
@@ -76,7 +83,7 @@ Gaúcho Chat uses port **3040** (within the 3030-3099 Vite frontends range).
 
 ```ini
 [Unit]
-Description=ChatGPT Clone (Gaúcho Chat)
+Description=Celer - Cliente IA Multi-Modal
 After=network.target
 
 [Service]
@@ -126,7 +133,7 @@ sudo journalctl -u chatgpt -n 50      # Last 50 lines
 ```bash
 cd /root/CHATGPT
 npm run build                          # Build production bundle
-sudo systemctl restart chatgpt         # Restart service
+sudo systemctl restart chatgpt         # Restart canonical service
 sudo systemctl status chatgpt          # Verify running
 curl -s http://localhost:3040/chat     # Verify HTTP 200
 ```
