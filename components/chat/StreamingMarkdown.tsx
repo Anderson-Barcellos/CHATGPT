@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import ReactMarkdown from "react-markdown";
+import { useMemo } from "react";
+import ReactMarkdown, { type Components } from "react-markdown";
 import { normalizeChatMarkdown } from "@/lib/formatting/chatMarkdown";
+import { shouldShowStreamingMarkdownCursor } from "@/lib/chat/streamingMarkdown";
+import { useStreamingTextBuffer } from "@/lib/chat/useStreamingTextBuffer";
 import {
-  STREAMING_MARKDOWN_SETTLE_MS,
-  shouldShowStreamingMarkdownCursor,
-} from "@/lib/chat/streamingMarkdown";
+  STREAMING_CURSOR_TAG,
+  rehypeStreamingCursor,
+} from "@/lib/chat/rehypeStreamingCursor";
 import type { MessageStreamStatus } from "@/types";
 import { cn } from "@/lib/utils";
 import {
@@ -14,6 +16,7 @@ import {
   chatMarkdownRehypePlugins,
   chatMarkdownRemarkPlugins,
 } from "@/components/chat/chatMarkdownRenderer";
+import { StreamingCursor } from "@/components/chat/StreamingCursor";
 
 interface StreamingMarkdownProps {
   content: string;
@@ -26,34 +29,33 @@ export function StreamingMarkdown({
   className,
   streamStatus,
 }: StreamingMarkdownProps) {
-  const normalizedContent = normalizeChatMarkdown(content);
-  const [settlingCursorVisible, setSettlingCursorVisible] = useState(
-    streamStatus === "streaming"
-  );
+  const { displayed, isSettling } = useStreamingTextBuffer({
+    content,
+    streamStatus,
+  });
 
-  useEffect(() => {
-    if (streamStatus === "streaming") {
-      const activateTimer = window.setTimeout(() => {
-        setSettlingCursorVisible(true);
-      }, 0);
-
-      return () => window.clearTimeout(activateTimer);
-    }
-
-    if (!settlingCursorVisible) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      setSettlingCursorVisible(false);
-    }, STREAMING_MARKDOWN_SETTLE_MS);
-
-    return () => window.clearTimeout(timer);
-  }, [settlingCursorVisible, streamStatus]);
+  const normalizedContent = normalizeChatMarkdown(displayed);
 
   const showCursor = shouldShowStreamingMarkdownCursor(
     streamStatus,
-    settlingCursorVisible
+    isSettling
+  );
+
+  const rehypePlugins = useMemo(
+    () =>
+      showCursor
+        ? [...chatMarkdownRehypePlugins, rehypeStreamingCursor]
+        : chatMarkdownRehypePlugins,
+    [showCursor]
+  );
+
+  const components = useMemo(
+    () =>
+      ({
+        ...chatMarkdownComponents,
+        [STREAMING_CURSOR_TAG]: StreamingCursor,
+      }) as Components,
+    []
   );
 
   return (
@@ -63,24 +65,11 @@ export function StreamingMarkdown({
     >
       <ReactMarkdown
         remarkPlugins={chatMarkdownRemarkPlugins}
-        rehypePlugins={chatMarkdownRehypePlugins}
-        components={chatMarkdownComponents}
+        rehypePlugins={rehypePlugins}
+        components={components}
       >
         {normalizedContent}
       </ReactMarkdown>
-
-      {showCursor ? (
-        <span
-          aria-hidden="true"
-          data-streaming-cursor="true"
-          className="mt-1 inline-flex items-center gap-1.5 text-[#D97757]"
-        >
-          <span className="inline-flex h-3.5 w-3.5 animate-pulse items-center justify-center rounded-full bg-[#D97757]/20">
-            <span className="h-2 w-2 rounded-full bg-[#D97757]" />
-          </span>
-          <span className="h-4 w-[3px] animate-pulse rounded-full bg-[#D97757]" />
-        </span>
-      ) : null}
     </div>
   );
 }

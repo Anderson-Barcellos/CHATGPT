@@ -6,8 +6,8 @@ vi.mock("@/hooks/useArtifactSessionPersistence", () => ({
   useArtifactSessionPersistence: () => async () => undefined,
 }));
 
-describe("MessageContent streaming markdown", () => {
-  it("renders assistant streaming responses as markdown with a live cursor", () => {
+describe("MessageContent streaming routing", () => {
+  it("wraps assistant streaming messages with the aria-live streaming renderer", () => {
     const markup = renderToStaticMarkup(
       <MessageContent
         message={{
@@ -20,10 +20,25 @@ describe("MessageContent streaming markdown", () => {
       />
     );
 
+    expect(markup).toContain('aria-live="polite"');
+  });
+
+  it("renders full markdown for assistant messages that already finished", () => {
+    const markup = renderToStaticMarkup(
+      <MessageContent
+        message={{
+          id: "assistant-done",
+          role: "assistant",
+          content: "# Titulo\n\n- item pronto",
+          timestamp: new Date("2026-04-23T12:00:00.000Z"),
+          streamStatus: "completed",
+        }}
+      />
+    );
+
     expect(markup).toContain("<h1");
     expect(markup).toContain("Titulo");
     expect(markup).toContain("<li");
-    expect(markup).toContain("item em stream");
-    expect(markup).toContain('data-streaming-cursor="true"');
+    expect(markup).toContain("item pronto");
   });
 });

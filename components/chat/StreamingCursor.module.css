@@ -1,0 +1,68 @@
+.cursor {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin-left: 0.5rem;
+  animation: cursorContainerPulse 0.95s ease-in-out infinite;
+}
+
+.ring {
+  position: relative;
+  display: inline-block;
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 9999px;
+  background-color: #d97757;
+  animation: cursorRingPulse 0.95s ease-in-out infinite;
+}
+
+.ringInner {
+  position: absolute;
+  inset: 3px;
+  border-radius: 9999px;
+  background-color: #fce7d8;
+}
+
+.bar {
+  display: inline-block;
+  width: 3px;
+  height: 1rem;
+  margin-left: 0.375rem;
+  border-radius: 9999px;
+  background-color: #d97757;
+  animation: cursorBarPulse 0.95s ease-in-out infinite;
+}
+
+@keyframes cursorContainerPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes cursorRingPulse {
+  0%,
+  100% {
+    transform: scale(0.92);
+    box-shadow: 0 0 0 0 rgba(217, 119, 87, 0.2);
+  }
+  50% {
+    transform: scale(1.14);
+    box-shadow: 0 0 0 6px rgba(217, 119, 87, 0.08);
+  }
+}
+
+@keyframes cursorBarPulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scaleY(0.92);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scaleY(1.08);
+  }
+}
