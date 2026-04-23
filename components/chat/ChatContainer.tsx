@@ -313,7 +313,12 @@ export function ChatContainer({
             ))
           )}
 
-          {isLoading && <TypingIndicator />}
+          {isLoading &&
+            !(
+              messages.at(-1)?.role === "assistant" &&
+              (messages.at(-1)?.streamStatus === "streaming" ||
+                messages.at(-1)?.reasoningStatus === "thinking")
+            ) && <TypingIndicator />}
         </div>
       </ScrollArea>
 
