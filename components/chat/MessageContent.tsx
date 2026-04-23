@@ -10,6 +10,7 @@ import { useUIStore } from "@/stores/uiStore";
 import { DocumentCanvas } from "@/components/artifacts/DocumentCanvas";
 import { QuizCanvas } from "@/components/artifacts/QuizCanvas";
 import { ChatMarkdown } from "./ChatMarkdown";
+import { StreamingMarkdown } from "./StreamingMarkdown";
 import { MessageArtifactCard } from "./MessageArtifactCard";
 import {
   cleanCitationMarkers,
@@ -38,6 +39,11 @@ export function MessageContent({ message, className }: MessageContentProps) {
   const content = cleanCitationMarkers(message.content);
   const richContent = detectRichContent(content);
   const artifactContent = artifact?.kind === "document" ? artifact.content : content;
+  const canRenderStreamingText =
+    message.role === "assistant" &&
+    !artifact &&
+    !isCanvasPresentation &&
+    !message.imageBase64;
 
   const handleQuizSessionChange = async (
     session: QuizMessageArtifact["quiz"]["session"]
@@ -53,11 +59,18 @@ export function MessageContent({ message, className }: MessageContentProps) {
     });
   };
 
-  const markdown = (
-    <ChatMarkdown
-      content={artifactContent}
-    />
-  );
+  const renderMessageText = (markdownClassName?: string) =>
+    canRenderStreamingText ? (
+      <StreamingMarkdown
+        content={artifactContent}
+        className={markdownClassName}
+        streamStatus={message.streamStatus}
+      />
+    ) : (
+      <ChatMarkdown content={artifactContent} className={markdownClassName} />
+    );
+
+  const markdown = renderMessageText();
 
   if (artifact && message.role === "assistant" && !message.imageBase64) {
     return (
