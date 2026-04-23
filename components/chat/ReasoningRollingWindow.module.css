@@ -1,0 +1,38 @@
+.window {
+  position: relative;
+  height: 130px;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 24%, black 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 24%, black 100%);
+}
+
+.scroller {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: 0 2px;
+}
+
+.scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 100%;
+  animation: fadeLinesIn 0.35s ease-out;
+}
+
+@keyframes fadeLinesIn {
+  from {
+    opacity: 0.4;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
