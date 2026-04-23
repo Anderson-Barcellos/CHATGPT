@@ -75,7 +75,6 @@ export function ArtifactPanel() {
   const artifactTitle = activeArtifact?.title || "Documento";
   const documentArtifact = activeArtifact?.kind === "document" ? activeArtifact : null;
   const quizArtifact = activeArtifact?.kind === "quiz" ? activeArtifact : null;
-  const isDocumentArtifact = documentArtifact !== null;
   const isQuizArtifact = quizArtifact !== null;
   const artifactContent = documentArtifact
     ? documentArtifact.content

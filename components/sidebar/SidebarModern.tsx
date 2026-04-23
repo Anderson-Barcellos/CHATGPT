@@ -109,8 +109,13 @@ export function SidebarModern({
       return;
     }
 
-    const id = await createConversation("Nova conversa");
-    setActiveConversationId(id);
+    try {
+      const id = await createConversation("Nova conversa");
+      setActiveConversationId(id);
+    } catch (error) {
+      console.error("[Sidebar] Falha ao criar conversa:", error);
+      toast.error("Nao consegui abrir uma nova conversa agora.");
+    }
   }, [createConversation, isStreaming, setActiveConversationId, showStreamingGuard]);
 
   const handleDeleteConversation = useCallback(async (id: string) => {
@@ -121,24 +126,34 @@ export function SidebarModern({
 
     const remaining = conversations.filter((conv) => conv.id !== id);
 
-    if (id === activeConversationId) {
-      const nextConversation = remaining[0];
+    try {
+      await deleteConversation(id);
 
-      if (nextConversation) {
-        handleSelectConversation(nextConversation.id);
-      } else {
-        const newId = await createConversation("Nova conversa");
-        setActiveConversationId(newId);
+      if (id === activeConversationId) {
+        const nextConversation = remaining[0];
+
+        if (nextConversation) {
+          setActiveConversationId(nextConversation.id);
+        } else {
+          try {
+            const newId = await createConversation("Nova conversa");
+            setActiveConversationId(newId);
+          } catch (error) {
+            console.error("[Sidebar] Falha ao criar conversa de fallback:", error);
+            toast.error("A conversa foi excluida, mas nao consegui abrir uma nova logo em seguida.");
+            setActiveConversationId(null);
+          }
+        }
       }
+    } catch (error) {
+      console.error("[Sidebar] Falha ao excluir conversa:", error);
+      toast.error("Nao consegui excluir essa conversa agora.");
     }
-
-    await deleteConversation(id);
   }, [
     activeConversationId,
     conversations,
     createConversation,
     deleteConversation,
-    handleSelectConversation,
     isStreaming,
     setActiveConversationId,
     showStreamingGuard,

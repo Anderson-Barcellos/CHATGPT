@@ -43,7 +43,7 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
   const headers = response.headers;
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://vercel.live https://*.vercel-scripts.com",
+    "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https: blob:",
     "font-src 'self' data:",

@@ -4,14 +4,15 @@ import {
   updateConversation,
   deleteConversation,
 } from "../data";
+import { jsonError } from "@/lib/api/errors";
 import { isAuthEnabled, isAuthenticatedRequest } from "@/lib/server/auth";
 import { deserializeMessage, serializeConversation } from "@/lib/storage/serializers";
 
 function unauthorized() {
-  return NextResponse.json(
-    { error: "Unauthorized", message: "Faça login para continuar." },
-    { status: 401 }
-  );
+  return jsonError(401, "Unauthorized", {
+    message: "Faça login para continuar.",
+    code: "unauthorized",
+  });
 }
 
 export const dynamic = "force-dynamic";
@@ -27,7 +28,10 @@ export async function GET(
   const { id } = await params;
   const conversation = await getConversation(id);
   if (!conversation) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return jsonError(404, "Not found", {
+      message: "Conversa nao encontrada.",
+      code: "conversation_not_found",
+    });
   }
   return NextResponse.json(serializeConversation(conversation));
 }
@@ -53,12 +57,18 @@ export async function PUT(
     };
     const updated = await updateConversation(id, updates);
     if (!updated) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return jsonError(404, "Not found", {
+        message: "Conversa nao encontrada.",
+        code: "conversation_not_found",
+      });
     }
     return NextResponse.json(serializeConversation(updated));
   } catch (err) {
     console.error("[conversations] PUT error", err);
-    return NextResponse.json({ error: "Failed to update" }, { status: 500 });
+    return jsonError(500, "Failed to update conversation", {
+      message: "Nao consegui salvar essa conversa agora.",
+      code: "conversation_update_failed",
+    });
   }
 }
 
@@ -74,11 +84,17 @@ export async function DELETE(
     const { id } = await params;
     const ok = await deleteConversation(id);
     if (!ok) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return jsonError(404, "Not found", {
+        message: "Conversa nao encontrada.",
+        code: "conversation_not_found",
+      });
     }
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("[conversations] DELETE error", err);
-    return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
+    return jsonError(500, "Failed to delete conversation", {
+      message: "Nao consegui excluir essa conversa agora.",
+      code: "conversation_delete_failed",
+    });
   }
 }

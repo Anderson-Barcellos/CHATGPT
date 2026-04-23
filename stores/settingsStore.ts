@@ -8,7 +8,6 @@ import {
 import {
   MODELS,
   isReasoningModel,
-  modelSupportsVerbosity,
 } from "@/lib/models/modelConfig";
 
 type ModelSettingsMap = Record<string, ModelScopedParameters>;
@@ -34,7 +33,7 @@ function buildDefaultModelSettings(modelId: string): ModelScopedParameters {
     topP: 0.95,
     reasoningEffort: isReasoningModel(modelId) ? "medium" : "none",
     reasoningSummary: isReasoningModel(modelId) ? "auto" : "off",
-    verbosity: modelSupportsVerbosity(modelId) ? "medium" : "medium",
+    verbosity: "medium",
     codeInterpreterEnabled: false,
   };
 }

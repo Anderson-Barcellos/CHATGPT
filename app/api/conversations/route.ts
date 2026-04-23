@@ -3,14 +3,15 @@ import {
   listConversations,
   createConversation,
 } from "./data";
+import { jsonError } from "@/lib/api/errors";
 import { isAuthEnabled, isAuthenticatedRequest } from "@/lib/server/auth";
 import { serializeConversation } from "@/lib/storage/serializers";
 
 function unauthorized() {
-  return NextResponse.json(
-    { error: "Unauthorized", message: "Faça login para continuar." },
-    { status: 401 }
-  );
+  return jsonError(401, "Unauthorized", {
+    message: "Faça login para continuar.",
+    code: "unauthorized",
+  });
 }
 
 export const dynamic = "force-dynamic";
@@ -37,6 +38,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(serializeConversation(conv), { status: 201 });
   } catch (err) {
     console.error("[conversations] POST error", err);
-    return NextResponse.json({ error: "Failed to create conversation" }, { status: 500 });
+    return jsonError(500, "Failed to create conversation", {
+      message: "Nao consegui criar uma nova conversa agora.",
+      code: "conversation_create_failed",
+    });
   }
 }

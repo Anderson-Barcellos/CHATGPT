@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useChat } from "@/hooks/useChat";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,10 +16,15 @@ import {
   Wand2,
 } from "lucide-react";
 import { GPTLogo } from "@/components/ui/gpt-logo";
+import {
+  AUTO_SCROLL_THRESHOLD,
+  deriveScrollState,
+  getDistanceFromBottom,
+  shouldAutoScroll,
+} from "@/lib/chat/scrollState";
 import { cn } from "@/lib/utils";
-
-const AUTO_SCROLL_THRESHOLD = 80;
-const SCROLL_BUTTON_THRESHOLD = 120;
+import { useChatStore } from "@/stores/chatStore";
+import { Message } from "@/types";
 
 const SUGGESTIONS = [
   { icon: Code, label: "Escrever codigo", desc: "Gere, refatore ou debug", prompt: "Me ajude a escrever um código em ", accent: "from-blue-500/20 to-indigo-500/20", iconColor: "text-blue-400" },
@@ -99,11 +103,24 @@ function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
   );
 }
 
-export function ChatContainer() {
-  const { messages, isLoading, editAndResend, deleteMessage } = useChat();
+interface ChatContainerProps {
+  messages: Message[];
+  isLoading: boolean;
+  editAndResend: (messageId: string, newContent: string) => Promise<void>;
+  deleteMessage: (messageId: string) => Promise<void>;
+}
+
+export function ChatContainer({
+  messages,
+  isLoading,
+  editAndResend,
+  deleteMessage,
+}: ChatContainerProps) {
+  const activeConversationId = useChatStore((state) => state.activeConversationId);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const autoScrollEnabledRef = useRef(true);
+  const isTrackingBottomRef = useRef(true);
+  const initialLoadCompleteRef = useRef(false);
   const scrollFrameRef = useRef<number | null>(null);
   const syncFrameRef = useRef<number | null>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
@@ -112,10 +129,6 @@ export function ChatContainer() {
     return scrollAreaRef.current?.querySelector<HTMLDivElement>(
       "[data-radix-scroll-area-viewport]"
     ) ?? null;
-  }, []);
-
-  const getDistanceFromBottom = useCallback((container: HTMLDivElement) => {
-    return container.scrollHeight - container.scrollTop - container.clientHeight;
   }, []);
 
   const scrollToBottom = useCallback(
@@ -146,16 +159,25 @@ export function ChatContainer() {
     const container = getViewport();
     if (!container) return;
 
-    const distanceFromBottom = getDistanceFromBottom(container);
-    const isNearBottom = distanceFromBottom <= AUTO_SCROLL_THRESHOLD;
-    const shouldShowButton =
-      messages.length > 0 && distanceFromBottom > SCROLL_BUTTON_THRESHOLD;
+    const snapshot = deriveScrollState({
+      distanceFromBottom: getDistanceFromBottom(container),
+      hasMessages: messages.length > 0,
+      isTrackingBottom: isTrackingBottomRef.current,
+      initialLoadComplete: initialLoadCompleteRef.current,
+    });
 
-    autoScrollEnabledRef.current = isNearBottom;
+    if (snapshot.mode === "reading-history") {
+      isTrackingBottomRef.current = false;
+    } else if (snapshot.isNearBottom) {
+      isTrackingBottomRef.current = true;
+    }
+
     setShowScrollBtn((current) =>
-      current === shouldShowButton ? current : shouldShowButton
+      current === snapshot.shouldShowScrollButton
+        ? current
+        : snapshot.shouldShowScrollButton
     );
-  }, [getDistanceFromBottom, getViewport, messages.length]);
+  }, [getViewport, messages.length]);
 
   const scheduleScrollStateSync = useCallback(() => {
     if (syncFrameRef.current !== null) {
@@ -167,6 +189,12 @@ export function ChatContainer() {
       syncFrameRef.current = null;
     });
   }, [syncScrollState]);
+
+  useEffect(() => {
+    initialLoadCompleteRef.current = false;
+    isTrackingBottomRef.current = true;
+    scheduleScrollStateSync();
+  }, [activeConversationId, scheduleScrollStateSync]);
 
   useEffect(() => {
     const container = getViewport();
@@ -182,25 +210,58 @@ export function ChatContainer() {
 
   useEffect(() => {
     if (messages.length === 0) {
-      autoScrollEnabledRef.current = true;
+      initialLoadCompleteRef.current = true;
+      isTrackingBottomRef.current = true;
       scheduleScrollStateSync();
       return;
     }
 
-    if (autoScrollEnabledRef.current) {
+    const container = getViewport();
+    const distanceFromBottom = container ? getDistanceFromBottom(container) : 0;
+    const snapshot = deriveScrollState({
+      distanceFromBottom,
+      hasMessages: messages.length > 0,
+      isTrackingBottom: isTrackingBottomRef.current,
+      initialLoadComplete: initialLoadCompleteRef.current,
+    });
+    const lastMessage = messages[messages.length - 1];
+    const forceAutoScroll = !initialLoadCompleteRef.current || lastMessage?.role === "user";
+
+    if (
+      shouldAutoScroll({
+        initialLoadComplete: initialLoadCompleteRef.current,
+        isTrackingBottom: isTrackingBottomRef.current,
+        isNearBottom: snapshot.isNearBottom,
+        force: forceAutoScroll,
+      })
+    ) {
       scrollToBottom("auto");
+      isTrackingBottomRef.current = true;
+      initialLoadCompleteRef.current = true;
       return;
     }
 
+    initialLoadCompleteRef.current = true;
     scheduleScrollStateSync();
-  }, [isLoading, messages.length, scheduleScrollStateSync, scrollToBottom]);
+  }, [getViewport, isLoading, messages, scheduleScrollStateSync, scrollToBottom]);
 
   useEffect(() => {
     const content = contentRef.current;
     if (!content) return;
 
     const observer = new ResizeObserver(() => {
-      if (autoScrollEnabledRef.current) {
+      const container = getViewport();
+      const isNearBottom = container
+        ? getDistanceFromBottom(container) <= AUTO_SCROLL_THRESHOLD
+        : true;
+
+      if (
+        shouldAutoScroll({
+          initialLoadComplete: initialLoadCompleteRef.current,
+          isTrackingBottom: isTrackingBottomRef.current,
+          isNearBottom,
+        })
+      ) {
         scrollToBottom("auto");
       } else {
         syncScrollState();
@@ -209,7 +270,7 @@ export function ChatContainer() {
 
     observer.observe(content);
     return () => observer.disconnect();
-  }, [scrollToBottom, syncScrollState]);
+  }, [getViewport, scrollToBottom, syncScrollState]);
 
   useEffect(() => {
     return () => {
@@ -267,7 +328,7 @@ export function ChatContainer() {
             "transition-all duration-200 hover:scale-110"
           )}
           onClick={() => {
-            autoScrollEnabledRef.current = true;
+            isTrackingBottomRef.current = true;
             setShowScrollBtn(false);
             scrollToBottom("smooth");
           }}

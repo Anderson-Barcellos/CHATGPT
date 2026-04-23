@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { conversationKeys } from "@/hooks/queries/useConversationQuery";
 import { saveConversationMessages } from "@/lib/storage/conversations";
+import { withConversationPersistenceRetry } from "@/lib/storage/conversationPersistence";
 import { MessageArtifact } from "@/types";
 import { useChatStore } from "@/stores/chatStore";
 
@@ -20,7 +21,9 @@ export function useArtifactSessionPersistence() {
       if (!activeConversationId) return;
 
       try {
-        await saveConversationMessages(activeConversationId, messages);
+        await withConversationPersistenceRetry(() =>
+          saveConversationMessages(activeConversationId, messages)
+        );
         queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
         queryClient.invalidateQueries({
           queryKey: conversationKeys.detail(activeConversationId),

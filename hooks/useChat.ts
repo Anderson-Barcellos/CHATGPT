@@ -4,20 +4,28 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useChatStore } from "@/stores/chatStore";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { parseApiErrorResponse } from "@/lib/api/errors";
+import {
+  assistantStreamStateToMessagePatch,
+  createInitialAssistantStreamState,
+  extractSsePayloads,
+  finalizeAssistantStreamState,
+  reduceAssistantStreamEvent,
+} from "@/lib/chat/streamMachine";
 import { buildInputFromMessages } from "@/lib/openai/buildInput";
 import {
   listConversations,
   getConversation,
   saveConversationMessages,
-  updateConversationTitle,
+  saveConversationMessagesAndTitle,
   createConversation,
 } from "@/lib/storage/conversations";
+import { withConversationPersistenceRetry } from "@/lib/storage/conversationPersistence";
 import {
   Message,
   ReasoningSummary,
   ResponseMode,
   SendMessageOptions,
-  UrlCitation,
 } from "@/types";
 import { useCustomInstructions } from "@/hooks/useCustomInstructions";
 import { useMemories } from "@/hooks/useMemories";
@@ -137,6 +145,49 @@ function getPreferredDisplayMode(responseMode: ResponseMode) {
   return undefined;
 }
 
+function sanitizeMessagesForStorage(messages: Message[]): Message[] {
+  return messages.map((message) => {
+    if (!message.attachments?.length) return message;
+
+    return {
+      ...message,
+      attachments: message.attachments.map((attachment) => ({
+        ...attachment,
+        dataUrl: attachment.type === "image" ? attachment.thumbnailUrl : undefined,
+        extractedText: attachment.extractedText
+          ? `[${attachment.extractedText.length} chars]`
+          : undefined,
+      })),
+    };
+  });
+}
+
+async function persistConversationSnapshot(
+  conversationId: string,
+  queryClient: ReturnType<typeof useQueryClient>
+) {
+  const finalMessages = useChatStore.getState().messages;
+  const messagesForStorage = sanitizeMessagesForStorage(finalMessages);
+  const userMessages = finalMessages.filter((message) => message.role === "user");
+
+  if (userMessages.length === 1) {
+    const snippet = userMessages[0].content.slice(0, 60).trim();
+    const title = snippet + (userMessages[0].content.length > 60 ? "..." : "");
+    await withConversationPersistenceRetry(() =>
+      saveConversationMessagesAndTitle(conversationId, messagesForStorage, title)
+    );
+  } else {
+    await withConversationPersistenceRetry(() =>
+      saveConversationMessages(conversationId, messagesForStorage)
+    );
+  }
+
+  await queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+  await queryClient.invalidateQueries({
+    queryKey: conversationKeys.detail(conversationId),
+  });
+}
+
 export function useChat() {
   const queryClient = useQueryClient();
   const {
@@ -154,42 +205,80 @@ export function useChat() {
   const { contextAboutUser, responsePreferences } = useCustomInstructions();
   const { memories } = useMemories();
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [composerError, setComposerError] = useState<string | null>(null);
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [isRecovering, setIsRecovering] = useState(true);
+  const [conversationLoadNonce, setConversationLoadNonce] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
   const hasLoadedRef = useRef(false);
+
+  const reloadConversations = useCallback(async () => {
+    setIsRecovering(true);
+    setRecoveryError(null);
+
+    try {
+      const conversations = await listConversations();
+      const activeId = useChatStore.getState().activeConversationId;
+      const preferredConversation =
+        activeId && conversations.some((conversation) => conversation.id === activeId)
+          ? activeId
+          : conversations[0]?.id;
+
+      if (preferredConversation) {
+        setActiveConversationId(preferredConversation);
+        setConversationLoadNonce((current) => current + 1);
+      } else {
+        const newId = await createConversation("Nova conversa");
+        setActiveConversationId(newId);
+        setConversationLoadNonce((current) => current + 1);
+        await queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+      }
+    } catch (error) {
+      console.error("[useChat] Erro ao inicializar conversa:", error);
+      setActiveConversationId(null);
+      setMessages([]);
+      setRecoveryError(
+        "Nao consegui inicializar as conversas. Recarrega a pagina para tentar de novo."
+      );
+      setIsRecovering(false);
+    }
+  }, [queryClient, setActiveConversationId, setMessages]);
 
   useEffect(() => {
     if (hasLoadedRef.current) return;
     hasLoadedRef.current = true;
-    listConversations()
-      .then(async (convs) => {
-        if (convs.length > 0) {
-          setActiveConversationId(convs[0].id);
-        } else {
-          const newId = await createConversation("Nova conversa");
-          setActiveConversationId(newId);
-          queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
-        }
-      })
-      .catch((err) => {
-        console.error("[useChat] Erro ao inicializar conversa:", err);
-        setError("Erro ao inicializar. Por favor, recarregue a página.");
-      });
-  }, [queryClient, setActiveConversationId, setMessages]);
+    void reloadConversations();
+  }, [reloadConversations]);
 
   useEffect(() => {
     if (!activeConversationId) return;
+
+    let isCurrent = true;
+    setIsRecovering(true);
+    setRecoveryError(null);
     setMessages([]);
+
     getConversation(activeConversationId)
       .then((conversation) => {
+        if (!isCurrent) return;
+
         if (conversation?.messages?.length) {
           setMessages(conversation.messages);
         }
+        setIsRecovering(false);
       })
       .catch((err) => {
+        if (!isCurrent) return;
         console.error("[useChat] Erro ao carregar conversa:", err);
+        setMessages([]);
+        setRecoveryError("Nao consegui carregar esta conversa agora.");
+        setIsRecovering(false);
       });
-  }, [activeConversationId, setMessages]);
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [activeConversationId, conversationLoadNonce, setMessages]);
 
   const sendMessage = useCallback(
     async (content: string, options: SendMessageOptions = {}) => {
@@ -199,13 +288,13 @@ export function useChat() {
       if (isLoading) return false;
 
       if (!activeConversationId) {
-        console.warn("[useChat] activeConversationId não está pronto ainda");
+        setComposerError("Ainda nao existe uma conversa pronta para enviar a mensagem.");
         return false;
       }
 
       setIsLoading(true);
       setIsStreaming(true);
-      setError(null);
+      setComposerError(null);
       abortControllerRef.current = new AbortController();
 
       const userMessage: Message = {
@@ -219,6 +308,8 @@ export function useChat() {
 
       addMessage(userMessage);
 
+      const input = buildInputFromMessages(useChatStore.getState().messages);
+
       const assistantMessageId = crypto.randomUUID();
       const usesReasoning = isReasoningModel(parameters.model) && responseMode !== "quiz";
       const preferredDisplayMode = getPreferredDisplayMode(responseMode);
@@ -227,13 +318,15 @@ export function useChat() {
         role: "assistant",
         content: "",
         timestamp: new Date(),
+        streamStatus: "streaming",
         responseMode,
         ...(preferredDisplayMode && { preferredDisplayMode }),
         ...(usesReasoning && { reasoningStatus: "thinking" as const }),
       });
 
+      let streamState = createInitialAssistantStreamState(usesReasoning);
+
       try {
-        const input = buildInputFromMessages(useChatStore.getState().messages);
         const requestModel =
           responseMode === "quiz" ? QUIZ_FORCED_MODEL : parameters.model;
         const requestReasoningEffort =
@@ -283,15 +376,10 @@ export function useChat() {
         });
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || "Erro ao chamar a API");
+          throw await parseApiErrorResponse(response);
         }
 
-        let buffer = "";
         let accumulated = "";
-        let reasoningSummary = "";
-        let reasoningText = "";
-        const citations: UrlCitation[] = [];
 
         if (responseMode === "quiz") {
           const payload = (await response.json()) as { output_text?: string };
@@ -301,120 +389,43 @@ export function useChat() {
           if (!reader) throw new Error("Stream indisponível");
 
           const decoder = new TextDecoder();
+          let buffer = "";
 
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
             buffer += decoder.decode(value, { stream: true });
+            const extraction = extractSsePayloads(buffer);
+            buffer = extraction.buffer;
 
-            let boundaryIndex = buffer.indexOf("\n\n");
-            while (boundaryIndex !== -1) {
-              const rawEvent = buffer.slice(0, boundaryIndex).trim();
-              buffer = buffer.slice(boundaryIndex + 2);
+            for (const payload of extraction.payloads) {
+              if (payload === "[DONE]") continue;
 
-              if (rawEvent.length > 0) {
-                const dataLine = rawEvent
-                  .split("\n")
-                  .find((line) => line.startsWith("data: "));
-
-                if (dataLine) {
-                  const payload = dataLine.replace("data: ", "").trim();
-
-                  if (payload === "[DONE]") {
-                    boundaryIndex = buffer.indexOf("\n\n");
-                    continue;
-                  }
-
-                  try {
-                    const event = JSON.parse(payload);
-
-                    if (event.type === "response.output_text.delta") {
-                      accumulated += event.delta || "";
-                      updateMessage(assistantMessageId, { content: accumulated });
-                    }
-
-                    if (
-                      event.type === "response.output_item.added" &&
-                      event.item?.type === "image_generation_call"
-                    ) {
-                      updateMessage(assistantMessageId, { isGeneratingImage: true });
-                    }
-
-                    if (event.type === "response.image_generation_call.partial_image") {
-                      updateMessage(assistantMessageId, {
-                        imageBase64: event.partial_image_b64,
-                        imageMimeType: "image/png",
-                        isGeneratingImage: true,
-                      });
-                    }
-
-                    if (
-                      event.type === "response.output_item.done" &&
-                      event.item?.type === "image_generation_call" &&
-                      event.item?.result
-                    ) {
-                      updateMessage(assistantMessageId, {
-                        imageBase64: event.item.result,
-                        imageMimeType: "image/png",
-                      });
-                    }
-
-                    if (
-                      event.type === "response.output_item.added" &&
-                      event.item?.type === "web_search_call"
-                    ) {
-                      updateMessage(assistantMessageId, { isSearching: true });
-                    }
-
-                    if (
-                      event.type === "response.output_item.done" &&
-                      event.item?.type === "web_search_call"
-                    ) {
-                      updateMessage(assistantMessageId, { isSearching: false });
-                    }
-
-                    if (event.type === "response.output_text.annotation.added") {
-                      const ann = event.annotation;
-                      if (ann?.type === "url_citation" && ann.url) {
-                        const exists = citations.some((c) => c.url === ann.url);
-                        if (!exists) {
-                          citations.push({ title: ann.title || "", url: ann.url });
-                          updateMessage(assistantMessageId, { citations: [...citations] });
-                        }
-                      }
-                    }
-
-                    if (event.type === "response.reasoning_summary_text.delta") {
-                      reasoningSummary += event.delta || "";
-                      updateMessage(assistantMessageId, {
-                        reasoningSummary,
-                        reasoningStatus: "thinking",
-                      });
-                    }
-
-                    if (event.type === "response.reasoning_text.delta") {
-                      reasoningText += event.delta || "";
-                      updateMessage(assistantMessageId, {
-                        reasoningText,
-                        reasoningStatus: "thinking",
-                      });
-                    }
-                  } catch {
-                    // Ignora chunks parciais
-                  }
-                }
+              try {
+                const event = JSON.parse(payload);
+                streamState = reduceAssistantStreamEvent(streamState, event);
+                accumulated = streamState.content;
+                updateMessage(
+                  assistantMessageId,
+                  assistantStreamStateToMessagePatch(streamState)
+                );
+              } catch {
+                // Ignora chunks parciais ou eventos irrelevantes
               }
-
-              boundaryIndex = buffer.indexOf("\n\n");
             }
           }
-        }
 
-        if (usesReasoning) {
-          updateMessage(assistantMessageId, {
-            reasoningStatus: "complete",
-          });
+          streamState = finalizeAssistantStreamState(
+            streamState,
+            "completed",
+            usesReasoning
+          );
+          accumulated = streamState.content;
+          updateMessage(
+            assistantMessageId,
+            assistantStreamStateToMessagePatch(streamState)
+          );
         }
 
         if (accumulated.trim().length > 0) {
@@ -423,9 +434,9 @@ export function useChat() {
               ? createQuizArtifact(accumulated)
               : responseMode === "document"
               ? createMessageArtifact(accumulated, {
-                force: true,
-                displayMode: "document",
-              })
+                  force: true,
+                  displayMode: "document",
+                })
               : undefined;
           if (artifact) {
             updateMessage(assistantMessageId, {
@@ -433,36 +444,16 @@ export function useChat() {
               artifact,
             });
           } else if (responseMode === "quiz") {
-            throw new Error("Nao consegui montar o quiz interativo a partir da resposta do modelo.");
+            toast.error("Nao consegui montar o quiz interativo. Vou preservar a resposta bruta para tu revisar.");
+            updateMessage(assistantMessageId, {
+              content: accumulated,
+              preferredDisplayMode: undefined,
+            });
           }
         }
 
         try {
-          const finalMessages = useChatStore.getState().messages;
-          const messagesForStorage = finalMessages.map((m) => {
-            if (!m.attachments?.length) return m;
-            return {
-              ...m,
-              attachments: m.attachments.map((a) => ({
-                ...a,
-                dataUrl: a.type === "image" ? a.thumbnailUrl : undefined,
-                extractedText: a.extractedText ? `[${a.extractedText.length} chars]` : undefined,
-              })),
-            };
-          });
-          await saveConversationMessages(activeConversationId, messagesForStorage);
-
-          const userMsgs = finalMessages.filter((m) => m.role === "user");
-          if (userMsgs.length === 1) {
-            const snippet = userMsgs[0].content.slice(0, 60).trim();
-            const title = snippet + (userMsgs[0].content.length > 60 ? "..." : "");
-            await updateConversationTitle(activeConversationId, title);
-          }
-
-          queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
-          queryClient.invalidateQueries({
-            queryKey: conversationKeys.detail(activeConversationId),
-          });
+          await persistConversationSnapshot(activeConversationId, queryClient);
         } catch (saveErr) {
           console.error("[useChat] Falha ao salvar conversa:", saveErr);
           toast.error("Mensagem enviada, mas não foi salva. Tente recarregar.");
@@ -470,16 +461,32 @@ export function useChat() {
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
           updateMessage(assistantMessageId, {
+            ...assistantStreamStateToMessagePatch(
+              finalizeAssistantStreamState(
+                streamState,
+                "aborted",
+                usesReasoning
+              )
+            ),
+          });
+          updateMessage(assistantMessageId, {
             content: "⏹️ Geração cancelada.",
-            ...(usesReasoning && { reasoningStatus: "complete" as const }),
           });
         } else {
           const message =
             err instanceof Error ? err.message : "Erro desconhecido";
-          setError(message);
+          setComposerError(message);
+          updateMessage(assistantMessageId, {
+            ...assistantStreamStateToMessagePatch(
+              finalizeAssistantStreamState(
+                streamState,
+                "failed",
+                usesReasoning
+              )
+            ),
+          });
           updateMessage(assistantMessageId, {
             content: `❌ ${message}`,
-            ...(usesReasoning && { reasoningStatus: "complete" as const }),
           });
         }
       } finally {
@@ -532,8 +539,15 @@ export function useChat() {
       deleteMessagePair(messageId);
       if (activeConversationId) {
         const finalMessages = useChatStore.getState().messages;
-        await saveConversationMessages(activeConversationId, finalMessages);
-        queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+        try {
+          await withConversationPersistenceRetry(() =>
+            saveConversationMessages(activeConversationId, finalMessages)
+          );
+          await queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+        } catch (error) {
+          console.error("[useChat] Falha ao persistir exclusao:", error);
+          toast.error("A resposta sumiu da tela, mas nao consegui salvar essa exclusao.");
+        }
       }
     },
     [activeConversationId, deleteMessagePair, queryClient]
@@ -550,7 +564,10 @@ export function useChat() {
   return {
     messages,
     isLoading,
-    error,
+    error: composerError,
+    recoveryError,
+    isRecovering,
+    reloadConversations,
     sendMessage,
     editAndResend,
     deleteMessage,

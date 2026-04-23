@@ -9,6 +9,7 @@ import {
 } from "react";
 import { SidebarModern } from "@/components/sidebar/SidebarModern";
 import { ChatContainer } from "@/components/chat/ChatContainer";
+import { ChatRecoveryState } from "@/components/chat/ChatRecoveryState";
 import { InputArea } from "@/components/chat/InputArea";
 import { SettingsDrawer } from "@/components/settings/SettingsDrawer";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -31,6 +32,7 @@ import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import { cn } from "@/lib/utils";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { MODELS } from "@/lib/models/modelConfig";
+import { useChat } from "@/hooks/useChat";
 import {
   APP_DESKTOP_SIDEBAR_WIDTH_CLASS,
   APP_PANEL_SHEET_CLASS,
@@ -51,9 +53,21 @@ export function ChatShell() {
   const { activeConversationId, messages } = useChatStore();
   const { parameters } = useSettingsStore();
   const { conversations } = useConversations();
+  const {
+    messages: chatMessages,
+    isLoading: isChatLoading,
+    error: composerError,
+    recoveryError,
+    isRecovering,
+    reloadConversations,
+    sendMessage,
+    editAndResend,
+    deleteMessage,
+    stopGeneration,
+  } = useChat();
 
   const activeConversation = useMemo(() => {
-    if (!activeConversationId || messages.length === 0) return null;
+    if (!activeConversationId) return null;
     const conv = conversations.find((c) => c.id === activeConversationId);
     return conv
       ? { ...conv, messages }
@@ -92,6 +106,8 @@ export function ChatShell() {
 
   const currentMode = MODE_CONFIG[activeMode as keyof typeof MODE_CONFIG];
   const currentModel = MODELS[parameters.model];
+  const shouldShowRecoveryState =
+    Boolean(recoveryError) || isRecovering || !activeConversationId;
 
   const handleSplashComplete = useCallback(() => {
     sessionStorage.setItem("gpt-splash-shown", "1");
@@ -222,10 +238,30 @@ export function ChatShell() {
               </header>
 
               <main className="flex-1 overflow-hidden">
-                <div className="flex h-full flex-col">
-                  <ChatContainer />
-                  <InputArea />
-                </div>
+                {shouldShowRecoveryState ? (
+                  <ChatRecoveryState
+                    error={recoveryError}
+                    isRecovering={isRecovering}
+                    onRetry={() => {
+                      void reloadConversations();
+                    }}
+                  />
+                ) : (
+                  <div className="flex h-full flex-col">
+                    <ChatContainer
+                      messages={chatMessages}
+                      isLoading={isChatLoading}
+                      editAndResend={editAndResend}
+                      deleteMessage={deleteMessage}
+                    />
+                    <InputArea
+                      sendMessage={sendMessage}
+                      stopGeneration={stopGeneration}
+                      isLoading={isChatLoading}
+                      error={composerError}
+                    />
+                  </div>
+                )}
               </main>
             </div>
 

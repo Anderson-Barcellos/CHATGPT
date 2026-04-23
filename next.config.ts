@@ -1,25 +1,27 @@
 import type { NextConfig } from "next";
-import path from "path";
 
 const nextConfig: NextConfig = {
   basePath: process.env.NEXT_PUBLIC_BASE_PATH || "",
   assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || "",
   reactStrictMode: true,
-  
+
   poweredByHeader: false,
-  
+
   compress: true,
-  
-  compiler: {
-    removeConsole: process.env.NODE_ENV === "production" ? {
-      exclude: ["error", "warn"],
-    } : false,
-  },
-  
+
   turbopack: {
-    root: path.join(process.cwd()),
+    root: __dirname,
   },
-  
+
+  compiler: {
+    removeConsole:
+      process.env.NODE_ENV === "production"
+        ? {
+            exclude: ["error", "warn"],
+          }
+        : false,
+  },
+
   experimental: {
     optimizePackageImports: [
       "lucide-react",
@@ -34,7 +36,7 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "2mb",
     },
   },
-  
+
   images: {
     remotePatterns: [
       {
@@ -43,13 +45,13 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "chat.ultrassom.ai",
+        hostname: "ultrassom.ai",
       },
     ],
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60,
   },
-  
+
   headers: async () => {
     return [
       {

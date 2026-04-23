@@ -1,7 +1,6 @@
 "use client";
 
 import { KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState, DragEvent, ClipboardEvent } from "react";
-import { useChat } from "@/hooks/useChat";
 import { useSpeechToText } from "@/hooks/useSpeechToText";
 import { useFileAttachments } from "@/hooks/useFileAttachments";
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -23,7 +22,7 @@ import {
   Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ReasoningEffort, ResponseMode } from "@/types";
+import type { ReasoningEffort, ResponseMode, SendMessageOptions } from "@/types";
 import {
   QUIZ_FORCED_MODEL,
   QUIZ_FORCED_REASONING_EFFORT,
@@ -59,14 +58,25 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
 
-export function InputArea() {
+interface InputAreaProps {
+  sendMessage: (content: string, options?: SendMessageOptions) => Promise<boolean>;
+  stopGeneration: () => void;
+  isLoading: boolean;
+  error: string | null;
+}
+
+export function InputArea({
+  sendMessage,
+  stopGeneration,
+  isLoading,
+  error,
+}: InputAreaProps) {
   const [input, setInput] = useState("");
   const [responseMode, setResponseMode] = useState<ResponseMode>("default");
   const [isDragging, setIsDragging] = useState(false);
   const dragCounter = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { sendMessage, stopGeneration, isLoading, error } = useChat();
   const { attachments, isProcessing, errors: fileErrors, addFiles, removeFile, clearFiles } = useFileAttachments();
   const {
     audioLevel,

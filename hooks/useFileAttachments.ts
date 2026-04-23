@@ -130,11 +130,11 @@ export function useFileAttachments() {
     const fileArray = Array.from(files);
     const newErrors: FileProcessingError[] = [];
 
+    let currentCount = 0;
     setAttachments((current) => {
-      const remaining = MAX_FILES - current.length;
-      if (remaining <= 0) {
+      currentCount = current.length;
+      if (currentCount >= MAX_FILES) {
         newErrors.push({ fileName: "geral", error: `Maximo de ${MAX_FILES} arquivos atingido` });
-        return current;
       }
       return current;
     });
@@ -142,7 +142,6 @@ export function useFileAttachments() {
     setIsProcessing(true);
     setErrors([]);
 
-    const currentCount = attachments.length;
     const toProcess = fileArray.slice(0, MAX_FILES - currentCount);
 
     const processed: FileAttachment[] = [];
@@ -194,7 +193,7 @@ export function useFileAttachments() {
     setAttachments((current) => [...current, ...processed]);
     if (newErrors.length > 0) setErrors(newErrors);
     setIsProcessing(false);
-  }, [attachments.length]);
+  }, []);
 
   const removeFile = useCallback((id: string) => {
     setAttachments((current) => current.filter((a) => a.id !== id));

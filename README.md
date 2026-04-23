@@ -125,7 +125,7 @@ npm run dev
 npm run build
 npm run start
 npm run lint
-npm test -- --run
+npm test
 npx tsc --noEmit
 ```
 
@@ -134,7 +134,7 @@ npx tsc --noEmit
 Before shipping a change, the repo is typically validated with:
 
 ```bash
-npm test -- --run
+npm test
 npm run build
 npx tsc --noEmit
 npm run lint

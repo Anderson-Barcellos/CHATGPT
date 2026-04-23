@@ -5,7 +5,7 @@ interface ChatState {
   activeConversationId: string | null;
   messages: Message[];
   isStreaming: boolean;
-  setActiveConversationId: (id: string) => void;
+  setActiveConversationId: (id: string | null) => void;
   setMessages: (messages: Message[]) => void;
   setIsStreaming: (isStreaming: boolean) => void;
   addMessage: (message: Message) => void;

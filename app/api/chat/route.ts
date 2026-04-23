@@ -1,6 +1,7 @@
 import OpenAI from "openai";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import type { ResponseMode, ResponseVerbosity } from "@/types";
+import { jsonError } from "@/lib/api/errors";
 import {
   MODELS,
   isReasoningModel,
@@ -139,10 +140,10 @@ function buildRequestParams(body: ChatRequestBody) {
 export async function POST(request: NextRequest) {
   try {
     if (isAuthEnabled() && !(await isAuthenticatedRequest(request))) {
-      return NextResponse.json(
-        { error: "Unauthorized", message: "Faça login para continuar." },
-        { status: 401 }
-      );
+      return jsonError(401, "Unauthorized", {
+        message: "Faça login para continuar.",
+        code: "unauthorized",
+      });
     }
 
     const body = (await request.json()) as ChatRequestBody;
@@ -155,11 +156,17 @@ export async function POST(request: NextRequest) {
     const effectiveModel = responseMode === "quiz" ? QUIZ_FORCED_MODEL : model;
 
     if (!input) {
-      return Response.json({ error: "Input é obrigatório" }, { status: 400 });
+      return jsonError(400, "Input is required", {
+        message: "Input e obrigatorio.",
+        code: "chat_input_required",
+      });
     }
 
     if (!ALLOWED_MODELS.has(effectiveModel)) {
-      return Response.json({ error: "Modelo não permitido" }, { status: 400 });
+      return jsonError(400, "Model not allowed", {
+        message: "Modelo nao permitido.",
+        code: "chat_model_not_allowed",
+      });
     }
 
     const requestParams = buildRequestParams(body);
@@ -202,12 +209,14 @@ export async function POST(request: NextRequest) {
     console.error("Chat API error:", error);
 
     if (error instanceof OpenAI.APIError) {
-      return Response.json(
-        { error: error.message, code: error.code },
-        { status: error.status || 500 }
-      );
+      return jsonError(error.status || 500, error.message, {
+        code: error.code ?? "openai_api_error",
+      });
     }
 
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return jsonError(500, "Internal server error", {
+      message: "Falha interna ao processar a conversa.",
+      code: "chat_internal_error",
+    });
   }
 }

@@ -1,6 +1,11 @@
 export type MessageRole = "user" | "assistant";
 export type AppMode = "chat" | "image";
 export type ResponseMode = "default" | "document" | "quiz";
+export type MessageStreamStatus =
+  | "streaming"
+  | "completed"
+  | "aborted"
+  | "failed";
 
 export interface UrlCitation {
   title: string;
@@ -85,6 +90,7 @@ export interface Message {
   role: MessageRole;
   content: string;
   timestamp: Date;
+  streamStatus?: MessageStreamStatus;
   responseMode?: ResponseMode;
   preferredDisplayMode?: MessageArtifactDisplayMode;
   reasoningSummary?: string;

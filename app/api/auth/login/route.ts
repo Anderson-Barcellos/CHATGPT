@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import {
   getAuthPassword,
@@ -5,6 +6,14 @@ import {
   setAuthCookie,
   signAuthToken,
 } from "@/lib/server/auth";
+
+function passwordsMatch(a: string, b: string): boolean {
+  const encoder = new TextEncoder();
+  const bufA = encoder.encode(a);
+  const bufB = encoder.encode(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     const correctPassword = getAuthPassword();
 
-    if (password !== correctPassword) {
+    if (!passwordsMatch(password ?? "", correctPassword)) {
       return NextResponse.json(
         { error: "Senha incorreta" },
         { status: 401 }
