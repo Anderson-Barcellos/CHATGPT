@@ -9,7 +9,7 @@ The project focuses on a ChatGPT-like experience with conversation history, reas
 - Real-time chat experience with streaming responses
 - Dedicated reasoning panel with explicit state transitions
 - Conversation history with editing and deletion flows
-- Model picker with support for `gpt-5.4` and `gpt-5.3-chat-latest`
+- Model picker with support for `gpt-5.5`, `gpt-5.3-codex`, and `gpt-5.3-chat-latest`
 - Persistent memory and custom instructions stored server-side
 - Artifact rendering and export flows, including PDF generation
 - Mobile-first shell refinements for Safari and installed PWA usage

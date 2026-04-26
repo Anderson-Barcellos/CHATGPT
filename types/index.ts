@@ -195,7 +195,6 @@ export type ModelFamily =
   | "o-series"
   | "gpt-4o"
   | "gpt-5"
-  | "gpt-5.1"
   | "dall-e"
   | "gpt-image";
 

@@ -166,7 +166,7 @@ Plus custom:
 | `CustomInstructions` | id, contextAboutUser, responsePreferences |
 | `Memory` | id, content, category, isActive, priority, createdAt, updatedAt |
 | `ModelInfo` | id, name, family, description, contextWindow, maxOutput, pricing, capabilities[], supportsTemperature, supportsVerbosity, supportsCodeInterpreter, supportsStreaming, badge? |
-| `ModelFamily` | `"gpt-5.1" \| "gpt-5" \| "gpt-4.1" \| "gpt-4o" \| "o-series" \| "dall-e"` |
+| `ModelFamily` | `"gpt-5" \| "gpt-4.1" \| "gpt-4o" \| "o-series" \| "dall-e" \| "gpt-image"` |
 | `ReasoningEffort` | `"none" \| "low" \| "medium" \| "high" \| "xhigh"` |
 | `ReasoningSummary` | `"off" \| "auto" \| "concise" \| "detailed"` |
 | `AppMode` | `"chat" \| "image"` |

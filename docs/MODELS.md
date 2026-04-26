@@ -1,20 +1,17 @@
 # Model Configuration
 
-**Last updated:** 2026-04-01  
+**Last updated:** 2026-04-26
 **Source:** `lib/models/modelConfig.ts`
 
-## Available Models (10 chat + 2 image)
+## Available Models (8 chat + 2 image)
 
 ### GPT-5 Series
 
 | ID | Name | Reasoning | Temperature | Context | Pricing (in/out per 1M) | Badge |
 |----|------|-----------|-------------|---------|--------------------------|-------|
-| `gpt-5.4` | GPT-5.4 | Yes | No | 1.05M | $2.5 / $15 | Frontier |
-| `gpt-5.4-mini` | GPT-5.4 Mini | Yes | No | 400K | $0.75 / $4.5 | Mini |
+| `gpt-5.5` | GPT-5.5 | Yes | No | 1.05M | $5 / $30 | Frontier |
 | `gpt-5.3-chat-latest` | GPT-5.3 Chat | No | Yes | 128K | $1.75 / $14 | ChatGPT |
-| `gpt-5.1-chat-latest` | GPT-5.1 Instant | No | Yes | 256K | $5 / $15 | Rapido |
-| `gpt-5.1` | GPT-5.1 Thinking | Yes | No | 256K | $5 / $15 | Mais Novo |
-| `gpt-5.1-pro` | GPT-5.1 Pro | Yes | No | 256K | $15 / $60 | Premium |
+| `gpt-5.3-codex` | GPT-5.3 Codex | Yes | No | 400K | $1.75 / $14 | Codex |
 
 ### GPT-4 Series
 
