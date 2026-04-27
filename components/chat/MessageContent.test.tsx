@@ -41,4 +41,49 @@ describe("MessageContent streaming routing", () => {
     expect(markup).toContain("<li");
     expect(markup).toContain("item pronto");
   });
+
+  it("does not render panel actions while an artifact is still being prepared", () => {
+    const markup = renderToStaticMarkup(
+      <MessageContent
+        message={{
+          id: "assistant-document-loading",
+          role: "assistant",
+          content: "",
+          timestamp: new Date("2026-04-23T12:00:00.000Z"),
+          streamStatus: "streaming",
+          preferredDisplayMode: "document",
+        }}
+      />
+    );
+
+    expect(markup).toContain("Montando o documento");
+    expect(markup).not.toContain("Abrir no painel");
+  });
+
+  it("renders panel actions once an artifact exists", () => {
+    const markup = renderToStaticMarkup(
+      <MessageContent
+        message={{
+          id: "assistant-document-ready",
+          role: "assistant",
+          content: "Documento pronto",
+          timestamp: new Date("2026-04-23T12:00:00.000Z"),
+          streamStatus: "completed",
+          preferredDisplayMode: "document",
+          artifact: {
+            id: "artifact-1",
+            kind: "document",
+            title: "Documento pronto",
+            summary: "Resumo do documento.",
+            displayMode: "document",
+            content: "# Documento pronto",
+            type: "markdown",
+          },
+        }}
+      />
+    );
+
+    expect(markup).toContain("Abrir documento");
+    expect(markup).toContain("Abrir no painel");
+  });
 });

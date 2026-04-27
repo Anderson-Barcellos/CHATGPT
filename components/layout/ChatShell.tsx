@@ -130,11 +130,11 @@ export function ChatShell() {
         <div
           className="relative z-10 flex h-full w-full p-0 md:p-4 md:pb-[max(1rem,env(safe-area-inset-bottom))]"
         >
-          <div className="relative flex h-full w-full overflow-hidden rounded-none md:rounded-[28px] border-0 md:border md:border-white/10 bg-background/60 md:shadow-[0_20px_80px_rgba(2,6,23,0.25)] backdrop-blur-2xl">
+          <div className="relative flex h-full w-full overflow-hidden rounded-none border-0 bg-[var(--app-shell-panel)] backdrop-blur-xl md:rounded-[28px] md:border md:border-[color:var(--app-border-subtle)] md:shadow-[0_24px_90px_rgba(2,8,23,0.42)]">
             {!isMobile && (
               <aside
                 className={cn(
-                  "hidden md:flex transition-all duration-300 border-r border-white/5",
+                  "hidden border-r border-[color:var(--app-border-subtle)] transition-all duration-300 md:flex",
                   "glass",
                   sidebarCollapsed ? "w-16" : APP_DESKTOP_SIDEBAR_WIDTH_CLASS
                 )}
@@ -145,7 +145,7 @@ export function ChatShell() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-8 w-8 rounded-xl bg-[var(--app-control-surface)] hover:bg-[var(--app-control-hover)]"
                         onClick={() => setSidebarCollapsed(false)}
                       >
                         <ChevronRight className="h-4 w-4" />
@@ -178,7 +178,7 @@ export function ChatShell() {
             </Sheet>
 
             <div className="flex h-full flex-1 flex-col overflow-hidden">
-              <header className="border-b border-white/5 bg-background/40 backdrop-blur-xl pt-[env(safe-area-inset-top)] md:pt-0">
+              <header className="border-b border-[color:var(--app-border-subtle)] bg-[var(--app-shell-panel-strong)] pt-[env(safe-area-inset-top)] backdrop-blur-xl md:pt-0">
                 <div className="flex items-center justify-between px-2.5 py-1.5 md:px-4 md:py-2.5">
                   <div className="flex items-center gap-1.5 md:gap-2">
                     {isMobile && (
@@ -186,7 +186,7 @@ export function ChatShell() {
                         variant="ghost"
                         size="icon"
                         onClick={() => setSidebarOpen(true)}
-                        className="h-8 w-8 rounded-xl"
+                        className="h-8 w-8 rounded-xl bg-[var(--app-control-surface)] hover:bg-[var(--app-control-hover)]"
                         data-compact-touch
                       >
                         <Menu className="h-4 w-4" />
@@ -219,7 +219,7 @@ export function ChatShell() {
                       variant="ghost"
                       size="icon"
                       onClick={() => setSettingsOpen(true)}
-                      className="h-8 w-8 rounded-xl"
+                      className="h-8 w-8 rounded-xl bg-[var(--app-control-surface)] hover:bg-[var(--app-control-hover)]"
                       data-compact-touch
                     >
                       <Settings className="h-4 w-4" />

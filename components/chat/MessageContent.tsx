@@ -254,19 +254,17 @@ export function MessageContent({ message, className }: MessageContentProps) {
               </Button>
             )}
 
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-6 gap-1 rounded-full px-2.5 text-[11px] md:h-7 md:gap-1.5 md:px-3 md:text-xs"
-              onClick={() =>
-                artifact
-                  ? openArtifact(artifact, message.id)
-                  : undefined
-              }
-            >
-              <PanelRightOpen className="h-3.5 w-3.5" />
-              {prefersQuizMode ? "Abrir quiz" : "Abrir no painel"}
-            </Button>
+            {artifact && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-6 gap-1 rounded-full px-2.5 text-[11px] md:h-7 md:gap-1.5 md:px-3 md:text-xs"
+                onClick={() => openArtifact(artifact, message.id)}
+              >
+                <PanelRightOpen className="h-3.5 w-3.5" />
+                {prefersQuizMode ? "Abrir quiz" : "Abrir no painel"}
+              </Button>
+            )}
           </div>
         </div>
       </div>

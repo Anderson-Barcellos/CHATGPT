@@ -165,8 +165,8 @@ export function SidebarModern({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-3 border-b border-white/5 px-4 py-4">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/20 via-blue-500/10 to-indigo-500/20">
+      <div className="flex items-center gap-3 border-b border-[color:var(--app-border-subtle)] px-4 py-4">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[color:var(--app-border-subtle)] bg-gradient-to-br from-cyan-400/16 via-blue-400/10 to-slate-950/30 shadow-[0_10px_30px_rgba(8,145,178,0.10)]">
           <GPTLogo size={30} />
         </div>
         <div className="flex-1 min-w-0">
@@ -180,7 +180,7 @@ export function SidebarModern({
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-9 w-9 shrink-0 rounded-xl bg-white/5 hover:bg-white/10"
+                  className="h-9 w-9 shrink-0 rounded-xl bg-[var(--app-control-surface)] hover:bg-[var(--app-control-hover)]"
                   onClick={handleCreateConversation}
                   disabled={isStreaming}
                 >
@@ -197,7 +197,7 @@ export function SidebarModern({
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-9 w-9 shrink-0 rounded-xl bg-white/5 hover:bg-white/10"
+                    className="h-9 w-9 shrink-0 rounded-xl bg-[var(--app-control-surface)] hover:bg-[var(--app-control-hover)]"
                     onClick={onCollapse}
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -217,7 +217,7 @@ export function SidebarModern({
             placeholder="Buscar conversas..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-9 text-xs bg-background/60 border-white/10 rounded-xl focus-visible:ring-2 focus-visible:ring-primary/30"
+            className="h-9 rounded-xl border-[color:var(--app-border-subtle)] bg-[var(--app-control-surface)] pl-9 text-xs focus-visible:border-[color:var(--app-border-active)] focus-visible:ring-2 focus-visible:ring-primary/20"
           />
         </div>
 
@@ -233,7 +233,7 @@ export function SidebarModern({
                   {Array.from({ length: 4 }).map((_, index) => (
                     <div
                       key={index}
-                      className="h-14 rounded-xl border border-white/6 bg-white/[0.04] animate-pulse"
+                    className="h-14 animate-pulse rounded-xl border border-[color:var(--app-border-subtle)] bg-[var(--app-control-surface)]"
                     />
                   ))}
                 </div>
@@ -291,13 +291,13 @@ export function SidebarModern({
         </ScrollArea>
       </div>
 
-      <div className="p-3 border-t border-white/5">
+      <div className="border-t border-[color:var(--app-border-subtle)] p-3">
         <button
           onClick={onOpenSettings}
           className={cn(
             "flex items-center gap-2 text-xs text-muted-foreground w-full",
             "px-3 py-2.5 rounded-xl transition-all",
-            "hover:text-foreground hover:bg-white/10"
+            "hover:bg-[var(--app-control-hover)] hover:text-foreground"
           )}
         >
           <Settings className="h-4 w-4" />
@@ -308,7 +308,7 @@ export function SidebarModern({
   );
 }
 
-function ConversationItem({
+export function ConversationItem({
   conversation,
   isActive,
   disabled = false,
@@ -336,44 +336,53 @@ function ConversationItem({
   }, []);
 
   return (
-    <div
-      className={cn(
-        "group relative flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm cursor-pointer",
-        "transition-all duration-150",
-        isActive
-          ? "bg-white/20 text-foreground shadow-sm ring-1 ring-primary/15"
-          : "hover:bg-white/10 text-muted-foreground hover:text-foreground",
-        disabled && "cursor-not-allowed opacity-75"
-      )}
-      onClick={onClick}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onTouchMove={handleTouchEnd}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        if (!disabled) setMenuOpen(true);
-      }}
-      aria-disabled={disabled}
-    >
-      <div
+    <div className="group relative">
+      <button
+        type="button"
         className={cn(
-          "absolute left-1 top-2 bottom-2 w-0.5 rounded-full transition-opacity",
-          isActive ? "bg-primary/80 opacity-100" : "opacity-0"
+          "relative flex w-full items-center gap-2.5 rounded-xl px-3 py-2 pr-11 text-left text-sm",
+          "transition-all duration-150",
+          isActive
+            ? "bg-[var(--app-control-hover)] text-foreground shadow-sm ring-1 ring-primary/25"
+            : "text-muted-foreground hover:bg-[var(--app-control-surface)] hover:text-foreground",
+          disabled ? "cursor-not-allowed opacity-75" : "cursor-pointer"
         )}
-      />
-      <MessageCircle className={cn("h-3.5 w-3.5 shrink-0", isActive && "text-primary")} />
-      <div className="flex-1 min-w-0">
-        <span className={cn("block truncate text-xs", isActive ? "font-semibold" : "font-medium")}>
-          {conversation.title}
-        </span>
-        <span className="text-[11px] text-muted-foreground/55">
-          {relativeDate(conversation.updatedAt)}
-        </span>
-      </div>
-      {(conversation as Conversation & { favorite?: boolean }).favorite && (
-        <Star className="h-3 w-3 text-yellow-500 shrink-0" />
-      )}
-      <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+        onClick={onClick}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchMove={handleTouchEnd}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          if (!disabled) setMenuOpen(true);
+        }}
+        aria-current={isActive ? "page" : undefined}
+        aria-disabled={disabled}
+        disabled={disabled}
+      >
+        <div
+          className={cn(
+            "absolute left-1 top-2 bottom-2 w-0.5 rounded-full transition-opacity",
+            isActive ? "bg-primary opacity-100 shadow-[0_0_12px_rgba(94,234,212,0.35)]" : "opacity-0"
+          )}
+        />
+        <MessageCircle className={cn("h-3.5 w-3.5 shrink-0", isActive && "text-primary")} />
+        <div className="min-w-0 flex-1">
+          <span className={cn("block truncate text-xs", isActive ? "font-semibold" : "font-medium")}>
+            {conversation.title}
+          </span>
+          <span className="text-[11px] text-muted-foreground/55">
+            {relativeDate(conversation.updatedAt)}
+          </span>
+        </div>
+        {(conversation as Conversation & { favorite?: boolean }).favorite && (
+          <Star className="h-3 w-3 shrink-0 text-yellow-500" />
+        )}
+      </button>
+
+      <div
+        className="absolute right-2 top-1/2 shrink-0 -translate-y-1/2"
+        onClick={(e) => e.stopPropagation()}
+      >
         <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenuTrigger asChild>
             <Button

@@ -9,12 +9,12 @@
     "updatedAt": "2026-04-09T00:49:29.682Z"
   },
   {
-    "content": "O texto deve manter uma arquitetura pedagógica clara, progressiva e altamente ilustrativa. Em vez de apenas listar achados ou patologias, conduza o leitor como um tutor socrático experiente que forma um colega mais jovem",
+    "content": "O texto deve manter uma arquitetura pedagógica clara, progressiva e altamente ilustrativa. Em vez de apenas listar achados ou patologias, conduza o leitor como um tutor socrático experiente que forma um colega mais jovem.\n\nNunca use vertical bullet points ou enumeraçoes.",
     "category": "personal",
-    "isActive": false,
+    "isActive": true,
     "priority": 0,
     "id": "a2b9366e-bb50-4607-b09d-a9f13936eca5",
     "createdAt": "2026-04-08T11:09:31.274Z",
-    "updatedAt": "2026-04-09T00:49:26.800Z"
+    "updatedAt": "2026-04-24T17:31:01.603Z"
   }
 ]

@@ -3,7 +3,7 @@ import { addRateLimitHeaders, checkRateLimit } from "@/lib/security/rateLimit";
 import { isAuthEnabled, isAuthenticatedRequest } from "@/lib/server/auth";
 
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
-const RATE_LIMITED_PATHS = ["/api/chat", "/api/transcribe"];
+const RATE_LIMITED_PATHS = ["/api/chat", "/api/transcribe", "/api/auth/login"];
 const PUBLIC_PATHS = [
   "/login",
   "/api/auth/login",
@@ -31,8 +31,31 @@ function isPublicPath(pathname: string): boolean {
   );
 }
 
-function isRateLimitedPath(pathname: string): boolean {
+export function shouldRateLimitPath(pathname: string): boolean {
   return RATE_LIMITED_PATHS.some((path) => pathname.startsWith(path));
+}
+
+async function applyRateLimit(request: NextRequest, pathname: string) {
+  const rateLimitResult = await checkRateLimit(request, pathname);
+
+  if (!rateLimitResult.allowed) {
+    const response = NextResponse.json(
+      {
+        error: "Too Many Requests",
+        message: `Rate limit exceeded. Try again in ${rateLimitResult.retryAfter} seconds.`,
+        retryAfter: rateLimitResult.retryAfter,
+        limit: rateLimitResult.limit,
+      },
+      { status: 429 }
+    );
+
+    addRateLimitHeaders(response.headers, rateLimitResult, pathname);
+    return addSecurityHeaders(response);
+  }
+
+  const response = NextResponse.next();
+  addRateLimitHeaders(response.headers, rateLimitResult, pathname);
+  return addSecurityHeaders(response);
 }
 
 function buildLoginUrl(request: NextRequest): URL {
@@ -83,6 +106,10 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  if (pathname === "/api/auth/login" && shouldRateLimitPath(pathname)) {
+    return applyRateLimit(request, pathname);
+  }
+
   if (isPublicPath(pathname)) {
     return addSecurityHeaders(NextResponse.next());
   }
@@ -104,27 +131,8 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  if (isRateLimitedPath(pathname)) {
-    const rateLimitResult = await checkRateLimit(request, pathname);
-
-    if (!rateLimitResult.allowed) {
-      const response = NextResponse.json(
-        {
-          error: "Too Many Requests",
-          message: `Rate limit exceeded. Try again in ${rateLimitResult.retryAfter} seconds.`,
-          retryAfter: rateLimitResult.retryAfter,
-          limit: rateLimitResult.limit,
-        },
-        { status: 429 }
-      );
-
-      addRateLimitHeaders(response.headers, rateLimitResult, pathname);
-      return addSecurityHeaders(response);
-    }
-
-    const response = NextResponse.next();
-    addRateLimitHeaders(response.headers, rateLimitResult, pathname);
-    return addSecurityHeaders(response);
+  if (shouldRateLimitPath(pathname)) {
+    return applyRateLimit(request, pathname);
   }
 
   return addSecurityHeaders(NextResponse.next());

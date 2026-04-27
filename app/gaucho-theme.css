@@ -23,19 +23,19 @@
 .dark {
   --primary: oklch(0.75 0.14 195);
   --primary-foreground: oklch(0.10 0.02 245);
-  --accent: oklch(0.75 0.14 195);
+  --accent: oklch(0.72 0.12 212);
   --accent-foreground: oklch(0.10 0.02 245);
   --ring: oklch(0.75 0.14 195);
 
-  --glass-bg: oklch(0.24 0.03 245 / 0.60);
-  --glass-bg-strong: oklch(0.26 0.03 245 / 0.75);
-  --glass-border: oklch(1 0.01 245 / 0.08);
-  --glass-highlight: oklch(0.75 0.10 195 / 0.08);
+  --glass-bg: oklch(0.16 0.030 252 / 0.72);
+  --glass-bg-strong: oklch(0.19 0.032 250 / 0.84);
+  --glass-border: oklch(0.82 0.035 230 / 0.12);
+  --glass-highlight: oklch(0.80 0.11 200 / 0.08);
 }
 
 @layer utilities {
   .glass {
-    @apply backdrop-blur-2xl border;
+    @apply border backdrop-blur-xl;
     background: var(--glass-bg);
     border-color: var(--glass-border);
     box-shadow: 0 1px 0 var(--glass-highlight) inset;
@@ -47,7 +47,7 @@
   }
 
   .glass-hover:hover {
-    box-shadow: 0 12px 36px oklch(0.65 0.18 240 / 0.25);
+    box-shadow: 0 14px 38px oklch(0.08 0.03 255 / 0.30);
     transform: translateY(-1px);
   }
 
@@ -61,11 +61,11 @@
   }
 
   :is(.dark) .text-gradient-gpt {
-    background: linear-gradient(135deg, #a5f3fc 0%, #60a5fa 40%, #c084fc 90%);
+    background: linear-gradient(135deg, #b8fff5 0%, #6ee7f9 42%, #8fb8ff 82%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    filter: drop-shadow(0 0 22px oklch(0.75 0.16 255 / 0.55));
+    filter: drop-shadow(0 0 18px oklch(0.78 0.13 205 / 0.42));
   }
 
   .animate-float {

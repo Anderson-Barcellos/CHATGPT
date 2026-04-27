@@ -16,13 +16,13 @@ describe("streaming buffer timing", () => {
   });
 
   it("matches the STT step-delay thresholds", () => {
-    expect(getStreamingBufferStepDelay(500)).toBe(14);
-    expect(getStreamingBufferStepDelay(300)).toBe(18);
-    expect(getStreamingBufferStepDelay(180)).toBe(22);
-    expect(getStreamingBufferStepDelay(100)).toBe(28);
-    expect(getStreamingBufferStepDelay(40)).toBe(36);
-    expect(getStreamingBufferStepDelay(10)).toBe(48);
-    expect(getStreamingBufferStepDelay(0)).toBe(48);
+    expect(getStreamingBufferStepDelay(500)).toBe(18);
+    expect(getStreamingBufferStepDelay(300)).toBe(22);
+    expect(getStreamingBufferStepDelay(180)).toBe(28);
+    expect(getStreamingBufferStepDelay(100)).toBe(34);
+    expect(getStreamingBufferStepDelay(40)).toBe(42);
+    expect(getStreamingBufferStepDelay(10)).toBe(56);
+    expect(getStreamingBufferStepDelay(0)).toBe(56);
   });
 
   it("keeps bigger chunks paired with shorter delays", () => {

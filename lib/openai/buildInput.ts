@@ -10,7 +10,11 @@ type InputMessage =
 
 export function buildInputFromMessages(messages: Message[]): InputMessage[] {
   return messages.map((message) => {
-    const imageAttachments = message.attachments?.filter((a) => a.type === "image" && a.dataUrl) ?? [];
+    const imageAttachments = message.attachments?.filter((a) =>
+      a.type === "image" &&
+      a.dataUrl &&
+      a.dataUrl !== a.thumbnailUrl
+    ) ?? [];
     const textAttachments = message.attachments?.filter((a) => a.type !== "image" && a.extractedText) ?? [];
 
     let textContent = message.content;

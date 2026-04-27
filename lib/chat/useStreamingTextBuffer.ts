@@ -15,12 +15,12 @@ export function getStreamingBufferStepSize(pendingChars: number): number {
 }
 
 export function getStreamingBufferStepDelay(pendingChars: number): number {
-  if (pendingChars > 420) return 14;
-  if (pendingChars > 240) return 18;
-  if (pendingChars > 140) return 22;
-  if (pendingChars > 72) return 28;
-  if (pendingChars > 28) return 36;
-  return 48;
+  if (pendingChars > 420) return 18;
+  if (pendingChars > 240) return 22;
+  if (pendingChars > 140) return 28;
+  if (pendingChars > 72) return 34;
+  if (pendingChars > 28) return 42;
+  return 56;
 }
 
 interface UseStreamingTextBufferOptions {

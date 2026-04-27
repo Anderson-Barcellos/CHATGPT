@@ -28,6 +28,7 @@ import {
   QUIZ_FORCED_REASONING_EFFORT,
   QUIZ_MIN_QUESTION_COUNT,
 } from "@/lib/artifacts/quizArtifacts";
+import { canSubmitComposerMessage } from "@/lib/chat/composerSubmit";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -131,7 +132,7 @@ export function InputArea({
   }, [updateParameters]);
 
   const handleSubmit = useCallback(async () => {
-    if (!hasContent) return;
+    if (!canSubmitComposerMessage({ hasContent, isProcessing })) return;
     const sent = await sendMessage(input, {
       responseMode,
       attachments: attachments.length > 0 ? attachments : undefined,
@@ -145,7 +146,7 @@ export function InputArea({
       }
       textareaRef.current?.focus();
     }
-  }, [attachments, clearFiles, hasContent, input, responseMode, sendMessage]);
+  }, [attachments, clearFiles, hasContent, input, isProcessing, responseMode, sendMessage]);
 
   const handleMicrophoneClick = useCallback(async () => {
     const transcript = await toggleRecording();
@@ -251,10 +252,10 @@ export function InputArea({
   }, []);
 
   return (
-    <div className="relative border-t border-white/5 bg-background/40 backdrop-blur-2xl">
+    <div className="relative border-t border-[color:var(--app-border-subtle)] bg-[var(--app-shell-panel)] backdrop-blur-xl">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[max(env(safe-area-inset-bottom),0.35rem)] bg-background/80 md:hidden"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[max(env(safe-area-inset-bottom),0.35rem)] bg-[var(--app-composer-surface)] md:hidden"
       />
       <div className="relative mx-auto w-full max-w-5xl px-3 pt-2.5 pb-2 [padding-bottom:calc(env(safe-area-inset-bottom)+0.5rem)] md:px-4 md:py-4">
         {error && (
@@ -291,10 +292,10 @@ export function InputArea({
 
         <div
           className={cn(
-            "relative rounded-xl border border-white/10 bg-background/70 shadow-lg backdrop-blur-xl md:rounded-2xl",
+            "relative rounded-xl border border-[color:var(--app-border-subtle)] bg-[var(--app-composer-surface)] shadow-[var(--app-composer-shadow)] backdrop-blur-lg md:rounded-2xl",
             "transition-all duration-200",
-            "focus-within:shadow-xl focus-within:border-primary/30",
-            isDragging && "border-primary/50 shadow-xl shadow-primary/10 bg-primary/5"
+            "focus-within:border-[color:var(--app-border-active)] focus-within:shadow-[0_18px_70px_rgba(8,145,178,0.22)]",
+            isDragging && "border-primary/50 bg-primary/8 shadow-xl shadow-primary/10"
           )}
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
@@ -350,7 +351,7 @@ export function InputArea({
               {attachments.map((att) => (
                 <div
                   key={att.id}
-                  className="group relative flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-[11px] transition-colors hover:bg-white/10 md:gap-2 md:rounded-xl md:px-2.5 md:text-xs"
+                  className="group relative flex items-center gap-1.5 rounded-lg border border-[color:var(--app-border-subtle)] bg-[var(--app-control-surface)] px-2 py-1.5 text-[11px] transition-colors hover:bg-[var(--app-control-hover)] md:gap-2 md:rounded-xl md:px-2.5 md:text-xs"
                 >
                   {att.type === "image" && att.thumbnailUrl ? (
                     /* eslint-disable-next-line @next/next/no-img-element -- thumbnail data URI */
@@ -374,14 +375,14 @@ export function InputArea({
                   </div>
                   <button
                     onClick={() => removeFile(att.id)}
-                    className="ml-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-muted-foreground/70 transition-colors hover:bg-destructive/20 hover:text-destructive"
+                    className="ml-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/8 text-muted-foreground/70 transition-colors hover:bg-destructive/20 hover:text-destructive"
                   >
                     <X className="h-3 w-3" />
                   </button>
                 </div>
               ))}
               {isProcessing && (
-                <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[11px] text-muted-foreground md:rounded-xl md:px-3 md:py-2 md:text-xs">
+                <div className="flex items-center gap-2 rounded-lg border border-[color:var(--app-border-subtle)] bg-[var(--app-control-surface)] px-2.5 py-1.5 text-[11px] text-muted-foreground md:rounded-xl md:px-3 md:py-2 md:text-xs">
                   <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
                   Processando...
                 </div>
@@ -391,7 +392,7 @@ export function InputArea({
 
           {(isRecording || isTranscribing) && (
             <div className="px-3 pb-2 md:px-4">
-              <div className="flex items-center gap-2.5 rounded-xl border border-white/8 bg-white/[0.03] px-2.5 py-2 md:gap-3 md:rounded-2xl md:px-3 md:py-2.5">
+              <div className="flex items-center gap-2.5 rounded-xl border border-[color:var(--app-border-subtle)] bg-[var(--app-control-surface)] px-2.5 py-2 md:gap-3 md:rounded-2xl md:px-3 md:py-2.5">
                 <div className="flex h-6 items-end gap-1 md:h-7">
                   {audioMeterBars.map((bar, index) => (
                     <span
@@ -449,7 +450,7 @@ export function InputArea({
                   "h-6 w-6 rounded-full text-muted-foreground hover:text-foreground md:h-7 md:w-7",
                   attachments.length > 0
                     ? "bg-primary/15 text-primary ring-1 ring-primary/30 hover:bg-primary/20"
-                    : "bg-white/5"
+                    : "bg-[var(--app-control-surface)] hover:bg-[var(--app-control-hover)]"
                 )}
               >
                 {isProcessing ? (
@@ -466,7 +467,7 @@ export function InputArea({
                     size="sm"
                     disabled={disabled}
                     aria-label="Selecionar modelo"
-                    className="h-6 gap-0.5 rounded-full px-2 text-[9px] font-medium text-muted-foreground hover:text-foreground bg-white/5 md:h-7 md:gap-1 md:px-3 md:text-[11px]"
+                    className="h-6 gap-0.5 rounded-full bg-[var(--app-control-surface)] px-2 text-[9px] font-medium text-muted-foreground hover:bg-[var(--app-control-hover)] hover:text-foreground md:h-7 md:gap-1 md:px-3 md:text-[11px]"
                   >
                     <span className="max-w-[72px] truncate md:max-w-[100px]">{currentModel?.name || parameters.model}</span>
                     <ChevronDown className="h-3 w-3" />
@@ -508,7 +509,7 @@ export function InputArea({
                       size="sm"
                       disabled={disabled}
                       aria-label="Ajustar nível de raciocínio"
-                      className="h-6 gap-0.5 rounded-full px-2 text-[9px] font-medium text-muted-foreground hover:text-foreground bg-white/5 md:h-7 md:gap-1 md:px-3 md:text-[11px]"
+                      className="h-6 gap-0.5 rounded-full bg-[var(--app-control-surface)] px-2 text-[9px] font-medium text-muted-foreground hover:bg-[var(--app-control-hover)] hover:text-foreground md:h-7 md:gap-1 md:px-3 md:text-[11px]"
                     >
                       <Brain className="h-2.5 w-2.5 md:h-3 md:w-3" />
                       <span>{currentReasoning?.label || "Medio"}</span>
@@ -550,7 +551,7 @@ export function InputArea({
                   "h-6 gap-0.5 rounded-full px-2 text-[9px] font-medium transition-colors md:h-7 md:gap-1 md:px-3 md:text-[11px]",
                   responseMode === "document"
                     ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/30 hover:bg-cyan-500/20"
-                    : "bg-white/5 text-muted-foreground hover:text-foreground"
+                    : "bg-[var(--app-control-surface)] text-muted-foreground hover:bg-[var(--app-control-hover)] hover:text-foreground"
                 )}
               >
                 <FileText className="h-2.5 w-2.5 md:h-3 md:w-3" />
@@ -572,7 +573,7 @@ export function InputArea({
                   "h-6 gap-0.5 rounded-full px-2 text-[9px] font-medium transition-colors md:h-7 md:gap-1 md:px-3 md:text-[11px]",
                   responseMode === "quiz"
                     ? "bg-indigo-500/15 text-indigo-100 ring-1 ring-indigo-400/30 hover:bg-indigo-500/20"
-                    : "bg-white/5 text-muted-foreground hover:text-foreground"
+                    : "bg-[var(--app-control-surface)] text-muted-foreground hover:bg-[var(--app-control-hover)] hover:text-foreground"
                 )}
               >
                 <ClipboardList className="h-2.5 w-2.5 md:h-3 md:w-3" />
@@ -594,7 +595,7 @@ export function InputArea({
                     ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/30 hover:bg-cyan-500/20"
                     : speechStatus === "error"
                     ? "bg-amber-500/12 text-amber-100 ring-1 ring-amber-400/25 hover:bg-amber-500/18"
-                    : "bg-white/5 text-muted-foreground hover:text-foreground"
+                    : "bg-[var(--app-control-surface)] text-muted-foreground hover:bg-[var(--app-control-hover)] hover:text-foreground"
                 )}
               >
                 {isTranscribing ? (
@@ -626,7 +627,7 @@ export function InputArea({
                   aria-label="Enviar mensagem"
                   className={cn(
                     "h-7 rounded-lg px-2.5 text-[10px] md:h-9 md:rounded-xl md:px-4 md:text-xs",
-                    "bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-600 hover:via-blue-700 hover:to-indigo-700 text-white",
+                    "bg-gradient-to-r from-cyan-300 via-cyan-500 to-blue-500 text-slate-950 shadow-[0_10px_26px_rgba(34,211,238,0.22)] hover:from-cyan-200 hover:via-cyan-400 hover:to-blue-400",
                     "disabled:opacity-30"
                   )}
                 >

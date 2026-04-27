@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import type { FileAttachment, FileAttachmentType } from "@/types";
+import { createAttachmentId } from "@/lib/chat/attachmentIds";
 
 const MAX_FILES = 10;
 const MAX_IMAGE_SIZE = 20 * 1024 * 1024;
@@ -165,7 +166,7 @@ export function useFileAttachments() {
 
       try {
         const attachment: FileAttachment = {
-          id: crypto.randomUUID(),
+          id: createAttachmentId(),
           name: file.name,
           type,
           mimeType: file.type || "application/octet-stream",

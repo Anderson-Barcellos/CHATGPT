@@ -9,6 +9,10 @@ export const RATE_LIMITS = {
     windowMs: 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_TRANSCRIBE_RPM || "10", 10),
   },
+  login: {
+    windowMs: 60 * 1000,
+    max: parseInt(process.env.RATE_LIMIT_LOGIN_RPM || "5", 10),
+  },
   default: {
     windowMs: 60 * 1000,
     max: 60,
@@ -106,6 +110,10 @@ export function getUserIdentifier(request: NextRequest): string {
 }
 
 export function getRateLimitConfig(endpoint: string): { windowMs: number; max: number } {
+  if (endpoint === "/api/auth/login") {
+    return RATE_LIMITS.login;
+  }
+
   const normalizedEndpoint = endpoint.replace(/^\/api\//, "").split("/")[0];
 
   if (normalizedEndpoint in RATE_LIMITS) {

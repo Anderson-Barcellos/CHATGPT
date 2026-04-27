@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
-import { User, Pencil, X, Send, Globe, ExternalLink, Trash2, MoreHorizontal, FileIcon, FileText } from "lucide-react";
+import { Pencil, X, Send, Globe, ExternalLink, Trash2, MoreHorizontal, FileIcon, FileText } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +23,9 @@ interface MessageBubbleProps {
   onEdit?: (id: string, newContent: string) => void;
   onDelete?: (id: string) => void;
 }
+
+const APP_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
+const USER_AVATAR_SRC = `${APP_BASE_PATH}/images/anders-avatar.png`;
 
 function formatTime(date: Date): string {
   try {
@@ -103,7 +106,7 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
           className={cn(
             "relative min-w-0 gap-0 overflow-hidden break-words px-2.5 py-2 text-left text-[12px] leading-relaxed md:px-4 md:py-3 md:text-[13px]",
             isUser
-              ? "rounded-xl rounded-br-md bg-gradient-to-br from-cyan-500 to-indigo-600 text-white shadow-lg shadow-cyan-500/20 md:rounded-2xl"
+              ? "rounded-xl rounded-br-md bg-gradient-to-br from-cyan-400 via-cyan-600 to-blue-700 text-white shadow-lg shadow-cyan-500/18 md:rounded-2xl"
               : "glass rounded-xl rounded-bl-md text-foreground/90 md:rounded-2xl"
           )}
           onTouchStart={handleTouchStart}
@@ -310,8 +313,13 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
       </div>
 
       {isUser && (
-        <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 md:h-8 md:w-8">
-          <User className="h-3 w-3 text-primary md:h-4 md:w-4" />
+        <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[color:var(--app-border-active)] bg-[var(--app-control-surface)] shadow-[0_0_18px_rgba(34,211,238,0.16)] md:h-8 md:w-8">
+          {/* eslint-disable-next-line @next/next/no-img-element -- small local avatar */}
+          <img
+            src={USER_AVATAR_SRC}
+            alt="Anders"
+            className="h-full w-full object-cover"
+          />
         </div>
       )}
 

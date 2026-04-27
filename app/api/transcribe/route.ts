@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { NextRequest } from "next/server";
 import { isAuthEnabled, isAuthenticatedRequest } from "@/lib/server/auth";
+import { validateTranscriptionFile } from "@/lib/server/transcriptionValidation";
 
 export const runtime = "nodejs";
 
@@ -24,8 +25,9 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "Arquivo de audio obrigatorio." }, { status: 400 });
     }
 
-    if (file.size === 0) {
-      return Response.json({ error: "O audio chegou vazio para transcricao." }, { status: 400 });
+    const validation = validateTranscriptionFile(file);
+    if (!validation.ok) {
+      return Response.json({ error: validation.error }, { status: validation.status });
     }
 
     const transcription = await openai.audio.transcriptions.create({

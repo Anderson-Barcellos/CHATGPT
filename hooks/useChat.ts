@@ -31,6 +31,9 @@ import { useCustomInstructions } from "@/hooks/useCustomInstructions";
 import { useMemories } from "@/hooks/useMemories";
 import { buildSystemPrompt } from "@/lib/openai/contextBuilder";
 import { apiUrl } from "@/lib/utils";
+import { buildEditResendOptions } from "@/lib/chat/resendOptions";
+import { buildQuizCompletionPatch } from "@/lib/chat/quizCompletion";
+import { buildAbortedAssistantMessagePatch } from "@/lib/chat/abortCompletion";
 import {
   isReasoningModel,
   modelSupportsCodeInterpreter,
@@ -41,7 +44,6 @@ import { conversationKeys } from "@/hooks/queries/useConversationQuery";
 import { toast } from "sonner";
 import { createMessageArtifact } from "@/lib/artifacts/messageArtifacts";
 import {
-  createQuizArtifact,
   QUIZ_FORCED_MODEL,
   QUIZ_FORCED_REASONING_EFFORT,
   QUIZ_MIN_QUESTION_COUNT,
@@ -153,7 +155,7 @@ function sanitizeMessagesForStorage(messages: Message[]): Message[] {
       ...message,
       attachments: message.attachments.map((attachment) => ({
         ...attachment,
-        dataUrl: attachment.type === "image" ? attachment.thumbnailUrl : undefined,
+        dataUrl: undefined,
         extractedText: attachment.extractedText
           ? `[${attachment.extractedText.length} chars]`
           : undefined,
@@ -429,26 +431,26 @@ export function useChat() {
         }
 
         if (accumulated.trim().length > 0) {
-          const artifact =
-            responseMode === "quiz"
-              ? createQuizArtifact(accumulated)
-              : responseMode === "document"
-              ? createMessageArtifact(accumulated, {
-                  force: true,
-                  displayMode: "document",
-                })
-              : undefined;
-          if (artifact) {
-            updateMessage(assistantMessageId, {
-              content: artifact.summary,
-              artifact,
-            });
-          } else if (responseMode === "quiz") {
-            toast.error("Nao consegui montar o quiz interativo. Vou preservar a resposta bruta para tu revisar.");
-            updateMessage(assistantMessageId, {
-              content: accumulated,
-              preferredDisplayMode: undefined,
-            });
+          if (responseMode === "quiz") {
+            const patch = buildQuizCompletionPatch(accumulated);
+            if (!patch.artifact) {
+              toast.error("Nao consegui montar o quiz interativo. Vou preservar a resposta bruta para tu revisar.");
+            }
+            updateMessage(assistantMessageId, patch);
+          } else {
+            const artifact =
+              responseMode === "document"
+                ? createMessageArtifact(accumulated, {
+                    force: true,
+                    displayMode: "document",
+                  })
+                : undefined;
+            if (artifact) {
+              updateMessage(assistantMessageId, {
+                content: artifact.summary,
+                artifact,
+              });
+            }
           }
         }
 
@@ -461,16 +463,7 @@ export function useChat() {
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
           updateMessage(assistantMessageId, {
-            ...assistantStreamStateToMessagePatch(
-              finalizeAssistantStreamState(
-                streamState,
-                "aborted",
-                usesReasoning
-              )
-            ),
-          });
-          updateMessage(assistantMessageId, {
-            content: "⏹️ Geração cancelada.",
+            ...buildAbortedAssistantMessagePatch(streamState, usesReasoning),
           });
         } else {
           const message =
@@ -527,9 +520,7 @@ export function useChat() {
         .messages.find((message) => message.id === messageId);
       truncateFromMessage(messageId);
       await new Promise((r) => setTimeout(r, 0));
-      await sendMessage(newContent, {
-        responseMode: originalMessage?.responseMode,
-      });
+      await sendMessage(newContent, buildEditResendOptions(originalMessage));
     },
     [isLoading, truncateFromMessage, sendMessage]
   );
