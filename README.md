@@ -11,7 +11,8 @@ The project focuses on a ChatGPT-like experience with conversation history, reas
 - Conversation history with editing and deletion flows
 - Model picker with support for `gpt-5.5`, `gpt-5.3-codex`, and `gpt-5.3-chat-latest`
 - Persistent memory and custom instructions stored server-side
-- Artifact rendering and export flows, including PDF generation
+- Workspace v2 shell with conversation rail, chat canvas, command composer, and right-side Canvas/Artifact panel
+- Artifact and Canvas rendering flows, including Markdown, HTML, quiz, copy, and PDF export
 - Mobile-first shell refinements for Safari and installed PWA usage
 - Local persistence for conversations, memories, and persona bootstrap data
 
@@ -44,6 +45,7 @@ components/
   layout/                Application shell
   settings/              Persona and memory settings
   sidebar/               Conversation navigation
+  workspace-v2/          Current Gaucho Chat workspace shell and Canvas panel
 hooks/
   useChat.ts             Streaming chat orchestration
 lib/
@@ -63,11 +65,12 @@ data/
 - Streaming responses with reasoning state handling
 - Markdown rendering with code, math, and rich formatting support
 - Message actions for editing, exporting, and artifact handling
+- Stable assistant bubble mounting during stream completion so the buffered text does not restart when an artifact is attached
 - Improved mobile composer behavior and safe-area handling
 
 ### Sidebar and Navigation
 
-- Conversation list with clearer active state
+- Workspace v2 conversation rail with clearer active state, filters, search, and fixed internal scrolling
 - Safer delete flow for the currently open conversation
 - Shared panel sizing between conversation sidebar and settings drawer
 
@@ -79,7 +82,8 @@ data/
 
 ### Artifacts and Export
 
-- Right-side artifact panel for document-like outputs
+- Right-side Canvas/Artifact panel for document-like outputs
+- Canvas tab renders Markdown, HTML, and quiz artifacts in a larger reading/production surface
 - PDF export tuned for cleaner layout and OpenAI-branded header
 - Support for document and quiz-oriented artifact rendering
 

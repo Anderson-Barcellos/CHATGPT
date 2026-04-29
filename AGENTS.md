@@ -7,9 +7,11 @@ Projeto de chat multimodal em `Next.js 16` com `React 19`, `TypeScript`, `Zustan
 Principais areas:
 
 - `components/chat/*`: experiencia principal do chat, baloes, input, reasoning e export
+- `components/workspace-v2/*`: shell atual do Gaucho Chat, rail de conversas, canvas central, composer e painel Canvas/Artefato
 - `components/sidebar/*`: lista de conversas e navegacao lateral
-- `components/layout/*`: shell principal da aplicacao
+- `components/layout/*`: shell legado da aplicacao, mantido como referencia/compatibilidade
 - `hooks/useChat.ts`: streaming, reasoning, citacoes, persistencia e fluxo de envio
+- `lib/chat/useStreamingTextBuffer.ts`: buffer STT-style do texto do assistente
 - `lib/models/modelConfig.ts`: catalogo de modelos e metadados usados no seletor
 - `app/api/chat/route.ts`: proxy server-side para OpenAI
 - `data/*.json`: persistencia local simples para conversas e persona
@@ -19,9 +21,13 @@ Principais areas:
 - Modelo padrao atual: `gpt-5.3-chat-latest`
 - Seletor de modelos ja inclui `gpt-5.4` e `gpt-5.3-chat-latest`
 - Acoes de mensagem e conversa foram polidas com confirmacao explicita via dialog
-- Header agora mostra contexto da conversa ativa e do modelo selecionado
-- Sidebar ganhou estado ativo mais claro e fluxo melhor ao excluir a conversa aberta
-- Reasoning foi movido para um painel proprio, com estado explicito e visual mais consistente
+- A rota principal usa `GauchoChatShellV2` / `WorkspaceFrameV2`
+- Sidebar/rail v2 ganhou busca, filtros, estado ativo e scroll interno real
+- Painel direito v2 possui abas `Canvas`, `Artefato`, `Atividade` e `Notas`
+- Canvas Markdown renderiza documentos, HTML e quiz em area maior usando os renderizadores de artifact existentes
+- Bolhas usam tokens `--v2-*` em claro/escuro, sem `dark` forcado no shell
+- Balões de assistente devem manter key estavel por `message.id`; nao incluir `artifact.id`, para nao remontar no fim do stream e reiniciar visualmente o buffer
+- Reasoning possui estado explicito e renderizacao dedicada
 
 ## Ultimas Alteracoes Relevantes
 
@@ -45,6 +51,15 @@ Principais areas:
 - `Message` agora possui `reasoningStatus` explicito
 - `useChat.ts` passou a controlar reasoning como `thinking` -> `complete`
 
+### Rodada 4
+
+- Criado/polido `components/workspace-v2/*` como shell principal
+- Criada aba `Canvas` em `ContextPanelV2`, padrao ao abrir o painel
+- Corrigida rolagem da rail de conversas via viewport interno (`ScrollArea`, `min-h-0`, `flex-1`)
+- Removido `dark` forcado do workspace v2; tema claro/escuro agora vem dos tokens CSS
+- Atualizadas bolhas para `v2-user-bubble` e `v2-assistant-bubble`
+- Estabilizada a key de `MessageBubble` para preservar o buffer durante `streaming -> completed -> artifact`
+
 ## Proximos Pontos De Atencao
 
 ### Alta prioridade
@@ -53,6 +68,7 @@ Principais areas:
 - Decidir se vamos unificar de vez `MessageContent` com `ChatMarkdown`
 - Revisar `rehypeRaw` no fluxo principal de markdown e endurecer a estrategia de renderizacao
 - Melhorar o auto-scroll durante streaming para nao puxar a leitura enquanto o usuario esta acima
+- Se o Canvas evoluir para editor real, definir antes contrato de edicao/autosave para nao misturar estado visual com persistencia de mensagens
 
 ### Lembrete explicito
 

@@ -110,6 +110,10 @@ interface ChatContainerProps {
   deleteMessage: (messageId: string) => Promise<void>;
 }
 
+export function getChatMessageRenderKey(message: Message): string {
+  return message.id;
+}
+
 export function ChatContainer({
   messages,
   isLoading,
@@ -297,7 +301,7 @@ export function ChatContainer({
   }, []);
 
   return (
-    <div className="relative flex-1 overflow-hidden">
+    <div className="relative min-h-0 flex-1 overflow-hidden">
       <ScrollArea ref={scrollAreaRef} className="h-full">
         <div ref={contentRef} className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-3 py-4 md:gap-6 md:px-4 md:py-6">
           {messages.length === 0 ? (
@@ -305,7 +309,7 @@ export function ChatContainer({
           ) : (
             messages.map((message) => (
               <MessageBubble
-                key={`${message.id}:${message.artifact?.id ?? "no-artifact"}`}
+                key={getChatMessageRenderKey(message)}
                 message={message}
                 onEdit={editAndResend}
                 onDelete={deleteMessage}

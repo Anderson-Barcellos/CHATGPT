@@ -1,5 +1,10 @@
 import { apiUrl } from "@/lib/utils";
-import { Conversation, Message, SerializedConversation } from "@/types";
+import {
+  Conversation,
+  ConversationWorkspace,
+  Message,
+  SerializedConversation,
+} from "@/types";
 import { parseApiErrorResponse } from "@/lib/api/errors";
 import { deserializeConversation } from "@/lib/storage/serializers";
 
@@ -100,6 +105,18 @@ export async function saveConversationMessagesAndTitle(
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ messages, title }),
+  });
+  await assertOk(res);
+}
+
+export async function saveConversationWorkspace(
+  id: string,
+  workspace: ConversationWorkspace
+): Promise<void> {
+  const res = await fetch(`${BASE()}/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ workspace }),
   });
   await assertOk(res);
 }

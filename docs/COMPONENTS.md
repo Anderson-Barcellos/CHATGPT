@@ -1,6 +1,6 @@
 # Components, Hooks & Stores
 
-**Last updated:** 2026-04-01
+**Last updated:** 2026-04-29
 
 ## Component Tree
 
@@ -9,56 +9,88 @@ layout.tsx
   └── ThemeProvider (next-themes)
       └── QueryProvider (TanStack Query)
           └── page.tsx
-              └── ChatShell
-                  ├── Header (mode tabs, settings toggle, theme toggle)
-                  ├── SidebarModern
-                  │   ├── New conversation button
-                  │   ├── Search input
-                  │   └── Conversation list (relative dates, delete)
-                  ├── ChatContainer
-                  │   ├── WelcomeScreen (greeting, suggestion chips)
-                  │   ├── MessageBubble[] (markdown, code blocks, copy, timestamps)
-                  │   ├── TypingIndicator (OpenAI avatar, bounce dots)
-                  │   └── Scroll-to-bottom button
-                  ├── InputArea
-                  │   ├── Auto-resize textarea
-                  │   ├── Model dropdown (DropdownMenu)
-                  │   ├── Reasoning dropdown (conditional)
-                  │   └── Send / Stop buttons
-                  └── SettingsDrawer (Sheet)
-                      ├── Temperature slider (conditional)
-                      ├── Max tokens slider
-                      ├── Verbosity selector (GPT-5 only)
-                      ├── Code Interpreter switch (conditional)
-                      ├── Memory tab
-                      └── Persona tab
+              └── GauchoChatShellV2
+                  ├── WorkspaceFrameV2
+                  │   ├── ConversationRailV2 (desktop + mobile sheet)
+                  │   ├── ChatCanvasV2
+                  │   │   └── ChatContainer
+                  │   │       ├── WelcomeScreen
+                  │   │       ├── MessageBubble[]
+                  │   │       ├── TypingIndicator
+                  │   │       └── Scroll-to-bottom button
+                  │   ├── CommandComposerContainerV2
+                  │   │   └── CommandComposerV2
+                  │   └── ContextPanelV2 (Canvas, Artefato, Atividade, Notas)
+                  └── SettingsDrawer
 ```
 
 ## Key Components
 
-### ChatShell (`components/layout/ChatShell.tsx`)
-Main application shell. Manages sidebar toggle, splash screen, settings drawer, export button, and artifact panel.
+### GauchoChatShellV2 (`components/workspace-v2/GauchoChatShellV2.tsx`)
+Current main application shell. It wires `useChat`, `useConversations`, settings state, artifact state, splash handling, and recovery state into the workspace v2 layout.
+
+### WorkspaceFrameV2 (`components/workspace-v2/WorkspaceLayoutV2.tsx`)
+Three-region workspace frame:
+- conversation rail on the left
+- chat canvas and command composer in the center
+- right-side operational panel with collapse/expand controls
+
+The frame uses `--v2-*` CSS tokens from `app/globals.css` instead of forcing the `dark` class. Light and dark themes therefore diverge through variables rather than component branches.
+
+### ConversationRailV2 (`components/workspace-v2/ConversationRailV2.tsx`)
+Conversation navigation for workspace v2:
+- create conversation
+- search
+- filter tabs
+- grouped conversation sections
+- active state
+- guarded switching/deletion while streaming
+- internal `ScrollArea` with `min-h-0`/`flex-1` so the rail scrolls inside the fixed-height shell
 
 ### ChatContainer (`components/chat/ChatContainer.tsx`)
-Renders the message list or WelcomeScreen when empty. Handles auto-scroll, scroll-to-bottom button, and suggestion chip injection via native setter pattern.
+Renders the message list or `WelcomeScreen` when empty. Handles auto-scroll, scroll-to-bottom button, and suggestion chip injection via native setter pattern.
+
+Message rows are keyed by stable `message.id` only. Do not include `artifact.id` or other completion-time data in the React key: streamed assistant bubbles must stay mounted when `streamStatus` changes or when an artifact is attached, otherwise the streaming buffer can appear to restart from the beginning.
 
 ### MessageBubble (`components/chat/MessageBubble.tsx`)
 Renders individual messages with:
-- Markdown via `react-markdown` + `remark-gfm`
-- `CodeBlock` sub-component with language header bar and copy button
-- `CopyBtn` with tooltip and checkmark feedback
-- Timestamps, reasoning summary collapsible
-- Fade-in animation
+- role-specific token-backed bubble surfaces (`v2-user-bubble`, `v2-assistant-bubble`)
+- attachments
+- citations
+- timestamps
+- edit/delete menu and long-press behavior
+- `MessageActions`
+- `ReasoningPanel`
 
-### InputArea (`components/chat/InputArea.tsx`)
-Floating card input with:
-- Auto-resize textarea (scrollHeight-based)
-- Model selector (shadcn DropdownMenu, shows name/badge/description)
-- Reasoning effort selector (conditionally visible for reasoning models)
-- Send button (gradient) / Stop button (destructive)
+The bubble delegates text, streaming, artifacts, images, rich content, document mode, and quiz mode to `MessageContent`.
+
+### MessageContent (`components/chat/MessageContent.tsx`)
+Routes message body rendering:
+- streaming assistant text through `StreamingMarkdown`
+- completed assistant text through `ChatMarkdown`
+- document/quiz artifacts through `DocumentCanvas` or `QuizCanvas`
+- image generation output through an inline image
+- rich Markdown/HTML through panel-opening artifact helpers
+
+Inline artifact visibility is tracked per `artifact.id` without a synchronous state-setting effect. When a document/quiz artifact appears after streaming, the same mounted message component expands it without resetting the buffered text.
+
+### StreamingMarkdown (`components/chat/StreamingMarkdown.tsx`)
+Renders assistant streaming text with the STT-style buffer from `useStreamingTextBuffer`. The hook incrementally reveals `content` while `streamStatus === "streaming"` and keeps a short cursor settle after completion. It expects its parent bubble to remain mounted across completion.
+
+### ContextPanelV2 (`components/workspace-v2/ContextPanelV2.tsx`)
+Right-side operational panel with four tabs:
+- **Canvas:** default tab; renders the active or latest artifact in a larger reading/production surface using `DocumentCanvas`, `ChatMarkdown`, `HtmlPreview`, or `QuizCanvas`
+- **Artefato:** metadata, preview/source, and export-oriented view
+- **Atividade:** timeline and conversation execution summary
+- **Notas:** per-conversation workspace notes persisted server-side
+
+### CommandComposerContainerV2 (`components/workspace-v2/CommandComposerContainerV2.tsx`)
+Container for the current composer. It manages text input, file attachments, speech-to-text, model selection, reasoning selection, document mode, quiz mode, and send/stop behavior.
 
 ### SidebarModern (`components/sidebar/SidebarModern.tsx`)
-Conversation list with:
+Legacy conversation list used by the older `ChatShell`. It is still present and tested, but workspace v2 uses `ConversationRailV2`.
+
+Features:
 - `relativeDate()` helper (agora/5min/2h/3d/2sem/3m)
 - Search filtering
 - Empty state illustration

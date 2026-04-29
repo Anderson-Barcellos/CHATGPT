@@ -109,17 +109,40 @@ export interface SerializedMessage extends Omit<Message, "timestamp"> {
   timestamp: string;
 }
 
+export interface ConversationWorkspaceNotes {
+  objective: string;
+  body: string;
+  nextSteps: string[];
+  updatedAt: Date;
+}
+
+export interface ConversationWorkspace {
+  notes: ConversationWorkspaceNotes;
+}
+
+export interface SerializedConversationWorkspaceNotes
+  extends Omit<ConversationWorkspaceNotes, "updatedAt"> {
+  updatedAt: string;
+}
+
+export interface SerializedConversationWorkspace {
+  notes: SerializedConversationWorkspaceNotes;
+}
+
 export interface Conversation {
   id: string;
   title: string;
   messages: Message[];
+  workspace?: ConversationWorkspace;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface SerializedConversation
-  extends Omit<Conversation, "messages" | "createdAt" | "updatedAt"> {
+export interface SerializedConversation {
+  id: string;
+  title: string;
   messages: SerializedMessage[];
+  workspace?: SerializedConversationWorkspace;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,11 +1,15 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { ChatShell } from "@/components/layout/ChatShell";
+import { GauchoChatShellV2 } from "@/components/workspace-v2/GauchoChatShellV2";
 import {
   AUTH_COOKIE_NAME,
   isAuthEnabled,
   verifyAuthToken,
 } from "@/lib/server/auth";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export default async function Home() {
   if (isAuthEnabled()) {
@@ -17,5 +21,5 @@ export default async function Home() {
     }
   }
 
-  return <ChatShell />;
+  return <GauchoChatShellV2 />;
 }

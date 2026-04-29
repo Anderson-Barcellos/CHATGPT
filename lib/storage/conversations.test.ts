@@ -4,6 +4,7 @@ import {
   createConversation,
   listConversations,
   saveConversationMessages,
+  saveConversationWorkspace,
 } from "@/lib/storage/conversations";
 
 describe("conversation storage client", () => {
@@ -89,5 +90,32 @@ describe("conversation storage client", () => {
       status: 500,
       code: "conversation_update_failed",
     } satisfies Partial<ClientApiError>);
+  });
+
+  it("sends workspace notes payload to the conversation API", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await saveConversationWorkspace("conv-1", {
+      notes: {
+        objective: "Fechar round de UX",
+        body: "Resumo operacional com decisões.",
+        nextSteps: ["Rodar build", "Publicar"],
+        updatedAt: new Date("2026-04-28T20:00:00.000Z"),
+      },
+    });
+
+    const call = fetchMock.mock.calls[0];
+    const payload = JSON.parse(call?.[1]?.body as string) as {
+      workspace?: { notes?: { objective?: string; nextSteps?: string[] } };
+    };
+
+    expect(call?.[0]).toContain("/api/conversations/conv-1");
+    expect(call?.[1]).toMatchObject({
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+    });
+    expect(payload.workspace?.notes?.objective).toBe("Fechar round de UX");
+    expect(payload.workspace?.notes?.nextSteps).toEqual(["Rodar build", "Publicar"]);
   });
 });

@@ -90,4 +90,33 @@ describe("conversation serializers", () => {
     expect(quizArtifact.quiz.session.score).toBe(100);
     expect(quizArtifact.quiz.session.answersByQuestionId.q1).toBe("a");
   });
+
+  it("preserves workspace notes and normalizes note updatedAt", () => {
+    const source: Conversation = {
+      id: "conv-workspace",
+      title: "Workspace",
+      createdAt: new Date("2026-04-28T10:00:00.000Z"),
+      updatedAt: new Date("2026-04-28T10:05:00.000Z"),
+      workspace: {
+        notes: {
+          objective: "Fechar plano do cliente",
+          body: "Resumo da rodada com decisões técnicas.",
+          nextSteps: ["Subir ajuste de layout", "Validar build final"],
+          updatedAt: new Date("2026-04-28T10:04:00.000Z"),
+        },
+      },
+      messages: [],
+    };
+
+    const serialized = serializeConversation(source);
+    const restored = deserializeConversation(serialized);
+
+    expect(serialized.workspace?.notes.updatedAt).toBe("2026-04-28T10:04:00.000Z");
+    expect(restored.workspace?.notes.updatedAt).toBeInstanceOf(Date);
+    expect(restored.workspace?.notes.objective).toBe("Fechar plano do cliente");
+    expect(restored.workspace?.notes.nextSteps).toEqual([
+      "Subir ajuste de layout",
+      "Validar build final",
+    ]);
+  });
 });

@@ -41,4 +41,75 @@ describe("/api/conversations/[id] route", () => {
       code: "conversation_not_found",
     });
   });
+
+  it("updates workspace notes when payload is valid", async () => {
+    const now = new Date("2026-04-28T19:20:00.000Z");
+    updateConversationMock.mockResolvedValueOnce({
+      id: "conv-1",
+      title: "Conversa teste",
+      messages: [],
+      workspace: {
+        notes: {
+          objective: "Objetivo final",
+          body: "Notas da rodada",
+          nextSteps: ["Validar", "Publicar"],
+          updatedAt: now,
+        },
+      },
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const { PUT } = await import("./route");
+    const response = await PUT(
+      new NextRequest("http://localhost/api/conversations/conv-1", {
+        method: "PUT",
+        body: JSON.stringify({
+          workspace: {
+            notes: {
+              objective: "  Objetivo final  ",
+              body: "Notas da rodada",
+              nextSteps: [" Validar ", "", "Publicar"],
+            },
+          },
+        }),
+      }),
+      { params: Promise.resolve({ id: "conv-1" }) }
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateConversationMock).toHaveBeenCalledWith(
+      "conv-1",
+      expect.objectContaining({
+        workspace: {
+          notes: {
+            objective: "Objetivo final",
+            body: "Notas da rodada",
+            nextSteps: ["Validar", "Publicar"],
+            updatedAt: expect.any(Date),
+          },
+        },
+      })
+    );
+  });
+
+  it("rejects invalid workspace payload", async () => {
+    const { PUT } = await import("./route");
+    const response = await PUT(
+      new NextRequest("http://localhost/api/conversations/conv-1", {
+        method: "PUT",
+        body: JSON.stringify({
+          workspace: "invalid",
+        }),
+      }),
+      { params: Promise.resolve({ id: "conv-1" }) }
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Invalid workspace payload",
+      code: "invalid_workspace_payload",
+    });
+    expect(updateConversationMock).not.toHaveBeenCalled();
+  });
 });

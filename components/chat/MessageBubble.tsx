@@ -104,10 +104,10 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
       <div className={cn("max-w-[93%] min-w-0 sm:max-w-[80%]", isUser && "order-first")}>
         <Card
           className={cn(
-            "relative min-w-0 gap-0 overflow-hidden break-words px-2.5 py-2 text-left text-[12px] leading-relaxed md:px-4 md:py-3 md:text-[13px]",
+            "relative min-w-0 gap-0 overflow-hidden break-words border px-2.5 py-2 text-left text-[12px] leading-relaxed md:px-4 md:py-3 md:text-[13px]",
             isUser
-              ? "rounded-xl rounded-br-md bg-gradient-to-br from-cyan-400 via-cyan-600 to-blue-700 text-white shadow-lg shadow-cyan-500/18 md:rounded-2xl"
-              : "glass rounded-xl rounded-bl-md text-foreground/90 md:rounded-2xl"
+              ? "v2-user-bubble rounded-2xl rounded-br-md"
+              : "v2-assistant-bubble rounded-2xl rounded-bl-md text-foreground/90"
           )}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}

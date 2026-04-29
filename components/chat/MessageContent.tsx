@@ -23,6 +23,12 @@ interface MessageContentProps {
   className?: string;
 }
 
+interface InlineArtifactViewState {
+  artifactId: string | null;
+  show: boolean;
+  expanded: boolean;
+}
+
 export function MessageContent({ message, className }: MessageContentProps) {
   const { openArtifact } = useUIStore();
   const persistArtifactSession = useArtifactSessionPersistence();
@@ -34,8 +40,8 @@ export function MessageContent({ message, className }: MessageContentProps) {
   const isQuizPresentation = isQuizArtifact || prefersQuizMode;
   const isDocumentPresentation = isDocumentArtifact || prefersDocumentMode;
   const isCanvasPresentation = isDocumentPresentation || isQuizPresentation;
-  const [showArtifactInline, setShowArtifactInline] = useState(isCanvasPresentation);
-  const [expandInlineArtifact, setExpandInlineArtifact] = useState(isCanvasPresentation);
+  const [inlineArtifactState, setInlineArtifactState] =
+    useState<InlineArtifactViewState | null>(null);
   const content = cleanCitationMarkers(message.content);
   const richContent = detectRichContent(content);
   const artifactContent = artifact?.kind === "document" ? artifact.content : content;
@@ -44,6 +50,25 @@ export function MessageContent({ message, className }: MessageContentProps) {
     !artifact &&
     !isCanvasPresentation &&
     !message.imageBase64;
+
+  const currentArtifactState =
+    artifact && inlineArtifactState?.artifactId === artifact.id
+      ? inlineArtifactState
+      : null;
+  const showArtifactInline = currentArtifactState?.show ?? isCanvasPresentation;
+  const expandInlineArtifact =
+    currentArtifactState?.expanded ?? isCanvasPresentation;
+
+  const setCurrentArtifactViewState = (
+    updater: (current: InlineArtifactViewState) => InlineArtifactViewState
+  ) => {
+    const current: InlineArtifactViewState = {
+      artifactId: artifact?.id ?? null,
+      show: showArtifactInline,
+      expanded: expandInlineArtifact,
+    };
+    setInlineArtifactState(updater(current));
+  };
 
   const handleQuizSessionChange = async (
     session: QuizMessageArtifact["quiz"]["session"]
@@ -79,15 +104,16 @@ export function MessageContent({ message, className }: MessageContentProps) {
           artifact={artifact}
           showInline={showArtifactInline}
           onOpen={() => openArtifact(artifact, message.id)}
-          onToggleInline={() =>
-            setShowArtifactInline((current) => {
-              const nextValue = !current;
-              if (!nextValue) {
-                setExpandInlineArtifact(false);
-              }
-              return nextValue;
-            })
-          }
+          onToggleInline={() => {
+            setCurrentArtifactViewState((current) => {
+              const nextShow = !current.show;
+              return {
+                ...current,
+                show: nextShow,
+                expanded: nextShow ? current.expanded : false,
+              };
+            });
+          }}
         />
 
         {showArtifactInline && (
@@ -144,7 +170,12 @@ export function MessageContent({ message, className }: MessageContentProps) {
                 variant="ghost"
                 size="sm"
                 className="h-6 gap-1 rounded-full px-2.5 text-[11px] md:h-7 md:gap-1.5 md:px-3 md:text-xs"
-                onClick={() => setExpandInlineArtifact((current) => !current)}
+                onClick={() =>
+                  setCurrentArtifactViewState((current) => ({
+                    ...current,
+                    expanded: !current.expanded,
+                  }))
+                }
               >
                 {expandInlineArtifact ? (
                   <Minimize2 className="h-3.5 w-3.5" />
@@ -243,7 +274,12 @@ export function MessageContent({ message, className }: MessageContentProps) {
                 variant="ghost"
                 size="sm"
                 className="h-6 gap-1 rounded-full px-2.5 text-[11px] md:h-7 md:gap-1.5 md:px-3 md:text-xs"
-                onClick={() => setExpandInlineArtifact((current) => !current)}
+                onClick={() =>
+                  setCurrentArtifactViewState((current) => ({
+                    ...current,
+                    expanded: !current.expanded,
+                  }))
+                }
               >
                 {expandInlineArtifact ? (
                   <Minimize2 className="h-3.5 w-3.5" />

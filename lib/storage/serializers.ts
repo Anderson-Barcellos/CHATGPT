@@ -1,8 +1,10 @@
 import {
   Conversation,
+  ConversationWorkspace,
   Memory,
   Message,
   SerializedConversation,
+  SerializedConversationWorkspace,
   SerializedMemory,
   SerializedMessage,
 } from "@/types";
@@ -28,12 +30,39 @@ export function deserializeMessage(message: SerializedMessage | Message): Messag
   };
 }
 
+function serializeConversationWorkspace(
+  workspace: ConversationWorkspace | undefined
+): SerializedConversationWorkspace | undefined {
+  if (!workspace?.notes) return undefined;
+
+  return {
+    notes: {
+      ...workspace.notes,
+      updatedAt: normalizeDate(workspace.notes.updatedAt).toISOString(),
+    },
+  };
+}
+
+function deserializeConversationWorkspace(
+  workspace: SerializedConversationWorkspace | ConversationWorkspace | undefined
+): ConversationWorkspace | undefined {
+  if (!workspace?.notes) return undefined;
+
+  return {
+    notes: {
+      ...workspace.notes,
+      updatedAt: normalizeDate(workspace.notes.updatedAt),
+    },
+  };
+}
+
 export function serializeConversation(
   conversation: Conversation
 ): SerializedConversation {
   return {
     ...conversation,
     messages: conversation.messages.map(serializeMessage),
+    workspace: serializeConversationWorkspace(conversation.workspace),
     createdAt: normalizeDate(conversation.createdAt).toISOString(),
     updatedAt: normalizeDate(conversation.updatedAt).toISOString(),
   };
@@ -46,6 +75,9 @@ export function deserializeConversation(
     ...conversation,
     messages: conversation.messages.map((message) =>
       deserializeMessage(message as SerializedMessage | Message)
+    ),
+    workspace: deserializeConversationWorkspace(
+      conversation.workspace as SerializedConversationWorkspace | ConversationWorkspace | undefined
     ),
     createdAt: normalizeDate(conversation.createdAt),
     updatedAt: normalizeDate(conversation.updatedAt),
