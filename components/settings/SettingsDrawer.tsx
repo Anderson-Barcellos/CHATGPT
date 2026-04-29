@@ -32,7 +32,6 @@ import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { APP_PANEL_SHEET_CLASS } from "@/lib/layout/panels";
 import type { Memory } from "@/types";
 
 const IMAGE_SIZES = [
@@ -287,7 +286,11 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
         if (!open) onClose();
       }}
     >
-      <SheetContent side="right" showCloseButton={false} className={APP_PANEL_SHEET_CLASS}>
+      <SheetContent
+        side="right"
+        showCloseButton={false}
+        className="w-[82vw] max-w-[18rem] gap-0 border-white/10 bg-background/75 p-0 pt-[env(safe-area-inset-top)] pb-[max(0.75rem,env(safe-area-inset-bottom))] glass sm:max-w-[18rem]"
+      >
         <div className="flex h-full flex-col overflow-hidden">
           <div className="border-b border-white/5 px-3 pb-3">
             <div className="flex items-start justify-between gap-2 px-1 pt-3">

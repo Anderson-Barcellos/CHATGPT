@@ -8,8 +8,6 @@ Principais areas:
 
 - `components/chat/*`: experiencia principal do chat, baloes, input, reasoning e export
 - `components/workspace-v2/*`: shell atual do Gaucho Chat, rail de conversas, canvas central, composer e painel Canvas/Artefato
-- `components/sidebar/*`: lista de conversas e navegacao lateral
-- `components/layout/*`: shell legado da aplicacao, mantido como referencia/compatibilidade
 - `hooks/useChat.ts`: streaming, reasoning, citacoes, persistencia e fluxo de envio
 - `lib/chat/useStreamingTextBuffer.ts`: buffer STT-style do texto do assistente
 - `lib/models/modelConfig.ts`: catalogo de modelos e metadados usados no seletor
@@ -59,6 +57,17 @@ Principais areas:
 - Removido `dark` forcado do workspace v2; tema claro/escuro agora vem dos tokens CSS
 - Atualizadas bolhas para `v2-user-bubble` e `v2-assistant-bubble`
 - Estabilizada a key de `MessageBubble` para preservar o buffer durante `streaming -> completed -> artifact`
+
+### Rodada 5 — Sprint 0 (Limpeza + Setup)
+
+- Removido shell legado: `components/layout/`, `components/sidebar/`, `components/chat/InputArea.tsx`, `components/artifacts/ArtifactPanel.tsx`, `hooks/useSwipeGesture.ts`, `lib/layout/`
+- Removido bloco `.dark { --app-* }` de `app/globals.css` (linhas 167-175)
+- `MessageBubble.tsx:316` migrado defensivamente de `--app-border-active` + `--app-control-surface` para `--v2-border` + `--v2-control` (avatar do usuario)
+- Inline de `APP_PANEL_SHEET_CLASS` no `SettingsDrawer.tsx` antes de remover `lib/layout/panels.ts`
+- Removido widget "Como fica no mobile" e variavel `mobilePreviewConversation` em `ConversationRailV2.tsx` (artefato de design-time)
+- Removidos: `vercel.json`, `DOCKER_PLAN.md`, `docs/REVISAO_PROTOTIPO.md`, `docs/superpowers/`
+- Adicionadas dependencias: `framer-motion 12.38.0`, `cmdk 1.1.1` (para sprints S2 e S7)
+- Tag de retorno: `pre-redesign-s0` em `9d36822`
 
 ## Proximos Pontos De Atencao
 

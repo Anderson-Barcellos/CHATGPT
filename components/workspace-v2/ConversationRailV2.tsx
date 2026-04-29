@@ -329,8 +329,6 @@ export function ConversationRailV2({ onOpenSettings }: ConversationRailV2Props) 
     ];
   }, [filter, visibleConversations]);
 
-  const mobilePreviewConversation = visibleConversations[0] ?? sortedConversations[0] ?? null;
-
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="shrink-0 border-b border-[color:var(--v2-border-soft)] px-3 py-3">
@@ -442,22 +440,6 @@ export function ConversationRailV2({ onOpenSettings }: ConversationRailV2Props) 
       </ScrollArea>
 
       <div className="shrink-0 border-t border-[color:var(--v2-border-soft)] p-2">
-        <div className="mb-2 rounded-lg border border-cyan-300/20 bg-cyan-300/[0.08] p-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-100/90">
-            Como fica no mobile
-          </p>
-          <div className="mt-2 rounded-md border border-white/10 bg-black/25 p-2">
-            <p className="truncate text-[10px] font-medium text-foreground/90">
-              {mobilePreviewConversation?.title || "Preview de conversa"}
-            </p>
-            <p className="mt-0.5 line-clamp-2 text-[10px] text-muted-foreground/75">
-              {mobilePreviewConversation
-                ? getConversationPreview(mobilePreviewConversation)
-                : "Painel compacto com conversa e ações rápidas."}
-            </p>
-          </div>
-        </div>
-
         <Button
           variant="ghost"
           onClick={onOpenSettings}

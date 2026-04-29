@@ -41,11 +41,9 @@ app/
     transcribe/          Audio transcription endpoint
 components/
   artifacts/             Artifact viewers and export entry points
-  chat/                  Main chat experience
-  layout/                Application shell
+  chat/                  Main chat experience (bubbles, reasoning, composer)
   settings/              Persona and memory settings
-  sidebar/               Conversation navigation
-  workspace-v2/          Current Gaucho Chat workspace shell and Canvas panel
+  workspace-v2/          Gaucho Chat workspace shell, conversation rail, and Canvas panel
 hooks/
   useChat.ts             Streaming chat orchestration
 lib/

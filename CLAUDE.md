@@ -2,6 +2,59 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Sprints de Melhoria
+
+Plano completo do redesign em `/root/.claude/plans/meu-velho-na-verdade-golden-creek.md`. Cada sprint = 1 sessão. Status atual:
+
+| # | Sprint | Status | Risco |
+|---|---|---|---|
+| S0 | Limpeza + Setup (deletar legado, instalar `framer-motion`/`cmdk`) | ✅ Concluída | Baixo |
+| S1 | Token System Unificado `--gc-*` | **PRÓXIMA** | **Alto** |
+| S2 | Tipografia + Animação + Primitivos Motion | Pendente | Médio |
+| S3 | Hook `useIsMobile` + Breakpoints | Pendente | Baixo |
+| S4 | Refactor `uiStore` + NotesContext | Pendente | Médio |
+| S5 | `CanvasOverlayV2` (draggable/resizable) | Pendente | **Alto** |
+| S6 | Toolbar Flutuante de Seleção | Pendente | Médio |
+| S7 | Command Palette (cmd+k) | Pendente | Baixo |
+| S8 | Monaco Editor Real | Pendente | Médio |
+| S9 | Quick Actions sob Balão | Pendente | Médio |
+| S10 | Reconectar `useExport` ao Shell V2 | Pendente | Baixo |
+| S11 | Mobile Pass | Pendente | Médio |
+| S12 | Polimento Final | Pendente | Baixo |
+
+**Tag de retorno:** `pre-redesign-s0` (criada em `9d36822`). Reverter o redesign inteiro: `git checkout pre-redesign-s0 -- .`.
+
+**Pré-requisitos:** Antes de começar uma sprint, ler o plan file completo (`/root/.claude/plans/meu-velho-na-verdade-golden-creek.md`) — contém arquivos-alvo, riscos, validação manual e os 3 apêndices (tokens `--gc-*`, escala tipográfica, escala animação).
+
+### KICKOFF — Sprint 1 (Token System Unificado `--gc-*`)
+
+> **Branch:** `redesign/s1-tokens`. **Estado base:** `redesign/s0-cleanup` mergeado em `main`. **Risco:** Alto (todo visual passa por aqui). **Estimativa:** 1-2 commits.
+>
+> **Pré-requisito obrigatório:** ler o **Apêndice A** (tokens `--gc-*`) do plan file `/root/.claude/plans/meu-velho-na-verdade-golden-creek.md` antes de tocar em qualquer arquivo. A nomenclatura `--gc-*` está toda lá.
+>
+> **Estado pós-S0 (saiba isso antes de começar):**
+>
+> - Tokens `--app-*` foram **removidos** (linhas 167-175 do `app/globals.css`). Não há mais herança a unificar nesse namespace.
+> - Tokens `--v2-*` continuam em `app/globals.css` (`:root` e `.dark`) e governam todo o shell V2 — **esse é o alvo da migração**.
+> - `MessageBubble.tsx:316` foi migrado em S0 para `--v2-border` + `--v2-control` (avatar do usuário). Entra na onda de S1.
+> - `framer-motion 12.38.0` e `cmdk 1.1.1` já instalados, prontos pra S2/S7.
+>
+> **Tarefas (resumo — detalhes no plan file):**
+>
+> 1. Criar branch: `git checkout -b redesign/s1-tokens`
+> 2. Definir todos os tokens `--gc-*` em `app/globals.css` no `:root` e `.dark`, conforme Apêndice A.
+> 3. Mapear cada `--v2-*` consumido no projeto (`grep -rn "var(--v2-" components/ app/ lib/`) e substituir por seu equivalente `--gc-*`.
+> 4. Remover bloco `--v2-*` do `app/globals.css` ao final, validando que nenhum consumidor sobrou.
+> 5. Conferir `app/gaucho-theme.css` — se houver tokens locais lá, alinhar com `--gc-*`.
+> 6. Validar: `npx tsc --noEmit` && `npm run build` && `npm test`. Visual: abrir `npm run dev`, testar light/dark, conferir bolhas, rail, canvas, composer.
+> 7. Commit atômico: `refactor(s1): unificar tokens em --gc-*, remover namespace --v2-*`.
+>
+> **Riscos:** alterações cross-file atômicas. Em caso de regressão visual difícil de localizar, `git revert` é mais seguro que patch em cima. Tag de retorno geral do redesign: `pre-redesign-s0`.
+>
+> **Validação manual pós-deploy:** abrir `https://ultrassom.ai/chat` em light/dark → bolhas, rail, composer e canvas mantêm a mesma estética; zero 500 no console.
+
+---
+
 ## Leitura obrigatória antes de codar
 
 Este `CLAUDE.md` complementa — não substitui — outros docs vivos do repo:
@@ -95,14 +148,12 @@ Hook único que conecta:
 
 Mudanças em fluxo de envio/persistência devem ser pensadas em `useChat.ts` antes de mexer em componentes.
 
-### 6. Dois shells coexistem
+### 6. Shell único: workspace-v2 (pós-S0)
 
-- **`components/workspace-v2/*`** — shell ATUAL (Gaúcho Chat). `app/page.tsx` renderiza `GauchoChatShellV2`.
-- **`components/layout/*`** — shell legado, mantido por compat/referência. Não é a tela que o usuário vê.
-- **`components/chat/*`** — peças compartilhadas (balões, input, reasoning, export).
-- **`components/sidebar/*`** — usado pelo shell legado; o rail v2 vive em `workspace-v2/`.
+- **`components/workspace-v2/*`** — shell ATIVO (Gaúcho Chat). `app/page.tsx` renderiza `GauchoChatShellV2`.
+- **`components/chat/*`** — peças compartilhadas (balões, reasoning, export, composer).
 
-Antes de editar componente "de chat" rode um Grep pra confirmar qual shell consome — não é raro o componente legado ainda existir e induzir mudança no lugar errado.
+O shell legado (`components/layout/*`, `components/sidebar/*`, `components/chat/InputArea.tsx`, `components/artifacts/ArtifactPanel.tsx`, `hooks/useSwipeGesture.ts`, `lib/layout/panels.ts`) foi removido na Sprint 0. Tag de retorno `pre-redesign-s0` em `9d36822` se precisar voltar.
 
 ### 7. Storage dual: server JSON + client Dexie
 
@@ -137,6 +188,5 @@ Os balões do assistente usam **key estável `message.id`** — não incluir `ar
 
 - Tentar adicionar trailing-slash rewrite a `/chat` no Apache → loop de redirect com basePath do Next.
 - Usar `chat.completions` em vez de `responses.create` → quebra reasoning/citations/artifacts.
-- Editar `components/layout/*` achando que é o shell ativo → o ativo é `components/workspace-v2/*`.
 - Subir o app com `nohup npx next start` em vez de systemd → `ExecStartPre` do unit faz `fuser -k 3040/tcp` antes de subir, então duas instâncias se atropelam.
 - Esquecer do `AUTH_ENABLED` ao testar local: com flag `false` o proxy passa direto e `app/page.tsx` não redireciona.
