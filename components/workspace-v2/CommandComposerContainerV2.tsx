@@ -227,6 +227,19 @@ export function CommandComposerContainerV2({
   }, [input]);
 
   useEffect(() => {
+    const handler = (e: Event) => {
+      const { text } = (e as CustomEvent<{ text: string }>).detail;
+      setInput((current) => {
+        const prefix = current.trim() ? `${current.trim()}\n\n` : "";
+        return `${prefix}> ${text}\n\n`;
+      });
+      textareaRef.current?.focus();
+    };
+    window.addEventListener("gaucho:quote-text", handler);
+    return () => window.removeEventListener("gaucho:quote-text", handler);
+  }, []);
+
+  useEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 

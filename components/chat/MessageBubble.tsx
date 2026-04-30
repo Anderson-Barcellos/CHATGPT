@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { OpenAIIcon } from "@/components/ui/icons";
 import { MessageActions } from "@/components/chat/MessageActions";
+import { useNotes } from "@/hooks/useNotes";
+import { StickyNote } from "lucide-react";
 
 interface MessageBubbleProps {
   message: Message;
@@ -40,6 +42,7 @@ function formatTime(date: Date): string {
 
 export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps) {
   const isUser = message.role === "user";
+  const { appendToNotes } = useNotes();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -94,6 +97,7 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
         "group flex gap-2 animate-in fade-in-0 slide-in-from-bottom-2 duration-300 md:gap-3",
         isUser ? "justify-end" : "justify-start"
       )}
+      data-message-id={message.id}
     >
       {!isUser && (
         <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 md:h-8 md:w-8">
@@ -280,6 +284,18 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
                   >
                     <Pencil className="h-3.5 w-3.5" />
                     Editar e refazer daqui
+                  </DropdownMenuItem>
+                )}
+                {!isUser && message.content && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      appendToNotes(message.content, message.id);
+                      setMenuOpen(false);
+                    }}
+                    className="gap-2 text-xs"
+                  >
+                    <StickyNote className="h-3.5 w-3.5" />
+                    Adicionar à nota
                   </DropdownMenuItem>
                 )}
                 {onDelete && (

@@ -17,6 +17,8 @@ import { WorkspaceFrameV2 } from "@/components/workspace-v2/WorkspaceLayoutV2";
 import { useChat } from "@/hooks/useChat";
 import { NotesProvider } from "@/components/workspace-v2/NotesProvider";
 import { CanvasOverlayV2 } from "@/components/workspace-v2/canvas/CanvasOverlayV2";
+import { SelectionToolbar } from "@/components/chat/SelectionToolbar";
+import { useTextSelection } from "@/hooks/useTextSelection";
 import { useConversations } from "@/hooks/useConversations";
 import { useComponentPreloader } from "@/lib/performance/lazy";
 import { MODELS } from "@/lib/models/modelConfig";
@@ -43,6 +45,7 @@ export function GauchoChatShellV2() {
   const { conversations } = useConversations();
   const { parameters } = useSettingsStore();
   const { artifactOpen, activeArtifact, closeArtifact } = useUIStore();
+  const textSelection = useTextSelection();
   const {
     messages: chatMessages,
     isLoading: isChatLoading,
@@ -138,6 +141,7 @@ export function GauchoChatShellV2() {
       </NotesProvider>
       <SettingsDrawer isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <CanvasOverlayV2 />
+      <SelectionToolbar selection={textSelection} />
     </>
   );
 }
