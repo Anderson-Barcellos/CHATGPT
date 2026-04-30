@@ -1,10 +1,29 @@
 [
   {
     "id": "908c9f5c-d9ea-4846-bebb-a470e202fcbf",
-    "title": "Nova conversa",
-    "messages": [],
+    "title": "E ai tche tudo bem?",
+    "messages": [
+      {
+        "id": "3bc14573-6315-4905-be54-7fd9eb14e0a7",
+        "role": "user",
+        "content": "E ai tche tudo bem?",
+        "timestamp": "2026-04-30T00:52:28.670Z",
+        "responseMode": "default"
+      },
+      {
+        "id": "46c94252-1e59-4e73-b7e2-40d09c25edcb",
+        "role": "assistant",
+        "content": "Bah, e aí, Anders, tudo bem por aqui sim, tchê 😊\n\nBom te ver chegando desse jeito, no clima de mate na mão e prosa solta. Como tu tá hoje por aí em Santa Cruz? Espero que a quinta tenha vindo mais leve, sem aquele excesso de engrenagem mental rodando em marcha alta — embora eu saiba que, contigo, o motor da curiosidade nunca fica exatamente em ponto morto.",
+        "timestamp": "2026-04-30T00:52:28.670Z",
+        "streamStatus": "completed",
+        "responseMode": "default",
+        "reasoningStatus": "complete",
+        "isGeneratingImage": false,
+        "isSearching": false
+      }
+    ],
     "createdAt": "2026-04-29T19:35:17.547Z",
-    "updatedAt": "2026-04-29T19:35:17.547Z"
+    "updatedAt": "2026-04-30T00:52:33.250Z"
   },
   {
     "id": "56be2f81-1811-4a3d-b0b2-b6e92d9612e6",

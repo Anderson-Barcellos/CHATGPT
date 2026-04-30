@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { CommandComposerV2 } from "@/components/workspace-v2/WorkspaceLayoutV2";
 import { useFileAttachments } from "@/hooks/useFileAttachments";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useSpeechToText } from "@/hooks/useSpeechToText";
 import {
@@ -69,6 +70,7 @@ export function CommandComposerContainerV2({
   isLoading,
   error,
 }: CommandComposerContainerV2Props) {
+  const isMobile = useIsMobile();
   const [input, setInput] = useState("");
   const [responseMode, setResponseMode] = useState<ResponseMode>("default");
   const [isDragging, setIsDragging] = useState(false);
@@ -229,7 +231,7 @@ export function CommandComposerContainerV2({
     if (!textarea) return;
 
     const handleFocus = () => {
-      if (window.innerWidth < 768) return;
+      if (isMobile) return;
       window.setTimeout(() => {
         textarea.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }, 350);
