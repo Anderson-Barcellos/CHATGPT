@@ -9,8 +9,8 @@ Plano completo do redesign em `/root/.claude/plans/meu-velho-na-verdade-golden-c
 | # | Sprint | Status | Risco |
 |---|---|---|---|
 | S0 | Limpeza + Setup (deletar legado, instalar `framer-motion`/`cmdk`) | ✅ Concluída | Baixo |
-| S1 | Token System Unificado `--gc-*` | **PRÓXIMA** | **Alto** |
-| S2 | Tipografia + Animação + Primitivos Motion | Pendente | Médio |
+| S1 | Token System Unificado `--gc-*` | ✅ Concluída | Alto |
+| S2 | Tipografia + Animação + Primitivos Motion | **PRÓXIMA** | Médio |
 | S3 | Hook `useIsMobile` + Breakpoints | Pendente | Baixo |
 | S4 | Refactor `uiStore` + NotesContext | Pendente | Médio |
 | S5 | `CanvasOverlayV2` (draggable/resizable) | Pendente | **Alto** |
@@ -26,32 +26,33 @@ Plano completo do redesign em `/root/.claude/plans/meu-velho-na-verdade-golden-c
 
 **Pré-requisitos:** Antes de começar uma sprint, ler o plan file completo (`/root/.claude/plans/meu-velho-na-verdade-golden-creek.md`) — contém arquivos-alvo, riscos, validação manual e os 3 apêndices (tokens `--gc-*`, escala tipográfica, escala animação).
 
-### KICKOFF — Sprint 1 (Token System Unificado `--gc-*`)
+### KICKOFF — Sprint 2 (Tipografia + Animação + Primitivos Motion)
 
-> **Branch:** `redesign/s1-tokens`. **Estado base:** `redesign/s0-cleanup` mergeado em `main`. **Risco:** Alto (todo visual passa por aqui). **Estimativa:** 1-2 commits.
+> **Branch:** `redesign/s2-typography`. **Estado base:** `redesign/s1-tokens` mergeado em `main`. **Risco:** Médio. **Estimativa:** 1-2 commits.
 >
-> **Pré-requisito obrigatório:** ler o **Apêndice A** (tokens `--gc-*`) do plan file `/root/.claude/plans/meu-velho-na-verdade-golden-creek.md` antes de tocar em qualquer arquivo. A nomenclatura `--gc-*` está toda lá.
+> **Pré-requisito obrigatório:** ler o **Apêndice B** (escala tipográfica) e **Apêndice C** (escala de animação) do plan file `/root/.claude/plans/meu-velho-na-verdade-golden-creek.md`.
 >
-> **Estado pós-S0 (saiba isso antes de começar):**
+> **Estado pós-S1 (saiba isso antes de começar):**
 >
-> - Tokens `--app-*` foram **removidos** (linhas 167-175 do `app/globals.css`). Não há mais herança a unificar nesse namespace.
-> - Tokens `--v2-*` continuam em `app/globals.css` (`:root` e `.dark`) e governam todo o shell V2 — **esse é o alvo da migração**.
-> - `MessageBubble.tsx:316` foi migrado em S0 para `--v2-border` + `--v2-control` (avatar do usuário). Entra na onda de S1.
-> - `framer-motion 12.38.0` e `cmdk 1.1.1` já instalados, prontos pra S2/S7.
+> - Todos os tokens `--gc-*` definidos em `app/globals.css` — surface, border, bubble, brand, glass.
+> - `gaucho-theme.css` deletado; utilities (`.glass`, `.gc-text-gradient`, `.animate-float`) agora em `globals.css @layer utilities`.
+> - `framer-motion 12.38.0` e `cmdk 1.1.1` instalados.
+> - Namespace `--v2-*` completamente removido.
 >
 > **Tarefas (resumo — detalhes no plan file):**
 >
-> 1. Criar branch: `git checkout -b redesign/s1-tokens`
-> 2. Definir todos os tokens `--gc-*` em `app/globals.css` no `:root` e `.dark`, conforme Apêndice A.
-> 3. Mapear cada `--v2-*` consumido no projeto (`grep -rn "var(--v2-" components/ app/ lib/`) e substituir por seu equivalente `--gc-*`.
-> 4. Remover bloco `--v2-*` do `app/globals.css` ao final, validando que nenhum consumidor sobrou.
-> 5. Conferir `app/gaucho-theme.css` — se houver tokens locais lá, alinhar com `--gc-*`.
-> 6. Validar: `npx tsc --noEmit` && `npm run build` && `npm test`. Visual: abrir `npm run dev`, testar light/dark, conferir bolhas, rail, canvas, composer.
-> 7. Commit atômico: `refactor(s1): unificar tokens em --gc-*, remover namespace --v2-*`.
+> 1. Criar branch: `git checkout -b redesign/s2-typography`
+> 2. Em `globals.css`: adicionar tokens `--gc-text-*` (display/h1/h2/h3/body/body-sm/caption/micro/nano/mono) e `--gc-duration-*`/`--gc-ease-*` via `@theme inline`.
+> 3. Criar `components/motion/` com 4 primitivos: `FadeIn.tsx`, `SlideIn.tsx`, `Pop.tsx`, `Drawer.tsx`, `index.ts`.
+> 4. Find-replace `text-[8px]/[9px]/[10px]/[11px]/[12px]/[13px]` por classes semânticas (Apêndice B).
+> 5. Mover `<style>` do `gpt-logo.tsx` (4 keyframes) para `globals.css @layer utilities`.
+> 6. `splash-screen.tsx`: usar `<FadeIn>` nas fases + tokens `--gc-*` em vez de OKLCH hardcoded.
+> 7. Validar: `npx tsc --noEmit` + `npm run build` + `npm test`.
+> 8. Commit: `feat(s2): escala tipográfica + escala animação + primitivos motion`.
 >
-> **Riscos:** alterações cross-file atômicas. Em caso de regressão visual difícil de localizar, `git revert` é mais seguro que patch em cima. Tag de retorno geral do redesign: `pre-redesign-s0`.
+> **Riscos:** mudança de 1-2px pode deslocar layouts de altura fixa (`h-[3.1rem]`). Testar header, rail, balões, composer separadamente. Tag de retorno: `pre-redesign-s0`.
 >
-> **Validação manual pós-deploy:** abrir `https://ultrassom.ai/chat` em light/dark → bolhas, rail, composer e canvas mantêm a mesma estética; zero 500 no console.
+> **Validação manual:** todas as telas mantêm layout; nenhum jank; splash anima suave em light/dark.
 
 ---
 
