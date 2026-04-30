@@ -5,7 +5,8 @@ export type MessageStreamStatus =
   | "streaming"
   | "completed"
   | "aborted"
-  | "failed";
+  | "failed"
+  | "interrupted";
 
 export interface UrlCitation {
   title: string;

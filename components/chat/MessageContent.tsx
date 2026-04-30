@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Message, QuizMessageArtifact } from "@/types";
 import "katex/dist/katex.min.css";
 import { Button } from "@/components/ui/button";
-import { PanelRightOpen, Maximize2, Minimize2 } from "lucide-react";
+import { AlertTriangle, PanelRightOpen, Maximize2, Minimize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/uiStore";
 import { DocumentCanvas } from "@/components/artifacts/DocumentCanvas";
@@ -83,6 +83,15 @@ export function MessageContent({ message, className }: MessageContentProps) {
       },
     });
   };
+
+  const isInterrupted = message.streamStatus === "interrupted";
+
+  const interruptedNotice = isInterrupted ? (
+    <div className="mt-2 flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/[0.08] px-3 py-1.5 text-xs text-amber-300/90">
+      <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+      <span>Resposta interrompida — pode regenerar pra completar.</span>
+    </div>
+  ) : null;
 
   const renderMessageText = (markdownClassName?: string) =>
     canRenderStreamingText ? (
@@ -333,9 +342,15 @@ export function MessageContent({ message, className }: MessageContentProps) {
         </Button>
 
         {markdown}
+        {interruptedNotice}
       </div>
     );
   }
 
-  return <div className={className}>{markdown}</div>;
+  return (
+    <div className={className}>
+      {markdown}
+      {interruptedNotice}
+    </div>
+  );
 }

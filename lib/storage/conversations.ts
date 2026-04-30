@@ -120,3 +120,34 @@ export async function saveConversationWorkspace(
   });
   await assertOk(res);
 }
+
+export function saveConversationMessagesViaBeacon(
+  id: string,
+  messages: Message[]
+): boolean {
+  if (typeof navigator === "undefined") return false;
+
+  const url = `${BASE()}/${id}`;
+  const payload = JSON.stringify({ messages });
+
+  try {
+    if (typeof navigator.sendBeacon === "function") {
+      const blob = new Blob([payload], { type: "application/json" });
+      if (navigator.sendBeacon(url, blob)) return true;
+    }
+  } catch {
+    // sendBeacon pode atirar QuotaExceededError; cai no fallback
+  }
+
+  try {
+    void fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: payload,
+      keepalive: true,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}

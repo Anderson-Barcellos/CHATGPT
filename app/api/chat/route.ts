@@ -172,24 +172,45 @@ export async function POST(request: NextRequest) {
     const requestParams = buildRequestParams(body);
 
     if (stream && responseMode !== "quiz") {
-      const streamResponse = await openai.responses.create({
-        ...requestParams,
-        stream: true,
-      });
+      const streamResponse = await openai.responses.create(
+        { ...requestParams, stream: true },
+        { signal: request.signal }
+      );
 
       const encoder = new TextEncoder();
       const readableStream = new ReadableStream({
         async start(controller) {
           try {
             for await (const event of streamResponse) {
+              if (request.signal.aborted) {
+                break;
+              }
               const data = JSON.stringify(event);
               controller.enqueue(encoder.encode(`data: ${data}\n\n`));
             }
-            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+
+            if (!request.signal.aborted) {
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            }
             controller.close();
           } catch (error) {
+            if (
+              error instanceof Error &&
+              (error.name === "AbortError" || request.signal.aborted)
+            ) {
+              console.info("[chat] Stream abortado pelo cliente — fechando upstream.");
+              try {
+                controller.close();
+              } catch {
+                // controller já pode estar fechado
+              }
+              return;
+            }
             controller.error(error);
           }
+        },
+        cancel() {
+          console.info("[chat] ReadableStream.cancel — cliente desconectou.");
         },
       });
 
@@ -202,10 +223,19 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const response = await openai.responses.create(requestParams);
+    const response = await openai.responses.create(requestParams, {
+      signal: request.signal,
+    });
 
     return Response.json(response);
   } catch (error) {
+    if (
+      error instanceof Error &&
+      (error.name === "AbortError" || request.signal.aborted)
+    ) {
+      return new Response(null, { status: 499 });
+    }
+
     console.error("Chat API error:", error);
 
     if (error instanceof OpenAI.APIError) {

@@ -142,7 +142,7 @@ export function QuickActionsBar({
     </div>
   );
 
-  if (streamStatus === "completed") {
+  if (streamStatus === "completed" || streamStatus === "interrupted") {
     return <FadeIn delay={0.3}>{bar}</FadeIn>;
   }
 

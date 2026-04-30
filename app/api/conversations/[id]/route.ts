@@ -86,7 +86,7 @@ export async function GET(
   return NextResponse.json(serializeConversation(conversation));
 }
 
-export async function PUT(
+async function handleConversationUpdate(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -137,13 +137,16 @@ export async function PUT(
     }
     return NextResponse.json(serializeConversation(updated));
   } catch (err) {
-    console.error("[conversations] PUT error", err);
+    console.error("[conversations] update error", err);
     return jsonError(500, "Failed to update conversation", {
       message: "Nao consegui salvar essa conversa agora.",
       code: "conversation_update_failed",
     });
   }
 }
+
+export const PUT = handleConversationUpdate;
+export const POST = handleConversationUpdate;
 
 export async function DELETE(
   request: NextRequest,

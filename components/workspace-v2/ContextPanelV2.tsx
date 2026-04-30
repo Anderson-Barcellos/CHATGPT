@@ -127,7 +127,7 @@ function buildActivityEvents(messages: Message[]): ActivityEvent[] {
     const assistantStatus: ActivityStatus =
       streamStatus === "failed"
         ? "failed"
-        : streamStatus === "aborted"
+        : streamStatus === "aborted" || streamStatus === "interrupted"
           ? "warning"
           : streamStatus === "streaming"
             ? "running"
@@ -137,10 +137,12 @@ function buildActivityEvents(messages: Message[]): ActivityEvent[] {
       streamStatus === "failed"
         ? "Resposta do assistente falhou"
         : streamStatus === "aborted"
-          ? "Geração interrompida"
-          : streamStatus === "streaming"
-            ? "Resposta em geração"
-            : "Resposta concluída";
+          ? "Geração cancelada pelo usuário"
+          : streamStatus === "interrupted"
+            ? "Resposta interrompida no streaming"
+            : streamStatus === "streaming"
+              ? "Resposta em geração"
+              : "Resposta concluída";
 
     events.push({
       id: `${message.id}:assistant-status`,

@@ -18,6 +18,7 @@ import {
   getConversation,
   saveConversationMessages,
   saveConversationMessagesAndTitle,
+  saveConversationMessagesViaBeacon,
   createConversation,
 } from "@/lib/storage/conversations";
 import { withConversationPersistenceRetry } from "@/lib/storage/conversationPersistence";
@@ -34,6 +35,7 @@ import { apiUrl } from "@/lib/utils";
 import { buildEditResendOptions } from "@/lib/chat/resendOptions";
 import { buildQuizCompletionPatch } from "@/lib/chat/quizCompletion";
 import { buildAbortedAssistantMessagePatch } from "@/lib/chat/abortCompletion";
+import { createThrottle } from "@/lib/performance/throttle";
 import {
   isReasoningModel,
   modelSupportsCodeInterpreter,
@@ -48,6 +50,29 @@ import {
   QUIZ_FORCED_REASONING_EFFORT,
   QUIZ_MIN_QUESTION_COUNT,
 } from "@/lib/artifacts/quizArtifacts";
+
+const STREAM_AUTO_SAVE_INTERVAL_MS = 2000;
+
+function normalizeStreamingMessages(messages: Message[]): Message[] {
+  return messages.map((message) => {
+    if (message.role !== "assistant" || message.streamStatus !== "streaming") {
+      return message;
+    }
+
+    const reasoningCleanup =
+      message.reasoningStatus === "thinking"
+        ? { reasoningStatus: "complete" as const }
+        : {};
+
+    return {
+      ...message,
+      streamStatus: "interrupted" as const,
+      isGeneratingImage: false,
+      isSearching: false,
+      ...reasoningCleanup,
+    };
+  });
+}
 
 function buildReasoningConfig(
   model: string,
@@ -265,7 +290,25 @@ export function useChat() {
         if (!isCurrent) return;
 
         if (conversation?.messages?.length) {
-          setMessages(conversation.messages);
+          const normalized = normalizeStreamingMessages(conversation.messages);
+          setMessages(normalized);
+
+          const wasInterrupted = normalized.some(
+            (message, idx) => message !== conversation.messages[idx]
+          );
+          if (wasInterrupted) {
+            void withConversationPersistenceRetry(() =>
+              saveConversationMessages(
+                activeConversationId,
+                sanitizeMessagesForStorage(normalized)
+              )
+            ).catch((err) => {
+              console.warn(
+                "[useChat] Falha ao persistir normalização de interrupted:",
+                err
+              );
+            });
+          }
         }
         setIsRecovering(false);
       })
@@ -281,6 +324,30 @@ export function useChat() {
       isCurrent = false;
     };
   }, [activeConversationId, conversationLoadNonce, setMessages]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleUnload = () => {
+      const state = useChatStore.getState();
+      if (!state.isStreaming || !state.activeConversationId) return;
+
+      abortControllerRef.current?.abort();
+
+      const normalized = normalizeStreamingMessages(state.messages);
+      saveConversationMessagesViaBeacon(
+        state.activeConversationId,
+        sanitizeMessagesForStorage(normalized)
+      );
+    };
+
+    window.addEventListener("beforeunload", handleUnload);
+    window.addEventListener("pagehide", handleUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleUnload);
+      window.removeEventListener("pagehide", handleUnload);
+    };
+  }, []);
 
   const sendMessage = useCallback(
     async (content: string, options: SendMessageOptions = {}) => {
@@ -328,7 +395,32 @@ export function useChat() {
 
       let streamState = createInitialAssistantStreamState(usesReasoning);
 
+      const throttledAutoSave = createThrottle(() => {
+        const snapshot = sanitizeMessagesForStorage(
+          useChatStore.getState().messages
+        );
+        void saveConversationMessages(activeConversationId, snapshot).catch(
+          (err) => {
+            console.warn("[useChat] Falha em auto-save throttled:", err);
+          }
+        );
+      }, STREAM_AUTO_SAVE_INTERVAL_MS);
+
       try {
+        try {
+          await withConversationPersistenceRetry(() =>
+            saveConversationMessages(
+              activeConversationId,
+              sanitizeMessagesForStorage(useChatStore.getState().messages)
+            )
+          );
+        } catch (err) {
+          console.warn(
+            "[useChat] Falha em flush imediato pré-stream (segue mesmo assim):",
+            err
+          );
+        }
+
         const requestModel =
           responseMode === "quiz" ? QUIZ_FORCED_MODEL : parameters.model;
         const requestReasoningEffort =
@@ -412,6 +504,7 @@ export function useChat() {
                   assistantMessageId,
                   assistantStreamStateToMessagePatch(streamState)
                 );
+                throttledAutoSave.call();
               } catch {
                 // Ignora chunks parciais ou eventos irrelevantes
               }
@@ -483,6 +576,7 @@ export function useChat() {
           });
         }
       } finally {
+        throttledAutoSave.cancel();
         setIsLoading(false);
         setIsStreaming(false);
         abortControllerRef.current = null;
