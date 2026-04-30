@@ -15,6 +15,7 @@ import { CommandComposerContainerV2 } from "@/components/workspace-v2/CommandCom
 import { ContextPanelV2 } from "@/components/workspace-v2/ContextPanelV2";
 import { ConversationRailV2 } from "@/components/workspace-v2/ConversationRailV2";
 import { WorkspaceFrameV2 } from "@/components/workspace-v2/WorkspaceLayoutV2";
+import { ExportDropdown } from "@/components/workspace-v2/ExportDropdown";
 import { useChat } from "@/hooks/useChat";
 import { NotesProvider } from "@/components/workspace-v2/NotesProvider";
 import { CanvasOverlayV2 } from "@/components/workspace-v2/canvas/CanvasOverlayV2";
@@ -149,6 +150,7 @@ export function GauchoChatShellV2() {
           mobileContextOpen={shouldShowMobileContext}
           onMobileContextOpenChange={handleMobileContextOpenChange}
           onOpenSettings={() => setSettingsOpen(true)}
+          exportControl={<ExportDropdown />}
         />
       </div>
         <SelectionToolbar selection={textSelection} />
