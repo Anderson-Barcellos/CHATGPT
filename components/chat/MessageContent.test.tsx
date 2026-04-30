@@ -84,6 +84,6 @@ describe("MessageContent streaming routing", () => {
     );
 
     expect(markup).toContain("Abrir documento");
-    expect(markup).toContain("Abrir no painel");
+    expect(markup).toContain("Abrir Canvas");
   });
 });
