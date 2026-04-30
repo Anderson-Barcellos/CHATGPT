@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { AnimatePresence } from "framer-motion";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -125,7 +126,7 @@ export function ChatContainer({
     if (lastAssistantIdx === -1) return;
     const beforeAssistant = messages.slice(0, messages.length - 1 - lastAssistantIdx);
     const lastUserMsg = [...beforeAssistant].reverse().find((m) => m.role === "user");
-    if (!lastUserMsg) return;
+    if (!lastUserMsg?.content?.trim()) return;
     void editAndResend(lastUserMsg.id, lastUserMsg.content);
   }, [messages, editAndResend]);
   const activeConversationId = useChatStore((state) => state.activeConversationId);
@@ -315,21 +316,23 @@ export function ChatContainer({
           {messages.length === 0 ? (
             <WelcomeScreen onSuggestionClick={handleSuggestion} />
           ) : (
-            messages.map((message, idx) => {
-              const isLastAssistant =
-                message.role === "assistant" &&
-                !isLoading &&
-                idx === messages.length - 1;
-              return (
-                <MessageBubble
-                  key={getChatMessageRenderKey(message)}
-                  message={message}
-                  onEdit={editAndResend}
-                  onDelete={deleteMessage}
-                  onRegenerate={isLastAssistant ? regenerateLastMessage : undefined}
-                />
-              );
-            })
+            <AnimatePresence initial={false}>
+              {messages.map((message, idx) => {
+                const isLastAssistant =
+                  message.role === "assistant" &&
+                  !isLoading &&
+                  idx === messages.length - 1;
+                return (
+                  <MessageBubble
+                    key={getChatMessageRenderKey(message)}
+                    message={message}
+                    onEdit={editAndResend}
+                    onDelete={deleteMessage}
+                    onRegenerate={isLastAssistant ? regenerateLastMessage : undefined}
+                  />
+                );
+              })}
+            </AnimatePresence>
           )}
 
           {isLoading &&

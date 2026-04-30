@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { motion } from "framer-motion";
 import { MessageContent } from "./MessageContent";
 import { ReasoningPanel } from "./ReasoningPanel";
 import { Message } from "@/types";
@@ -93,9 +94,13 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
   }, [message.content]);
 
   return (
-    <div
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
       className={cn(
-        "group flex gap-2 animate-in fade-in-0 slide-in-from-bottom-2 duration-300 md:gap-3",
+        "group flex gap-2 md:gap-3",
         isUser ? "justify-end" : "justify-start"
       )}
       data-message-id={message.id}
@@ -352,6 +357,6 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
           onConfirm={() => onDelete(message.id)}
         />
       )}
-    </div>
+    </motion.div>
   );
 }

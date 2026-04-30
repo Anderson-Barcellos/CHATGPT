@@ -20,25 +20,16 @@ Plano completo do redesign em `/root/.claude/plans/meu-velho-na-verdade-golden-c
 | S9 | Quick Actions sob Balão | ✅ Concluída | Médio |
 | S10 | Reconectar `useExport` ao Shell V2 | ✅ Concluída | Baixo |
 | S11 | Mobile Pass | ✅ Concluída | Médio |
-| S12 | Polimento Final | **PRÓXIMA** | Baixo |
+| S12 | Polimento Final | ✅ Concluída | Baixo |
 
 **Tag de retorno:** `pre-redesign-s0` (criada em `9d36822`). Reverter o redesign inteiro: `git checkout pre-redesign-s0 -- .`.
 
 **Pré-requisitos:** Antes de começar uma sprint, ler o plan file completo (`/root/.claude/plans/meu-velho-na-verdade-golden-creek.md`) — contém arquivos-alvo, riscos, validação manual e os 3 apêndices (tokens `--gc-*`, escala tipográfica, escala animação).
 
-### KICKOFF — Sprint 12 (Polimento Final)
+### Redesign concluído — S0-S12 ✅
 
-> **Branch:** `redesign/s12-polish`. **Estado base:** S11 mergeado em `main`. **Risco:** Baixo.
->
-> Leia o plan file em `/root/.claude/plans/meu-velho-na-verdade-golden-creek.md` para os detalhes da S12 antes de começar.
->
-> **Estado pós-S11:**
-> - Touch targets 44×44px no mobile. Safe-areas centralizadas (`.gc-safe-top/bottom/both`).
-> - Chips do header conectados ao estado real (model, reasoning, responseMode).
-> - `responseMode` elevado para `GauchoChatShellV2`, compartilhado com header.
-> - Badge no botão painel mobile. QuickActionsBar → `onTouchStart` em mobile.
-> - ConversationRail Sheet fecha ao selecionar conversa.
-> - `getReasoningLabel` em `lib/models/modelConfig.ts`.
+> Todas as 13 sprints do plano `meu-velho-na-verdade-golden-creek.md` foram concluídas.
+> Para sprints opcionais (S13-S18), ver o plan file em `/root/.claude/plans/meu-velho-na-verdade-golden-creek.md`.
 
 ---
 
@@ -162,10 +153,21 @@ Apache vhost canônico: `/etc/apache2/sites-enabled/ultrassom.ai-optimized.conf`
 
 Os balões do assistente usam **key estável `message.id`** — não incluir `artifact.id` na key, senão o componente remonta no fim do stream e o buffer STT-style de `useStreamingTextBuffer.ts` reinicia visualmente. Isso é registrado em `AGENTS.md` como regra explícita.
 
+### 11. Sistemas do redesign (pós-S0)
+
+- **Tokens `--gc-*`** em `app/globals.css` — substitui `--v2-*`/`--app-*`/`--glass-*`. Breakpoints: `md=768`, `lg=1024 (sidebar)`, `xl=1280 (painel contextual)`.
+- **`components/motion/`** — `FadeIn`, `SlideIn`, `Pop`, `Drawer` encapsulam framer-motion com tokens `--gc-duration-*`.
+- **`CanvasOverlayV2`** — overlay flutuante draggable/resizable em `components/workspace-v2/canvas/`. Mobile = Sheet full-screen.
+- **`CommandPalette` + `CommandPaletteProvider`** — cmd+k via `cmdk`. Z-index 300 (acima do canvas 150).
+- **`NotesProvider`** — Context em `components/workspace-v2/NotesProvider.tsx`. `appendToNotes` lança toast se painel não montado.
+- **`SelectionToolbar`** + `useTextSelection` — toolbar Notion-like ao selecionar texto em balões.
+- **`ExportDropdown`** — consome `useExport` internamente; slot `exportControl` em `WorkspaceFrameV2`.
+- **`getReasoningLabel`** em `lib/models/modelConfig.ts` — chips do header conectados ao estado real.
+
 ## Convenções específicas do repo
 
 - **Path alias**: `@/*` → raiz (configurado em `tsconfig.json` e `vitest.config.ts`).
-- **Testes adjacentes**: `*.test.ts` mora ao lado do arquivo testado (`lib/chat/streamMachine.ts` ↔ `lib/chat/streamMachine.test.ts`). Não há diretório `/tests`.
+- **Testes adjacentes**: `*.test.ts` mora ao lado do arquivo testado. Não há diretório `/tests`.
 - **Erros API**: usar `jsonError(status, message, { code })` de `lib/api/errors.ts` em vez de `Response.json` cru.
 - **Stores Zustand minimalistas**: três stores (`chatStore`, `settingsStore`, `uiStore`) com setters explícitos; reducers complexos vivem em `lib/chat/*`, não no store.
 - **Stream events**: nunca consumir SSE no componente diretamente — passar pelo reducer (`reduceAssistantStreamEvent` + `assistantStreamStateToMessagePatch`).

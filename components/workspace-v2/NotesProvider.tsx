@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useRef } from "react";
+import { toast } from "sonner";
 import { useUIStore } from "@/stores/uiStore";
 
 type AppendFn = (text: string, sourceMessageId: string) => void;
@@ -16,7 +17,11 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   const implRef = useRef<AppendFn | null>(null);
 
   const appendToNotes = useCallback((text: string, sourceMessageId: string) => {
-    implRef.current?.(text, sourceMessageId);
+    if (!implRef.current) {
+      toast.error("Painel de notas não está disponível.");
+      return;
+    }
+    implRef.current(text, sourceMessageId);
     useUIStore.getState().setActivePanelTab("notes");
   }, []);
 
