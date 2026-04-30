@@ -138,10 +138,10 @@ export function GauchoChatShellV2() {
           onOpenSettings={() => setSettingsOpen(true)}
         />
       </div>
+        <SelectionToolbar selection={textSelection} />
       </NotesProvider>
       <SettingsDrawer isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <CanvasOverlayV2 />
-      <SelectionToolbar selection={textSelection} />
     </>
   );
 }

@@ -14,8 +14,8 @@ Plano completo do redesign em `/root/.claude/plans/meu-velho-na-verdade-golden-c
 | S3 | Hook `useIsMobile` + Breakpoints | ✅ Concluída | Baixo |
 | S4 | Refactor `uiStore` + NotesContext | ✅ Concluída | Médio |
 | S5 | `CanvasOverlayV2` (draggable/resizable) | ✅ Concluída | **Alto** |
-| S6 | Toolbar Flutuante de Seleção | **PRÓXIMA** | Médio |
-| S7 | Command Palette (cmd+k) | Pendente | Baixo |
+| S6 | Toolbar Flutuante de Seleção | ✅ Concluída | Médio |
+| S7 | Command Palette (cmd+k) | **PRÓXIMA** | Baixo |
 | S8 | Monaco Editor Real | Pendente | Médio |
 | S9 | Quick Actions sob Balão | Pendente | Médio |
 | S10 | Reconectar `useExport` ao Shell V2 | Pendente | Baixo |
