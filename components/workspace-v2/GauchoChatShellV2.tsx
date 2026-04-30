@@ -15,6 +15,7 @@ import { ContextPanelV2 } from "@/components/workspace-v2/ContextPanelV2";
 import { ConversationRailV2 } from "@/components/workspace-v2/ConversationRailV2";
 import { WorkspaceFrameV2 } from "@/components/workspace-v2/WorkspaceLayoutV2";
 import { useChat } from "@/hooks/useChat";
+import { NotesProvider } from "@/components/workspace-v2/NotesProvider";
 import { useConversations } from "@/hooks/useConversations";
 import { useComponentPreloader } from "@/lib/performance/lazy";
 import { MODELS } from "@/lib/models/modelConfig";
@@ -91,6 +92,7 @@ export function GauchoChatShellV2() {
   return (
     <>
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+      <NotesProvider>
       <div className={!isHydrated ? "invisible" : undefined}>
         <WorkspaceFrameV2
           activeConversationTitle={activeConversation?.title || "Workspace"}
@@ -132,6 +134,7 @@ export function GauchoChatShellV2() {
           onOpenSettings={() => setSettingsOpen(true)}
         />
       </div>
+      </NotesProvider>
       <SettingsDrawer isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>
   );

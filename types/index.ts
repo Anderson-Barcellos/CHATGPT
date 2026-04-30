@@ -147,6 +147,22 @@ export interface SerializedConversation {
   updatedAt: string;
 }
 
+export type ActivePanelTab = "activity" | "notes";
+
+export interface CanvasOverlayState {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  isMaximized: boolean;
+}
+
+export interface ActiveSelection {
+  text: string;
+  messageId: string;
+  rect: DOMRect | null;
+}
+
 export type ReasoningEffort = "none" | "low" | "medium" | "high" | "xhigh";
 export type ReasoningSummary = "off" | "auto" | "concise" | "detailed";
 export type ResponseVerbosity = "low" | "medium" | "high";

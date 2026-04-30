@@ -5,14 +5,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   AlertTriangle,
-  BookOpenText,
   Check,
-  ClipboardList,
-  Code,
   Copy,
   Download,
-  Eye,
-  FileText,
   LoaderCircle,
   PanelRightClose,
   PlayCircle,
@@ -23,13 +18,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CodeBlock } from "@/components/chat/CodeBlock";
-import { ChatMarkdown } from "@/components/chat/ChatMarkdown";
-import { DocumentCanvas } from "@/components/artifacts/DocumentCanvas";
-import { QuizCanvas } from "@/components/artifacts/QuizCanvas";
-import { downloadArtifactPDF } from "@/lib/export/artifactPdf";
-import { getQuizSourceContent } from "@/lib/artifacts/quizArtifacts";
-import { useArtifactSessionPersistence } from "@/hooks/useArtifactSessionPersistence";
+import { useNotesContext } from "@/components/workspace-v2/NotesProvider";
 import { useConversations } from "@/hooks/useConversations";
 import { conversationKeys } from "@/hooks/queries/useConversationQuery";
 import { withConversationPersistenceRetry } from "@/lib/storage/conversationPersistence";
@@ -37,10 +26,10 @@ import { saveConversationWorkspace } from "@/lib/storage/conversations";
 import { useChatStore } from "@/stores/chatStore";
 import { useUIStore } from "@/stores/uiStore";
 import type {
+  ActivePanelTab,
   ConversationWorkspace,
   ConversationWorkspaceNotes,
   Message,
-  QuizMessageArtifact,
 } from "@/types";
 
 type ActivityStatus = "done" | "running" | "warning" | "failed";
@@ -64,39 +53,6 @@ const EMPTY_NOTES_DRAFT: NotesDraft = {
   body: "",
   nextStepsText: "",
 };
-
-function HtmlPreview({ content }: { content: string }) {
-  const srcDoc = `<!DOCTYPE html>
-<html><head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    line-height: 1.6; padding: 18px; max-width: 100%; overflow-x: auto;
-    color: #d9e6ee; background: #0b1118;
-  }
-  pre { background: #121b25; padding: 12px; border-radius: 8px; overflow-x: auto; }
-  code { background: #121b25; padding: 2px 6px; border-radius: 4px; }
-  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
-  th, td { border: 1px solid #263545; padding: 8px 12px; text-align: left; }
-  th { background: #121b25; }
-  img, svg { max-width: 100%; height: auto; }
-  a { color: #67e8f9; }
-  h1, h2, h3 { color: #f4fbff; margin: 16px 0 8px; }
-</style>
-</head><body>${content}</body></html>`;
-
-  return (
-    <iframe
-      srcDoc={srcDoc}
-      className="h-full w-full rounded-lg border border-white/8 bg-slate-950"
-      title="HTML Preview"
-      sandbox=""
-    />
-  );
-}
 
 function formatClock(date: Date): string {
   return date.toLocaleTimeString("pt-BR", {
@@ -340,7 +296,10 @@ export function ContextPanelV2() {
     artifactMessageId,
     openArtifact,
     closeArtifact,
+    activePanelTab,
+    setActivePanelTab,
   } = useUIStore();
+  const { _register } = useNotesContext();
   const { activeConversationId, messages } = useChatStore();
   const { conversations = [] } = useConversations();
 
@@ -349,8 +308,11 @@ export function ContextPanelV2() {
   const [notesDirty, setNotesDirty] = useState(false);
   const [notesDraft, setNotesDraft] = useState<NotesDraft>(EMPTY_NOTES_DRAFT);
   const previousConversationIdRef = useRef<string | null>(null);
+  const notesDraftBodyRef = useRef(notesDraft.body);
 
-  const persistArtifactSession = useArtifactSessionPersistence();
+  useEffect(() => {
+    notesDraftBodyRef.current = notesDraft.body;
+  }, [notesDraft.body]);
 
   const activeConversation = useMemo(
     () =>
@@ -385,42 +347,17 @@ export function ContextPanelV2() {
   );
 
   const effectiveArtifact = activeArtifact ?? fallbackArtifactMessage?.artifact ?? null;
-  const effectiveArtifactMessageId = activeArtifact
-    ? artifactMessageId
-    : fallbackArtifactMessage?.id ?? null;
 
   const documentArtifact =
     effectiveArtifact?.kind === "document" ? effectiveArtifact : null;
-  const quizArtifact = effectiveArtifact?.kind === "quiz" ? effectiveArtifact : null;
-  const isQuizArtifact = quizArtifact !== null;
 
   const artifactTitle = effectiveArtifact?.title || "Sem artefato";
-  const artifactContent = documentArtifact
-    ? documentArtifact.content
-    : quizArtifact
-      ? getQuizSourceContent(quizArtifact.quiz)
-      : "";
-  const artifactSourceLanguage = documentArtifact
-    ? documentArtifact.type === "html"
-      ? "html"
-      : "markdown"
-    : "json";
-  const canDownloadPdf = documentArtifact !== null;
+  const artifactContent = documentArtifact ? documentArtifact.content : "";
   const artifactExtension = documentArtifact
     ? documentArtifact.type === "html"
       ? "html"
       : "md"
     : "json";
-  const artifactFilename = effectiveArtifact
-    ? `${artifactTitle.replace(/\s+/g, "_")}.${artifactExtension}`
-    : "";
-  const canvasDescription = effectiveArtifact
-    ? isQuizArtifact
-      ? "Quiz renderizado em uma area maior, com espaco para responder e revisar."
-      : documentArtifact?.type === "html"
-        ? "Preview HTML renderizado em uma area maior do workspace."
-        : "Documento markdown renderizado com mais respiro para leitura e producao."
-    : "Gere um documento, quiz ou resposta rica para abrir aqui como canvas.";
 
   const activityEvents = useMemo(() => buildActivityEvents(messages), [messages]);
   const latestEvent = activityEvents[0];
@@ -433,26 +370,6 @@ export function ContextPanelV2() {
   const citationEventsCount = activityEvents.filter((event) =>
     event.id.includes(":citations")
   ).length;
-
-  const handleOpenFallbackArtifact = useCallback(() => {
-    if (!fallbackArtifactMessage?.artifact) return;
-    openArtifact(fallbackArtifactMessage.artifact, fallbackArtifactMessage.id);
-  }, [fallbackArtifactMessage, openArtifact]);
-
-  const handleQuizSessionChange = useCallback(
-    async (session: QuizMessageArtifact["quiz"]["session"]) => {
-      if (!effectiveArtifactMessageId || !quizArtifact) return;
-
-      await persistArtifactSession(effectiveArtifactMessageId, {
-        ...quizArtifact,
-        quiz: {
-          ...quizArtifact.quiz,
-          session,
-        },
-      });
-    },
-    [effectiveArtifactMessageId, persistArtifactSession, quizArtifact]
-  );
 
   const handleCopy = useCallback(async () => {
     if (!effectiveArtifact) {
@@ -494,26 +411,6 @@ export function ContextPanelV2() {
     documentArtifact,
     effectiveArtifact,
   ]);
-
-  const handleDownloadPDF = useCallback(async () => {
-    if (!documentArtifact) {
-      toast.info("Somente documentos possuem exportação em PDF.");
-      return;
-    }
-
-    try {
-      await downloadArtifactPDF(artifactContent, {
-        title: artifactTitle || "Documento",
-        contentType: documentArtifact.type,
-      });
-    } catch (downloadError) {
-      const message =
-        downloadError instanceof Error
-          ? downloadError.message
-          : "Falha ao exportar o documento em PDF.";
-      toast.error("PDF nao exportado", { description: message });
-    }
-  }, [artifactContent, artifactTitle, documentArtifact]);
 
   const handleSaveNotes = useCallback(async () => {
     if (!activeConversationId) {
@@ -561,6 +458,13 @@ export function ContextPanelV2() {
     []
   );
 
+  useEffect(() => {
+    return _register((text, msgId) => {
+      const snippet = `\n\n---\n> ${text}\n> _Fonte: #${msgId.slice(0, 8)}_\n`;
+      updateNotesField("body", notesDraftBodyRef.current + snippet);
+    });
+  }, [_register, updateNotesField]);
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-white/8 px-3 py-3 xl:hidden">
@@ -575,7 +479,11 @@ export function ContextPanelV2() {
         </Button>
       </div>
 
-      <Tabs defaultValue="canvas" className="flex min-h-0 flex-1 flex-col">
+      <Tabs
+        value={activePanelTab}
+        onValueChange={(v) => setActivePanelTab(v as ActivePanelTab)}
+        className="flex min-h-0 flex-1 flex-col"
+      >
         <div className="border-b border-white/8 px-3 py-2">
           <div className="mb-2 flex items-center justify-between gap-2">
             <div className="min-w-0">
@@ -598,12 +506,6 @@ export function ContextPanelV2() {
             </div>
           </div>
           <TabsList className="w-full rounded-lg border border-white/8 bg-white/[0.03] p-1">
-            <TabsTrigger value="canvas" className="h-7 rounded-md text-xs">
-              Canvas
-            </TabsTrigger>
-            <TabsTrigger value="artifact" className="h-7 rounded-md text-xs">
-              Artefato
-            </TabsTrigger>
             <TabsTrigger value="activity" className="h-7 rounded-md text-xs">
               Atividade
             </TabsTrigger>
@@ -612,215 +514,6 @@ export function ContextPanelV2() {
             </TabsTrigger>
           </TabsList>
         </div>
-
-        <TabsContent value="canvas" className="mt-0 min-h-0 flex-1 overflow-hidden">
-          <ScrollArea className="h-full">
-            <div className="p-3">
-              <section className="gc-canvas-surface rounded-xl border p-3">
-                <div className="mb-3 flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="mb-1 flex items-center gap-2">
-                      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-cyan-300/14 text-cyan-700 dark:text-cyan-100">
-                        <BookOpenText className="size-4" />
-                      </span>
-                      <div className="min-w-0">
-                        <h3 className="truncate text-sm font-semibold text-foreground">
-                          {effectiveArtifact ? artifactTitle : "Canvas Markdown"}
-                        </h3>
-                        <p className="text-nano uppercase tracking-label text-muted-foreground">
-                          Leitura expandida
-                        </p>
-                      </div>
-                    </div>
-                    <p className="text-micro leading-relaxed text-muted-foreground">
-                      {canvasDescription}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <Button variant="ghost" size="icon" className="size-8" onClick={handleCopy}>
-                      {copied ? (
-                        <Check className="size-4 text-emerald-300" />
-                      ) : (
-                        <Copy className="size-4" />
-                      )}
-                    </Button>
-                    {canDownloadPdf && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-2 text-xs"
-                        onClick={handleDownloadPDF}
-                      >
-                        PDF
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-canvas-soft)] p-2">
-                  {effectiveArtifact ? (
-                    isQuizArtifact ? (
-                      <QuizCanvas
-                        artifact={quizArtifact}
-                        onSessionChange={handleQuizSessionChange}
-                      />
-                    ) : documentArtifact?.type === "html" ? (
-                      <div className="h-[min(72vh,680px)]">
-                        <HtmlPreview content={artifactContent} />
-                      </div>
-                    ) : (
-                      <DocumentCanvas
-                        title={artifactTitle}
-                        eyebrow="Canvas Markdown"
-                        description={documentArtifact?.summary ?? "Resposta renderizada em modo canvas."}
-                        className="border-black/5 bg-transparent dark:border-white/8"
-                        bodyClassName="md:px-8 md:py-8"
-                      >
-                        <ChatMarkdown content={artifactContent} className="max-w-none" />
-                      </DocumentCanvas>
-                    )
-                  ) : (
-                    <EmptyArtifactState />
-                  )}
-                </div>
-              </section>
-            </div>
-          </ScrollArea>
-        </TabsContent>
-
-        <TabsContent value="artifact" className="mt-0 min-h-0 flex-1 overflow-hidden">
-          <ScrollArea className="h-full">
-            <div className="space-y-3 p-3">
-              <section className="rounded-lg border border-white/8 bg-white/[0.03] p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-rose-400/18 text-rose-200">
-                      {isQuizArtifact ? (
-                        <ClipboardList className="size-4" />
-                      ) : (
-                        <FileText className="size-4" />
-                      )}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-xs font-semibold text-foreground">
-                        {effectiveArtifact ? artifactFilename : "Nenhum artefato disponível"}
-                      </p>
-                      <p className="text-nano text-muted-foreground">
-                        {effectiveArtifact
-                          ? isQuizArtifact
-                            ? "Quiz interativo"
-                            : documentArtifact?.type === "html"
-                              ? "HTML · pré-visualização"
-                              : "Documento markdown"
-                          : "Use as respostas com documento/quiz para preencher este painel."}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {!activeArtifact && fallbackArtifactMessage?.artifact && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-2 text-xs"
-                        onClick={handleOpenFallbackArtifact}
-                      >
-                        Abrir painel
-                      </Button>
-                    )}
-                    {canDownloadPdf && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-2 text-xs"
-                        onClick={handleDownloadPDF}
-                      >
-                        PDF
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </section>
-
-              <section className="rounded-lg border border-white/8 bg-white/[0.02] p-2">
-                <Tabs defaultValue="preview" className="flex min-h-0 flex-1 flex-col">
-                  <TabsList className="mb-2 w-fit rounded-md border border-white/8 bg-white/[0.03] p-1">
-                    <TabsTrigger value="preview" className="h-7 rounded-md text-xs">
-                      <Eye className="mr-1 size-3.5" />
-                      Preview
-                    </TabsTrigger>
-                    <TabsTrigger value="source" className="h-7 rounded-md text-xs">
-                      <Code className="mr-1 size-3.5" />
-                      Fonte
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="preview" className="mt-0">
-                    {effectiveArtifact ? (
-                      <div className="min-h-[220px] rounded-lg border border-white/8 bg-black/20 p-2">
-                        {isQuizArtifact ? (
-                          <ScrollArea className="h-[300px]">
-                            <div className="p-1">
-                              <QuizCanvas
-                                artifact={quizArtifact}
-                                compact
-                                onSessionChange={handleQuizSessionChange}
-                              />
-                            </div>
-                          </ScrollArea>
-                        ) : documentArtifact?.type === "html" ? (
-                          <div className="h-[300px]">
-                            <HtmlPreview content={artifactContent} />
-                          </div>
-                        ) : (
-                          <ScrollArea className="h-[300px]">
-                            <div className="p-1">
-                              <DocumentCanvas
-                                title={artifactTitle}
-                                eyebrow="Documento pronto"
-                                description="Preview editorial do artefato da conversa."
-                                compact
-                                className="border-white/8 bg-white/[0.02]"
-                                bodyClassName="md:py-6"
-                              >
-                                <ChatMarkdown content={artifactContent} className="max-w-none" />
-                              </DocumentCanvas>
-                            </div>
-                          </ScrollArea>
-                        )}
-                      </div>
-                    ) : (
-                      <EmptyArtifactState />
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="source" className="mt-0">
-                    <div className="rounded-lg border border-white/8 bg-black/20 p-2">
-                      {effectiveArtifact ? (
-                        <CodeBlock
-                          language={artifactSourceLanguage}
-                          value={artifactContent}
-                          showLineNumbers
-                        />
-                      ) : (
-                        <CodeBlock
-                          language="markdown"
-                          value={"# Sem artefato ativo\n\nGere um documento ou quiz para liberar a fonte nesta aba.\n"}
-                          showLineNumbers
-                        />
-                      )}
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </section>
-
-              <ActivityTimeline
-                title="Atividade recente do assistente"
-                events={activityEvents}
-                compact
-              />
-            </div>
-          </ScrollArea>
-        </TabsContent>
 
         <TabsContent value="activity" className="mt-0 min-h-0 flex-1 overflow-hidden">
           <ScrollArea className="h-full">
