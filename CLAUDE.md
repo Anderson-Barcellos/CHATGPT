@@ -26,47 +26,31 @@ Plano completo do redesign em `/root/.claude/plans/meu-velho-na-verdade-golden-c
 
 **Pré-requisitos:** Antes de começar uma sprint, ler o plan file completo (`/root/.claude/plans/meu-velho-na-verdade-golden-creek.md`) — contém arquivos-alvo, riscos, validação manual e os 3 apêndices (tokens `--gc-*`, escala tipográfica, escala animação).
 
-### KICKOFF — Sprint 5 (CanvasOverlayV2)
+### KICKOFF — Sprint 10 (Reconectar useExport)
 
-> **Branch:** `redesign/s5-canvas`. **Estado base:** S4 mergeado em `main`. **Risco:** Alto. **Estimativa:** 2 commits.
+> **Branch:** `redesign/s10-export`. **Estado base:** S9 mergeado em `main`. **Risco:** Baixo. **Estimativa:** 1 commit.
 >
-> **Pré-requisito:** ler plan file completo — seção Sprint 5 tem detalhes de z-index, drag, resize e mobile.
->
-> **Estado pós-S4 (saiba isso antes de começar):**
->
-> - `uiStore` expandido: `canvasPosition {x,y}`, `canvasDimensions {w,h}`, `canvasMaximized`, `activeSelection`, `activePanelTab`, `setCanvas*` setters.
-> - `NotesProvider` + `useNotes` montados em `GauchoChatShellV2`.
-> - `ContextPanelV2`: 2 abas controladas (Atividade + Notas). Canvas/Artifact removidas.
-> - Primitivos `<FadeIn>`, `<SlideIn>`, `<Pop>`, `<Drawer>` em `components/motion/`.
-> - `framer-motion 12.38.0` instalado.
-> - `useIsMobile()` disponível em `hooks/useIsMobile.ts`.
+> **Estado pós-S9 (saiba isso antes de começar):**
+> - `QuickActionsBar` substituiu `MessageActions` nos balões do assistente.
+> - `GauchoChatShellV2` tem `CommandPaletteProvider` + `NotesProvider` + `SelectionToolbar` + `CanvasOverlayV2` + `CommandPalette`.
+> - `WorkspaceLayoutV2.tsx` tem `handleQuickExport` com `window.print()` — **remover isso**.
+> - `useExport` em `hooks/useExport.ts` — hook pronto mas órfão do shell ativo.
 >
 > **Arquivos a criar:**
-> - `components/workspace-v2/canvas/CanvasOverlayV2.tsx` — overlay principal (motion.div fixed)
-> - `components/workspace-v2/canvas/CanvasDragHandle.tsx` — barra de título draggável
-> - `components/workspace-v2/canvas/CanvasResizeHandle.tsx` — 8 handles N/NE/E/SE/S/SW/W/NW
-> - `components/workspace-v2/canvas/useCanvasDrag.ts` — Pointer Events nativos
-> - `components/workspace-v2/canvas/useCanvasResize.ts`
-> - `components/workspace-v2/canvas/CanvasContent.tsx` — renderização (DocumentCanvas/QuizCanvas/HtmlPreview)
+> - `components/workspace-v2/ExportDropdown.tsx` — `DropdownMenu` com Markdown/JSON/PDF/Copiar, consome `useExport` internamente.
 >
 > **Arquivos a modificar:**
-> - `components/workspace-v2/GauchoChatShellV2.tsx` — montar `<CanvasOverlayV2>` no nível raiz
-> - `components/chat/MessageContent.tsx` — botão "Abrir no painel" → "Abrir Canvas"
+> - `components/workspace-v2/WorkspaceLayoutV2.tsx` — adicionar prop `exportControl?: ReactNode`, substituir botão exportar por `{exportControl}`, deletar `handleQuickExport` + `window.print()`.
+> - `components/workspace-v2/GauchoChatShellV2.tsx` — passar `exportControl={<ExportDropdown />}` para `WorkspaceFrameV2`.
 >
 > **Tarefas:**
->
-> 1. `git checkout -b redesign/s5-canvas`
-> 2. Criar `CanvasContent.tsx` extraindo lógica de canvas do antigo `ContextPanelV2` (DocumentCanvas/QuizCanvas/HtmlPreview + handlers copy/download/PDF). **ATENÇÃO:** HtmlPreview foi removida do ContextPanelV2 em S4 mas o código original está no plan file — recriar aqui.
-> 3. Criar `useCanvasDrag.ts`: `setPointerCapture` no onPointerDown, `onPointerMove` calcula delta, `onPointerUp` chama `setCanvasPosition`. Clamp 80px dentro do viewport.
-> 4. Criar `useCanvasResize.ts`: 8 handles, min 420×300, max 90vw/90vh.
-> 5. Criar `CanvasDragHandle.tsx` e `CanvasResizeHandle.tsx`.
-> 6. Criar `CanvasOverlayV2.tsx`: `motion.div position:fixed`, z-[150]. Backdrop `z-[140] pointer-events-none backdrop-blur-[24px]`. Animação entrada via `<Pop>` (scale 0.95→1, opacity 0→1). Mobile: `if (useIsMobile()) return <Sheet side="bottom" full-screen>` com breadcrumb.
-> 7. ESC fecha; `window.resize` reclamp.
-> 8. Em `GauchoChatShellV2.tsx`: montar `<CanvasOverlayV2>` controlado por `artifactOpen` + `activeArtifact`.
-> 9. `npx tsc --noEmit` + `npm run build` + `npm test`.
-> 10. Testar light/dark + desktop/mobile. Commit: `feat(s5): CanvasOverlayV2 draggable/resizable`.
->
-> **Riscos:** z-index hell; `motion.div` + `position:fixed` + drag via `transform` pode conflitar — usar `dragConstraints` do viewport ou Pointer Events puros. Em caso de regressão: `git revert` > patch.
+> 1. `git checkout -b redesign/s10-export`
+> 2. Ler `hooks/useExport.ts` e `components/workspace-v2/WorkspaceLayoutV2.tsx` para entender o slot atual do botão exportar.
+> 3. Criar `ExportDropdown.tsx`: `useExport()` + `useChatStore()` internos. `DropdownMenu` com 4 items: Markdown, JSON, PDF, Copiar para área de transferência. Spinner se `progress.isExporting`.
+> 4. Em `WorkspaceLayoutV2.tsx`: adicionar `exportControl?: ReactNode` em `WorkspaceFrameV2Props`. Substituir o botão existente por `{exportControl ?? null}`. Deletar `handleQuickExport` e `window.print()`.
+> 5. Em `GauchoChatShellV2.tsx`: importar `ExportDropdown` e passar como `exportControl={<ExportDropdown />}`.
+> 6. `npx tsc --noEmit` + `npm run build` + `npm test`.
+> 7. Commit: `fix(s10): conectar useExport ao header v2, remover window.print()`.
 
 ---
 
