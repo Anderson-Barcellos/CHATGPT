@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useEffect,
   useMemo,
   useState,
   useSyncExternalStore,
@@ -19,6 +20,8 @@ import { NotesProvider } from "@/components/workspace-v2/NotesProvider";
 import { CanvasOverlayV2 } from "@/components/workspace-v2/canvas/CanvasOverlayV2";
 import { SelectionToolbar } from "@/components/chat/SelectionToolbar";
 import { useTextSelection } from "@/hooks/useTextSelection";
+import { CommandPaletteProvider } from "@/components/command/CommandPaletteProvider";
+import { CommandPalette } from "@/components/command/CommandPalette";
 import { useConversations } from "@/hooks/useConversations";
 import { useComponentPreloader } from "@/lib/performance/lazy";
 import { MODELS } from "@/lib/models/modelConfig";
@@ -41,7 +44,7 @@ export function GauchoChatShellV2() {
     !window.sessionStorage.getItem("gpt-splash-shown");
 
   useComponentPreloader();
-  const { activeConversationId, messages } = useChatStore();
+  const { activeConversationId, messages, setActiveConversationId } = useChatStore();
   const { conversations } = useConversations();
   const { parameters } = useSettingsStore();
   const { artifactOpen, activeArtifact, closeArtifact } = useUIStore();
@@ -83,6 +86,12 @@ export function GauchoChatShellV2() {
     setSplashDismissed(true);
   }, []);
 
+  useEffect(() => {
+    const handler = () => setSettingsOpen(true);
+    window.addEventListener("gaucho:open-settings", handler);
+    return () => window.removeEventListener("gaucho:open-settings", handler);
+  }, []);
+
   const handleMobileContextOpenChange = useCallback(
     (open: boolean) => {
       setMobileContextOpen(open);
@@ -96,6 +105,10 @@ export function GauchoChatShellV2() {
   return (
     <>
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+      <CommandPaletteProvider
+        onNewConversation={() => setActiveConversationId(null)}
+        onOpenSettings={() => setSettingsOpen(true)}
+      >
       <NotesProvider>
       <div className={!isHydrated ? "invisible" : undefined}>
         <WorkspaceFrameV2
@@ -142,6 +155,8 @@ export function GauchoChatShellV2() {
       </NotesProvider>
       <SettingsDrawer isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <CanvasOverlayV2 />
+      <CommandPalette />
+      </CommandPaletteProvider>
     </>
   );
 }
