@@ -142,7 +142,7 @@ function ContextChip({
   value: string;
 }) {
   return (
-    <span className="inline-flex max-w-[12rem] items-center gap-1 rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] text-muted-foreground">
+    <span className="inline-flex max-w-[12rem] items-center gap-1 rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-nano text-muted-foreground">
       <span className="text-foreground/65">{label}</span>
       <span className="truncate font-medium text-foreground">{value}</span>
     </span>
@@ -217,14 +217,14 @@ export function WorkspaceFrameV2({
                         {activeConversationTitle}
                       </h1>
                     </div>
-                    <p className="truncate text-[11px] text-muted-foreground">
+                    <p className="truncate text-micro text-muted-foreground">
                       Gaucho Chat
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <div className="hidden items-center gap-1.5 rounded-lg border border-emerald-300/20 bg-emerald-300/10 px-2 py-1 text-[10px] font-medium text-emerald-200 lg:flex">
+                  <div className="hidden items-center gap-1.5 rounded-lg border border-emerald-300/20 bg-emerald-300/10 px-2 py-1 text-nano font-medium text-emerald-200 lg:flex">
                     <ShieldCheck className="size-3.5" />
                     Salvo
                   </div>
@@ -254,7 +254,7 @@ export function WorkspaceFrameV2({
                   <ContextChip label="Reasoning" value="Alto" />
                   <ContextChip label="Modo" value="Documento" />
                 </div>
-                <span className="hidden items-center gap-1 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-0.5 text-[10px] font-medium text-cyan-100 sm:inline-flex">
+                <span className="hidden items-center gap-1 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-0.5 text-nano font-medium text-cyan-100 sm:inline-flex">
                   <span className="size-1.5 rounded-full bg-cyan-200" />
                   online
                 </span>
@@ -285,7 +285,7 @@ export function WorkspaceFrameV2({
                   <PanelRightOpen className="size-4" />
                 </IconButton>
                 <div className="h-px w-6 bg-white/10" />
-                <span className="rotate-90 whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                <span className="rotate-90 whitespace-nowrap text-nano font-medium uppercase tracking-eyebrow text-muted-foreground">
                   Artefato
                 </span>
               </div>
@@ -294,7 +294,7 @@ export function WorkspaceFrameV2({
                 <div className="flex h-[3.25rem] items-center justify-between border-b border-white/8 px-3">
                   <div>
                     <p className="text-xs font-semibold text-foreground">Painel operacional</p>
-                    <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                    <p className="text-nano uppercase tracking-label text-muted-foreground">
                       Canvas · artefato · atividade
                     </p>
                   </div>
@@ -431,7 +431,7 @@ export function CommandComposerV2({
             placeholder={placeholder}
             rows={1}
             disabled={disabled}
-            className="max-h-[180px] min-h-[42px] w-full resize-none bg-transparent px-3 pb-1.5 pt-3 text-[13px] leading-relaxed outline-none placeholder:text-muted-foreground/45 md:px-4 md:text-sm"
+            className="max-h-[180px] min-h-[42px] w-full resize-none bg-transparent px-3 pb-1.5 pt-3 text-body-sm leading-relaxed outline-none placeholder:text-muted-foreground/45 md:px-4 md:text-sm"
           />
 
           {attachments.length > 0 && (
@@ -439,7 +439,7 @@ export function CommandComposerV2({
               {attachments.map((attachment) => (
                 <div
                   key={attachment.id}
-                  className="flex min-w-0 items-center gap-2 rounded-lg border border-white/8 bg-white/[0.035] px-2 py-1.5 text-[11px]"
+                  className="flex min-w-0 items-center gap-2 rounded-lg border border-white/8 bg-white/[0.035] px-2 py-1.5 text-micro"
                 >
                   <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-cyan-300/10 text-cyan-100">
                     <FileText className="size-3.5" />
@@ -448,7 +448,7 @@ export function CommandComposerV2({
                     <span className="block max-w-[8rem] truncate font-medium text-foreground/85">
                       {attachment.name}
                     </span>
-                    <span className="block text-[10px] text-muted-foreground">
+                    <span className="block text-nano text-muted-foreground">
                       {formatFileSize(attachment.size)}
                     </span>
                   </span>
@@ -488,7 +488,7 @@ export function CommandComposerV2({
               {modelControl ?? (
                 <button
                   type="button"
-                  className="flex h-8 max-w-[9rem] items-center gap-1.5 rounded-lg border border-white/8 bg-white/[0.035] px-2 text-[11px] font-medium text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
+                  className="flex h-8 max-w-[9rem] items-center gap-1.5 rounded-lg border border-white/8 bg-white/[0.035] px-2 text-micro font-medium text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
                 >
                   <span className="truncate">{modelName}</span>
                   <ChevronDown className="size-3.5 shrink-0" />
@@ -499,7 +499,7 @@ export function CommandComposerV2({
                 reasoningControl ?? (
                   <button
                     type="button"
-                    className="flex h-8 items-center gap-1.5 rounded-lg border border-white/8 bg-white/[0.035] px-2 text-[11px] font-medium text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
+                    className="flex h-8 items-center gap-1.5 rounded-lg border border-white/8 bg-white/[0.035] px-2 text-micro font-medium text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
                   >
                     <Brain className="size-3.5" />
                     <span>{reasoningLabel}</span>
@@ -514,7 +514,7 @@ export function CommandComposerV2({
                 disabled={disabled}
                 onClick={onToggleDocument}
                 className={cn(
-                  "h-8 rounded-lg border px-2 text-[11px]",
+                  "h-8 rounded-lg border px-2 text-micro",
                   responseMode === "document"
                     ? "border-cyan-300/25 bg-cyan-300/12 text-cyan-100"
                     : "border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
@@ -531,7 +531,7 @@ export function CommandComposerV2({
                 disabled={disabled}
                 onClick={onToggleQuiz}
                 className={cn(
-                  "h-8 rounded-lg border px-2 text-[11px]",
+                  "h-8 rounded-lg border px-2 text-micro",
                   responseMode === "quiz"
                     ? "border-amber-300/25 bg-amber-300/12 text-amber-100"
                     : "border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
@@ -549,7 +549,7 @@ export function CommandComposerV2({
                 onClick={onMicrophoneClick}
                 aria-label={isRecording ? "Encerrar gravação" : "Gravar áudio"}
                 className={cn(
-                  "h-8 rounded-lg border px-2 text-[11px]",
+                  "h-8 rounded-lg border px-2 text-micro",
                   isRecording
                     ? "border-rose-300/25 bg-rose-300/12 text-rose-100"
                     : isTranscribing
@@ -598,7 +598,7 @@ export function CommandComposerV2({
           </div>
         </div>
 
-        <div className="mt-1.5 hidden items-center gap-2 text-[10px] text-muted-foreground/65 md:flex">
+        <div className="mt-1.5 hidden items-center gap-2 text-nano text-muted-foreground/65 md:flex">
           <Archive className="size-3" />
           <span>Enter envia · Shift+Enter quebra linha · arraste arquivos ou cole imagens</span>
         </div>

@@ -10,8 +10,8 @@ Plano completo do redesign em `/root/.claude/plans/meu-velho-na-verdade-golden-c
 |---|---|---|---|
 | S0 | Limpeza + Setup (deletar legado, instalar `framer-motion`/`cmdk`) | ✅ Concluída | Baixo |
 | S1 | Token System Unificado `--gc-*` | ✅ Concluída | Alto |
-| S2 | Tipografia + Animação + Primitivos Motion | **PRÓXIMA** | Médio |
-| S3 | Hook `useIsMobile` + Breakpoints | Pendente | Baixo |
+| S2 | Tipografia + Animação + Primitivos Motion | ✅ Concluída | Médio |
+| S3 | Hook `useIsMobile` + Breakpoints | **PRÓXIMA** | Baixo |
 | S4 | Refactor `uiStore` + NotesContext | Pendente | Médio |
 | S5 | `CanvasOverlayV2` (draggable/resizable) | Pendente | **Alto** |
 | S6 | Toolbar Flutuante de Seleção | Pendente | Médio |
@@ -26,33 +26,29 @@ Plano completo do redesign em `/root/.claude/plans/meu-velho-na-verdade-golden-c
 
 **Pré-requisitos:** Antes de começar uma sprint, ler o plan file completo (`/root/.claude/plans/meu-velho-na-verdade-golden-creek.md`) — contém arquivos-alvo, riscos, validação manual e os 3 apêndices (tokens `--gc-*`, escala tipográfica, escala animação).
 
-### KICKOFF — Sprint 2 (Tipografia + Animação + Primitivos Motion)
+### KICKOFF — Sprint 3 (Hook `useIsMobile` + Breakpoints)
 
-> **Branch:** `redesign/s2-typography`. **Estado base:** `redesign/s1-tokens` mergeado em `main`. **Risco:** Médio. **Estimativa:** 1-2 commits.
+> **Branch:** `redesign/s3-mobile`. **Estado base:** `redesign/s2-typography` mergeado em `main`. **Risco:** Baixo. **Estimativa:** 1 commit.
 >
-> **Pré-requisito obrigatório:** ler o **Apêndice B** (escala tipográfica) e **Apêndice C** (escala de animação) do plan file `/root/.claude/plans/meu-velho-na-verdade-golden-creek.md`.
+> **Estado pós-S2 (saiba isso antes de começar):**
 >
-> **Estado pós-S1 (saiba isso antes de começar):**
+> - Tokens `--gc-text-*`, `--gc-duration-*`, `--gc-ease-*`, `--gc-tracking-*` em `globals.css (:root)`.
+> - Tailwind utilities expostas: `text-nano/micro/caption/body-sm/h3`, `tracking-label/eyebrow/splash`, `duration-instant/fast/normal/slow/slower/dramatic`.
+> - `components/motion/` com FadeIn, SlideIn, Pop, Drawer — prontos pra usar.
+> - `gpt-logo.tsx` sem `<style>` inline; keyframes em `globals.css`.
+> - `splash-screen.tsx` usa `<FadeIn>` + `var(--gc-bg-splash)`.
+> - 19 arquivos com `text-[Npx]` migrados para classes semânticas.
 >
-> - Todos os tokens `--gc-*` definidos em `app/globals.css` — surface, border, bubble, brand, glass.
-> - `gaucho-theme.css` deletado; utilities (`.glass`, `.gc-text-gradient`, `.animate-float`) agora em `globals.css @layer utilities`.
-> - `framer-motion 12.38.0` e `cmdk 1.1.1` instalados.
-> - Namespace `--v2-*` completamente removido.
+> **Tarefas:**
 >
-> **Tarefas (resumo — detalhes no plan file):**
+> 1. Criar branch: `git checkout -b redesign/s3-mobile`
+> 2. Criar `hooks/useIsMobile.ts` com `useSyncExternalStore` + `window.matchMedia('(max-width: 767px)')`. `getServerSnapshot` retorna `false`.
+> 3. Criar `lib/layout/breakpoints.ts` exportando `MOBILE_BREAKPOINT = 768` + convenção comentada.
+> 4. Em `CommandComposerContainerV2.tsx` substituir `window.innerWidth < 768` por `useIsMobile()`.
+> 5. Validar: `npx tsc --noEmit` + `npm run build`.
+> 6. Commit: `feat(s3): useIsMobile + breakpoints documentados`.
 >
-> 1. Criar branch: `git checkout -b redesign/s2-typography`
-> 2. Em `globals.css`: adicionar tokens `--gc-text-*` (display/h1/h2/h3/body/body-sm/caption/micro/nano/mono) e `--gc-duration-*`/`--gc-ease-*` via `@theme inline`.
-> 3. Criar `components/motion/` com 4 primitivos: `FadeIn.tsx`, `SlideIn.tsx`, `Pop.tsx`, `Drawer.tsx`, `index.ts`.
-> 4. Find-replace `text-[8px]/[9px]/[10px]/[11px]/[12px]/[13px]` por classes semânticas (Apêndice B).
-> 5. Mover `<style>` do `gpt-logo.tsx` (4 keyframes) para `globals.css @layer utilities`.
-> 6. `splash-screen.tsx`: usar `<FadeIn>` nas fases + tokens `--gc-*` em vez de OKLCH hardcoded.
-> 7. Validar: `npx tsc --noEmit` + `npm run build` + `npm test`.
-> 8. Commit: `feat(s2): escala tipográfica + escala animação + primitivos motion`.
->
-> **Riscos:** mudança de 1-2px pode deslocar layouts de altura fixa (`h-[3.1rem]`). Testar header, rail, balões, composer separadamente. Tag de retorno: `pre-redesign-s0`.
->
-> **Validação manual:** todas as telas mantêm layout; nenhum jank; splash anima suave em light/dark.
+> **Tag de retorno:** `pre-redesign-s0`. Riscos: sem `getServerSnapshot`, hydration mismatch.
 
 ---
 

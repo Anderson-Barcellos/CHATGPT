@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { GPTLogo } from "@/components/ui/gpt-logo";
+import { FadeIn } from "@/components/motion";
 import { cn } from "@/lib/utils";
 
 export function SplashScreen({ onComplete }: { onComplete: () => void }) {
@@ -20,15 +21,14 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   if (phase === "done") return null;
 
   return (
+    <FadeIn duration={0.4}>
     <div
       className={cn(
         "fixed inset-0 z-50 flex flex-col items-center justify-center",
         "transition-opacity duration-700",
         phase === "shrink" ? "opacity-0 scale-90" : "opacity-100"
       )}
-      style={{
-        background: "radial-gradient(ellipse at 50% 40%, oklch(0.26 0.04 242) 0%, oklch(0.20 0.03 248) 50%, oklch(0.16 0.025 250) 100%)",
-      }}
+      style={{ background: "var(--gc-bg-splash)" }}
     >
       <div
         className={cn(
@@ -55,7 +55,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
 
       <p
         className={cn(
-          "mt-3 text-sm tracking-[0.5em] uppercase font-medium transition-all duration-700 delay-200",
+          "mt-3 text-sm tracking-splash uppercase font-medium transition-all duration-700 delay-200",
           "text-cyan-400/70",
           phase === "logo" && "opacity-0",
           phase === "brand" && "opacity-100",
@@ -65,5 +65,6 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
         Chat pessoal em ritmo de mate
       </p>
     </div>
+    </FadeIn>
   );
 }

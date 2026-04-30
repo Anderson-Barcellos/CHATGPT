@@ -34,17 +34,7 @@ export function GPTLogo({ size = 36, className }: GPTLogoProps) {
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
-        <style>{`
-          @keyframes gpt-vortex { to { transform: rotate(360deg); } }
-          @keyframes gpt-vortex-rev { to { transform: rotate(-360deg); } }
-          @keyframes gpt-pulse-deep { 0%,100% { transform: scale(1); opacity: .4; } 50% { transform: scale(1.05); opacity: .7; } }
-          @keyframes gpt-core-beat { 0%,100% { transform: scale(1); filter: drop-shadow(0 0 10px #0ea5e9); opacity: .8; } 50% { transform: scale(1.3); filter: drop-shadow(0 0 30px #0ea5e9); opacity: 1; } }
-          .gpt-ring-fast { animation: gpt-vortex 5s linear infinite; transform-origin: 325px 325px; }
-          .gpt-ring-med { animation: gpt-vortex-rev 10s linear infinite; transform-origin: 325px 325px; }
-          .gpt-ring-slow { animation: gpt-vortex 25s linear infinite; transform-origin: 325px 325px; }
-          .gpt-organic { animation: gpt-pulse-deep 5s ease-in-out infinite; transform-origin: 325px 325px; }
-          .gpt-core { animation: gpt-core-beat 1.5s ease-in-out infinite; transform-origin: 325px 325px; }
-        `}</style>
+
       </defs>
 
       <g transform="translate(75, 75)">

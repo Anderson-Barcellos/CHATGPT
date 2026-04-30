@@ -87,13 +87,13 @@ export function MemoryManager() {
                     onClick={() =>
                       updateMemory(memory.id, { isActive: !memory.isActive })
                     }
-                    className="rounded-full border border-slate-200 px-2 py-1 text-[10px] text-slate-500"
+                    className="rounded-full border border-slate-200 px-2 py-1 text-nano text-slate-500"
                   >
                     {memory.isActive ? "Ativa" : "Inativa"}
                   </button>
                   <button
                     onClick={() => deleteMemory(memory.id)}
-                    className="text-[10px] text-red-400 hover:text-red-500"
+                    className="text-nano text-red-400 hover:text-red-500"
                   >
                     Remover
                   </button>

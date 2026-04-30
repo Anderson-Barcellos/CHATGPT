@@ -82,7 +82,7 @@ function SaveStatusBadge({
 }) {
   if (status === "saving") {
     return (
-      <Badge variant="outline" className="gap-1 border-primary/20 bg-primary/5 text-[10px] text-primary">
+      <Badge variant="outline" className="gap-1 border-primary/20 bg-primary/5 text-nano text-primary">
         <LoaderCircle className="h-3 w-3 animate-spin" />
         Salvando
       </Badge>
@@ -91,7 +91,7 @@ function SaveStatusBadge({
 
   if (status === "saved") {
     return (
-      <Badge variant="outline" className="gap-1 border-emerald-500/25 bg-emerald-500/8 text-[10px] text-emerald-600 dark:text-emerald-400">
+      <Badge variant="outline" className="gap-1 border-emerald-500/25 bg-emerald-500/8 text-nano text-emerald-600 dark:text-emerald-400">
         <CheckCircle2 className="h-3 w-3" />
         Salvo
       </Badge>
@@ -100,7 +100,7 @@ function SaveStatusBadge({
 
   if (status === "error") {
     return (
-      <Badge variant="outline" className="gap-1 border-destructive/25 bg-destructive/8 text-[10px] text-destructive">
+      <Badge variant="outline" className="gap-1 border-destructive/25 bg-destructive/8 text-nano text-destructive">
         <AlertCircle className="h-3 w-3" />
         Erro
       </Badge>
@@ -108,7 +108,7 @@ function SaveStatusBadge({
   }
 
   return (
-    <Badge variant="outline" className="border-white/10 bg-white/[0.03] text-[10px] text-muted-foreground/80">
+    <Badge variant="outline" className="border-white/10 bg-white/[0.03] text-nano text-muted-foreground/80">
       {idleLabel}
     </Badge>
   );
@@ -185,7 +185,7 @@ function MemoryCard({ memory, onDelete, onUpdate }: MemoryCardProps) {
       <div className="mb-2 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Switch checked={memory.isActive} onCheckedChange={handleToggle} />
-          <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground/75">
+          <span className="text-micro font-medium uppercase tracking-eyebrow text-muted-foreground/75">
             {memory.isActive ? "Ativa" : "Pausada"}
           </span>
         </div>
@@ -298,7 +298,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                 <h2 className="text-sm font-semibold tracking-wide gc-text-gradient">
                   Configuração
                 </h2>
-                <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
+                <p className="mt-1 text-micro uppercase tracking-eyebrow text-muted-foreground/70">
                   Ajustes, memórias e contexto
                 </p>
               </div>
@@ -327,7 +327,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                   type="button"
                   onClick={() => setActiveTab(key)}
                   className={cn(
-                    "flex min-w-0 items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium transition-all",
+                    "flex min-w-0 items-center justify-center gap-1 rounded-xl px-2 py-2 text-micro font-medium transition-all",
                     activeTab === key
                       ? "bg-background shadow-sm text-foreground"
                       : "text-muted-foreground hover:text-foreground"
@@ -351,7 +351,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                   <p className="mt-1 text-xs text-muted-foreground">
                     {currentModel?.description || "Modelo selecionado"}
                   </p>
-                  <p className="mt-2 text-[10px] text-muted-foreground/80">
+                  <p className="mt-2 text-nano text-muted-foreground/80">
                     O seletor de modelo continua na área de input.
                   </p>
                 </div>
@@ -359,7 +359,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                 {activeMode === "chat" && (
                   <>
                     <div className="space-y-3">
-                      <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                      <h3 className="text-micro font-semibold uppercase tracking-eyebrow text-muted-foreground">
                         Tuning do Modelo
                       </h3>
                       <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
@@ -368,7 +368,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                             <div className="flex items-center justify-between gap-3">
                               <div>
                                 <p className="text-sm font-medium">Temperature</p>
-                                <p className="text-[11px] text-muted-foreground">
+                                <p className="text-micro text-muted-foreground">
                                   Controla criatividade e variação de resposta.
                                 </p>
                               </div>
@@ -390,7 +390,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                           <div className="flex items-center justify-between gap-3">
                             <div>
                               <p className="text-sm font-medium">Max Tokens</p>
-                              <p className="text-[11px] text-muted-foreground">
+                              <p className="text-micro text-muted-foreground">
                                 Limita o tamanho máximo da resposta do modelo atual.
                               </p>
                             </div>
@@ -407,7 +407,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                               updateParameters({ maxOutputTokens: value })
                             }
                           />
-                          <p className="text-[11px] text-muted-foreground">
+                          <p className="text-micro text-muted-foreground">
                             Limite do modelo: {maxTokensLimit.toLocaleString()} tokens.
                           </p>
                         </div>
@@ -416,7 +416,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
 
                     {showVerbosity && (
                       <div className="space-y-3">
-                        <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                        <h3 className="text-micro font-semibold uppercase tracking-eyebrow text-muted-foreground">
                           Verbosity
                         </h3>
                         <div className="grid grid-cols-1 gap-2">
@@ -433,7 +433,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                               )}
                             >
                               <p className="text-sm font-medium">{option.label}</p>
-                              <p className="mt-1 text-[11px] leading-relaxed">
+                              <p className="mt-1 text-micro leading-relaxed">
                                 {option.description}
                               </p>
                             </button>
@@ -444,13 +444,13 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
 
                     {showCodeInterpreter && (
                       <div className="space-y-3">
-                        <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                        <h3 className="text-micro font-semibold uppercase tracking-eyebrow text-muted-foreground">
                           Ferramentas
                         </h3>
                         <div className="flex items-start justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                           <div className="space-y-1">
                             <p className="text-sm font-medium">Code Interpreter</p>
-                            <p className="text-[11px] leading-relaxed text-muted-foreground">
+                            <p className="text-micro leading-relaxed text-muted-foreground">
                               Expõe um container Python para o modelo usar quando achar necessário.
                             </p>
                           </div>
@@ -468,7 +468,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
 
                 {activeMode === "image" && (
                   <div className="space-y-3">
-                    <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    <h3 className="flex items-center gap-1.5 text-micro font-semibold uppercase tracking-eyebrow text-muted-foreground">
                       <ImageIcon className="h-3 w-3" />
                       Geração de Imagem
                     </h3>

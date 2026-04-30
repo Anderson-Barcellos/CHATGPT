@@ -130,7 +130,7 @@ export function QuizCanvas({
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
+                  <div className="text-micro font-semibold uppercase tracking-eyebrow text-muted-foreground/70">
                     Questao {questionIndex + 1}
                   </div>
                   <h3 className="mt-2 text-sm font-semibold leading-6 text-foreground">
@@ -139,12 +139,12 @@ export function QuizCanvas({
                 </div>
                 {isSubmitted && (
                   selectedOptionId === question.correctOptionId ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/12 px-2.5 py-1 text-[11px] font-medium text-emerald-300">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/12 px-2.5 py-1 text-micro font-medium text-emerald-300">
                       <CheckCircle2 className="h-3.5 w-3.5" />
                       Correta
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/12 px-2.5 py-1 text-[11px] font-medium text-rose-300">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/12 px-2.5 py-1 text-micro font-medium text-rose-300">
                       <CircleAlert className="h-3.5 w-3.5" />
                       Incorreta
                     </span>
@@ -187,7 +187,7 @@ export function QuizCanvas({
                         {option.label}
                       </span>
                       {isSubmitted && isCorrect && (
-                        <span className="rounded-full bg-emerald-500/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+                        <span className="rounded-full bg-emerald-500/12 px-2 py-0.5 text-nano font-semibold uppercase tracking-wide text-emerald-300">
                           Gabarito
                         </span>
                       )}
@@ -198,7 +198,7 @@ export function QuizCanvas({
 
               {isSubmitted && (
                 <div className="mt-4 rounded-2xl border border-white/10 bg-background/70 p-4">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
+                  <div className="text-micro font-semibold uppercase tracking-eyebrow text-muted-foreground/70">
                     Explicacao
                   </div>
                   <p className="mt-2 text-sm leading-6 text-foreground/80">{question.explanation}</p>

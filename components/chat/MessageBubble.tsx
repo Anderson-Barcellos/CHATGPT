@@ -104,7 +104,7 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
       <div className={cn("max-w-[93%] min-w-0 sm:max-w-[80%]", isUser && "order-first")}>
         <Card
           className={cn(
-            "relative min-w-0 gap-0 overflow-hidden break-words border px-2.5 py-2 text-left text-[12px] leading-relaxed md:px-4 md:py-3 md:text-[13px]",
+            "relative min-w-0 gap-0 overflow-hidden break-words border px-2.5 py-2 text-left text-caption leading-relaxed md:px-4 md:py-3 md:text-body-sm",
             isUser
               ? "gc-user-bubble rounded-2xl rounded-br-md"
               : "gc-assistant-bubble rounded-2xl rounded-bl-md text-foreground/90"
@@ -147,7 +147,7 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
                       <div
                         key={att.id}
                         className={cn(
-                          "flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] md:text-[11px]",
+                          "flex items-center gap-1.5 rounded-lg px-2 py-1 text-nano md:text-micro",
                           isUser
                             ? "bg-white/15 text-white/90"
                             : "bg-white/8 text-foreground/75"
@@ -182,14 +182,14 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
                 }}
                 className="w-full resize-none bg-background/50 rounded-lg p-2 text-sm text-foreground outline-none ring-1 ring-primary/30 focus:ring-primary/60 min-h-[40px]"
               />
-              <p className="text-[11px] leading-relaxed text-muted-foreground/80">
+              <p className="text-micro leading-relaxed text-muted-foreground/80">
                 Ao salvar, o chat refaz a conversa a partir desta mensagem.
               </p>
               <div className="flex justify-end gap-1.5">
-                <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] md:h-7 md:text-xs" onClick={handleCancelEdit}>
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-micro md:h-7 md:text-xs" onClick={handleCancelEdit}>
                   <X className="h-3 w-3 mr-1" />Cancelar
                 </Button>
-                <Button size="sm" className="h-6 px-2 text-[11px] md:h-7 md:text-xs" onClick={handleSaveEdit} disabled={!editContent.trim()}>
+                <Button size="sm" className="h-6 px-2 text-micro md:h-7 md:text-xs" onClick={handleSaveEdit} disabled={!editContent.trim()}>
                   <Send className="h-3 w-3 mr-1" />Enviar
                 </Button>
               </div>
@@ -218,7 +218,7 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
 
           {message.citations && message.citations.length > 0 && (
             <div className="mt-3 space-y-1.5">
-              <div className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 text-nano font-semibold text-muted-foreground/70 uppercase tracking-wider">
                 <Globe className="h-3 w-3" />
                 Fontes
               </div>
@@ -230,7 +230,7 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
                     target="_blank"
                     rel="noopener noreferrer"
                     className={cn(
-                      "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-medium",
+                      "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-nano font-medium",
                       "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
                       "border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors",
                       "max-w-[200px] truncate"

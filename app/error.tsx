@@ -47,7 +47,7 @@ export default function Error({
             : error.message || "Ocorreu um erro inesperado."}
         </p>
         {error.digest && (
-          <code className="text-[10px] text-muted-foreground/50">
+          <code className="text-nano text-muted-foreground/50">
             Digest: {error.digest}
           </code>
         )}

@@ -247,7 +247,7 @@ export function CommandComposerContainerV2({
           size="sm"
           disabled={isLoading || isTranscribing}
           aria-label="Selecionar modelo"
-          className="h-8 max-w-[9.5rem] gap-1.5 rounded-lg border border-white/8 bg-white/[0.035] px-2 text-[11px] font-medium text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
+          className="h-8 max-w-[9.5rem] gap-1.5 rounded-lg border border-white/8 bg-white/[0.035] px-2 text-micro font-medium text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
         >
           <span className="truncate">{currentModel?.name || parameters.model}</span>
           <ChevronDown className="size-3.5 shrink-0" />
@@ -268,12 +268,12 @@ export function CommandComposerContainerV2({
             <div className="flex w-full items-center justify-between gap-2">
               <span className="text-xs font-medium">{model.name}</span>
               {model.badge && (
-                <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary">
+                <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-nano font-semibold text-primary">
                   {model.badge}
                 </span>
               )}
             </div>
-            <span className="line-clamp-1 text-[10px] text-muted-foreground">
+            <span className="line-clamp-1 text-nano text-muted-foreground">
               {model.description}
             </span>
           </DropdownMenuItem>
@@ -290,7 +290,7 @@ export function CommandComposerContainerV2({
           size="sm"
           disabled={isLoading || isTranscribing}
           aria-label="Ajustar nível de raciocínio"
-          className="h-8 gap-1.5 rounded-lg border border-white/8 bg-white/[0.035] px-2 text-[11px] font-medium text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
+          className="h-8 gap-1.5 rounded-lg border border-white/8 bg-white/[0.035] px-2 text-micro font-medium text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
         >
           <Brain className="size-3.5" />
           <span>{currentReasoning?.label || "Medio"}</span>
@@ -310,7 +310,7 @@ export function CommandComposerContainerV2({
             )}
           >
             <span className="text-xs font-medium">{option.label}</span>
-            <span className="text-[10px] text-muted-foreground">{option.desc}</span>
+            <span className="text-nano text-muted-foreground">{option.desc}</span>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

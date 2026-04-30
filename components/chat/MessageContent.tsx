@@ -169,7 +169,7 @@ export function MessageContent({ message, className }: MessageContentProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 gap-1 rounded-full px-2.5 text-[11px] md:h-7 md:gap-1.5 md:px-3 md:text-xs"
+                className="h-6 gap-1 rounded-full px-2.5 text-micro md:h-7 md:gap-1.5 md:px-3 md:text-xs"
                 onClick={() =>
                   setCurrentArtifactViewState((current) => ({
                     ...current,
@@ -188,7 +188,7 @@ export function MessageContent({ message, className }: MessageContentProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-6 gap-1 rounded-full px-2.5 text-[11px] md:h-7 md:gap-1.5 md:px-3 md:text-xs"
+                className="h-6 gap-1 rounded-full px-2.5 text-micro md:h-7 md:gap-1.5 md:px-3 md:text-xs"
                 onClick={() => openArtifact(artifact, message.id)}
               >
                 <PanelRightOpen className="h-3.5 w-3.5" />
@@ -257,7 +257,7 @@ export function MessageContent({ message, className }: MessageContentProps) {
                     className="max-w-none"
                   />
                 ) : (
-                  <p className="text-[13px] leading-6 text-muted-foreground md:text-sm md:leading-7">
+                  <p className="text-body-sm leading-6 text-muted-foreground md:text-sm md:leading-7">
                     {prefersQuizMode ? "Montando o quiz..." : "Montando o documento..."}
                   </p>
                 )}
@@ -273,7 +273,7 @@ export function MessageContent({ message, className }: MessageContentProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 gap-1 rounded-full px-2.5 text-[11px] md:h-7 md:gap-1.5 md:px-3 md:text-xs"
+                className="h-6 gap-1 rounded-full px-2.5 text-micro md:h-7 md:gap-1.5 md:px-3 md:text-xs"
                 onClick={() =>
                   setCurrentArtifactViewState((current) => ({
                     ...current,
@@ -294,7 +294,7 @@ export function MessageContent({ message, className }: MessageContentProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-6 gap-1 rounded-full px-2.5 text-[11px] md:h-7 md:gap-1.5 md:px-3 md:text-xs"
+                className="h-6 gap-1 rounded-full px-2.5 text-micro md:h-7 md:gap-1.5 md:px-3 md:text-xs"
                 onClick={() => openArtifact(artifact, message.id)}
               >
                 <PanelRightOpen className="h-3.5 w-3.5" />
@@ -326,7 +326,7 @@ export function MessageContent({ message, className }: MessageContentProps) {
               message.id
             )
           }
-          className="h-6 gap-1 text-[11px] rounded-full border-primary/20 hover:bg-primary/5 md:h-7 md:gap-1.5 md:text-xs"
+          className="h-6 gap-1 text-micro rounded-full border-primary/20 hover:bg-primary/5 md:h-7 md:gap-1.5 md:text-xs"
         >
           <PanelRightOpen className="h-3 w-3" />
           Abrir no painel

@@ -47,7 +47,7 @@ export function ReasoningPanel({ message }: ReasoningPanelProps) {
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-full border border-cyan-500/20 bg-cyan-500/[0.06] px-2.5 py-1 text-[10.5px] text-foreground/70 transition-colors hover:bg-cyan-500/[0.1] hover:text-foreground md:text-[11px]"
+            "inline-flex items-center gap-1.5 rounded-full border border-cyan-500/20 bg-cyan-500/[0.06] px-2.5 py-1 text-micro text-foreground/70 transition-colors hover:bg-cyan-500/[0.1] hover:text-foreground md:text-micro"
           )}
         >
           {isThinking ? (
@@ -61,7 +61,7 @@ export function ReasoningPanel({ message }: ReasoningPanelProps) {
               <span className="text-foreground/35">·</span>
               <span
                 className={cn(
-                  "text-[10px] md:text-[10.5px]",
+                  "text-nano md:text-micro",
                   isThinking
                     ? "text-cyan-600 dark:text-cyan-400"
                     : "text-emerald-600 dark:text-emerald-400"
@@ -79,14 +79,14 @@ export function ReasoningPanel({ message }: ReasoningPanelProps) {
           hasFull ? (
             <ReasoningRollingWindow content={full} />
           ) : (
-            <div className="flex items-center gap-2 rounded-lg border border-white/6 bg-background/55 px-2.5 py-2 text-[11px] text-muted-foreground md:text-[12px]">
+            <div className="flex items-center gap-2 rounded-lg border border-white/6 bg-background/55 px-2.5 py-2 text-micro text-muted-foreground md:text-caption">
               <LoaderCircle className="h-3 w-3 animate-spin text-cyan-500" />
               Organizando o raciocínio...
             </div>
           )
         ) : (
           completedContent.length > 0 && (
-            <div className="rounded-lg border border-white/6 bg-background/55 px-2.5 py-2 text-[11px] leading-5 text-foreground/75 md:rounded-xl md:px-3 md:py-2.5 md:text-[12px] md:leading-6">
+            <div className="rounded-lg border border-white/6 bg-background/55 px-2.5 py-2 text-micro leading-5 text-foreground/75 md:rounded-xl md:px-3 md:py-2.5 md:text-caption md:leading-6">
               <ChatMarkdown content={completedContent} />
             </div>
           )

@@ -54,24 +54,24 @@ export function MessageArtifactCard({
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <Badge variant="outline" className="border-cyan-500/20 bg-background/70 text-[10px] uppercase tracking-wide">
+            <Badge variant="outline" className="border-cyan-500/20 bg-background/70 text-nano uppercase tracking-wide">
               {isQuizArtifact ? "Quiz" : "Documento"}
             </Badge>
             {isDocumentModeArtifact && (
-              <Badge variant="outline" className="border-cyan-400/20 bg-cyan-500/10 text-[10px] uppercase tracking-wide text-cyan-100">
+              <Badge variant="outline" className="border-cyan-400/20 bg-cyan-500/10 text-nano uppercase tracking-wide text-cyan-100">
                 Modo documento
               </Badge>
             )}
             {artifact.kind === "document" ? (
-              <Badge variant="outline" className="border-white/10 bg-background/50 text-[10px] uppercase tracking-wide text-muted-foreground">
+              <Badge variant="outline" className="border-white/10 bg-background/50 text-nano uppercase tracking-wide text-muted-foreground">
                 {artifact.type === "html" ? "HTML" : "Markdown"}
               </Badge>
             ) : (
-              <Badge variant="outline" className="border-white/10 bg-background/50 text-[10px] uppercase tracking-wide text-muted-foreground">
+              <Badge variant="outline" className="border-white/10 bg-background/50 text-nano uppercase tracking-wide text-muted-foreground">
                 {artifact.quiz.session.status === "submitted" ? "Corrigido" : "Em andamento"}
               </Badge>
             )}
-            <Badge variant="outline" className="border-white/10 bg-background/50 text-[10px] text-muted-foreground">
+            <Badge variant="outline" className="border-white/10 bg-background/50 text-nano text-muted-foreground">
               {isQuizArtifact ? `${lineCount} questoes` : `${lineCount} linhas`}
             </Badge>
           </div>

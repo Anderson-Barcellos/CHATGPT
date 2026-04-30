@@ -44,6 +44,26 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+
+  /* ── Typography utilities ────────────────────── */
+  --text-nano: var(--gc-text-nano);
+  --text-micro: var(--gc-text-micro);
+  --text-caption: var(--gc-text-caption);
+  --text-body-sm: var(--gc-text-body-sm);
+  --text-h3: var(--gc-text-h3);
+
+  /* ── Tracking utilities ──────────────────────── */
+  --tracking-label: var(--gc-tracking-label);
+  --tracking-eyebrow: var(--gc-tracking-eyebrow);
+  --tracking-splash: var(--gc-tracking-splash);
+
+  /* ── Duration utilities ──────────────────────── */
+  --duration-instant: var(--gc-duration-instant);
+  --duration-fast: var(--gc-duration-fast);
+  --duration-normal: var(--gc-duration-normal);
+  --duration-slow: var(--gc-duration-slow);
+  --duration-slower: var(--gc-duration-slower);
+  --duration-dramatic: var(--gc-duration-dramatic);
 }
 
 html {
@@ -63,6 +83,41 @@ body {
 
 :root {
   --radius: 0.85rem;
+
+  /* ── Typography ─────────────────────────────────────── */
+  --gc-text-nano: 0.625rem;
+  --gc-text-micro: 0.6875rem;
+  --gc-text-caption: 0.75rem;
+  --gc-text-body-sm: 0.8125rem;
+  --gc-text-body: 0.875rem;
+  --gc-text-h3: 0.9375rem;
+  --gc-text-h2: 1.125rem;
+  --gc-text-h1: 1.5rem;
+  --gc-text-display: 3rem;
+  --gc-text-mono: 0.8125rem;
+
+  /* ── Tracking ────────────────────────────────────────── */
+  --gc-tracking-label: 0.16em;
+  --gc-tracking-eyebrow: 0.20em;
+  --gc-tracking-splash: 0.50em;
+
+  /* ── Duration ────────────────────────────────────────── */
+  --gc-duration-instant: 75ms;
+  --gc-duration-fast: 150ms;
+  --gc-duration-normal: 200ms;
+  --gc-duration-slow: 350ms;
+  --gc-duration-slower: 500ms;
+  --gc-duration-dramatic: 700ms;
+
+  /* ── Easing ──────────────────────────────────────────── */
+  --gc-ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --gc-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --gc-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --gc-ease-snappy: cubic-bezier(0.25, 0.1, 0.25, 1);
+
+  /* ── Splash ──────────────────────────────────────────── */
+  --gc-bg-splash:
+    radial-gradient(ellipse at 50% 40%, oklch(0.26 0.04 242) 0%, oklch(0.20 0.03 248) 50%, oklch(0.16 0.025 250) 100%);
 
   /* ── Shadcn tokens ──────────────────────────────────── */
   --background: oklch(0.94 0.01 250);
@@ -305,6 +360,25 @@ body {
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
+}
+
+@keyframes gpt-vortex { to { transform: rotate(360deg); } }
+@keyframes gpt-vortex-rev { to { transform: rotate(-360deg); } }
+@keyframes gpt-pulse-deep {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.05); opacity: 0.7; }
+}
+@keyframes gpt-core-beat {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px #0ea5e9); opacity: 0.8; }
+  50% { transform: scale(1.3); filter: drop-shadow(0 0 30px #0ea5e9); opacity: 1; }
+}
+
+@layer utilities {
+  .gpt-ring-fast { animation: gpt-vortex 5s linear infinite; transform-origin: 325px 325px; }
+  .gpt-ring-med { animation: gpt-vortex-rev 10s linear infinite; transform-origin: 325px 325px; }
+  .gpt-ring-slow { animation: gpt-vortex 25s linear infinite; transform-origin: 325px 325px; }
+  .gpt-organic { animation: gpt-pulse-deep 5s ease-in-out infinite; transform-origin: 325px 325px; }
+  .gpt-core { animation: gpt-core-beat 1.5s ease-in-out infinite; transform-origin: 325px 325px; }
 }
 
 @media (max-width: 767px) {

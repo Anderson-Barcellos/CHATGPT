@@ -21,7 +21,7 @@ export function ReasoningRollingWindow({ content }: ReasoningRollingWindowProps)
     <div className={styles.window} aria-live="polite">
       <div ref={scrollerRef} className={styles.scroller}>
         <div className={styles.content}>
-          <ChatMarkdown content={content} className="text-[11px] leading-5 text-foreground/70 md:text-[12px] md:leading-6" />
+          <ChatMarkdown content={content} className="text-micro leading-5 text-foreground/70 md:text-caption md:leading-6" />
         </div>
       </div>
     </div>

@@ -256,7 +256,7 @@ function ActivityTimeline({
     <section className="rounded-lg border border-white/8 bg-white/[0.025] p-3">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-xs font-semibold text-foreground">{title}</h3>
-        <span className="text-[10px] text-cyan-100/85">
+        <span className="text-nano text-cyan-100/85">
           {events.length} evento(s)
         </span>
       </div>
@@ -296,15 +296,15 @@ function ActivityTimeline({
                     {icon}
                   </span>
                   <div className="min-w-0">
-                    <p className="text-[11px] text-foreground/90">{event.label}</p>
+                    <p className="text-micro text-foreground/90">{event.label}</p>
                     {event.detail && (
-                      <p className="truncate text-[10px] text-muted-foreground/75">
+                      <p className="truncate text-nano text-muted-foreground/75">
                         {event.detail}
                       </p>
                     )}
                   </div>
                 </div>
-                <span className="tabular-nums text-[10px] text-muted-foreground">
+                <span className="tabular-nums text-nano text-muted-foreground">
                   {formatClock(event.timestamp)}
                 </span>
               </div>
@@ -312,7 +312,7 @@ function ActivityTimeline({
           })}
         </div>
       ) : (
-        <div className="rounded-md border border-white/8 bg-black/20 px-3 py-4 text-[11px] text-muted-foreground">
+        <div className="rounded-md border border-white/8 bg-black/20 px-3 py-4 text-micro text-muted-foreground">
           Sem eventos ainda nesta conversa.
         </div>
       )}
@@ -325,7 +325,7 @@ function EmptyArtifactState() {
     <div className="flex min-h-[220px] items-center justify-center rounded-lg border border-dashed border-white/10 bg-black/20 p-4">
       <div className="max-w-[17rem] text-center">
         <p className="text-sm font-semibold text-foreground">Sem artefato disponível</p>
-        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+        <p className="mt-1 text-micro leading-relaxed text-muted-foreground">
           Gere um documento ou quiz para habilitar preview, fonte e exportações.
         </p>
       </div>
@@ -566,7 +566,7 @@ export function ContextPanelV2() {
       <div className="flex items-center justify-between border-b border-white/8 px-3 py-3 xl:hidden">
         <div className="min-w-0">
           <h2 className="truncate text-sm font-semibold">Painel operacional</h2>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+          <p className="text-nano uppercase tracking-label text-muted-foreground">
             Contexto
           </p>
         </div>
@@ -580,7 +580,7 @@ export function ContextPanelV2() {
           <div className="mb-2 flex items-center justify-between gap-2">
             <div className="min-w-0">
               <h2 className="truncate text-sm font-semibold">Workspace</h2>
-              <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+              <p className="text-nano uppercase tracking-label text-muted-foreground">
                 acompanhamento em tempo real
               </p>
             </div>
@@ -627,12 +627,12 @@ export function ContextPanelV2() {
                         <h3 className="truncate text-sm font-semibold text-foreground">
                           {effectiveArtifact ? artifactTitle : "Canvas Markdown"}
                         </h3>
-                        <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                        <p className="text-nano uppercase tracking-label text-muted-foreground">
                           Leitura expandida
                         </p>
                       </div>
                     </div>
-                    <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    <p className="text-micro leading-relaxed text-muted-foreground">
                       {canvasDescription}
                     </p>
                   </div>
@@ -705,7 +705,7 @@ export function ContextPanelV2() {
                       <p className="truncate text-xs font-semibold text-foreground">
                         {effectiveArtifact ? artifactFilename : "Nenhum artefato disponível"}
                       </p>
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-nano text-muted-foreground">
                         {effectiveArtifact
                           ? isQuizArtifact
                             ? "Quiz interativo"
@@ -830,7 +830,7 @@ export function ContextPanelV2() {
                 <h3 className="mb-2 text-xs font-semibold text-foreground">
                   Resumo da execução
                 </h3>
-                <div className="space-y-2 text-[11px] text-muted-foreground">
+                <div className="space-y-2 text-micro text-muted-foreground">
                   <p>
                     Último evento:{" "}
                     {latestEvent
@@ -852,14 +852,14 @@ export function ContextPanelV2() {
               <section className="rounded-lg border border-white/8 bg-white/[0.025] p-3">
                 <div className="mb-2 flex items-center justify-between">
                   <h3 className="text-xs font-semibold text-foreground">Notas da rodada</h3>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-nano text-muted-foreground">
                     {notesDirty ? "Alterações pendentes" : "Sincronizado"}
                   </span>
                 </div>
 
                 <div className="space-y-2">
                   <div>
-                    <label className="mb-1 block text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                    <label className="mb-1 block text-nano uppercase tracking-label text-muted-foreground">
                       Objetivo
                     </label>
                     <Input
@@ -873,7 +873,7 @@ export function ContextPanelV2() {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                    <label className="mb-1 block text-nano uppercase tracking-label text-muted-foreground">
                       Notas
                     </label>
                     <Textarea
@@ -887,7 +887,7 @@ export function ContextPanelV2() {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                    <label className="mb-1 block text-nano uppercase tracking-label text-muted-foreground">
                       Próximos passos (um por linha)
                     </label>
                     <Textarea
@@ -902,7 +902,7 @@ export function ContextPanelV2() {
                 </div>
 
                 <div className="mt-3 flex items-center justify-between">
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-nano text-muted-foreground">
                     Persistência server-side por conversa.
                   </span>
                   <Button
@@ -927,7 +927,7 @@ export function ContextPanelV2() {
                 </div>
               </section>
 
-              <section className="rounded-lg border border-white/8 bg-white/[0.02] p-3 text-[11px] text-muted-foreground">
+              <section className="rounded-lg border border-white/8 bg-white/[0.02] p-3 text-micro text-muted-foreground">
                 Essas notas ficam vinculadas ao <span className="text-foreground">ID da conversa</span> e são carregadas automaticamente quando tu reabre o mesmo thread.
               </section>
             </div>

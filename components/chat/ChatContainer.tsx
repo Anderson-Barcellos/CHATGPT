@@ -89,13 +89,13 @@ function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
             <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br md:h-9 md:w-9 md:rounded-xl", accent)}>
               <Icon className={cn("h-4 w-4", iconColor)} />
             </div>
-            <span className="text-[13px] font-semibold md:text-sm">{label}</span>
+            <span className="text-body-sm font-semibold md:text-sm">{label}</span>
             <span className="text-xs text-muted-foreground/80 leading-tight">{desc}</span>
           </button>
         ))}
       </div>
 
-      <div className="mt-7 flex items-center gap-2 text-[11px] text-muted-foreground/60 md:mt-10 md:text-xs">
+      <div className="mt-7 flex items-center gap-2 text-micro text-muted-foreground/60 md:mt-10 md:text-xs">
         <Sparkles className="h-3 w-3" />
         <span>Com tecnologia OpenAI</span>
       </div>

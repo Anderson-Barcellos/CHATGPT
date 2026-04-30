@@ -45,7 +45,7 @@ export function ChatRecoveryState({
         <h2 className="text-lg font-semibold tracking-tight md:text-xl">
           {isError ? "Nao consegui recuperar o chat" : "Preparando teu workspace"}
         </h2>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground md:text-[15px]">
+        <p className="mt-2 text-sm leading-6 text-muted-foreground md:text-h3">
           {error ||
             "Estou carregando as conversas e preparando a sessao para tu continuar de onde parou."}
         </p>

@@ -55,7 +55,7 @@ export function DocumentCanvas({
             )}
           >
             {eyebrow && (
-              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+              <div className="text-nano font-semibold uppercase tracking-eyebrow text-slate-500 dark:text-slate-400">
                 {eyebrow}
               </div>
             )}
@@ -73,7 +73,7 @@ export function DocumentCanvas({
               <p
                 className={cn(
                   "mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300/80",
-                  compact && "text-[13px] leading-5"
+                  compact && "text-body-sm leading-5"
                 )}
               >
                 {description}

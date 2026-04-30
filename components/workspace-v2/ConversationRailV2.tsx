@@ -135,17 +135,17 @@ function ConversationRowV2({
         />
         <span className="min-w-0 flex-1">
           <span className="mb-0.5 flex items-center gap-1.5">
-            <span className="block truncate text-[12px] font-medium">
+            <span className="block truncate text-caption font-medium">
               {conversation.title || "Nova conversa"}
             </span>
             {isPinned && (
-              <span className="inline-flex shrink-0 rounded border border-cyan-300/20 bg-cyan-300/12 px-1 py-0.5 text-[9px] font-medium text-cyan-100">
+              <span className="inline-flex shrink-0 rounded border border-cyan-300/20 bg-cyan-300/12 px-1 py-0.5 text-nano font-medium text-cyan-100">
                 fixada
               </span>
             )}
           </span>
-          <span className="block truncate text-[10px] text-muted-foreground/80">{preview}</span>
-          <span className="mt-0.5 block text-[10px] text-muted-foreground/65">
+          <span className="block truncate text-nano text-muted-foreground/80">{preview}</span>
+          <span className="mt-0.5 block text-nano text-muted-foreground/65">
             {formatTimeLabel(updatedAt)}
           </span>
         </span>
@@ -338,7 +338,7 @@ export function ConversationRailV2({ onOpenSettings }: ConversationRailV2Props) 
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-sm font-semibold">Gaucho Chat</h2>
-            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            <p className="text-nano uppercase tracking-eyebrow text-muted-foreground">
               Conversas
             </p>
           </div>
@@ -370,7 +370,7 @@ export function ConversationRailV2({ onOpenSettings }: ConversationRailV2Props) 
               type="button"
               onClick={() => setFilter(option.value)}
               className={cn(
-                "h-6 rounded-md text-[10px] font-medium transition-colors",
+                "h-6 rounded-md text-nano font-medium transition-colors",
                 filter === option.value
                   ? "bg-cyan-300/14 text-cyan-100"
                   : "text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
@@ -405,7 +405,7 @@ export function ConversationRailV2({ onOpenSettings }: ConversationRailV2Props) 
             !error &&
             sections.map((section) => (
               <div key={section.title} className="space-y-1">
-                <div className="mb-1 flex items-center gap-1.5 px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                <div className="mb-1 flex items-center gap-1.5 px-1 text-nano font-semibold uppercase tracking-label text-muted-foreground">
                   {section.title === "Pastas" ? (
                     <FolderClosed className="size-3" />
                   ) : section.title === "Fixadas" ? (

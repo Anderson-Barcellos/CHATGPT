@@ -26,9 +26,9 @@ export function PromptPreview() {
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
       <div className="mb-2 flex items-center justify-between">
         <span className="font-semibold text-slate-500">Preview do prompt</span>
-        <span className="text-[11px] text-slate-400">~{tokenCount} tokens</span>
+        <span className="text-micro text-slate-400">~{tokenCount} tokens</span>
       </div>
-      <pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded-lg bg-white p-3 text-[11px] text-slate-700">
+      <pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded-lg bg-white p-3 text-micro text-slate-700">
         {preview || "(Sem conteúdo)"}
       </pre>
     </div>
