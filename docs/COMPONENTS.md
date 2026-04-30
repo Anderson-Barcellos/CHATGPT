@@ -74,6 +74,8 @@ Routes message body rendering:
 
 Inline artifact visibility is tracked per `artifact.id` without a synchronous state-setting effect. When a document/quiz artifact appears after streaming, the same mounted message component expands it without resetting the buffered text.
 
+When `streamStatus === "interrupted"`, renders an inline orange banner (`AlertTriangle`) with the message "Resposta interrompida — pode regenerar pra completar."
+
 ### StreamingMarkdown (`components/chat/StreamingMarkdown.tsx`)
 Renders assistant streaming text with the STT-style buffer from `useStreamingTextBuffer`. The hook incrementally reveals `content` while `streamStatus === "streaming"` and keeps a short cursor settle after completion. It expects its parent bubble to remain mounted across completion.
 
@@ -148,6 +150,13 @@ Core chat logic. Manages message send/receive cycle with SSE streaming.
 
 Internally handles: `buildInputFromMessages`, `buildReasoningConfig`, `buildSystemPrompt`, SSE parsing, IndexedDB persistence.
 
+**Incremental persistence (5 defensive rings):**
+1. Flush user message + assistant placeholder to server synchronously before fetch.
+2. Throttled auto-save (2 s interval via `createThrottle`) during the stream loop.
+3. `beforeunload`/`pagehide` listener that aborts the `AbortController` and calls `saveConversationMessagesViaBeacon` (POST via `navigator.sendBeacon`, fallback `fetch keepalive`).
+4. `useEffect` on mount normalises any message with `streamStatus === "streaming"` to `"interrupted"` and re-persists — recovers from mid-stream reload.
+5. (Server-side) `signal: request.signal` forwarded to OpenAI SDK; stream aborts when client disconnects.
+
 ### useCustomInstructions (`hooks/useCustomInstructions.ts`)
 
 | Return | Type | Purpose |
@@ -204,3 +213,13 @@ Plus custom:
 | `AppMode` | `"chat" \| "image"` |
 | `TokenUsage` | inputTokens, outputTokens, cachedTokens?, totalCost |
 | `ModelRecommendation` | modelId, reason, confidence |
+| `MessageStreamStatus` | `"streaming" \| "completed" \| "aborted" \| "failed" \| "interrupted"` — `aborted` = user stop, `interrupted` = connection drop/reload mid-stream, `failed` = API error |
+
+### Utility: createThrottle (`lib/performance/throttle.ts`)
+
+Imperative (non-React) throttle factory. Returns `{ call, flush, cancel }`.
+- `call(value)` — invokes `fn` at most once per `intervalMs`; later calls within the interval are queued and emitted on the next tick
+- `flush()` — forces immediate emit of the pending value
+- `cancel()` — discards any pending call
+
+Used in `useChat.ts` for the 2 s auto-save during streaming. Reusable for any side-effect throttling (telemetry, auto-save in other flows).

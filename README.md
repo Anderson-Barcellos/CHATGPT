@@ -6,7 +6,7 @@ The project focuses on a ChatGPT-like experience with conversation history, reas
 
 ## Highlights
 
-- Real-time chat experience with streaming responses
+- Real-time chat experience with streaming responses and incremental persistence (auto-save throttled during stream, beacon on unload, interrupted-stream recovery on load)
 - Dedicated reasoning panel with explicit state transitions
 - Conversation history with editing and deletion flows
 - Model picker with support for `gpt-5.5`, `gpt-5.3-codex`, and `gpt-5.3-chat-latest`
@@ -89,7 +89,7 @@ data/
 
 - `GET/POST /api/chat`
 - `GET/POST /api/conversations`
-- `GET/PATCH/DELETE /api/conversations/[id]`
+- `GET/PUT/POST/PATCH/DELETE /api/conversations/[id]`
 - `GET/POST /api/memories`
 - `PATCH/DELETE /api/memories/[id]`
 - `GET/PUT /api/persona`

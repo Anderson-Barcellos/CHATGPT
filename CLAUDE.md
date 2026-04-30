@@ -138,6 +138,7 @@ O shell legado (`components/layout/*`, `components/sidebar/*`, `components/chat/
 - **Server**: `data/conversations.json`, `data/memories.json`, `data/persona.json` — JSON files lidos/escritos por `lib/storage/conversations.ts` e `lib/storage/memories.ts`. Endpoints `/api/conversations`, `/api/memories`, `/api/persona` operam sobre eles.
 - **Client**: Dexie IndexedDB em `lib/storage/db.ts` (database `GauchoChatDB`, version 2). `useConversations`/`useMemories` hooks consomem tanto o servidor quanto o cache local.
 - **Persistência com retry**: `lib/storage/conversationPersistence.ts` envolve writes server-side com `withConversationPersistenceRetry`.
+- **Persistência incremental durante streaming**: `useChat.ts` faz flush síncrono antes do fetch, auto-save throttled a cada 2 s, e beacon no unload via `saveConversationMessagesViaBeacon` (`lib/storage/conversations.ts`). Na carga, mensagens com `streamStatus === "streaming"` são normalizadas para `"interrupted"`. `/api/conversations/[id]` aceita POST além de PUT (necessário para `navigator.sendBeacon`).
 
 ### 8. basePath `/chat` é load-bearing
 
@@ -152,6 +153,8 @@ Apache vhost canônico: `/etc/apache2/sites-enabled/ultrassom.ai-optimized.conf`
 ### 10. Streaming buffer estável por `message.id`
 
 Os balões do assistente usam **key estável `message.id`** — não incluir `artifact.id` na key, senão o componente remonta no fim do stream e o buffer STT-style de `useStreamingTextBuffer.ts` reinicia visualmente. Isso é registrado em `AGENTS.md` como regra explícita.
+
+Se o usuário recarregar a página durante o stream, a mensagem parcial é preservada no servidor (via beacon no unload) e exibida com `streamStatus === "interrupted"` na próxima carga — o buffer não reinicia porque a mensagem já está persistida com o conteúdo parcial.
 
 ### 11. Sistemas do redesign (pós-S0)
 

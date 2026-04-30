@@ -65,12 +65,17 @@ data: [DONE]
 
 Returns the raw OpenAI response object as JSON.
 
+### Signal propagation
+
+`route.ts` passes `signal: request.signal` to `openai.responses.create()`. When the client disconnects, the upstream OpenAI stream is aborted immediately, avoiding unnecessary token consumption. Cancelled streams return HTTP `499` (Client Closed Request).
+
 ### Errors
 
 | Status | Meaning |
 |--------|---------|
 | 400 | Missing `input` or invalid parameters |
 | 429 | Rate limited |
+| 499 | Client disconnected — upstream stream aborted |
 | 500 | OpenAI API error or internal error |
 
 ---
@@ -119,6 +124,30 @@ Atualiza uma memória existente.
 ## DELETE /api/memories/[id]
 
 Remove uma memória existente.
+
+---
+
+## GET /api/conversations/[id]
+
+Returns a single conversation by ID.
+
+## PUT /api/conversations/[id]
+
+Full conversation update (standard JSON body).
+
+## POST /api/conversations/[id]
+
+Alias for `PUT`. Accepted because `navigator.sendBeacon` only sends POST. Used by the incremental-persistence beacon path to flush in-progress messages on page unload.
+
+**File:** `app/api/conversations/[id]/route.ts`
+
+## PATCH /api/conversations/[id]
+
+Partial update (title rename, etc.).
+
+## DELETE /api/conversations/[id]
+
+Deletes the conversation.
 
 ---
 

@@ -30,6 +30,7 @@ Principais areas:
 - Chips do header conectados ao estado real (model, reasoning, responseMode)
 - Breakpoints: `md=768`, `lg=1024 (sidebar)`, `xl=1280 (painel contextual)`
 - Balões de assistente devem manter key estável por `message.id`; não incluir `artifact.id`
+- `MessageStreamStatus`: `"streaming" | "completed" | "aborted" | "failed" | "interrupted"` — `aborted` = usuário cancelou, `interrupted` = conexão caiu/reload mid-stream, `failed` = erro de API
 
 ## Ultimas Alteracoes Relevantes
 
@@ -82,6 +83,19 @@ Principais areas:
 - **S10**: `ExportDropdown` com slot `exportControl`; removido `window.print()`
 - **S11**: touch targets 44px, safe-areas `.gc-safe-*`, chips dinâmicos, badge artefatos mobile
 - **S12**: `MessageBubble` com `motion.div layout`; `AnimatePresence` no loop; edge case guards
+
+### Rodada 7 — Persistência Incremental durante Streaming
+
+- `MessageStreamStatus` ganhou valor `"interrupted"` (distinto de `"aborted"` = stop pelo usuário e `"failed"` = erro de API)
+- `useChat.ts` implementa 5 anéis defensivos: flush síncrono antes do fetch, auto-save throttled a cada 2 s durante o stream, listener `beforeunload`/`pagehide` com `navigator.sendBeacon` (fallback `fetch keepalive`), normalização de mensagens `"streaming"` → `"interrupted"` na carga, e repasse de `signal: request.signal` ao SDK upstream
+- `app/api/chat/route.ts`: `signal: request.signal` repassado ao `openai.responses.create()`; stream encerra junto com o cliente quando ele desconecta (economia real de tokens); retorna HTTP 499 em AbortError
+- `/api/conversations/[id]` aceita agora `POST` além de `PUT` — necessário porque `navigator.sendBeacon` só envia POST
+- `lib/performance/throttle.ts`: util imperativo `createThrottle<T>` com `{ call, flush, cancel }`; reusável fora do contexto React
+- `lib/storage/conversations.ts`: `saveConversationMessagesViaBeacon(id, messages)` — salva via Beacon com fallback fetch keepalive; retorna boolean
+- `lib/chat/abortCompletion.ts`: constante `INTERRUPTED_GENERATION_MESSAGE` + `buildInterruptedAssistantMessagePatch`
+- `MessageContent`: banner laranja (`AlertTriangle`) "Resposta interrompida — pode regenerar pra completar." quando `streamStatus === "interrupted"`
+- `QuickActionsBar`: botão Regenerar visível também em `streamStatus === "interrupted"`
+- `ContextPanelV2`: `aborted | interrupted` agrupados em status `"warning"`; labels distintos por valor
 
 ## Proximos Pontos De Atencao
 
