@@ -11,8 +11,8 @@ Plano completo do redesign em `/root/.claude/plans/meu-velho-na-verdade-golden-c
 | S0 | Limpeza + Setup (deletar legado, instalar `framer-motion`/`cmdk`) | ✅ Concluída | Baixo |
 | S1 | Token System Unificado `--gc-*` | ✅ Concluída | Alto |
 | S2 | Tipografia + Animação + Primitivos Motion | ✅ Concluída | Médio |
-| S3 | Hook `useIsMobile` + Breakpoints | **PRÓXIMA** | Baixo |
-| S4 | Refactor `uiStore` + NotesContext | Pendente | Médio |
+| S3 | Hook `useIsMobile` + Breakpoints | ✅ Concluída | Baixo |
+| S4 | Refactor `uiStore` + NotesContext | **PRÓXIMA** | Médio |
 | S5 | `CanvasOverlayV2` (draggable/resizable) | Pendente | **Alto** |
 | S6 | Toolbar Flutuante de Seleção | Pendente | Médio |
 | S7 | Command Palette (cmd+k) | Pendente | Baixo |
