@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ArrowDown,
   Check,
@@ -55,6 +55,15 @@ export function QuickActionsBar({
 }: QuickActionsBarProps) {
   const isMobile = useIsMobile();
   const [copied, setCopied] = useState(false);
+  const [touched, setTouched] = useState(false);
+  const touchTimer = useRef<number | undefined>(undefined);
+
+  const handleTouchStart = useCallback(() => {
+    if (!isMobile) return;
+    setTouched(true);
+    window.clearTimeout(touchTimer.current);
+    touchTimer.current = window.setTimeout(() => setTouched(false), 2000);
+  }, [isMobile]);
   const { appendToNotes } = useNotes();
   const { setActivePanelTab } = useUIStore();
 
@@ -97,9 +106,12 @@ export function QuickActionsBar({
 
   const bar = (
     <div
+      onTouchStart={handleTouchStart}
       className={cn(
         "flex items-center gap-0.5",
-        isMobile ? "opacity-55" : "opacity-0 transition-opacity group-hover:opacity-100",
+        isMobile
+          ? touched ? "opacity-100" : "opacity-55 transition-opacity"
+          : "opacity-0 transition-opacity group-hover:opacity-100",
         className,
       )}
     >

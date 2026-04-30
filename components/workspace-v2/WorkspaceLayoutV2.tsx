@@ -48,6 +48,12 @@ import { GPTLogo } from "@/components/ui/gpt-logo";
 import { cn } from "@/lib/utils";
 import type { FileAttachment, ResponseMode } from "@/types";
 
+const RESPONSE_MODE_LABELS: Record<ResponseMode, string> = {
+  default: "Chat",
+  document: "Documento",
+  quiz: "Quiz",
+};
+
 interface WorkspaceFrameV2Props {
   sidebar: ReactNode;
   chat: ReactNode;
@@ -59,6 +65,11 @@ interface WorkspaceFrameV2Props {
   currentModelName: string;
   onOpenSettings: () => void;
   exportControl?: ReactNode;
+  activeResponseMode?: ResponseMode;
+  reasoningLabel?: string;
+  artifactCount?: number;
+  mobileSidebarOpen?: boolean;
+  onMobileSidebarOpenChange?: (open: boolean) => void;
   mobileContextOpen?: boolean;
   onMobileContextOpenChange?: (open: boolean) => void;
 }
@@ -122,7 +133,7 @@ function IconButton({
           aria-label={label}
           onClick={onClick}
           className={cn(
-            "size-8 rounded-lg border border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground",
+            "size-8 max-md:size-11 rounded-lg border border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground",
             className
           )}
         >
@@ -166,10 +177,17 @@ export function WorkspaceFrameV2({
   currentModelName,
   onOpenSettings,
   exportControl,
+  activeResponseMode,
+  reasoningLabel,
+  artifactCount,
+  mobileSidebarOpen,
+  onMobileSidebarOpenChange,
   mobileContextOpen,
   onMobileContextOpenChange,
 }: WorkspaceFrameV2Props) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [internalSidebarOpen, setInternalSidebarOpen] = useState(false);
+  const sidebarOpen = mobileSidebarOpen ?? internalSidebarOpen;
+  const setSidebarOpen = onMobileSidebarOpenChange ?? setInternalSidebarOpen;
   const [internalContextOpen, setInternalContextOpen] = useState(false);
   const [contextCollapsed, setContextCollapsed] = useState(false);
   const [contextExpanded, setContextExpanded] = useState(false);
@@ -196,7 +214,7 @@ export function WorkspaceFrameV2({
           </aside>
 
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-            <header className="shrink-0 border-b border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel-strong)] pt-[env(safe-area-inset-top)] md:pt-0">
+            <header className="shrink-0 border-b border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel-strong)] gc-safe-top md:pt-0">
               <div className="flex h-[3.1rem] items-center justify-between px-2.5 md:px-4">
                 <div className="flex min-w-0 items-center gap-2">
                   <IconButton
@@ -236,9 +254,14 @@ export function WorkspaceFrameV2({
                   <IconButton
                     label="Painel contextual"
                     onClick={() => setContextOpen(true)}
-                    className="xl:hidden"
+                    className="relative xl:hidden"
                   >
                     <PanelRightOpen className="size-4" />
+                    {!!artifactCount && artifactCount > 0 && (
+                      <span className="absolute -right-0.5 -top-0.5 flex size-3.5 items-center justify-center rounded-full bg-cyan-300 text-[8px] font-bold leading-none text-slate-950">
+                        {artifactCount > 9 ? "9+" : artifactCount}
+                      </span>
+                    )}
                   </IconButton>
                 </div>
               </div>
@@ -247,8 +270,13 @@ export function WorkspaceFrameV2({
                 <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                   <ContextChip label="Workspace" value="Anders" />
                   <ContextChip label="Modelo" value={currentModelName} />
-                  <ContextChip label="Reasoning" value="Alto" />
-                  <ContextChip label="Modo" value="Documento" />
+                  {reasoningLabel && reasoningLabel !== "—" && (
+                    <ContextChip label="Reasoning" value={reasoningLabel} />
+                  )}
+                  <ContextChip
+                    label="Modo"
+                    value={RESPONSE_MODE_LABELS[activeResponseMode ?? "default"]}
+                  />
                 </div>
                 <span className="hidden items-center gap-1 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-0.5 text-nano font-medium text-cyan-100 sm:inline-flex">
                   <span className="size-1.5 rounded-full bg-cyan-200" />
@@ -321,7 +349,7 @@ export function WorkspaceFrameV2({
         <SheetContent
           side="left"
           showCloseButton={false}
-          className="w-[88vw] max-w-[20rem] gap-0 border-white/10 bg-[var(--gc-surface-panel)] p-0 pt-[env(safe-area-inset-top)]"
+          className="w-[88vw] max-w-[20rem] gap-0 border-white/10 bg-[var(--gc-surface-panel)] p-0 gc-safe-top"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Conversas</SheetTitle>
@@ -335,7 +363,7 @@ export function WorkspaceFrameV2({
         <SheetContent
           side="right"
           showCloseButton={false}
-          className="w-[96vw] max-w-none gap-0 border-white/10 bg-[var(--gc-surface-panel)] p-0 pt-[env(safe-area-inset-top)] sm:max-w-[34rem]"
+          className="w-[96vw] max-w-none gap-0 border-white/10 bg-[var(--gc-surface-panel)] p-0 gc-safe-top sm:max-w-[34rem]"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Painel contextual</SheetTitle>

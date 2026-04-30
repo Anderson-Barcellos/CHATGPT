@@ -55,6 +55,8 @@ interface CommandComposerContainerV2Props {
   stopGeneration: () => void;
   isLoading: boolean;
   error: string | null;
+  responseMode?: ResponseMode;
+  onResponseModeChange?: (mode: ResponseMode) => void;
 }
 
 function formatRecordingDuration(durationMs: number) {
@@ -69,10 +71,14 @@ export function CommandComposerContainerV2({
   stopGeneration,
   isLoading,
   error,
+  responseMode: externalResponseMode,
+  onResponseModeChange,
 }: CommandComposerContainerV2Props) {
   const isMobile = useIsMobile();
   const [input, setInput] = useState("");
-  const [responseMode, setResponseMode] = useState<ResponseMode>("default");
+  const [internalResponseMode, setInternalResponseMode] = useState<ResponseMode>("default");
+  const responseMode = externalResponseMode ?? internalResponseMode;
+  const setResponseMode = onResponseModeChange ?? setInternalResponseMode;
   const [isDragging, setIsDragging] = useState(false);
   const dragCounter = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -402,10 +408,10 @@ export function CommandComposerContainerV2({
           void handleMicrophoneClick();
         }}
         onToggleDocument={() =>
-          setResponseMode((current) => (current === "document" ? "default" : "document"))
+          setResponseMode(responseMode === "document" ? "default" : "document")
         }
         onToggleQuiz={() =>
-          setResponseMode((current) => (current === "quiz" ? "default" : "quiz"))
+          setResponseMode(responseMode === "quiz" ? "default" : "quiz")
         }
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
