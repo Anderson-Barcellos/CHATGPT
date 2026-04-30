@@ -106,8 +106,8 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
           className={cn(
             "relative min-w-0 gap-0 overflow-hidden break-words border px-2.5 py-2 text-left text-[12px] leading-relaxed md:px-4 md:py-3 md:text-[13px]",
             isUser
-              ? "v2-user-bubble rounded-2xl rounded-br-md"
-              : "v2-assistant-bubble rounded-2xl rounded-bl-md text-foreground/90"
+              ? "gc-user-bubble rounded-2xl rounded-br-md"
+              : "gc-assistant-bubble rounded-2xl rounded-bl-md text-foreground/90"
           )}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
@@ -313,7 +313,7 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
       </div>
 
       {isUser && (
-        <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[color:var(--v2-border)] bg-[var(--v2-control)] shadow-[0_0_18px_rgba(34,211,238,0.16)] md:h-8 md:w-8">
+        <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[color:var(--gc-border)] bg-[var(--gc-surface-control)] shadow-[0_0_18px_rgba(34,211,238,0.16)] md:h-8 md:w-8">
           {/* eslint-disable-next-line @next/next/no-img-element -- small local avatar */}
           <img
             src={USER_AVATAR_SRC}

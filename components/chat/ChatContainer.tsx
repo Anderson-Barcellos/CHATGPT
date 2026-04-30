@@ -67,7 +67,7 @@ function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
       </div>
 
       <h2 className="mb-1.5 text-[1.7rem] font-semibold tracking-tight md:mb-2 md:text-4xl">
-        <span className="text-gradient-gpt">GPT</span>
+        <span className="gc-text-gradient">GPT</span>
       </h2>
       <p className="mb-7 max-w-[18rem] text-center text-sm text-muted-foreground/80 md:mb-10 md:max-w-sm md:text-base">
         {getGreeting()}, Anders! {subtitle}

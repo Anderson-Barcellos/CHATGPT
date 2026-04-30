@@ -616,7 +616,7 @@ export function ContextPanelV2() {
         <TabsContent value="canvas" className="mt-0 min-h-0 flex-1 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="p-3">
-              <section className="v2-canvas-surface rounded-xl border p-3">
+              <section className="gc-canvas-surface rounded-xl border p-3">
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="mb-1 flex items-center gap-2">
@@ -657,7 +657,7 @@ export function ContextPanelV2() {
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-[color:var(--v2-border-soft)] bg-[var(--v2-canvas-soft)] p-2">
+                <div className="rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-canvas-soft)] p-2">
                   {effectiveArtifact ? (
                     isQuizArtifact ? (
                       <QuizCanvas

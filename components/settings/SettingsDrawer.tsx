@@ -295,7 +295,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
           <div className="border-b border-white/5 px-3 pb-3">
             <div className="flex items-start justify-between gap-2 px-1 pt-3">
               <div className="min-w-0">
-                <h2 className="text-sm font-semibold tracking-wide text-gradient-gpt">
+                <h2 className="text-sm font-semibold tracking-wide gc-text-gradient">
                   Configuração
                 </h2>
                 <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">

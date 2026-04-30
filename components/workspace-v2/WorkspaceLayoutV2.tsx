@@ -183,22 +183,22 @@ export function WorkspaceFrameV2({
   }, []);
 
   return (
-    <div className="relative h-dvh overflow-hidden bg-[var(--v2-bg)] text-foreground">
+    <div className="relative h-dvh overflow-hidden bg-[var(--gc-bg)] text-foreground">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[image:var(--v2-overlay)]"
+        className="pointer-events-none absolute inset-0 bg-[image:var(--gc-overlay-gradient)]"
       />
       <div className="relative z-10 flex h-full flex-col p-0 md:p-3">
-        <div className="flex min-h-0 flex-1 overflow-hidden border border-[color:var(--v2-border)] bg-[var(--v2-shell)] shadow-[0_24px_90px_rgba(0,0,0,0.22)] md:rounded-xl">
+        <div className="flex min-h-0 flex-1 overflow-hidden border border-[color:var(--gc-border)] bg-[var(--gc-surface-shell)] shadow-[0_24px_90px_rgba(0,0,0,0.22)] md:rounded-xl">
           <aside
             data-workspace-region="sidebar"
-            className="hidden min-h-0 w-[17.5rem] shrink-0 overflow-hidden border-r border-[color:var(--v2-border-soft)] bg-[var(--v2-panel)] lg:block"
+            className="hidden min-h-0 w-[17.5rem] shrink-0 overflow-hidden border-r border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] lg:block"
           >
             {sidebar}
           </aside>
 
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-            <header className="shrink-0 border-b border-[color:var(--v2-border-soft)] bg-[var(--v2-panel-strong)] pt-[env(safe-area-inset-top)] md:pt-0">
+            <header className="shrink-0 border-b border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel-strong)] pt-[env(safe-area-inset-top)] md:pt-0">
               <div className="flex h-[3.1rem] items-center justify-between px-2.5 md:px-4">
                 <div className="flex min-w-0 items-center gap-2">
                   <IconButton
@@ -247,7 +247,7 @@ export function WorkspaceFrameV2({
                 </div>
               </div>
 
-              <div className="flex min-h-[2.2rem] items-center justify-between border-t border-[color:var(--v2-border-soft)] bg-[var(--v2-control)] px-2.5 py-1.5 md:px-4">
+              <div className="flex min-h-[2.2rem] items-center justify-between border-t border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-2.5 py-1.5 md:px-4">
                 <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                   <ContextChip label="Workspace" value="Anders" />
                   <ContextChip label="Modelo" value={currentModelName} />
@@ -271,7 +271,7 @@ export function WorkspaceFrameV2({
           <aside
             data-workspace-region="context"
             className={cn(
-              "hidden min-h-0 shrink-0 overflow-hidden border-l border-[color:var(--v2-border-soft)] bg-[var(--v2-panel)] transition-[width] duration-200 xl:block",
+              "hidden min-h-0 shrink-0 overflow-hidden border-l border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] transition-[width] duration-200 xl:block",
               contextCollapsed
                 ? "w-12"
                 : contextExpanded
@@ -325,7 +325,7 @@ export function WorkspaceFrameV2({
         <SheetContent
           side="left"
           showCloseButton={false}
-          className="w-[88vw] max-w-[20rem] gap-0 border-white/10 bg-[var(--v2-panel)] p-0 pt-[env(safe-area-inset-top)]"
+          className="w-[88vw] max-w-[20rem] gap-0 border-white/10 bg-[var(--gc-surface-panel)] p-0 pt-[env(safe-area-inset-top)]"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Conversas</SheetTitle>
@@ -339,7 +339,7 @@ export function WorkspaceFrameV2({
         <SheetContent
           side="right"
           showCloseButton={false}
-          className="w-[96vw] max-w-none gap-0 border-white/10 bg-[var(--v2-panel)] p-0 pt-[env(safe-area-inset-top)] sm:max-w-[34rem]"
+          className="w-[96vw] max-w-none gap-0 border-white/10 bg-[var(--gc-surface-panel)] p-0 pt-[env(safe-area-inset-top)] sm:max-w-[34rem]"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Painel contextual</SheetTitle>
@@ -394,7 +394,7 @@ export function CommandComposerV2({
   const statusMessage = error || speechError || fileErrors[0] || null;
 
   return (
-    <footer className="shrink-0 border-t border-white/8 bg-[var(--v2-panel-strong)] px-2.5 pb-[calc(env(safe-area-inset-bottom)+0.45rem)] pt-2 md:px-4 md:pb-3">
+    <footer className="shrink-0 border-t border-white/8 bg-[var(--gc-surface-panel-strong)] px-2.5 pb-[calc(env(safe-area-inset-bottom)+0.45rem)] pt-2 md:px-4 md:pb-3">
       <div className="mx-auto max-w-5xl">
         {statusMessage && (
           <div className="mb-2 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
@@ -404,7 +404,7 @@ export function CommandComposerV2({
 
         <div
           className={cn(
-            "relative overflow-hidden rounded-xl border border-white/10 bg-[var(--v2-composer)] shadow-[0_18px_54px_rgba(0,0,0,0.28)] transition-colors",
+            "relative overflow-hidden rounded-xl border border-white/10 bg-[var(--gc-surface-composer)] shadow-[0_18px_54px_rgba(0,0,0,0.28)] transition-colors",
             "focus-within:border-cyan-300/35",
             isDragging && "border-cyan-300/55 bg-cyan-300/8"
           )}

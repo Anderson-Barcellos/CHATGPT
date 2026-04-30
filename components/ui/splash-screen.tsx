@@ -44,7 +44,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
       <h1
         className={cn(
           "mt-4 text-5xl font-bold tracking-widest transition-all duration-700",
-          "text-gradient-gpt",
+          "gc-text-gradient",
           phase === "logo" && "opacity-0 translate-y-6",
           phase === "brand" && "opacity-100 translate-y-0",
           phase === "shrink" && "opacity-0 -translate-y-4"

@@ -331,7 +331,7 @@ export function ConversationRailV2({ onOpenSettings }: ConversationRailV2Props) 
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-[color:var(--v2-border-soft)] px-3 py-3">
+      <div className="shrink-0 border-b border-[color:var(--gc-border-soft)] px-3 py-3">
         <div className="mb-3 flex items-center gap-2">
           <div className="flex size-9 items-center justify-center rounded-lg border border-cyan-300/14 bg-cyan-300/8">
             <GPTLogo size={25} />
@@ -439,7 +439,7 @@ export function ConversationRailV2({ onOpenSettings }: ConversationRailV2Props) 
         </div>
       </ScrollArea>
 
-      <div className="shrink-0 border-t border-[color:var(--v2-border-soft)] p-2">
+      <div className="shrink-0 border-t border-[color:var(--gc-border-soft)] p-2">
         <Button
           variant="ghost"
           onClick={onOpenSettings}
