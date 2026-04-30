@@ -240,6 +240,15 @@ export function CommandComposerContainerV2({
   }, []);
 
   useEffect(() => {
+    const handler = (e: Event) => {
+      const { mode } = (e as CustomEvent<{ mode: string }>).detail;
+      setResponseMode(mode as ResponseMode);
+    };
+    window.addEventListener("gaucho:set-response-mode", handler);
+    return () => window.removeEventListener("gaucho:set-response-mode", handler);
+  }, []);
+
+  useEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
