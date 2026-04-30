@@ -249,6 +249,16 @@ export function CommandComposerContainerV2({
   }, []);
 
   useEffect(() => {
+    const handler = (e: Event) => {
+      const { text } = (e as CustomEvent<{ text: string }>).detail;
+      setInput(text);
+      window.setTimeout(() => void handleSubmit(), 0);
+    };
+    window.addEventListener("gaucho:send-message", handler);
+    return () => window.removeEventListener("gaucho:send-message", handler);
+  }, [handleSubmit]);
+
+  useEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
