@@ -12,8 +12,8 @@ Plano completo do redesign em `/root/.claude/plans/meu-velho-na-verdade-golden-c
 | S1 | Token System Unificado `--gc-*` | ✅ Concluída | Alto |
 | S2 | Tipografia + Animação + Primitivos Motion | ✅ Concluída | Médio |
 | S3 | Hook `useIsMobile` + Breakpoints | ✅ Concluída | Baixo |
-| S4 | Refactor `uiStore` + NotesContext | **PRÓXIMA** | Médio |
-| S5 | `CanvasOverlayV2` (draggable/resizable) | Pendente | **Alto** |
+| S4 | Refactor `uiStore` + NotesContext | ✅ Concluída | Médio |
+| S5 | `CanvasOverlayV2` (draggable/resizable) | **PRÓXIMA** | **Alto** |
 | S6 | Toolbar Flutuante de Seleção | Pendente | Médio |
 | S7 | Command Palette (cmd+k) | Pendente | Baixo |
 | S8 | Monaco Editor Real | Pendente | Médio |
@@ -26,29 +26,47 @@ Plano completo do redesign em `/root/.claude/plans/meu-velho-na-verdade-golden-c
 
 **Pré-requisitos:** Antes de começar uma sprint, ler o plan file completo (`/root/.claude/plans/meu-velho-na-verdade-golden-creek.md`) — contém arquivos-alvo, riscos, validação manual e os 3 apêndices (tokens `--gc-*`, escala tipográfica, escala animação).
 
-### KICKOFF — Sprint 3 (Hook `useIsMobile` + Breakpoints)
+### KICKOFF — Sprint 5 (CanvasOverlayV2)
 
-> **Branch:** `redesign/s3-mobile`. **Estado base:** `redesign/s2-typography` mergeado em `main`. **Risco:** Baixo. **Estimativa:** 1 commit.
+> **Branch:** `redesign/s5-canvas`. **Estado base:** S4 mergeado em `main`. **Risco:** Alto. **Estimativa:** 2 commits.
 >
-> **Estado pós-S2 (saiba isso antes de começar):**
+> **Pré-requisito:** ler plan file completo — seção Sprint 5 tem detalhes de z-index, drag, resize e mobile.
 >
-> - Tokens `--gc-text-*`, `--gc-duration-*`, `--gc-ease-*`, `--gc-tracking-*` em `globals.css (:root)`.
-> - Tailwind utilities expostas: `text-nano/micro/caption/body-sm/h3`, `tracking-label/eyebrow/splash`, `duration-instant/fast/normal/slow/slower/dramatic`.
-> - `components/motion/` com FadeIn, SlideIn, Pop, Drawer — prontos pra usar.
-> - `gpt-logo.tsx` sem `<style>` inline; keyframes em `globals.css`.
-> - `splash-screen.tsx` usa `<FadeIn>` + `var(--gc-bg-splash)`.
-> - 19 arquivos com `text-[Npx]` migrados para classes semânticas.
+> **Estado pós-S4 (saiba isso antes de começar):**
+>
+> - `uiStore` expandido: `canvasPosition {x,y}`, `canvasDimensions {w,h}`, `canvasMaximized`, `activeSelection`, `activePanelTab`, `setCanvas*` setters.
+> - `NotesProvider` + `useNotes` montados em `GauchoChatShellV2`.
+> - `ContextPanelV2`: 2 abas controladas (Atividade + Notas). Canvas/Artifact removidas.
+> - Primitivos `<FadeIn>`, `<SlideIn>`, `<Pop>`, `<Drawer>` em `components/motion/`.
+> - `framer-motion 12.38.0` instalado.
+> - `useIsMobile()` disponível em `hooks/useIsMobile.ts`.
+>
+> **Arquivos a criar:**
+> - `components/workspace-v2/canvas/CanvasOverlayV2.tsx` — overlay principal (motion.div fixed)
+> - `components/workspace-v2/canvas/CanvasDragHandle.tsx` — barra de título draggável
+> - `components/workspace-v2/canvas/CanvasResizeHandle.tsx` — 8 handles N/NE/E/SE/S/SW/W/NW
+> - `components/workspace-v2/canvas/useCanvasDrag.ts` — Pointer Events nativos
+> - `components/workspace-v2/canvas/useCanvasResize.ts`
+> - `components/workspace-v2/canvas/CanvasContent.tsx` — renderização (DocumentCanvas/QuizCanvas/HtmlPreview)
+>
+> **Arquivos a modificar:**
+> - `components/workspace-v2/GauchoChatShellV2.tsx` — montar `<CanvasOverlayV2>` no nível raiz
+> - `components/chat/MessageContent.tsx` — botão "Abrir no painel" → "Abrir Canvas"
 >
 > **Tarefas:**
 >
-> 1. Criar branch: `git checkout -b redesign/s3-mobile`
-> 2. Criar `hooks/useIsMobile.ts` com `useSyncExternalStore` + `window.matchMedia('(max-width: 767px)')`. `getServerSnapshot` retorna `false`.
-> 3. Criar `lib/layout/breakpoints.ts` exportando `MOBILE_BREAKPOINT = 768` + convenção comentada.
-> 4. Em `CommandComposerContainerV2.tsx` substituir `window.innerWidth < 768` por `useIsMobile()`.
-> 5. Validar: `npx tsc --noEmit` + `npm run build`.
-> 6. Commit: `feat(s3): useIsMobile + breakpoints documentados`.
+> 1. `git checkout -b redesign/s5-canvas`
+> 2. Criar `CanvasContent.tsx` extraindo lógica de canvas do antigo `ContextPanelV2` (DocumentCanvas/QuizCanvas/HtmlPreview + handlers copy/download/PDF). **ATENÇÃO:** HtmlPreview foi removida do ContextPanelV2 em S4 mas o código original está no plan file — recriar aqui.
+> 3. Criar `useCanvasDrag.ts`: `setPointerCapture` no onPointerDown, `onPointerMove` calcula delta, `onPointerUp` chama `setCanvasPosition`. Clamp 80px dentro do viewport.
+> 4. Criar `useCanvasResize.ts`: 8 handles, min 420×300, max 90vw/90vh.
+> 5. Criar `CanvasDragHandle.tsx` e `CanvasResizeHandle.tsx`.
+> 6. Criar `CanvasOverlayV2.tsx`: `motion.div position:fixed`, z-[150]. Backdrop `z-[140] pointer-events-none backdrop-blur-[24px]`. Animação entrada via `<Pop>` (scale 0.95→1, opacity 0→1). Mobile: `if (useIsMobile()) return <Sheet side="bottom" full-screen>` com breadcrumb.
+> 7. ESC fecha; `window.resize` reclamp.
+> 8. Em `GauchoChatShellV2.tsx`: montar `<CanvasOverlayV2>` controlado por `artifactOpen` + `activeArtifact`.
+> 9. `npx tsc --noEmit` + `npm run build` + `npm test`.
+> 10. Testar light/dark + desktop/mobile. Commit: `feat(s5): CanvasOverlayV2 draggable/resizable`.
 >
-> **Tag de retorno:** `pre-redesign-s0`. Riscos: sem `getServerSnapshot`, hydration mismatch.
+> **Riscos:** z-index hell; `motion.div` + `position:fixed` + drag via `transform` pode conflitar — usar `dragConstraints` do viewport ou Pointer Events puros. Em caso de regressão: `git revert` > patch.
 
 ---
 
