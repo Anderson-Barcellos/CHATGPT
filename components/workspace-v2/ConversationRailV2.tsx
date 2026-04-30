@@ -31,6 +31,7 @@ import type { Conversation } from "@/types";
 
 interface ConversationRailV2Props {
   onOpenSettings: () => void;
+  onClose?: () => void;
 }
 
 type RailFilter = "all" | "pinned" | "recent" | "folders";
@@ -185,7 +186,7 @@ function ConversationRowV2({
   );
 }
 
-export function ConversationRailV2({ onOpenSettings }: ConversationRailV2Props) {
+export function ConversationRailV2({ onOpenSettings, onClose }: ConversationRailV2Props) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<RailFilter>("all");
   const [mountTimestamp] = useState(() => Date.now());
@@ -226,8 +227,9 @@ export function ConversationRailV2({ onOpenSettings }: ConversationRailV2Props) 
         return;
       }
       setActiveConversationId(id);
+      onClose?.();
     },
-    [activeConversationId, isStreaming, setActiveConversationId, showStreamingGuard]
+    [activeConversationId, isStreaming, onClose, setActiveConversationId, showStreamingGuard]
   );
 
   const handleDeleteConversation = useCallback(

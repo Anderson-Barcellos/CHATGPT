@@ -16,6 +16,8 @@ import { ContextPanelV2 } from "@/components/workspace-v2/ContextPanelV2";
 import { ConversationRailV2 } from "@/components/workspace-v2/ConversationRailV2";
 import { WorkspaceFrameV2 } from "@/components/workspace-v2/WorkspaceLayoutV2";
 import { ExportDropdown } from "@/components/workspace-v2/ExportDropdown";
+import { getReasoningLabel, isReasoningModel } from "@/lib/models/modelConfig";
+import type { ResponseMode } from "@/types";
 import { useChat } from "@/hooks/useChat";
 import { NotesProvider } from "@/components/workspace-v2/NotesProvider";
 import { CanvasOverlayV2 } from "@/components/workspace-v2/canvas/CanvasOverlayV2";
@@ -34,6 +36,8 @@ export function GauchoChatShellV2() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [splashDismissed, setSplashDismissed] = useState(false);
   const [mobileContextOpen, setMobileContextOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [responseMode, setResponseMode] = useState<ResponseMode>("default");
   const isHydrated = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -78,6 +82,10 @@ export function GauchoChatShellV2() {
   }, [activeConversationId, conversations, messages]);
 
   const currentModel = MODELS[parameters.model];
+  const reasoningLabel = isReasoningModel(parameters.model)
+    ? getReasoningLabel(parameters.reasoningEffort)
+    : "";
+  const artifactCount = chatMessages.filter((m) => m.artifact).length;
   const shouldShowRecoveryState =
     Boolean(recoveryError) || isRecovering || !activeConversationId;
   const shouldShowMobileContext = mobileContextOpen || (artifactOpen && Boolean(activeArtifact));
@@ -115,8 +123,17 @@ export function GauchoChatShellV2() {
         <WorkspaceFrameV2
           activeConversationTitle={activeConversation?.title || "Workspace"}
           currentModelName={currentModel?.name || parameters.model}
+          activeResponseMode={responseMode}
+          reasoningLabel={reasoningLabel}
+          artifactCount={artifactCount}
+          mobileSidebarOpen={mobileSidebarOpen}
+          onMobileSidebarOpenChange={setMobileSidebarOpen}
           sidebar={<ConversationRailV2 onOpenSettings={() => setSettingsOpen(true)} />}
-          mobileSidebar={<ConversationRailV2 onOpenSettings={() => setSettingsOpen(true)} />}
+          mobileSidebar={
+            <ConversationRailV2
+              onOpenSettings={() => setSettingsOpen(true)}
+              onClose={() => setMobileSidebarOpen(false)}
+            />}
           chat={
             shouldShowRecoveryState ? (
               <ChatRecoveryState
@@ -142,6 +159,8 @@ export function GauchoChatShellV2() {
                 stopGeneration={stopGeneration}
                 isLoading={isChatLoading}
                 error={composerError}
+                responseMode={responseMode}
+                onResponseModeChange={setResponseMode}
               />
             )
           }

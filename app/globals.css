@@ -379,6 +379,13 @@ body {
   .gpt-ring-slow { animation: gpt-vortex 25s linear infinite; transform-origin: 325px 325px; }
   .gpt-organic { animation: gpt-pulse-deep 5s ease-in-out infinite; transform-origin: 325px 325px; }
   .gpt-core { animation: gpt-core-beat 1.5s ease-in-out infinite; transform-origin: 325px 325px; }
+
+  .gc-safe-top { padding-top: env(safe-area-inset-top); }
+  .gc-safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .gc-safe-both {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
 @media (max-width: 767px) {

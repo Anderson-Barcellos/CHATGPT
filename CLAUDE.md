@@ -19,24 +19,26 @@ Plano completo do redesign em `/root/.claude/plans/meu-velho-na-verdade-golden-c
 | S8 | Monaco Editor Real | ✅ Concluída | Médio |
 | S9 | Quick Actions sob Balão | ✅ Concluída | Médio |
 | S10 | Reconectar `useExport` ao Shell V2 | ✅ Concluída | Baixo |
-| S11 | Mobile Pass | **PRÓXIMA** | Médio |
-| S12 | Polimento Final | Pendente | Baixo |
+| S11 | Mobile Pass | ✅ Concluída | Médio |
+| S12 | Polimento Final | **PRÓXIMA** | Baixo |
 
 **Tag de retorno:** `pre-redesign-s0` (criada em `9d36822`). Reverter o redesign inteiro: `git checkout pre-redesign-s0 -- .`.
 
 **Pré-requisitos:** Antes de começar uma sprint, ler o plan file completo (`/root/.claude/plans/meu-velho-na-verdade-golden-creek.md`) — contém arquivos-alvo, riscos, validação manual e os 3 apêndices (tokens `--gc-*`, escala tipográfica, escala animação).
 
-### KICKOFF — Sprint 11 (Mobile Pass)
+### KICKOFF — Sprint 12 (Polimento Final)
 
-> **Branch:** `redesign/s11-mobile`. **Estado base:** S10 mergeado em `main`. **Risco:** Médio.
+> **Branch:** `redesign/s12-polish`. **Estado base:** S11 mergeado em `main`. **Risco:** Baixo.
 >
-> **Objetivo:** Garantir que o shell funcione bem em mobile (< 768px). Revisar layouts, espaçamentos, tamanhos de fonte e interações touch no `GauchoChatShellV2` e seus filhos.
+> Leia o plan file em `/root/.claude/plans/meu-velho-na-verdade-golden-creek.md` para os detalhes da S12 antes de começar.
 >
-> **Estado pós-S10:**
-> - `ExportDropdown` conectado ao header via slot `exportControl`.
-> - `window.print()` removido. Shell V2 está completo funcionalmente.
->
-> Leia o plan file em `/root/.claude/plans/meu-velho-na-verdade-golden-creek.md` para os detalhes da S11 antes de começar.
+> **Estado pós-S11:**
+> - Touch targets 44×44px no mobile. Safe-areas centralizadas (`.gc-safe-top/bottom/both`).
+> - Chips do header conectados ao estado real (model, reasoning, responseMode).
+> - `responseMode` elevado para `GauchoChatShellV2`, compartilhado com header.
+> - Badge no botão painel mobile. QuickActionsBar → `onTouchStart` em mobile.
+> - ConversationRail Sheet fecha ao selecionar conversa.
+> - `getReasoningLabel` em `lib/models/modelConfig.ts`.
 
 ---
 
