@@ -13,7 +13,6 @@ import {
   Archive,
   Brain,
   ChevronDown,
-  Download,
   FileText,
   Menu,
   Mic,
@@ -59,6 +58,7 @@ interface WorkspaceFrameV2Props {
   activeConversationTitle: string;
   currentModelName: string;
   onOpenSettings: () => void;
+  exportControl?: ReactNode;
   mobileContextOpen?: boolean;
   onMobileContextOpenChange?: (open: boolean) => void;
 }
@@ -165,6 +165,7 @@ export function WorkspaceFrameV2({
   activeConversationTitle,
   currentModelName,
   onOpenSettings,
+  exportControl,
   mobileContextOpen,
   onMobileContextOpenChange,
 }: WorkspaceFrameV2Props) {
@@ -174,9 +175,6 @@ export function WorkspaceFrameV2({
   const [contextExpanded, setContextExpanded] = useState(false);
   const contextOpen = mobileContextOpen ?? internalContextOpen;
   const setContextOpen = onMobileContextOpenChange ?? setInternalContextOpen;
-  const handleQuickExport = useCallback(() => {
-    window.print();
-  }, []);
   const handleFocusComposer = useCallback(() => {
     const composerInput = document.querySelector<HTMLTextAreaElement>("textarea");
     composerInput?.focus();
@@ -228,9 +226,7 @@ export function WorkspaceFrameV2({
                     <ShieldCheck className="size-3.5" />
                     Salvo
                   </div>
-                  <IconButton label="Exportar resposta" onClick={handleQuickExport}>
-                    <Download className="size-4" />
-                  </IconButton>
+                  {exportControl ?? null}
                   <IconButton label="Ajustar prompt" onClick={handleFocusComposer}>
                     <PencilLine className="size-4" />
                   </IconButton>
