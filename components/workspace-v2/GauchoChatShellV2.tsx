@@ -16,6 +16,7 @@ import { ConversationRailV2 } from "@/components/workspace-v2/ConversationRailV2
 import { WorkspaceFrameV2 } from "@/components/workspace-v2/WorkspaceLayoutV2";
 import { useChat } from "@/hooks/useChat";
 import { NotesProvider } from "@/components/workspace-v2/NotesProvider";
+import { CanvasOverlayV2 } from "@/components/workspace-v2/canvas/CanvasOverlayV2";
 import { useConversations } from "@/hooks/useConversations";
 import { useComponentPreloader } from "@/lib/performance/lazy";
 import { MODELS } from "@/lib/models/modelConfig";
@@ -136,6 +137,7 @@ export function GauchoChatShellV2() {
       </div>
       </NotesProvider>
       <SettingsDrawer isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <CanvasOverlayV2 />
     </>
   );
 }

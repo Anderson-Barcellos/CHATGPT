@@ -192,7 +192,7 @@ export function MessageContent({ message, className }: MessageContentProps) {
                 onClick={() => openArtifact(artifact, message.id)}
               >
                 <PanelRightOpen className="h-3.5 w-3.5" />
-                {isQuizArtifact ? "Abrir quiz" : "Abrir no painel"}
+                {isQuizArtifact ? "Abrir quiz" : "Abrir Canvas"}
               </Button>
             </div>
           </div>
