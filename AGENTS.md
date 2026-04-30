@@ -17,15 +17,19 @@ Principais areas:
 ## Estado Atual Do Projeto
 
 - Modelo padrao atual: `gpt-5.3-chat-latest`
-- Seletor de modelos ja inclui `gpt-5.4` e `gpt-5.3-chat-latest`
-- Acoes de mensagem e conversa foram polidas com confirmacao explicita via dialog
-- A rota principal usa `GauchoChatShellV2` / `WorkspaceFrameV2`
-- Sidebar/rail v2 ganhou busca, filtros, estado ativo e scroll interno real
-- Painel direito v2 possui abas `Canvas`, `Artefato`, `Atividade` e `Notas`
-- Canvas Markdown renderiza documentos, HTML e quiz em area maior usando os renderizadores de artifact existentes
-- Bolhas usam tokens `--v2-*` em claro/escuro, sem `dark` forcado no shell
-- Balões de assistente devem manter key estavel por `message.id`; nao incluir `artifact.id`, para nao remontar no fim do stream e reiniciar visualmente o buffer
-- Reasoning possui estado explicito e renderizacao dedicada
+- Shell ativo: `GauchoChatShellV2` / `WorkspaceFrameV2` — redesign completo (S0-S12)
+- Tokens `--gc-*` unificados em `app/globals.css`; light/dark completos
+- Canvas overlay flutuante draggable/resizable (`CanvasOverlayV2`); mobile = Sheet full-screen
+- Command palette cmd+k (`CommandPalette` + `cmdk`)
+- Quick actions nos balões do assistente (`QuickActionsBar`)
+- Toolbar de seleção de texto estilo Notion (`SelectionToolbar` + `useTextSelection`)
+- Export dropdown com Markdown/JSON/PDF/Clipboard (`ExportDropdown` + `useExport`)
+- NotesContext para bridge texto→notas (`NotesProvider`)
+- Primitivos de animação framer-motion em `components/motion/`
+- `MessageBubble` usa `motion.div` com `layout` (streaming suave); `AnimatePresence` no loop
+- Chips do header conectados ao estado real (model, reasoning, responseMode)
+- Breakpoints: `md=768`, `lg=1024 (sidebar)`, `xl=1280 (painel contextual)`
+- Balões de assistente devem manter key estável por `message.id`; não incluir `artifact.id`
 
 ## Ultimas Alteracoes Relevantes
 
@@ -61,13 +65,23 @@ Principais areas:
 ### Rodada 5 — Sprint 0 (Limpeza + Setup)
 
 - Removido shell legado: `components/layout/`, `components/sidebar/`, `components/chat/InputArea.tsx`, `components/artifacts/ArtifactPanel.tsx`, `hooks/useSwipeGesture.ts`, `lib/layout/`
-- Removido bloco `.dark { --app-* }` de `app/globals.css` (linhas 167-175)
-- `MessageBubble.tsx:316` migrado defensivamente de `--app-border-active` + `--app-control-surface` para `--v2-border` + `--v2-control` (avatar do usuario)
-- Inline de `APP_PANEL_SHEET_CLASS` no `SettingsDrawer.tsx` antes de remover `lib/layout/panels.ts`
-- Removido widget "Como fica no mobile" e variavel `mobilePreviewConversation` em `ConversationRailV2.tsx` (artefato de design-time)
-- Removidos: `vercel.json`, `DOCKER_PLAN.md`, `docs/REVISAO_PROTOTIPO.md`, `docs/superpowers/`
-- Adicionadas dependencias: `framer-motion 12.38.0`, `cmdk 1.1.1` (para sprints S2 e S7)
+- Adicionadas dependencias: `framer-motion 12.38.0`, `cmdk 1.1.1`
 - Tag de retorno: `pre-redesign-s0` em `9d36822`
+
+### Rodada 6 — Sprints S1-S12 (Redesign Completo)
+
+- **S1**: tokens `--gc-*` unificados, light/dark completos
+- **S2**: escala tipográfica + escala animação + primitivos `components/motion/` (FadeIn/SlideIn/Pop/Drawer)
+- **S3**: `useIsMobile` + `lib/layout/breakpoints.ts`
+- **S4**: `uiStore` expandido (canvas state, activeSelection, activePanelTab) + `NotesProvider`
+- **S5**: `CanvasOverlayV2` draggable/resizable (framer-motion); mobile = Sheet full-screen
+- **S6**: `SelectionToolbar` + `useTextSelection` (toolbar de seleção estilo Notion)
+- **S7**: `CommandPalette` + `CommandPaletteProvider` (cmd+k via cmdk)
+- **S8**: `MonacoCodeBlock` lazy-loaded com sync de tema `gc-dark`/`gc-light`
+- **S9**: `QuickActionsBar` nos balões do assistente com regenerate conectado
+- **S10**: `ExportDropdown` com slot `exportControl`; removido `window.print()`
+- **S11**: touch targets 44px, safe-areas `.gc-safe-*`, chips dinâmicos, badge artefatos mobile
+- **S12**: `MessageBubble` com `motion.div layout`; `AnimatePresence` no loop; edge case guards
 
 ## Proximos Pontos De Atencao
 
