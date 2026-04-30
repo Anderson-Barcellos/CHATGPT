@@ -18,39 +18,25 @@ Plano completo do redesign em `/root/.claude/plans/meu-velho-na-verdade-golden-c
 | S7 | Command Palette (cmd+k) | ✅ Concluída | Baixo |
 | S8 | Monaco Editor Real | ✅ Concluída | Médio |
 | S9 | Quick Actions sob Balão | ✅ Concluída | Médio |
-| S10 | Reconectar `useExport` ao Shell V2 | **PRÓXIMA** | Baixo |
-| S11 | Mobile Pass | Pendente | Médio |
+| S10 | Reconectar `useExport` ao Shell V2 | ✅ Concluída | Baixo |
+| S11 | Mobile Pass | **PRÓXIMA** | Médio |
 | S12 | Polimento Final | Pendente | Baixo |
 
 **Tag de retorno:** `pre-redesign-s0` (criada em `9d36822`). Reverter o redesign inteiro: `git checkout pre-redesign-s0 -- .`.
 
 **Pré-requisitos:** Antes de começar uma sprint, ler o plan file completo (`/root/.claude/plans/meu-velho-na-verdade-golden-creek.md`) — contém arquivos-alvo, riscos, validação manual e os 3 apêndices (tokens `--gc-*`, escala tipográfica, escala animação).
 
-### KICKOFF — Sprint 10 (Reconectar useExport)
+### KICKOFF — Sprint 11 (Mobile Pass)
 
-> **Branch:** `redesign/s10-export`. **Estado base:** S9 mergeado em `main`. **Risco:** Baixo. **Estimativa:** 1 commit.
+> **Branch:** `redesign/s11-mobile`. **Estado base:** S10 mergeado em `main`. **Risco:** Médio.
 >
-> **Estado pós-S9 (saiba isso antes de começar):**
-> - `QuickActionsBar` substituiu `MessageActions` nos balões do assistente.
-> - `GauchoChatShellV2` tem `CommandPaletteProvider` + `NotesProvider` + `SelectionToolbar` + `CanvasOverlayV2` + `CommandPalette`.
-> - `WorkspaceLayoutV2.tsx` tem `handleQuickExport` com `window.print()` — **remover isso**.
-> - `useExport` em `hooks/useExport.ts` — hook pronto mas órfão do shell ativo.
+> **Objetivo:** Garantir que o shell funcione bem em mobile (< 768px). Revisar layouts, espaçamentos, tamanhos de fonte e interações touch no `GauchoChatShellV2` e seus filhos.
 >
-> **Arquivos a criar:**
-> - `components/workspace-v2/ExportDropdown.tsx` — `DropdownMenu` com Markdown/JSON/PDF/Copiar, consome `useExport` internamente.
+> **Estado pós-S10:**
+> - `ExportDropdown` conectado ao header via slot `exportControl`.
+> - `window.print()` removido. Shell V2 está completo funcionalmente.
 >
-> **Arquivos a modificar:**
-> - `components/workspace-v2/WorkspaceLayoutV2.tsx` — adicionar prop `exportControl?: ReactNode`, substituir botão exportar por `{exportControl}`, deletar `handleQuickExport` + `window.print()`.
-> - `components/workspace-v2/GauchoChatShellV2.tsx` — passar `exportControl={<ExportDropdown />}` para `WorkspaceFrameV2`.
->
-> **Tarefas:**
-> 1. `git checkout -b redesign/s10-export`
-> 2. Ler `hooks/useExport.ts` e `components/workspace-v2/WorkspaceLayoutV2.tsx` para entender o slot atual do botão exportar.
-> 3. Criar `ExportDropdown.tsx`: `useExport()` + `useChatStore()` internos. `DropdownMenu` com 4 items: Markdown, JSON, PDF, Copiar para área de transferência. Spinner se `progress.isExporting`.
-> 4. Em `WorkspaceLayoutV2.tsx`: adicionar `exportControl?: ReactNode` em `WorkspaceFrameV2Props`. Substituir o botão existente por `{exportControl ?? null}`. Deletar `handleQuickExport` e `window.print()`.
-> 5. Em `GauchoChatShellV2.tsx`: importar `ExportDropdown` e passar como `exportControl={<ExportDropdown />}`.
-> 6. `npx tsc --noEmit` + `npm run build` + `npm test`.
-> 7. Commit: `fix(s10): conectar useExport ao header v2, remover window.print()`.
+> Leia o plan file em `/root/.claude/plans/meu-velho-na-verdade-golden-creek.md` para os detalhes da S11 antes de começar.
 
 ---
 
