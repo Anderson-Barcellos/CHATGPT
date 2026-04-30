@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { OpenAIIcon } from "@/components/ui/icons";
-import { MessageActions } from "@/components/chat/MessageActions";
+import { QuickActionsBar } from "@/components/chat/QuickActionsBar";
 import { useNotes } from "@/hooks/useNotes";
 import { StickyNote } from "lucide-react";
 
@@ -24,6 +24,7 @@ interface MessageBubbleProps {
   message: Message;
   onEdit?: (id: string, newContent: string) => void;
   onDelete?: (id: string) => void;
+  onRegenerate?: () => void;
 }
 
 const APP_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
@@ -40,7 +41,7 @@ function formatTime(date: Date): string {
   }
 }
 
-export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps) {
+export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const { appendToNotes } = useNotes();
   const [isEditing, setIsEditing] = useState(false);
@@ -316,13 +317,15 @@ export function MessageBubble({ message, onEdit, onDelete }: MessageBubbleProps)
           {!isUser &&
             (message.content ||
               (message.artifact?.kind === "document" ? message.artifact.content : "")) && (
-            <MessageActions
+            <QuickActionsBar
               content={
                 message.artifact?.kind === "document"
                   ? message.artifact.content
                   : message.content
               }
-              className="opacity-70 transition-opacity md:opacity-0 md:group-hover:opacity-100"
+              messageId={message.id}
+              streamStatus={message.streamStatus}
+              onRegenerate={onRegenerate}
             />
           )}
         </div>

@@ -17,8 +17,8 @@ Plano completo do redesign em `/root/.claude/plans/meu-velho-na-verdade-golden-c
 | S6 | Toolbar Flutuante de Seleção | ✅ Concluída | Médio |
 | S7 | Command Palette (cmd+k) | ✅ Concluída | Baixo |
 | S8 | Monaco Editor Real | ✅ Concluída | Médio |
-| S9 | Quick Actions sob Balão | **PRÓXIMA** | Médio |
-| S10 | Reconectar `useExport` ao Shell V2 | Pendente | Baixo |
+| S9 | Quick Actions sob Balão | ✅ Concluída | Médio |
+| S10 | Reconectar `useExport` ao Shell V2 | **PRÓXIMA** | Baixo |
 | S11 | Mobile Pass | Pendente | Médio |
 | S12 | Polimento Final | Pendente | Baixo |
 

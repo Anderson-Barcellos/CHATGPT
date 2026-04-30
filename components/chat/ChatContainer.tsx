@@ -120,6 +120,14 @@ export function ChatContainer({
   editAndResend,
   deleteMessage,
 }: ChatContainerProps) {
+  const regenerateLastMessage = useCallback(() => {
+    const lastAssistantIdx = [...messages].reverse().findIndex((m) => m.role === "assistant");
+    if (lastAssistantIdx === -1) return;
+    const beforeAssistant = messages.slice(0, messages.length - 1 - lastAssistantIdx);
+    const lastUserMsg = [...beforeAssistant].reverse().find((m) => m.role === "user");
+    if (!lastUserMsg) return;
+    void editAndResend(lastUserMsg.id, lastUserMsg.content);
+  }, [messages, editAndResend]);
   const activeConversationId = useChatStore((state) => state.activeConversationId);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -307,14 +315,21 @@ export function ChatContainer({
           {messages.length === 0 ? (
             <WelcomeScreen onSuggestionClick={handleSuggestion} />
           ) : (
-            messages.map((message) => (
-              <MessageBubble
-                key={getChatMessageRenderKey(message)}
-                message={message}
-                onEdit={editAndResend}
-                onDelete={deleteMessage}
-              />
-            ))
+            messages.map((message, idx) => {
+              const isLastAssistant =
+                message.role === "assistant" &&
+                !isLoading &&
+                idx === messages.length - 1;
+              return (
+                <MessageBubble
+                  key={getChatMessageRenderKey(message)}
+                  message={message}
+                  onEdit={editAndResend}
+                  onDelete={deleteMessage}
+                  onRegenerate={isLastAssistant ? regenerateLastMessage : undefined}
+                />
+              );
+            })
           )}
 
           {isLoading &&
