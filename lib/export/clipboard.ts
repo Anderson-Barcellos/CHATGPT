@@ -71,14 +71,19 @@ export async function copyToClipboard(
       await navigator.clipboard.writeText(textContent);
     }
   } catch {
-    const textarea = document.createElement("textarea");
-    textarea.value = textContent;
-    textarea.style.position = "fixed";
-    textarea.style.opacity = "0";
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textarea);
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = textContent;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      if (!ok) throw new Error("execCommand retornou false");
+    } catch {
+      throw new Error("Não foi possível copiar. Verifique as permissões do navegador.");
+    }
   }
 }
 

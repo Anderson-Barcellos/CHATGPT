@@ -37,7 +37,7 @@ export function useExport() {
     options: ExportOptions = {}
   ): Promise<void> => {
     if (!conversation || conversation.messages.length === 0) {
-      toast.error("No conversation to export");
+      toast.error("Nenhuma conversa para exportar");
       return;
     }
 
@@ -64,14 +64,14 @@ export function useExport() {
       setProgress({ isExporting: false });
       
       if (format !== "clipboard") {
-        toast.success(`Conversation exported as ${format.toUpperCase()}`, {
-          description: `"${conversation.title}" has been downloaded`,
+        toast.success(`Conversa exportada como ${format.toUpperCase()}`, {
+          description: `"${conversation.title}" foi baixada`,
         });
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
       setProgress({ isExporting: false, error: errorMessage });
-      toast.error(`Export failed`, {
+      toast.error("Falha na exportação", {
         description: errorMessage,
       });
     }
@@ -149,8 +149,8 @@ export function useExport() {
     
     setProgress((prev) => ({ ...prev, progress: 100 }));
     
-    toast.success("Copied to clipboard", {
-      description: "Conversation has been copied with formatting",
+    toast.success("Copiado para a área de transferência", {
+      description: "A conversa foi copiada com formatação",
     });
   };
 
@@ -165,8 +165,8 @@ export function useExport() {
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
     
-    toast.success("All exports completed", {
-      description: `${formats.length} files have been downloaded`,
+    toast.success("Todas as exportações concluídas", {
+      description: `${formats.length} arquivos foram baixados`,
     });
   };
 

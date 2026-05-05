@@ -96,32 +96,26 @@ function buildReasoningConfig(
 
 function isClinicalReportRequest(content: string): boolean {
   const normalized = content.toLowerCase();
-  const clinicalKeywords = [
-    "ultrasson",
-    "ultrason",
-    "ecodoppler",
-    "doppler",
-    "laudo",
-    "relatorio",
-    "relatório",
-    "impressao diagnostica",
-    "impressão diagnóstica",
-    "achados",
-    "achados sonograficos",
-    "achados sonográficos",
-    "descricao tecnica",
-    "descrição técnica",
-    "exame",
-    "punho",
-    "ombro",
-    "joelho",
-    "membro inferior",
-    "membro superior",
-    "venoso",
-    "arterial",
-  ];
 
-  return clinicalKeywords.some((keyword) => normalized.includes(keyword));
+  // Keywords inequivocamente clínicas — qualquer uma basta
+  const specificKeywords = [
+    "ultrasson", "ultrason", "ecodoppler", "doppler",
+    "laudo",
+    "impressão diagnóstica", "impressao diagnostica",
+    "achados sonográficos", "achados sonograficos",
+    "descrição técnica", "descricao tecnica",
+  ];
+  if (specificKeywords.some((kw) => normalized.includes(kw))) return true;
+
+  // Keywords genéricas — exigem co-ocorrência de pelo menos 2 para evitar falsos positivos
+  // ("exame de matemática" ou "joelho dói" não disparam, "achados no joelho" sim)
+  const genericKeywords = [
+    "exame", "achados", "relatorio", "relatório",
+    "venoso", "arterial",
+    "punho", "ombro", "joelho", "membro inferior", "membro superior",
+  ];
+  const genericMatches = genericKeywords.filter((kw) => normalized.includes(kw));
+  return genericMatches.length >= 2;
 }
 
 function appendDocumentModeInstructions(

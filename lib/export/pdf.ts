@@ -212,11 +212,30 @@ export async function exportToPDF(
   return doc;
 }
 
+function isIOS(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent);
+}
+
 export async function downloadPDF(
   conversation: Conversation,
   options?: PDFExportOptions
 ): Promise<void> {
   const doc = await exportToPDF(conversation, options);
+
+  if (isIOS()) {
+    // doc.save() não dispara download no iOS Safari — abre blob em nova aba para o usuário salvar manualmente
+    const blob = doc.output("blob");
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    if (!win) {
+      // Popup bloqueado — fallback para doc.save() mesmo sabendo que o comportamento é imperfeito
+      doc.save(`${sanitizeFilename(conversation.title)}.pdf`);
+    }
+    return;
+  }
+
   doc.save(`${sanitizeFilename(conversation.title)}.pdf`);
 }
 

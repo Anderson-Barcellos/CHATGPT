@@ -11,7 +11,7 @@ export const MODELS: Record<string, ModelInfo> = {
     pricing: { input: 5.0, output: 30.0, cachedInput: 0.5 },
     capabilities: ["chat", "reasoning", "vision", "function-calling", "json-mode"],
     supportsStreaming: true,
-    supportsSystemMessages: true,
+
     supportsTemperature: false,
     supportsVerbosity: true,
     supportsCodeInterpreter: true,
@@ -28,7 +28,7 @@ export const MODELS: Record<string, ModelInfo> = {
     pricing: { input: 1.75, output: 14.0, cachedInput: 0.175 },
     capabilities: ["chat", "vision", "function-calling", "json-mode"],
     supportsStreaming: true,
-    supportsSystemMessages: true,
+
     supportsTemperature: false,
     supportsVerbosity: true,
     supportsCodeInterpreter: true,
@@ -45,7 +45,7 @@ export const MODELS: Record<string, ModelInfo> = {
     pricing: { input: 1.75, output: 14.0, cachedInput: 0.175 },
     capabilities: ["chat", "reasoning", "vision", "function-calling", "json-mode"],
     supportsStreaming: true,
-    supportsSystemMessages: true,
+
     supportsTemperature: false,
     supportsVerbosity: true,
     supportsCodeInterpreter: true,
@@ -62,7 +62,7 @@ export const MODELS: Record<string, ModelInfo> = {
     pricing: { input: 2.5, output: 10.0, cachedInput: 1.25 },
     capabilities: ["chat", "vision", "function-calling", "json-mode"],
     supportsStreaming: true,
-    supportsSystemMessages: true,
+
     supportsTemperature: true,
     supportsVerbosity: false,
     supportsCodeInterpreter: true,
@@ -78,7 +78,7 @@ export const MODELS: Record<string, ModelInfo> = {
     pricing: { input: 2.5, output: 10.0, cachedInput: 1.25 },
     capabilities: ["chat", "vision", "function-calling", "json-mode"],
     supportsStreaming: true,
-    supportsSystemMessages: true,
+
     supportsTemperature: true,
     supportsVerbosity: false,
     supportsCodeInterpreter: true,
@@ -95,7 +95,7 @@ export const MODELS: Record<string, ModelInfo> = {
     pricing: { input: 10.0, output: 40.0, cachedInput: 5.0 },
     capabilities: ["reasoning", "chat", "vision"],
     supportsStreaming: true,
-    supportsSystemMessages: false,
+
     supportsTemperature: false,
     supportsVerbosity: false,
     supportsCodeInterpreter: true,
@@ -112,7 +112,7 @@ export const MODELS: Record<string, ModelInfo> = {
     pricing: { input: 1.1, output: 4.4, cachedInput: 0.55 },
     capabilities: ["reasoning", "chat"],
     supportsStreaming: true,
-    supportsSystemMessages: false,
+
     supportsTemperature: false,
     supportsVerbosity: false,
     supportsCodeInterpreter: true,
@@ -129,7 +129,7 @@ export const MODELS: Record<string, ModelInfo> = {
     pricing: { input: 0.04, output: 0.0 },
     capabilities: ["image-generation"],
     supportsStreaming: false,
-    supportsSystemMessages: false,
+
     supportsTemperature: false,
     supportsVerbosity: false,
     supportsCodeInterpreter: false,
@@ -146,7 +146,7 @@ export const MODELS: Record<string, ModelInfo> = {
     pricing: { input: 0.04, output: 0.0 },
     capabilities: ["image-generation"],
     supportsStreaming: false,
-    supportsSystemMessages: false,
+
     supportsTemperature: false,
     supportsVerbosity: false,
     supportsCodeInterpreter: false,
@@ -248,44 +248,6 @@ export function getChatModels(): ModelInfo[] {
   return Object.values(MODELS).filter(
     (m) => m.capabilities.includes("chat") || m.capabilities.includes("reasoning")
   );
-}
-
-export function getBestModelForTask(
-  task: string,
-  budget: "low" | "medium" | "high" | "unlimited" = "medium"
-): { modelId: string; reason: string; confidence: "high" | "medium" | "low" } {
-  const maxInput: Record<string, number> = {
-    low: 3,
-    medium: 8,
-    high: 20,
-    unlimited: Infinity,
-  };
-
-  const chatModels = getChatModels().filter(
-    (m) => m.pricing.input <= maxInput[budget]
-  );
-
-  const lowerTask = task.toLowerCase();
-  const needsReasoning =
-    lowerTask.includes("math") ||
-    lowerTask.includes("code") ||
-    lowerTask.includes("reason") ||
-    lowerTask.includes("analys");
-
-  const candidates = needsReasoning
-    ? chatModels.filter((m) => m.capabilities.includes("reasoning"))
-    : chatModels;
-
-  const pool = candidates.length > 0 ? candidates : chatModels;
-  const best = pool.sort((a, b) => a.pricing.input - b.pricing.input)[0];
-
-  return {
-    modelId: best?.id ?? "gpt-5.3-chat-latest",
-    reason: needsReasoning
-      ? `${best?.name} oferece raciocinio dentro do orcamento`
-      : `${best?.name} e o melhor custo-beneficio para esta tarefa`,
-    confidence: needsReasoning && candidates.length > 0 ? "high" : "medium",
-  };
 }
 
 export function formatCost(cost: number): string {

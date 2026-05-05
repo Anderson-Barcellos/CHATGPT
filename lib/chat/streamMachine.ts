@@ -22,13 +22,11 @@ export type AssistantStreamEvent =
       type: "response.output_text.annotation.added";
       annotation?: { type?: string; url?: string; title?: string };
     }
-  | { type: "response.reasoning_summary_text.delta"; delta?: string }
-  | { type: "response.reasoning_text.delta"; delta?: string };
+  | { type: "response.reasoning_summary_text.delta"; delta?: string };
 
 export interface AssistantStreamState {
   content: string;
   reasoningSummary: string;
-  reasoningText: string;
   reasoningStatus?: ReasoningStatus;
   citations: UrlCitation[];
   imageBase64?: string;
@@ -44,7 +42,6 @@ export function createInitialAssistantStreamState(
   return {
     content: "",
     reasoningSummary: "",
-    reasoningText: "",
     reasoningStatus: usesReasoning ? "thinking" : undefined,
     citations: [],
     imageBase64: undefined,
@@ -129,12 +126,6 @@ export function reduceAssistantStreamEvent(
         reasoningSummary: `${state.reasoningSummary}${event.delta || ""}`,
         reasoningStatus: "thinking",
       };
-    case "response.reasoning_text.delta":
-      return {
-        ...state,
-        reasoningText: `${state.reasoningText}${event.delta || ""}`,
-        reasoningStatus: "thinking",
-      };
     default:
       return state;
   }
@@ -160,7 +151,6 @@ export function assistantStreamStateToMessagePatch(
   return {
     content: state.content,
     ...(state.reasoningSummary ? { reasoningSummary: state.reasoningSummary } : {}),
-    ...(state.reasoningText ? { reasoningText: state.reasoningText } : {}),
     ...(state.reasoningStatus ? { reasoningStatus: state.reasoningStatus } : {}),
     ...(state.citations.length > 0 ? { citations: state.citations } : {}),
     ...(state.imageBase64 ? { imageBase64: state.imageBase64 } : {}),

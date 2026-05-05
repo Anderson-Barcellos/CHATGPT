@@ -148,7 +148,7 @@ export interface SerializedConversation {
   updatedAt: string;
 }
 
-export type ActivePanelTab = "activity" | "notes";
+export type ActivePanelTab = "artifact" | "activity" | "notes";
 
 export interface CanvasOverlayState {
   x: number;
@@ -254,7 +254,6 @@ export interface ModelInfo {
   pricing: ModelPricing;
   capabilities: ModelCapability[];
   supportsStreaming: boolean;
-  supportsSystemMessages: boolean;
   supportsTemperature: boolean;
   supportsVerbosity: boolean;
   supportsCodeInterpreter: boolean;
