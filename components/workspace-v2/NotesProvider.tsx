@@ -28,7 +28,11 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   const _register = useCallback((fn: AppendFn) => {
     implRef.current = fn;
     return () => {
-      implRef.current = null;
+      // Só nulifica se esta instância ainda é a registrada — evita que o cleanup de uma
+      // instância que desmonta sobrescreva o registro de outra que acabou de montar
+      if (implRef.current === fn) {
+        implRef.current = null;
+      }
     };
   }, []);
 

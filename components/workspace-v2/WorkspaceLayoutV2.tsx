@@ -13,6 +13,7 @@ import {
   Archive,
   Brain,
   ChevronDown,
+  Ellipsis,
   FileText,
   Menu,
   Mic,
@@ -20,6 +21,7 @@ import {
   PanelRightOpen,
   PencilLine,
   Paperclip,
+  Search,
   Send,
   Settings,
   ShieldCheck,
@@ -33,6 +35,12 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -45,6 +53,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { GPTLogo } from "@/components/ui/gpt-logo";
+import { useCommandPaletteContext } from "@/components/command/CommandPaletteProvider";
 import { cn } from "@/lib/utils";
 import type { FileAttachment, ResponseMode } from "@/types";
 
@@ -61,6 +70,7 @@ interface WorkspaceFrameV2Props {
   contextPanel: ReactNode;
   mobileSidebar: ReactNode;
   mobileContextPanel: ReactNode;
+  tabletSidebar?: ReactNode;
   activeConversationTitle: string;
   currentModelName: string;
   onOpenSettings: () => void;
@@ -82,6 +92,7 @@ interface CommandComposerV2Props {
   isProcessing: boolean;
   isRecording: boolean;
   isTranscribing: boolean;
+  audioLevel?: number;
   speechSupported: boolean;
   speechStatusLabel: string;
   hasContent: boolean;
@@ -173,6 +184,7 @@ export function WorkspaceFrameV2({
   contextPanel,
   mobileSidebar,
   mobileContextPanel,
+  tabletSidebar,
   activeConversationTitle,
   currentModelName,
   onOpenSettings,
@@ -185,6 +197,7 @@ export function WorkspaceFrameV2({
   mobileContextOpen,
   onMobileContextOpenChange,
 }: WorkspaceFrameV2Props) {
+  const { setOpen: openCommandPalette } = useCommandPaletteContext();
   const [internalSidebarOpen, setInternalSidebarOpen] = useState(false);
   const sidebarOpen = mobileSidebarOpen ?? internalSidebarOpen;
   const setSidebarOpen = onMobileSidebarOpenChange ?? setInternalSidebarOpen;
@@ -212,6 +225,15 @@ export function WorkspaceFrameV2({
           >
             {sidebar}
           </aside>
+
+          {tabletSidebar && (
+            <aside
+              data-workspace-region="tablet-rail"
+              className="hidden min-h-0 w-12 shrink-0 overflow-hidden border-r border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] md:block lg:hidden"
+            >
+              {tabletSidebar}
+            </aside>
+          )}
 
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             <header className="shrink-0 border-b border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel-strong)] gc-safe-top md:pt-0">
@@ -245,6 +267,13 @@ export function WorkspaceFrameV2({
                     Salvo
                   </div>
                   {exportControl ?? null}
+                  <IconButton
+                    label="Buscar comandos"
+                    onClick={() => openCommandPalette(true)}
+                    className="xl:hidden"
+                  >
+                    <Search className="size-4" />
+                  </IconButton>
                   <IconButton label="Ajustar prompt" onClick={handleFocusComposer}>
                     <PencilLine className="size-4" />
                   </IconButton>
@@ -253,7 +282,7 @@ export function WorkspaceFrameV2({
                   </IconButton>
                   <IconButton
                     label="Painel contextual"
-                    onClick={() => setContextOpen(true)}
+                    onClick={() => setContextOpen(!contextOpen)}
                     className="relative xl:hidden"
                   >
                     <PanelRightOpen className="size-4" />
@@ -267,16 +296,23 @@ export function WorkspaceFrameV2({
               </div>
 
               <div className="flex min-h-[2.2rem] items-center justify-between border-t border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-2.5 py-1.5 md:px-4">
-                <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                  <ContextChip label="Workspace" value="Anders" />
-                  <ContextChip label="Modelo" value={currentModelName} />
-                  {reasoningLabel && reasoningLabel !== "—" && (
-                    <ContextChip label="Reasoning" value={reasoningLabel} />
-                  )}
-                  <ContextChip
-                    label="Modo"
-                    value={RESPONSE_MODE_LABELS[activeResponseMode ?? "default"]}
-                  />
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <div className="hidden min-w-0 flex-wrap items-center gap-1.5 sm:flex">
+                    <ContextChip label="Workspace" value="Anders" />
+                    <ContextChip label="Modelo" value={currentModelName} />
+                    {reasoningLabel && reasoningLabel !== "—" && (
+                      <ContextChip label="Reasoning" value={reasoningLabel} />
+                    )}
+                    <ContextChip
+                      label="Modo"
+                      value={RESPONSE_MODE_LABELS[activeResponseMode ?? "default"]}
+                    />
+                  </div>
+                  <span className="inline-flex sm:hidden items-center gap-1.5 truncate text-micro text-muted-foreground">
+                    <span className="font-medium text-foreground truncate max-w-[7rem]">{currentModelName}</span>
+                    <span className="text-muted-foreground/50">·</span>
+                    <span>{RESPONSE_MODE_LABELS[activeResponseMode ?? "default"]}</span>
+                  </span>
                 </div>
                 <span className="hidden items-center gap-1 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-0.5 text-nano font-medium text-cyan-100 sm:inline-flex">
                   <span className="size-1.5 rounded-full bg-cyan-200" />
@@ -299,8 +335,8 @@ export function WorkspaceFrameV2({
               contextCollapsed
                 ? "w-12"
                 : contextExpanded
-                ? "w-[34rem] 2xl:w-[40rem]"
-                : "w-[22rem] 2xl:w-[24rem]"
+                ? "w-[30rem] 2xl:w-[36rem]"
+                : "w-[22rem] 2xl:w-[28rem]"
             )}
           >
             {contextCollapsed ? (
@@ -384,11 +420,11 @@ export function CommandComposerV2({
   isProcessing,
   isRecording,
   isTranscribing,
+  audioLevel = 0,
   speechSupported,
   speechStatusLabel,
   hasContent,
   modelName,
-  reasoningLabel,
   hasReasoning,
   responseMode,
   modelControl,
@@ -512,7 +548,7 @@ export function CommandComposerV2({
               {modelControl ?? (
                 <button
                   type="button"
-                  className="flex h-8 max-w-[9rem] items-center gap-1.5 rounded-lg border border-white/8 bg-white/[0.035] px-2 text-micro font-medium text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
+                  className="flex h-8 max-w-[6.5rem] items-center gap-1 rounded-lg border border-white/8 bg-white/[0.035] px-1.5 text-nano font-medium text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
                 >
                   <span className="truncate">{modelName}</span>
                   <ChevronDown className="size-3.5 shrink-0" />
@@ -523,10 +559,10 @@ export function CommandComposerV2({
                 reasoningControl ?? (
                   <button
                     type="button"
-                    className="flex h-8 items-center gap-1.5 rounded-lg border border-white/8 bg-white/[0.035] px-2 text-micro font-medium text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
+                    aria-label="Ajustar nível de raciocínio"
+                    className="flex h-8 items-center rounded-lg border border-white/8 bg-white/[0.035] px-1.5 text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
                   >
                     <Brain className="size-3.5" />
-                    <span>{reasoningLabel}</span>
                   </button>
                 )
               )}
@@ -538,7 +574,7 @@ export function CommandComposerV2({
                 disabled={disabled}
                 onClick={onToggleDocument}
                 className={cn(
-                  "h-8 rounded-lg border px-2 text-micro",
+                  "hidden h-8 rounded-lg border px-2 text-micro sm:flex",
                   responseMode === "document"
                     ? "border-cyan-300/25 bg-cyan-300/12 text-cyan-100"
                     : "border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
@@ -555,7 +591,7 @@ export function CommandComposerV2({
                 disabled={disabled}
                 onClick={onToggleQuiz}
                 className={cn(
-                  "h-8 rounded-lg border px-2 text-micro",
+                  "hidden h-8 rounded-lg border px-2 text-micro sm:flex",
                   responseMode === "quiz"
                     ? "border-amber-300/25 bg-amber-300/12 text-amber-100"
                     : "border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
@@ -565,6 +601,45 @@ export function CommandComposerV2({
                 Quiz
               </Button>
 
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={disabled}
+                    className="size-8 rounded-lg border border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground sm:hidden"
+                    aria-label="Mais opções"
+                  >
+                    <Ellipsis className="size-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" side="top" className="min-w-[10rem]">
+                  <DropdownMenuItem onClick={onToggleDocument}>
+                    <FileText
+                      className={cn(
+                        "mr-2 size-3.5",
+                        responseMode === "document" ? "text-cyan-300" : "text-muted-foreground"
+                      )}
+                    />
+                    <span className={responseMode === "document" ? "text-cyan-100" : ""}>
+                      Documento
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onToggleQuiz}>
+                    <ClipboardList
+                      className={cn(
+                        "mr-2 size-3.5",
+                        responseMode === "quiz" ? "text-amber-300" : "text-muted-foreground"
+                      )}
+                    />
+                    <span className={responseMode === "quiz" ? "text-amber-100" : ""}>
+                      Quiz
+                    </span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <Button
                 type="button"
                 variant="ghost"
@@ -572,10 +647,13 @@ export function CommandComposerV2({
                 disabled={isLoading || isTranscribing || (!speechSupported && !isRecording)}
                 onClick={onMicrophoneClick}
                 aria-label={isRecording ? "Encerrar gravação" : "Gravar áudio"}
+                style={isRecording ? {
+                  boxShadow: `0 0 ${8 + audioLevel * 14}px rgba(251,113,133,${(0.3 + audioLevel * 0.6).toFixed(2)})`,
+                } : undefined}
                 className={cn(
-                  "h-8 rounded-lg border px-2 text-micro",
+                  "h-8 rounded-lg border px-2 text-micro transition-shadow",
                   isRecording
-                    ? "border-rose-300/25 bg-rose-300/12 text-rose-100"
+                    ? "border-rose-300/40 bg-rose-300/12 text-rose-100"
                     : isTranscribing
                     ? "border-cyan-300/25 bg-cyan-300/12 text-cyan-100"
                     : "border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
@@ -584,7 +662,7 @@ export function CommandComposerV2({
                 {isTranscribing ? (
                   <LoaderCircle className="mr-1 size-3.5 animate-spin" />
                 ) : (
-                  <Mic className="mr-1 size-3.5" />
+                  <Mic className={cn("mr-1 size-3.5", isRecording && "animate-pulse")} />
                 )}
                 <span className="hidden sm:inline">{speechStatusLabel}</span>
                 {recordingDurationLabel && (

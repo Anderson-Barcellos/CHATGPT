@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CanvasContent } from "@/components/workspace-v2/canvas/CanvasContent";
 import { useNotesContext } from "@/components/workspace-v2/NotesProvider";
 import { useConversations } from "@/hooks/useConversations";
 import { conversationKeys } from "@/hooks/queries/useConversationQuery";
@@ -295,8 +296,6 @@ export function ContextPanelV2() {
   const queryClient = useQueryClient();
   const {
     activeArtifact,
-    artifactMessageId,
-    openArtifact,
     closeArtifact,
     activePanelTab,
     setActivePanelTab,
@@ -354,7 +353,11 @@ export function ContextPanelV2() {
     effectiveArtifact?.kind === "document" ? effectiveArtifact : null;
 
   const artifactTitle = effectiveArtifact?.title || "Sem artefato";
-  const artifactContent = documentArtifact ? documentArtifact.content : "";
+  const artifactPayload = effectiveArtifact
+    ? effectiveArtifact.kind === "document"
+      ? effectiveArtifact.content
+      : JSON.stringify(effectiveArtifact.quiz, null, 2)
+    : "";
   const artifactExtension = documentArtifact
     ? documentArtifact.type === "html"
       ? "html"
@@ -380,13 +383,13 @@ export function ContextPanelV2() {
     }
 
     try {
-      await navigator.clipboard.writeText(artifactContent);
+      await navigator.clipboard.writeText(artifactPayload);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
     } catch {
       toast.error("Nao consegui copiar o artefato.");
     }
-  }, [artifactContent, effectiveArtifact]);
+  }, [artifactPayload, effectiveArtifact]);
 
   const handleDownload = useCallback(() => {
     if (!effectiveArtifact) {
@@ -399,7 +402,7 @@ export function ContextPanelV2() {
         ? "text/html"
         : "text/markdown"
       : "application/json";
-    const blob = new Blob([artifactContent], { type: mime });
+    const blob = new Blob([artifactPayload], { type: mime });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
@@ -407,7 +410,7 @@ export function ContextPanelV2() {
     anchor.click();
     URL.revokeObjectURL(url);
   }, [
-    artifactContent,
+    artifactPayload,
     artifactExtension,
     artifactTitle,
     documentArtifact,
@@ -476,7 +479,17 @@ export function ContextPanelV2() {
             Contexto
           </p>
         </div>
-        <Button variant="ghost" size="icon" className="size-8" onClick={closeArtifact}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8"
+          onClick={() => {
+            closeArtifact();
+            // Fechar o Sheet mobile (controlado em GauchoChatShellV2) — closeArtifact sozinho
+            // não reseta mobileContextOpen, então o Sheet fica aberto mostrando estado vazio
+            window.dispatchEvent(new CustomEvent("gaucho:close-context-panel"));
+          }}
+        >
           <PanelRightClose className="size-4" />
         </Button>
       </div>
@@ -508,6 +521,9 @@ export function ContextPanelV2() {
             </div>
           </div>
           <TabsList className="w-full rounded-lg border border-white/8 bg-white/[0.03] p-1">
+            <TabsTrigger value="artifact" className="h-7 rounded-md text-xs">
+              Canvas
+            </TabsTrigger>
             <TabsTrigger value="activity" className="h-7 rounded-md text-xs">
               Atividade
             </TabsTrigger>
@@ -516,6 +532,18 @@ export function ContextPanelV2() {
             </TabsTrigger>
           </TabsList>
         </div>
+
+        <TabsContent value="artifact" className="mt-0 min-h-0 flex-1 overflow-hidden">
+          {effectiveArtifact ? (
+            <div className="h-full">
+              <CanvasContent artifact={effectiveArtifact} />
+            </div>
+          ) : (
+            <div className="p-3">
+              <EmptyArtifactState />
+            </div>
+          )}
+        </TabsContent>
 
         <TabsContent value="activity" className="mt-0 min-h-0 flex-1 overflow-hidden">
           <ScrollArea className="h-full">

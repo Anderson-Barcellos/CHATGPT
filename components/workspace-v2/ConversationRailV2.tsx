@@ -4,8 +4,10 @@ import { useCallback, useMemo, useState } from "react";
 import {
   Clock,
   FolderClosed,
+  Menu,
   MoreVertical,
   Pin,
+  PinOff,
   Plus,
   Search,
   Settings,
@@ -32,6 +34,7 @@ import type { Conversation } from "@/types";
 interface ConversationRailV2Props {
   onOpenSettings: () => void;
   onClose?: () => void;
+  compact?: boolean;
 }
 
 type RailFilter = "all" | "pinned" | "recent" | "folders";
@@ -98,6 +101,7 @@ interface ConversationRowV2Props {
   isPinned: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  onTogglePin: () => void;
 }
 
 function ConversationRowV2({
@@ -107,6 +111,7 @@ function ConversationRowV2({
   isPinned,
   onSelect,
   onDelete,
+  onTogglePin,
 }: ConversationRowV2Props) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const updatedAt = getConversationDate(conversation.updatedAt);
@@ -158,12 +163,20 @@ function ConversationRowV2({
             variant="ghost"
             size="icon"
             disabled={disabled}
-            className="absolute right-1 top-1/2 size-7 -translate-y-1/2 rounded-md opacity-0 transition-opacity hover:bg-white/8 group-hover:opacity-100 data-[state=open]:opacity-100"
+            className="absolute right-1 top-1/2 size-7 -translate-y-1/2 rounded-md opacity-0 transition-opacity hover:bg-white/8 group-hover:opacity-100 data-[state=open]:opacity-100 [@media(pointer:coarse)]:opacity-100"
           >
             <MoreVertical className="size-3.5" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={onTogglePin}>
+            {isPinned ? (
+              <PinOff className="mr-2 size-3.5" />
+            ) : (
+              <Pin className="mr-2 size-3.5" />
+            )}
+            {isPinned ? "Desafixar" : "Fixar"}
+          </DropdownMenuItem>
           <DropdownMenuItem
             className="text-destructive focus:text-destructive"
             onClick={() => setDeleteOpen(true)}
@@ -186,7 +199,7 @@ function ConversationRowV2({
   );
 }
 
-export function ConversationRailV2({ onOpenSettings, onClose }: ConversationRailV2Props) {
+export function ConversationRailV2({ onOpenSettings, onClose, compact }: ConversationRailV2Props) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<RailFilter>("all");
   const [mountTimestamp] = useState(() => Date.now());
@@ -278,10 +291,31 @@ export function ConversationRailV2({ onOpenSettings, onClose }: ConversationRail
     });
   }, [conversations]);
 
-  const pinnedIds = useMemo(
-    () => new Set(sortedConversations.slice(0, Math.min(3, sortedConversations.length)).map((item) => item.id)),
-    [sortedConversations]
-  );
+  const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem("gaucho-pinned-conversations");
+      return stored ? new Set(JSON.parse(stored) as string[]) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  const handleTogglePin = useCallback((id: string) => {
+    setPinnedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+        toast.success("Conversa desafixada.");
+      } else {
+        next.add(id);
+        toast.success("Conversa fixada.");
+      }
+      try {
+        localStorage.setItem("gaucho-pinned-conversations", JSON.stringify([...next]));
+      } catch {}
+      return next;
+    });
+  }, []);
 
   const visibleConversations = useMemo(() => {
     const recentCutoff = mountTimestamp - 1000 * 60 * 60 * 24 * 7;
@@ -330,6 +364,58 @@ export function ConversationRailV2({ onOpenSettings, onClose }: ConversationRail
       },
     ];
   }, [filter, visibleConversations]);
+
+  const pinnedConversations = useMemo(() => {
+    const ids = pinnedIds;
+    return sortedConversations.filter((c) => ids.has(c.id));
+  }, [pinnedIds, sortedConversations]);
+
+  if (compact) {
+    return (
+      <div className="flex h-full flex-col items-center gap-1 py-2.5">
+        <div className="flex size-8 items-center justify-center rounded-lg border border-cyan-300/14 bg-cyan-300/8">
+          <GPTLogo size={18} />
+        </div>
+        <div className="h-px w-5 bg-white/10" />
+        <div className="flex min-h-0 flex-1 flex-col items-center gap-1 overflow-hidden">
+          {pinnedConversations.slice(0, 8).map((conv) => (
+            <button
+              key={conv.id}
+              type="button"
+              disabled={isStreaming}
+              onClick={() => handleSelectConversation(conv.id)}
+              title={conv.title || "Conversa"}
+              className={cn(
+                "flex size-8 shrink-0 items-center justify-center rounded-lg text-micro font-medium transition-colors",
+                conv.id === activeConversationId
+                  ? "border border-cyan-300/25 bg-cyan-300/12 text-cyan-100"
+                  : "border border-transparent text-muted-foreground hover:border-white/8 hover:bg-white/[0.035] hover:text-foreground"
+              )}
+            >
+              {(conv.title || "N")[0].toUpperCase()}
+            </button>
+          ))}
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          disabled={isStreaming}
+          onClick={handleCreateConversation}
+          className="size-8 rounded-lg border border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
+        >
+          <Plus className="size-3.5" />
+        </Button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="size-8 flex items-center justify-center rounded-lg border border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
+          aria-label="Abrir todas as conversas"
+        >
+          <Menu className="size-3.5" />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -427,6 +513,7 @@ export function ConversationRailV2({ onOpenSettings, onClose }: ConversationRail
                       disabled={isStreaming}
                       onSelect={() => handleSelectConversation(conversation.id)}
                       onDelete={() => handleDeleteConversation(conversation.id)}
+                      onTogglePin={() => handleTogglePin(conversation.id)}
                     />
                   ))}
                 </div>

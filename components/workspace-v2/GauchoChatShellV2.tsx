@@ -28,9 +28,26 @@ import { CommandPalette } from "@/components/command/CommandPalette";
 import { useConversations } from "@/hooks/useConversations";
 import { useComponentPreloader } from "@/lib/performance/lazy";
 import { MODELS } from "@/lib/models/modelConfig";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { useChatStore } from "@/stores/chatStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useUIStore } from "@/stores/uiStore";
+
+const CONTEXT_DOCKED_QUERY = "(min-width: 1280px)";
+
+function subscribeContextDocked(callback: () => void) {
+  const mql = window.matchMedia(CONTEXT_DOCKED_QUERY);
+  mql.addEventListener("change", callback);
+  return () => mql.removeEventListener("change", callback);
+}
+
+function getContextDockedSnapshot() {
+  return window.matchMedia(CONTEXT_DOCKED_QUERY).matches;
+}
+
+function getContextDockedServerSnapshot() {
+  return false;
+}
 
 export function GauchoChatShellV2() {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -38,6 +55,12 @@ export function GauchoChatShellV2() {
   const [mobileContextOpen, setMobileContextOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [responseMode, setResponseMode] = useState<ResponseMode>("default");
+  const isMobile = useIsMobile();
+  const isContextDocked = useSyncExternalStore(
+    subscribeContextDocked,
+    getContextDockedSnapshot,
+    getContextDockedServerSnapshot
+  );
   const isHydrated = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -88,7 +111,13 @@ export function GauchoChatShellV2() {
   const artifactCount = chatMessages.filter((m) => m.artifact).length;
   const shouldShowRecoveryState =
     Boolean(recoveryError) || isRecovering || !activeConversationId;
-  const shouldShowMobileContext = mobileContextOpen || (artifactOpen && Boolean(activeArtifact));
+  // Abre o Sheet de contexto automaticamente em tablet (768-1279px) quando há artefato.
+  // Exclui isMobile porque em mobile o CanvasOverlayV2 já cobre esse caso com Sheet bottom —
+  // abrir os dois simultaneamente causa conflito visual de Sheets sobrepostos.
+  const shouldAutoShowContextPanel =
+    artifactOpen && Boolean(activeArtifact) && !isMobile && !isContextDocked;
+  const effectiveMobileContextOpen =
+    mobileContextOpen || shouldAutoShowContextPanel;
 
   const handleSplashComplete = useCallback(() => {
     sessionStorage.setItem("gpt-splash-shown", "1");
@@ -99,6 +128,12 @@ export function GauchoChatShellV2() {
     const handler = () => setSettingsOpen(true);
     window.addEventListener("gaucho:open-settings", handler);
     return () => window.removeEventListener("gaucho:open-settings", handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setMobileContextOpen(false);
+    window.addEventListener("gaucho:close-context-panel", handler);
+    return () => window.removeEventListener("gaucho:close-context-panel", handler);
   }, []);
 
   const handleMobileContextOpenChange = useCallback(
@@ -129,6 +164,13 @@ export function GauchoChatShellV2() {
           mobileSidebarOpen={mobileSidebarOpen}
           onMobileSidebarOpenChange={setMobileSidebarOpen}
           sidebar={<ConversationRailV2 onOpenSettings={() => setSettingsOpen(true)} />}
+          tabletSidebar={
+            <ConversationRailV2
+              compact
+              onOpenSettings={() => setSettingsOpen(true)}
+              onClose={() => setMobileSidebarOpen(true)}
+            />
+          }
           mobileSidebar={
             <ConversationRailV2
               onOpenSettings={() => setSettingsOpen(true)}
@@ -166,7 +208,7 @@ export function GauchoChatShellV2() {
           }
           contextPanel={<ContextPanelV2 />}
           mobileContextPanel={<ContextPanelV2 />}
-          mobileContextOpen={shouldShowMobileContext}
+          mobileContextOpen={effectiveMobileContextOpen}
           onMobileContextOpenChange={handleMobileContextOpenChange}
           onOpenSettings={() => setSettingsOpen(true)}
           exportControl={<ExportDropdown />}
