@@ -409,7 +409,7 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
           type="button"
           onClick={onClose}
           className="size-8 flex items-center justify-center rounded-lg border border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
-          aria-label="Abrir todas as conversas"
+          aria-label="Abrir sidebar completa"
         >
           <Menu className="size-3.5" />
         </button>

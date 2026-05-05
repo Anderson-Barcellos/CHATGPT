@@ -111,10 +111,10 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
         </div>
       )}
 
-      <div className={cn("max-w-[93%] min-w-0 sm:max-w-[80%]", isUser && "order-first")}>
+      <div className={cn("max-w-[93%] min-w-0 sm:max-w-[80%] xl:max-w-[75%]", isUser && "order-first")}>
         <Card
           className={cn(
-            "relative min-w-0 gap-0 overflow-hidden break-words border px-2.5 py-2 text-left text-caption leading-relaxed md:px-4 md:py-3 md:text-body-sm",
+            "relative min-w-0 gap-0 overflow-hidden break-words border px-2.5 py-2 text-left text-body-sm leading-relaxed md:px-4 md:py-3 md:text-body",
             isUser
               ? "gc-user-bubble rounded-2xl rounded-br-md"
               : "gc-assistant-bubble rounded-2xl rounded-bl-md text-foreground/90"
@@ -211,7 +211,7 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
           {message.isSearching && (
             <div className="mt-3 flex items-center gap-2 rounded-lg px-3 py-2.5 border bg-emerald-500/10 border-emerald-500/20">
               <Globe className="h-4 w-4 text-emerald-500 animate-pulse" />
-              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 animate-pulse">
+              <span className="text-micro font-medium text-emerald-600 dark:text-emerald-400 animate-pulse">
                 Pesquisando na web...
               </span>
               <div className="flex gap-1 ml-1">
@@ -240,10 +240,10 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
                     target="_blank"
                     rel="noopener noreferrer"
                     className={cn(
-                      "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-nano font-medium",
+                      "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-nano font-medium",
                       "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
                       "border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors",
-                      "max-w-[200px] truncate"
+                      "max-w-[170px] truncate md:max-w-[200px]"
                     )}
                     title={cite.url}
                   >

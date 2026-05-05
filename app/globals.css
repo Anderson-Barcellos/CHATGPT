@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant xs (@media (min-width: 420px));
 
 @theme inline {
   --color-background: var(--background);
@@ -389,7 +390,18 @@ body {
 }
 
 @media (max-width: 767px) {
-  input, textarea, select {
+  input, select {
     font-size: 16px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .gpt-ring-fast,
+  .gpt-ring-med,
+  .gpt-ring-slow,
+  .gpt-organic,
+  .gpt-core {
+    animation: none !important;
   }
 }

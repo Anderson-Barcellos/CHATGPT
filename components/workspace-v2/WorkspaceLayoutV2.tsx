@@ -297,7 +297,7 @@ export function WorkspaceFrameV2({
 
               <div className="flex min-h-[2.2rem] items-center justify-between border-t border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-2.5 py-1.5 md:px-4">
                 <div className="flex min-w-0 items-center gap-1.5">
-                  <div className="hidden min-w-0 flex-wrap items-center gap-1.5 sm:flex">
+                  <div className="hidden min-w-0 flex-wrap items-center gap-1.5 md:flex">
                     <ContextChip label="Workspace" value="Anders" />
                     <ContextChip label="Modelo" value={currentModelName} />
                     {reasoningLabel && reasoningLabel !== "—" && (
@@ -308,13 +308,19 @@ export function WorkspaceFrameV2({
                       value={RESPONSE_MODE_LABELS[activeResponseMode ?? "default"]}
                     />
                   </div>
-                  <span className="inline-flex sm:hidden items-center gap-1.5 truncate text-micro text-muted-foreground">
+                  <span className="inline-flex md:hidden items-center gap-1.5 truncate text-micro text-muted-foreground">
                     <span className="font-medium text-foreground truncate max-w-[7rem]">{currentModelName}</span>
                     <span className="text-muted-foreground/50">·</span>
                     <span>{RESPONSE_MODE_LABELS[activeResponseMode ?? "default"]}</span>
+                    {reasoningLabel && reasoningLabel !== "—" && (
+                      <>
+                        <span className="text-muted-foreground/50">·</span>
+                        <span className="truncate max-w-[4rem]">{reasoningLabel}</span>
+                      </>
+                    )}
                   </span>
                 </div>
-                <span className="hidden items-center gap-1 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-0.5 text-nano font-medium text-cyan-100 sm:inline-flex">
+                <span className="hidden items-center gap-1 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-0.5 text-nano font-medium text-cyan-100 md:inline-flex">
                   <span className="size-1.5 rounded-full bg-cyan-200" />
                   online
                 </span>
@@ -455,7 +461,7 @@ export function CommandComposerV2({
 
   return (
     <footer className="shrink-0 border-t border-white/8 bg-[var(--gc-surface-panel-strong)] px-2.5 pb-[calc(env(safe-area-inset-bottom)+0.45rem)] pt-2 md:px-4 md:pb-3">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-3xl lg:max-w-5xl">
         {statusMessage && (
           <div className="mb-2 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
             {statusMessage}
@@ -574,7 +580,7 @@ export function CommandComposerV2({
                 disabled={disabled}
                 onClick={onToggleDocument}
                 className={cn(
-                  "hidden h-8 rounded-lg border px-2 text-micro sm:flex",
+                  "hidden h-8 rounded-lg border px-2 text-micro md:flex",
                   responseMode === "document"
                     ? "border-cyan-300/25 bg-cyan-300/12 text-cyan-100"
                     : "border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
@@ -591,7 +597,7 @@ export function CommandComposerV2({
                 disabled={disabled}
                 onClick={onToggleQuiz}
                 className={cn(
-                  "hidden h-8 rounded-lg border px-2 text-micro sm:flex",
+                  "hidden h-8 rounded-lg border px-2 text-micro md:flex",
                   responseMode === "quiz"
                     ? "border-amber-300/25 bg-amber-300/12 text-amber-100"
                     : "border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
@@ -608,7 +614,7 @@ export function CommandComposerV2({
                     variant="ghost"
                     size="icon"
                     disabled={disabled}
-                    className="size-8 rounded-lg border border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground sm:hidden"
+                    className="size-8 rounded-lg border border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground md:hidden"
                     aria-label="Mais opções"
                   >
                     <Ellipsis className="size-3.5" />

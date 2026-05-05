@@ -74,7 +74,7 @@ function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
         {getGreeting()}, Anders! {subtitle}
       </p>
 
-      <div className="grid w-full max-w-3xl grid-cols-2 gap-2.5 sm:grid-cols-3 md:gap-3">
+      <div className="grid w-full max-w-3xl grid-cols-2 gap-2.5 sm:grid-cols-3 md:gap-3 lg:max-w-5xl">
         {SUGGESTIONS.map(({ icon: Icon, label, desc, prompt, accent, iconColor }) => (
           <button
             key={label}
@@ -312,7 +312,7 @@ export function ChatContainer({
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden">
       <ScrollArea ref={scrollAreaRef} className="h-full">
-        <div ref={contentRef} className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-3 py-4 md:gap-6 md:px-4 md:py-6">
+        <div ref={contentRef} className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-3 py-4 md:gap-6 md:px-4 md:py-6 lg:max-w-5xl">
           {messages.length === 0 ? (
             <WelcomeScreen onSuggestionClick={handleSuggestion} />
           ) : (
