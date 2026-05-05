@@ -229,7 +229,7 @@ export function useChat() {
     setActiveConversationId,
   } = useChatStore();
   const { parameters } = useSettingsStore();
-  const { contextAboutUser, responsePreferences } = useCustomInstructions();
+  const { contextAboutUser, responsePreferences, customSystemInstructions } = useCustomInstructions();
   const { memories } = useMemories();
   const [isLoading, setIsLoading] = useState(false);
   const [composerError, setComposerError] = useState<string | null>(null);
@@ -238,6 +238,7 @@ export function useChat() {
   const [conversationLoadNonce, setConversationLoadNonce] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
   const hasLoadedRef = useRef(false);
+  const hasBeaconFiredRef = useRef(false);
 
   const reloadConversations = useCallback(async () => {
     setIsRecovering(true);
@@ -328,7 +329,12 @@ export function useChat() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const handleUnload = () => {
+    const handlePageHide = () => {
+      // pagehide é o evento recomendado para beacon — beforeunload foi removido pois
+      // ambos disparavam em sequência causando race condition no lock do arquivo JSON
+      if (hasBeaconFiredRef.current) return;
+      hasBeaconFiredRef.current = true;
+
       const state = useChatStore.getState();
       if (!state.isStreaming || !state.activeConversationId) return;
 
@@ -341,11 +347,10 @@ export function useChat() {
       );
     };
 
-    window.addEventListener("beforeunload", handleUnload);
-    window.addEventListener("pagehide", handleUnload);
+    window.addEventListener("pagehide", handlePageHide);
     return () => {
-      window.removeEventListener("beforeunload", handleUnload);
-      window.removeEventListener("pagehide", handleUnload);
+      window.removeEventListener("pagehide", handlePageHide);
+      hasBeaconFiredRef.current = false;
     };
   }, []);
 
@@ -434,7 +439,7 @@ export function useChat() {
         );
         const { systemMessage: baseSystemMessage } = buildSystemPrompt(
           parameters.systemPrompt,
-          { id: "default", contextAboutUser, responsePreferences },
+          { id: "default", contextAboutUser, responsePreferences, customSystemInstructions },
           memories
         );
         const systemMessage =
@@ -545,6 +550,13 @@ export function useChat() {
               });
             }
           }
+        } else if (responseMode === "quiz") {
+          // Quiz retornou vazio — o path não-streaming nunca chamou finalizeAssistantStreamState,
+          // então a mensagem ainda está em streamStatus:"streaming". Forçar falha explícita.
+          updateMessage(assistantMessageId, {
+            streamStatus: "failed",
+            content: "⚠️ Não recebi resposta do servidor para gerar o quiz. Tente enviar de novo.",
+          });
         }
 
         try {
@@ -588,6 +600,7 @@ export function useChat() {
       activeConversationId,
       addMessage,
       contextAboutUser,
+      customSystemInstructions,
       isLoading,
       memories,
       parameters.maxOutputTokens,
@@ -623,7 +636,7 @@ export function useChat() {
     async (messageId: string) => {
       deleteMessagePair(messageId);
       if (activeConversationId) {
-        const finalMessages = useChatStore.getState().messages;
+        const finalMessages = sanitizeMessagesForStorage(useChatStore.getState().messages);
         try {
           await withConversationPersistenceRetry(() =>
             saveConversationMessages(activeConversationId, finalMessages)

@@ -173,7 +173,7 @@ export function getReasoningLabel(reasoningEffort: string | undefined): string {
 
 export function modelSupportsTemperature(modelId: string): boolean {
   const model = MODELS[modelId];
-  return model?.supportsTemperature ?? true;
+  return model?.supportsTemperature ?? false;
 }
 
 export function modelSupportsVerbosity(modelId: string): boolean {

@@ -1,4 +1,4 @@
-import { SignJWT, jwtVerify } from "jose";
+import { SignJWT, jwtVerify, errors as joseErrors } from "jose";
 import { NextRequest, NextResponse } from "next/server";
 
 export const AUTH_COOKIE_NAME = "auth-token";
@@ -44,7 +44,10 @@ export async function verifyAuthToken(token: string): Promise<boolean> {
   try {
     await jwtVerify(token, getJwtSecret());
     return true;
-  } catch {
+  } catch (err) {
+    if (!(err instanceof joseErrors.JOSEError)) {
+      console.error("[auth] verifyAuthToken erro inesperado:", err);
+    }
     return false;
   }
 }

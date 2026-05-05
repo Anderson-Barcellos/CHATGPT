@@ -27,6 +27,10 @@ export function buildSystemPrompt(
     );
   }
 
+  if (instructions.customSystemInstructions?.trim()) {
+    sections.push(`## Custom System Instructions\n${instructions.customSystemInstructions.trim()}`);
+  }
+
   const activeMemories = memories
     .filter((memory) => memory.isActive)
     .sort((a, b) => b.priority - a.priority);

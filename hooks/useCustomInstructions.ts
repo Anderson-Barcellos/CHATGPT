@@ -150,6 +150,7 @@ export function useCustomInstructions() {
   return {
     contextAboutUser: instructions.contextAboutUser,
     responsePreferences: instructions.responsePreferences,
+    customSystemInstructions: instructions.customSystemInstructions,
     updateContextAboutUser,
     updateResponsePreferences,
     saveContextAboutUser,
