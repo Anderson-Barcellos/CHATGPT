@@ -27,12 +27,21 @@ interface SettingsState {
 const DEFAULT_MODEL = "gpt-5.3-chat-latest";
 
 function buildDefaultModelSettings(modelId: string): ModelScopedParameters {
+  const defaultReasoningEffort =
+    modelId === "gpt-5.4-mini"
+      ? "none"
+      : isReasoningModel(modelId)
+      ? "medium"
+      : "none";
+  const defaultReasoningSummary =
+    defaultReasoningEffort === "none" ? "off" : "concise";
+
   return {
     maxOutputTokens: MODELS[modelId]?.maxOutput || 32768,
     temperature: 0.8,
     topP: 0.95,
-    reasoningEffort: isReasoningModel(modelId) ? "medium" : "none",
-    reasoningSummary: isReasoningModel(modelId) ? "auto" : "off",
+    reasoningEffort: defaultReasoningEffort,
+    reasoningSummary: defaultReasoningSummary,
     verbosity: "medium",
     codeInterpreterEnabled: false,
   };
