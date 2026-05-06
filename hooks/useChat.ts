@@ -379,7 +379,18 @@ export function useChat() {
       const input = buildInputFromMessages(useChatStore.getState().messages);
 
       const assistantMessageId = crypto.randomUUID();
-      const usesReasoning = isReasoningModel(parameters.model) && responseMode !== "quiz";
+      const requestModel =
+        responseMode === "quiz" ? QUIZ_FORCED_MODEL : parameters.model;
+      const requestReasoningEffort =
+        responseMode === "quiz"
+          ? QUIZ_FORCED_REASONING_EFFORT
+          : parameters.reasoningEffort;
+      const reasoning = buildReasoningConfig(
+        requestModel,
+        requestReasoningEffort,
+        parameters.reasoningSummary
+      );
+      const usesReasoning = !!reasoning && responseMode !== "quiz";
       const preferredDisplayMode = getPreferredDisplayMode(responseMode);
       addMessage({
         id: assistantMessageId,
@@ -419,18 +430,6 @@ export function useChat() {
             err
           );
         }
-
-        const requestModel =
-          responseMode === "quiz" ? QUIZ_FORCED_MODEL : parameters.model;
-        const requestReasoningEffort =
-          responseMode === "quiz"
-            ? QUIZ_FORCED_REASONING_EFFORT
-            : parameters.reasoningEffort;
-        const reasoning = buildReasoningConfig(
-          requestModel,
-          requestReasoningEffort,
-          parameters.reasoningSummary
-        );
         const { systemMessage: baseSystemMessage } = buildSystemPrompt(
           parameters.systemPrompt,
           { id: "default", contextAboutUser, responsePreferences, customSystemInstructions },
@@ -499,10 +498,7 @@ export function useChat() {
                 const event = JSON.parse(payload);
                 streamState = reduceAssistantStreamEvent(streamState, event);
                 accumulated = streamState.content;
-                updateMessage(
-                  assistantMessageId,
-                  assistantStreamStateToMessagePatch(streamState)
-                );
+                updateMessage(assistantMessageId, assistantStreamStateToMessagePatch(streamState));
                 throttledAutoSave.call();
               } catch {
                 // Ignora chunks parciais ou eventos irrelevantes
