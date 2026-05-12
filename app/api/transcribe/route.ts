@@ -5,10 +5,6 @@ import { validateTranscriptionFile } from "@/lib/server/transcriptionValidation"
 
 export const runtime = "nodejs";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function POST(request: NextRequest) {
   try {
     if (isAuthEnabled() && !(await isAuthenticatedRequest(request))) {
@@ -29,6 +25,16 @@ export async function POST(request: NextRequest) {
     if (!validation.ok) {
       return Response.json({ error: validation.error }, { status: validation.status });
     }
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return Response.json(
+        { error: "OPENAI_API_KEY nao configurada no servidor." },
+        { status: 503 }
+      );
+    }
+
+    const openai = new OpenAI({ apiKey });
 
     const transcription = await openai.audio.transcriptions.create({
       file,

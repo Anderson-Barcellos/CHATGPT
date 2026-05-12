@@ -40,11 +40,18 @@ const ALLOWED_MODELS = new Set(
   })
 );
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 const CHAT_REQUEST_BODY_LIMIT_BYTES = 10 * 1024 * 1024;
+
+function createOpenAIClient(): OpenAI | null {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return null;
+  }
+
+  return new OpenAI({ apiKey });
+}
+
 const DEFAULT_IMAGE_GENERATION_MODEL = "gpt-image-2";
 
 function buildTools(
@@ -206,6 +213,14 @@ export async function POST(request: NextRequest) {
       return jsonError(400, "Model not allowed", {
         message: "Modelo nao permitido.",
         code: "chat_model_not_allowed",
+      });
+    }
+
+    const openai = createOpenAIClient();
+    if (!openai) {
+      return jsonError(503, "OpenAI API key is missing", {
+        message: "OPENAI_API_KEY nao configurada no servidor.",
+        code: "chat_openai_api_key_missing",
       });
     }
 
