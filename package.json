@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest --run"
+    "test": "vitest"
   },
   "dependencies": {
     "@monaco-editor/react": "4.7.0",

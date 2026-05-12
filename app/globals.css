@@ -84,6 +84,8 @@ body {
 
 :root {
   --radius: 0.85rem;
+  --font-geist-sans: "Space Grotesk", "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-geist-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   /* ── Typography ─────────────────────────────────────── */
   --gc-text-nano: 0.625rem;

@@ -172,3 +172,58 @@ Details:
 
 Notes:
 Se o drawer continuar escondendo esses controles em fluxos comuns por causa do `activeMode`, lembrar que o wiring backend já está pronto; o que pode faltar no futuro é só tornar a troca mais descoberta no shell/composer.
+
+### 2026-05-12 02:46 - Fallback resiliente na exportação de PDF de documento
+
+Context:
+Exportação de PDF de artefatos de documento podia falhar silenciosamente quando a captura raster com html2canvas não conseguia renderizar o conteúdo (ex.: limitações de DOM/renderização).
+
+Details:
+`lib/export/documentPdf.ts` agora tenta a renderização visual normal primeiro e, em erro, aplica fallback automático para PDF textual paginado usando `jsPDF` (`extractTextFromArtifact` + `appendTextFallbackPdf`). Isso mantém a entrega do `.pdf` funcional mesmo quando a captura por canvas falha. Validação rodada: `npx tsc --noEmit` (ok), `npm test -- --run` (falha pré-existente por script duplicando `--run`), `npm run build` (falha por fetch de Google Fonts no ambiente).
+
+Notes:
+Se houver reclamação de layout “menos fiel” em alguns PDFs, revisar apenas o caminho de fallback textual (não o caminho primário raster), pois o fallback foi desenhado para priorizar robustez de exportação sobre fidelidade visual.
+
+### 2026-05-12 11:56 - Correção da duplicidade no comando de testes
+
+Context:
+Foi identificado que `npm test -- --run` estava quebrando por duplicidade de flag, já que o script `test` em `package.json` já incluía `--run`.
+
+Details:
+Ajustado `package.json` para `"test": "vitest"`, mantendo compatibilidade com o fluxo de validação padrão do projeto (`npm test -- --run`). Após o ajuste, suíte passou com `32 files / 95 testes`.
+
+Notes:
+Quando usar filtros no Vitest, sempre passar flags após `--` no `npm test` para evitar colisão entre argumentos do npm e do script.
+
+### 2026-05-12 13:58 - Fontes locais para build offline/sem fetch externo
+
+Context:
+A build estava quebrando por depender de fetch em runtime/build para Google Fonts (`next/font/google`), com falhas de conexão no ambiente.
+
+Details:
+Troca de `next/font/google` para `next/font/local` em `app/layout.tsx`, apontando para fontes versionadas no repositório (`public/fonts/SpaceGrotesk-Variable.ttf` e `public/fonts/JetBrainsMono-Variable.ttf`) baixadas do repositório oficial `google/fonts`. Isso removeu dependência de rede para fontes durante o build.
+
+Notes:
+Com essa mudança, o erro de build passou a ser apenas ausência de `OPENAI_API_KEY` para coletar dados de `/api/chat`, indicando que o gargalo de fontes foi resolvido.
+
+### 2026-05-12 14:33 - APIs tolerantes a ausência de OPENAI_API_KEY em build
+
+Context:
+A build avançou após resolver fontes locais, mas ainda quebrava na etapa de coleta de dados porque `/api/chat` e `/api/transcribe` instanciavam `OpenAI` no escopo de módulo.
+
+Details:
+`app/api/chat/route.ts` e `app/api/transcribe/route.ts` passaram a criar o cliente OpenAI apenas dentro do `POST`, com guarda explícita de `process.env.OPENAI_API_KEY`. Sem chave, retornam HTTP 503 com mensagem clara em vez de quebrar a avaliação de módulo no build. Também foi adicionado `.env.example` com `OPENAI_API_KEY=` para onboarding seguro sem hardcode.
+
+Notes:
+`.env*` já está no `.gitignore`; manter apenas `.env.example` versionado e nunca commitar chave real.
+
+### 2026-05-12 16:16 - Remoção de binários de fonte e placeholders documentados
+
+Context:
+Para evitar erro de push/PR em ambientes com limitação de bytes/binários, removemos os `.ttf` versionados do repositório.
+
+Details:
+`app/layout.tsx` deixou de depender de `next/font/local` e passou a usar somente `antialiased`; `app/globals.css` agora define stacks padrão para `--font-geist-sans` e `--font-geist-mono`. Arquivos binários em `public/fonts/*.ttf` foram removidos e substituídos por `public/fonts/.gitkeep`. Criado `docs/LOCAL_FONTS.md` explicando como adicionar as fontes localmente quando necessário.
+
+Notes:
+Build/test/tsc continuam passando sem os binários; quem quiser fontes locais determinísticas pode adicionar os arquivos manualmente conforme a documentação.

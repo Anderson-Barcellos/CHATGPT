@@ -1,19 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "sonner";
 import "./globals.css";
-
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -54,9 +43,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body
-        className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         <QueryProvider>
           <ThemeProvider
             attribute="class"

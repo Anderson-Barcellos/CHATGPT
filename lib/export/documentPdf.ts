@@ -156,6 +156,39 @@ async function buildSnapshotCanvas(
   }
 }
 
+
+function extractTextFromArtifact(artifact: DocumentMessageArtifact, sourceElement: HTMLElement | null): string {
+  if (sourceElement) {
+    const text = sourceElement.innerText?.trim();
+    if (text) return text;
+  }
+
+  if (artifact.type === "html") {
+    const parser = new DOMParser();
+    const parsed = parser.parseFromString(artifact.content, "text/html");
+    const text = parsed.body.textContent?.trim();
+    if (text) return text;
+  }
+
+  return artifact.content;
+}
+
+function appendTextFallbackPdf(pdf: jsPDF, text: string): void {
+  const printableWidthMm = A4_WIDTH_MM - PAGE_MARGIN_MM * 2;
+  const printableHeightMm = A4_HEIGHT_MM - PAGE_MARGIN_MM * 2;
+  const lineHeightMm = 5.4;
+  const linesPerPage = Math.max(1, Math.floor(printableHeightMm / lineHeightMm));
+  const lines = pdf.splitTextToSize(text || "Documento vazio.", printableWidthMm);
+
+  for (let i = 0; i < lines.length; i += linesPerPage) {
+    if (i > 0) {
+      pdf.addPage();
+    }
+
+    const pageLines = lines.slice(i, i + linesPerPage);
+    pdf.text(pageLines, PAGE_MARGIN_MM, PAGE_MARGIN_MM + 4);
+  }
+}
 function appendCanvasAsPaginatedPdf(pdf: jsPDF, canvas: HTMLCanvasElement): void {
   const printableWidthMm = A4_WIDTH_MM - PAGE_MARGIN_MM * 2;
   const printableHeightMm = A4_HEIGHT_MM - PAGE_MARGIN_MM * 2;
@@ -213,13 +246,19 @@ export async function downloadDocumentArtifactPdf(
   artifact: DocumentMessageArtifact,
   sourceElement: HTMLElement | null
 ): Promise<void> {
-  const canvas = await buildSnapshotCanvas(artifact, sourceElement);
   const pdf = new jsPDF({
     orientation: "portrait",
     unit: "mm",
     format: "a4",
   });
 
-  appendCanvasAsPaginatedPdf(pdf, canvas);
+  try {
+    const canvas = await buildSnapshotCanvas(artifact, sourceElement);
+    appendCanvasAsPaginatedPdf(pdf, canvas);
+  } catch {
+    const fallbackText = extractTextFromArtifact(artifact, sourceElement);
+    appendTextFallbackPdf(pdf, fallbackText);
+  }
+
   pdf.save(`${sanitizeFilename(artifact.title || "documento")}.pdf`);
 }
