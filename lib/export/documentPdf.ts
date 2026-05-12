@@ -255,7 +255,8 @@ export async function downloadDocumentArtifactPdf(
   try {
     const canvas = await buildSnapshotCanvas(artifact, sourceElement);
     appendCanvasAsPaginatedPdf(pdf, canvas);
-  } catch {
+  } catch (error) {
+    console.warn("Falha ao rasterizar o documento para PDF; usando fallback de texto.", error);
     const fallbackText = extractTextFromArtifact(artifact, sourceElement);
     appendTextFallbackPdf(pdf, fallbackText);
   }
