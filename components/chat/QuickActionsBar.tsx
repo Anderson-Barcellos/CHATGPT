@@ -16,11 +16,12 @@ import { useNotes } from "@/hooks/useNotes";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useUIStore } from "@/stores/uiStore";
 import { cn } from "@/lib/utils";
+import type { MessageStreamStatus } from "@/types";
 
 interface QuickActionsBarProps {
   content: string;
   messageId: string;
-  streamStatus?: string;
+  streamStatus?: MessageStreamStatus;
   onRegenerate?: () => void;
   className?: string;
 }
@@ -39,7 +40,7 @@ function ActionButton({
       type="button"
       title={title}
       onClick={onClick}
-      className="flex size-7 items-center justify-center rounded-md text-muted-foreground/70 hover:bg-white/[0.06] hover:text-foreground"
+      className="flex size-7 items-center justify-center rounded-md text-muted-foreground/70 hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground"
     >
       {children}
     </button>
@@ -142,7 +143,12 @@ export function QuickActionsBar({
     </div>
   );
 
-  if (streamStatus === "completed" || streamStatus === "interrupted") {
+  if (
+    streamStatus === "completed" ||
+    streamStatus === "interrupted" ||
+    streamStatus === "aborted" ||
+    streamStatus === "failed"
+  ) {
     return <FadeIn delay={0.3}>{bar}</FadeIn>;
   }
 

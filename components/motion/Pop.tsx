@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 interface PopProps {
   children: React.ReactNode;
@@ -11,11 +11,17 @@ interface PopProps {
 }
 
 export function Pop({ children, scale = 0.92, delay = 0, duration = 0.2, className }: PopProps) {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <motion.div
-      initial={{ opacity: 0, scale }}
+      initial={shouldReduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration, delay, ease: [0.34, 1.56, 0.64, 1] }}
+      transition={
+        shouldReduceMotion
+          ? { duration: 0 }
+          : { duration, delay, ease: [0.34, 1.56, 0.64, 1] }
+      }
       className={className}
     >
       {children}

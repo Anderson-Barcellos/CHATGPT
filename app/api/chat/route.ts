@@ -10,6 +10,7 @@ import {
   modelSupportsVerbosity,
 } from "@/lib/models/modelConfig";
 import { isAuthenticatedRequest, isAuthEnabled } from "@/lib/server/auth";
+import { readJsonWithLimit } from "@/lib/server/readJsonWithLimit";
 import {
   QUIZ_FORCED_MODEL,
   QUIZ_FORCED_REASONING_EFFORT,
@@ -28,6 +29,8 @@ type ChatRequestBody = {
   reasoning?: OpenAI.Responses.ResponseCreateParams["reasoning"];
   codeInterpreterEnabled?: boolean;
   responseMode?: ResponseMode;
+  imageQuality?: "low" | "medium" | "high" | "auto";
+  imageSize?: "1024x1024" | "1024x1536" | "1536x1024" | "auto";
 };
 
 const ALLOWED_MODELS = new Set(
@@ -41,17 +44,30 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const CHAT_REQUEST_BODY_LIMIT_BYTES = 10 * 1024 * 1024;
+const DEFAULT_IMAGE_GENERATION_MODEL = "gpt-image-2";
+
 function buildTools(
   model: string,
   codeInterpreterEnabled: boolean,
-  responseMode: ResponseMode
+  responseMode: ResponseMode,
+  imageQuality: ChatRequestBody["imageQuality"],
+  imageSize: ChatRequestBody["imageSize"]
 ) {
   if (responseMode === "quiz") {
     return [];
   }
 
   const tools: OpenAI.Responses.Tool[] = [
-    { type: "image_generation" },
+    {
+      type: "image_generation",
+      model: DEFAULT_IMAGE_GENERATION_MODEL,
+      quality: imageQuality ?? "high",
+      size: imageSize ?? "auto",
+      background: "auto",
+      partial_images: 2,
+      output_format: "png",
+    },
     {
       type: "web_search_preview",
       search_context_size: "medium",
@@ -72,7 +88,7 @@ function buildTools(
 function buildRequestParams(body: ChatRequestBody) {
   const {
     input,
-    model = "gpt-5.3-chat-latest",
+    model = "gpt-5.1-chat-latest",
     instructions,
     maxOutputTokens,
     temperature,
@@ -81,6 +97,8 @@ function buildRequestParams(body: ChatRequestBody) {
     reasoning,
     codeInterpreterEnabled = false,
     responseMode = "default",
+    imageQuality,
+    imageSize,
   } = body;
 
   const effectiveModel = responseMode === "quiz" ? QUIZ_FORCED_MODEL : model;
@@ -98,7 +116,13 @@ function buildRequestParams(body: ChatRequestBody) {
     instructions,
     input: input!,
     max_output_tokens: clampedMaxTokens,
-    tools: buildTools(effectiveModel, codeInterpreterEnabled, responseMode),
+    tools: buildTools(
+      effectiveModel,
+      codeInterpreterEnabled,
+      responseMode,
+      imageQuality,
+      imageSize
+    ),
   };
 
   if (modelSupportsTemperature(effectiveModel)) {
@@ -146,10 +170,26 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const body = (await request.json()) as ChatRequestBody;
+    const parsedBody = await readJsonWithLimit<ChatRequestBody>(request, {
+      limitBytes: CHAT_REQUEST_BODY_LIMIT_BYTES,
+    });
+    if (!parsedBody.ok) {
+      return jsonError(parsedBody.status, "Request body error", {
+        message:
+          parsedBody.reason === "too_large"
+            ? "Arquivo(s) muito grande(s). Reduza o tamanho ou a quantidade de anexos (maximo ~10MB total)."
+            : "Corpo da requisicao invalido.",
+        code:
+          parsedBody.reason === "too_large"
+            ? "chat_body_too_large"
+            : "chat_body_invalid",
+      });
+    }
+
+    const body = parsedBody.value;
     const {
       input,
-      model = "gpt-5.3-chat-latest",
+      model = "gpt-5.1-chat-latest",
       stream = true,
       responseMode = "default",
     } = body;

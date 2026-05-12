@@ -14,6 +14,7 @@ import {
   User,
   X,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { toast } from "sonner";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useUIStore } from "@/stores/uiStore";
@@ -108,7 +109,7 @@ function SaveStatusBadge({
   }
 
   return (
-    <Badge variant="outline" className="border-white/10 bg-white/[0.03] text-nano text-muted-foreground/80">
+    <Badge variant="outline" className="border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] text-nano text-muted-foreground/80">
       {idleLabel}
     </Badge>
   );
@@ -178,8 +179,8 @@ function MemoryCard({ memory, onDelete, onUpdate }: MemoryCardProps) {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-white/[0.04] p-3 transition-colors",
-        !memory.isActive && "bg-white/[0.02]"
+        "rounded-2xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-3 transition-colors",
+        !memory.isActive && "opacity-80"
       )}
     >
       <div className="mb-2 flex items-center justify-between gap-2">
@@ -201,7 +202,7 @@ function MemoryCard({ memory, onDelete, onUpdate }: MemoryCardProps) {
         }}
         rows={3}
         className={cn(
-          "min-h-[84px] w-full resize-none rounded-xl border border-white/10 bg-background/80 px-3 py-2.5 text-sm leading-relaxed outline-none transition-all",
+          "min-h-[84px] w-full resize-none rounded-xl border border-[color:var(--gc-border-soft)] bg-background/80 px-3 py-2.5 text-sm leading-relaxed outline-none transition-all",
           "focus:border-primary/40 focus:ring-2 focus:ring-primary/15",
           !memory.isActive && "text-muted-foreground/70"
         )}
@@ -308,6 +309,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                   status={panelStatus}
                   idleLabel={activeTab === "persona" ? "Autosave" : "Sincronizado"}
                 />
+                <ThemeToggle />
                 <Button
                   type="button"
                   variant="ghost"
@@ -343,8 +345,8 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
           <div className="flex-1 overflow-y-auto px-3 pb-3 pt-3">
             {activeTab === "tuning" && (
               <div className="space-y-5">
-                <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-3 text-sm">
-                  <div className="flex items-center gap-2 font-semibold text-blue-600 dark:text-blue-400">
+                <div className="rounded-2xl border border-primary/20 bg-primary/10 p-3 text-sm">
+                  <div className="flex items-center gap-2 font-semibold text-primary">
                     <Sparkles className="h-4 w-4" />
                     {currentModel?.name || parameters.model}
                   </div>
@@ -362,17 +364,17 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                       <h3 className="text-micro font-semibold uppercase tracking-eyebrow text-muted-foreground">
                         Tuning do Modelo
                       </h3>
-                      <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                      <div className="space-y-4 rounded-2xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-4">
                         {showTemperature && (
                           <div className="space-y-2">
                             <div className="flex items-center justify-between gap-3">
                               <div>
-                                <p className="text-sm font-medium">Temperature</p>
+                                <p className="text-xs font-medium">Temperature</p>
                                 <p className="text-micro text-muted-foreground">
                                   Controla criatividade e variação de resposta.
                                 </p>
                               </div>
-                              <span className="text-sm font-mono font-semibold">
+                              <span className="text-xs font-mono font-semibold">
                                 {parameters.temperature.toFixed(2)}
                               </span>
                             </div>
@@ -389,12 +391,12 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between gap-3">
                             <div>
-                              <p className="text-sm font-medium">Max Tokens</p>
+                              <p className="text-xs font-medium">Max Tokens</p>
                               <p className="text-micro text-muted-foreground">
                                 Limita o tamanho máximo da resposta do modelo atual.
                               </p>
                             </div>
-                            <span className="text-sm font-mono font-semibold">
+                            <span className="text-xs font-mono font-semibold">
                               {parameters.maxOutputTokens.toLocaleString()}
                             </span>
                           </div>
@@ -429,10 +431,10 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                                 "rounded-2xl border p-3 text-left transition-colors",
                                 parameters.verbosity === option.id
                                   ? "border-primary/30 bg-primary/10 text-foreground"
-                                  : "border-white/10 bg-white/[0.04] text-muted-foreground hover:text-foreground"
+                                  : "border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] text-muted-foreground hover:text-foreground"
                               )}
                             >
-                              <p className="text-sm font-medium">{option.label}</p>
+                              <p className="text-xs font-medium">{option.label}</p>
                               <p className="mt-1 text-micro leading-relaxed">
                                 {option.description}
                               </p>
@@ -447,9 +449,9 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                         <h3 className="text-micro font-semibold uppercase tracking-eyebrow text-muted-foreground">
                           Ferramentas
                         </h3>
-                        <div className="flex items-start justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                        <div className="flex items-start justify-between gap-4 rounded-2xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-4">
                           <div className="space-y-1">
-                            <p className="text-sm font-medium">Code Interpreter</p>
+                            <p className="text-xs font-medium">Code Interpreter</p>
                             <p className="text-micro leading-relaxed text-muted-foreground">
                               Expõe um container Python para o modelo usar quando achar necessário.
                             </p>
@@ -472,7 +474,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                       <ImageIcon className="h-3 w-3" />
                       Geração de Imagem
                     </h3>
-                    <div className="space-y-2 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                    <div className="space-y-2 rounded-2xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-4">
                       <label className="flex flex-col gap-1 text-xs">
                         <span className="text-muted-foreground">Tamanho</span>
                         <select
@@ -509,7 +511,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
 
             {activeTab === "memory" && (
               <div className="space-y-4">
-                <div className="rounded-2xl border border-cyan-500/15 bg-cyan-500/8 p-3">
+                <div className="rounded-2xl border border-primary/15 bg-primary/8 p-3">
                   <p className="text-xs leading-relaxed text-muted-foreground">
                     Memórias ficam no servidor e entram no prompt automaticamente quando estão ativas.
                     Dá pra editar o texto inline sem sair da lista.
@@ -522,7 +524,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                     onChange={(e) => setNewMemory(e.target.value)}
                     placeholder="Ex: Sempre explique código em detalhe..."
                     rows={2}
-                    className="min-h-[72px] flex-1 resize-none rounded-2xl border border-white/10 bg-background/85 p-3 text-sm outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
+                    className="min-h-[72px] flex-1 resize-none rounded-2xl border border-white/10 bg-background/85 p-3 text-xs outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
                     onKeyDown={(e) => {
                       if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && newMemory.trim()) {
                         e.preventDefault();
@@ -534,7 +536,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                     type="button"
                     onClick={() => void handleAddMemory()}
                     disabled={isCreatingMemory || !newMemory.trim()}
-                    className="h-auto min-h-[72px] rounded-2xl bg-gradient-to-r from-green-500 to-blue-500 px-3 text-white hover:opacity-90"
+                    className="h-auto min-h-[72px] rounded-2xl bg-primary px-3 text-primary-foreground hover:opacity-90"
                   >
                     {isCreatingMemory ? (
                       <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -548,7 +550,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                   {memories.length === 0 ? (
                     <div className="rounded-2xl border-2 border-dashed border-white/10 px-4 py-8 text-center">
                       <Brain className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
-                      <p className="text-sm">Nenhuma memória cadastrada.</p>
+                      <p className="text-xs">Nenhuma memória cadastrada.</p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         Cria uma acima e ela já entra no teu contexto.
                       </p>
@@ -569,7 +571,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
 
             {activeTab === "persona" && (
               <div className="space-y-4">
-                <div className="rounded-2xl border border-green-500/20 bg-green-500/10 p-3">
+                <div className="rounded-2xl border border-primary/20 bg-primary/10 p-3">
                   <p className="text-xs leading-relaxed text-muted-foreground">
                     Persona e regras base seguem fixas no servidor. Aqui tu ajusta o contexto
                     extra sobre ti e o jeito que prefere receber as respostas.
@@ -578,7 +580,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                       <User className="h-3.5 w-3.5" />
                       Sobre Você
                     </label>
@@ -592,7 +594,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                     onChange={(e) => updateContextAboutUser(e.target.value)}
                     placeholder="Contexto adicional sobre você..."
                     rows={7}
-                    className="w-full resize-none rounded-2xl border border-white/10 bg-background/85 p-3 text-sm outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
+                    className="w-full resize-none rounded-2xl border border-[color:var(--gc-border-soft)] bg-background/85 p-3 text-xs outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
                   />
                 </div>
 
@@ -606,7 +608,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                     onChange={(e) => updateResponsePreferences(e.target.value)}
                     placeholder="Como tu prefere que a IA responda..."
                     rows={5}
-                    className="w-full resize-none rounded-2xl border border-white/10 bg-background/85 p-3 text-sm outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
+                    className="w-full resize-none rounded-2xl border border-[color:var(--gc-border-soft)] bg-background/85 p-3 text-xs outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
                   />
                 </div>
               </div>

@@ -262,7 +262,7 @@ node --trace-warnings /root/CHATGPT/.next/standalone/server.js
 
 1. **API Key**: Sempre mantenha sua `OPENAI_API_KEY` segura e nunca commite no git
 2. **Logs**: Monitore regularmente `/var/log/chatgpt/` para erros
-3. **Backup**: Faça backup regular de `.env.production` e do banco IndexedDB
+3. **Backup**: Faça backup regular de `.env.production` e dos arquivos em `data/*.json`
 4. **Updates**: Teste updates em desenvolvimento antes de aplicar em produção
 
 ---

@@ -24,7 +24,7 @@ interface SettingsState {
   getActiveMemories: () => Memory[];
 }
 
-const DEFAULT_MODEL = "gpt-5.3-chat-latest";
+const DEFAULT_MODEL = "gpt-5.1-chat-latest";
 
 function buildDefaultModelSettings(modelId: string): ModelScopedParameters {
   const defaultReasoningEffort =

@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 type DrawerSide = "left" | "right" | "bottom";
 
@@ -22,15 +22,21 @@ function getVariants(side: DrawerSide) {
 }
 
 export function Drawer({ children, side = "right", open, className }: DrawerProps) {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <AnimatePresence>
       {open && (
         <motion.div
-          variants={getVariants(side)}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-          transition={{ duration: 0.35, ease: [0.2, 0, 0, 1] }}
+          variants={shouldReduceMotion ? undefined : getVariants(side)}
+          initial={shouldReduceMotion ? { opacity: 1, x: 0, y: 0 } : "hidden"}
+          animate={shouldReduceMotion ? { opacity: 1, x: 0, y: 0 } : "visible"}
+          exit={shouldReduceMotion ? { opacity: 1, x: 0, y: 0 } : "exit"}
+          transition={
+            shouldReduceMotion
+              ? { duration: 0 }
+              : { duration: 0.35, ease: [0.2, 0, 0, 1] }
+          }
           className={className}
         >
           {children}

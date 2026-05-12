@@ -17,10 +17,10 @@ import { ConversationRailV2 } from "@/components/workspace-v2/ConversationRailV2
 import { WorkspaceFrameV2 } from "@/components/workspace-v2/WorkspaceLayoutV2";
 import { ExportDropdown } from "@/components/workspace-v2/ExportDropdown";
 import { getReasoningLabel, isReasoningModel } from "@/lib/models/modelConfig";
+import { useCostSync } from "@/hooks/useCostSync";
 import type { ResponseMode } from "@/types";
 import { useChat } from "@/hooks/useChat";
 import { NotesProvider } from "@/components/workspace-v2/NotesProvider";
-import { CanvasOverlayV2 } from "@/components/workspace-v2/canvas/CanvasOverlayV2";
 import { SelectionToolbar } from "@/components/chat/SelectionToolbar";
 import { useTextSelection } from "@/hooks/useTextSelection";
 import { CommandPaletteProvider } from "@/components/command/CommandPaletteProvider";
@@ -31,7 +31,6 @@ import { MODELS } from "@/lib/models/modelConfig";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useChatStore } from "@/stores/chatStore";
 import { useSettingsStore } from "@/stores/settingsStore";
-import { useUIStore } from "@/stores/uiStore";
 
 const CONTEXT_DOCKED_QUERY = "(min-width: 1280px)";
 
@@ -75,8 +74,8 @@ export function GauchoChatShellV2() {
   const { activeConversationId, messages, setActiveConversationId } = useChatStore();
   const { conversations } = useConversations();
   const { parameters } = useSettingsStore();
-  const { artifactOpen, activeArtifact, closeArtifact } = useUIStore();
   const textSelection = useTextSelection();
+  useCostSync();
   const {
     messages: chatMessages,
     isLoading: isChatLoading,
@@ -111,13 +110,7 @@ export function GauchoChatShellV2() {
   const artifactCount = chatMessages.filter((m) => m.artifact).length;
   const shouldShowRecoveryState =
     Boolean(recoveryError) || isRecovering || !activeConversationId;
-  // Abre o Sheet de contexto automaticamente em tablet (768-1279px) quando há artefato.
-  // Exclui isMobile porque em mobile o CanvasOverlayV2 já cobre esse caso com Sheet bottom —
-  // abrir os dois simultaneamente causa conflito visual de Sheets sobrepostos.
-  const shouldAutoShowContextPanel =
-    artifactOpen && Boolean(activeArtifact) && !isMobile && !isContextDocked;
-  const effectiveMobileContextOpen =
-    mobileContextOpen || shouldAutoShowContextPanel;
+  const effectiveMobileContextOpen = mobileContextOpen;
 
   const handleSplashComplete = useCallback(() => {
     sessionStorage.setItem("gpt-splash-shown", "1");
@@ -139,11 +132,8 @@ export function GauchoChatShellV2() {
   const handleMobileContextOpenChange = useCallback(
     (open: boolean) => {
       setMobileContextOpen(open);
-      if (!open && artifactOpen) {
-        closeArtifact();
-      }
     },
-    [artifactOpen, closeArtifact]
+    []
   );
 
   return (
@@ -217,7 +207,6 @@ export function GauchoChatShellV2() {
         <SelectionToolbar selection={textSelection} />
       </NotesProvider>
       <SettingsDrawer isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      <CanvasOverlayV2 />
       <CommandPalette />
       </CommandPaletteProvider>
     </>

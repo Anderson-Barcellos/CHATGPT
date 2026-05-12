@@ -36,14 +36,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="w-full max-w-md">
-        <div className="bg-card border border-border rounded-2xl shadow-2xl p-8">
+    <div className="gc-dynamic-bg relative flex min-h-screen items-center justify-center overflow-hidden px-4">
+      <div aria-hidden="true" className="gc-ambient-overlay pointer-events-none absolute inset-0" />
+      <div aria-hidden="true" className="gc-subtle-grid pointer-events-none absolute inset-0 opacity-35" />
+      <div className="relative z-10 w-full max-w-md">
+        <div className="rounded-2xl border border-[color:var(--gc-border)] bg-[var(--gc-surface-panel-strong)] p-8 shadow-[0_26px_90px_rgba(10,18,34,0.24)] backdrop-blur-xl">
           <div className="flex flex-col items-center mb-8">
-            <div className="p-4 bg-primary/10 rounded-full mb-4">
+            <div className="mb-4 rounded-full border border-primary/20 bg-primary/10 p-4">
               <Lock className="h-8 w-8 text-primary" />
             </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-green-500 to-blue-500 bg-clip-text text-transparent">
+            <h1 className="gc-text-gradient text-2xl font-bold">
               Gaúcho Chat
             </h1>
             <p className="text-sm text-muted-foreground mt-2">
@@ -62,7 +64,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Digite sua senha"
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                className="w-full rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-4 py-3 text-foreground transition-all placeholder:text-muted-foreground/55 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 autoFocus
                 disabled={loading}
               />
@@ -77,7 +79,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || !password}
-              className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-blue-500 text-white font-medium rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? (
                 <span>Entrando...</span>

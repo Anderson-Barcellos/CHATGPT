@@ -1,6 +1,9 @@
 "use client";
 
+import { AnimatePresence } from "framer-motion";
 import { ChatContainer } from "@/components/chat/ChatContainer";
+import { ArtifactPreviewSheet } from "@/components/workspace-v2/canvas/ArtifactPreviewSheet";
+import { useUIStore } from "@/stores/uiStore";
 import type { Message } from "@/types";
 
 interface ChatCanvasV2Props {
@@ -16,14 +19,25 @@ export function ChatCanvasV2({
   editAndResend,
   deleteMessage,
 }: ChatCanvasV2Props) {
+  const { artifactOpen, activeArtifact, closeArtifact } = useUIStore();
+
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0)_32%)]">
+    <div className="relative flex h-full min-h-0 flex-col bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0)_32%)]">
       <ChatContainer
         messages={messages}
         isLoading={isLoading}
         editAndResend={editAndResend}
         deleteMessage={deleteMessage}
       />
+
+      <AnimatePresence>
+        {artifactOpen && activeArtifact && (
+          <ArtifactPreviewSheet
+            artifact={activeArtifact}
+            onClose={closeArtifact}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -12,22 +12,25 @@ import {
 interface ChatMarkdownProps {
   content: string;
   className?: string;
+  isNormalized?: boolean;
 }
 
 export function ChatMarkdown({
   content,
   className,
+  isNormalized = false,
 }: ChatMarkdownProps) {
-  const normalizedContent = normalizeChatMarkdown(content);
+  const normalizedContent = isNormalized ? content : normalizeChatMarkdown(content);
 
   return (
     <div
       className={cn(
-        "max-w-full text-left",
+        "max-w-full overflow-x-hidden break-words text-left text-body-sm [overflow-wrap:anywhere] md:text-body",
         className
       )}
     >
       <ReactMarkdown
+        skipHtml
         remarkPlugins={chatMarkdownRemarkPlugins}
         rehypePlugins={chatMarkdownRehypePlugins}
         components={chatMarkdownComponents}

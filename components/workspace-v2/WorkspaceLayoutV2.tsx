@@ -52,6 +52,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { FadeIn } from "@/components/motion/FadeIn";
+import { SlideIn } from "@/components/motion/SlideIn";
 import { GPTLogo } from "@/components/ui/gpt-logo";
 import { useCommandPaletteContext } from "@/components/command/CommandPaletteProvider";
 import { cn } from "@/lib/utils";
@@ -102,6 +104,7 @@ interface CommandComposerV2Props {
   responseMode: ResponseMode;
   modelControl?: ReactNode;
   reasoningControl?: ReactNode;
+  costControl?: ReactNode;
   error?: string | null;
   speechError?: string | null;
   fileErrors?: string[];
@@ -144,7 +147,7 @@ function IconButton({
           aria-label={label}
           onClick={onClick}
           className={cn(
-            "size-8 max-md:size-11 rounded-lg border border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground",
+            "size-8 max-md:size-11 rounded-xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] text-muted-foreground shadow-[0_2px_8px_rgba(15,23,42,0.08)] hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground",
             className
           )}
         >
@@ -164,7 +167,7 @@ function ContextChip({
   value: string;
 }) {
   return (
-    <span className="inline-flex max-w-[12rem] items-center gap-1 rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-nano text-muted-foreground">
+    <span className="inline-flex max-w-[12rem] items-center gap-1 rounded-md border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-2 py-0.5 text-nano text-muted-foreground">
       <span className="text-foreground/65">{label}</span>
       <span className="truncate font-medium text-foreground">{value}</span>
     </span>
@@ -176,6 +179,9 @@ function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
+
+const COMPOSER_CONTROL_BUTTON_CLASS =
+  "border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground";
 
 export function WorkspaceFrameV2({
   sidebar,
@@ -212,32 +218,40 @@ export function WorkspaceFrameV2({
   }, []);
 
   return (
-    <div className="relative h-dvh overflow-hidden bg-[var(--gc-bg)] text-foreground">
+    <div className="gc-dynamic-bg relative h-dvh overflow-hidden text-foreground">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[image:var(--gc-overlay-gradient)]"
+        className="gc-ambient-overlay pointer-events-none absolute inset-0"
       />
-      <div className="relative z-10 flex h-full flex-col p-0 md:p-3">
-        <div className="flex min-h-0 flex-1 overflow-hidden border border-[color:var(--gc-border)] bg-[var(--gc-surface-shell)] shadow-[0_24px_90px_rgba(0,0,0,0.22)] md:rounded-xl">
+      <div
+        aria-hidden="true"
+        className="gc-subtle-grid pointer-events-none absolute inset-0 opacity-35"
+      />
+      <div className="relative z-10 flex h-full flex-col p-1 sm:p-2 md:p-4">
+        <div className="flex min-h-0 flex-1 overflow-hidden rounded-[1.05rem] border border-[color:var(--gc-border)] bg-[var(--gc-surface-shell)]/95 shadow-[0_30px_100px_rgba(10,18,34,0.28)] backdrop-blur-xl">
           <aside
             data-workspace-region="sidebar"
-            className="hidden min-h-0 w-[17.5rem] shrink-0 overflow-hidden border-r border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] lg:block"
+            className="hidden min-h-0 w-[18.5rem] shrink-0 overflow-hidden border-r border-[color:var(--gc-border-soft)] bg-[linear-gradient(180deg,var(--gc-surface-panel),var(--gc-surface-panel-strong))] lg:block"
           >
-            {sidebar}
+            <FadeIn duration={0.24} className="h-full">
+              {sidebar}
+            </FadeIn>
           </aside>
 
           {tabletSidebar && (
             <aside
               data-workspace-region="tablet-rail"
-              className="hidden min-h-0 w-12 shrink-0 overflow-hidden border-r border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] md:block lg:hidden"
+              className="hidden min-h-0 w-12 shrink-0 overflow-hidden border-r border-[color:var(--gc-border-soft)] bg-[linear-gradient(180deg,var(--gc-surface-panel),var(--gc-surface-panel-strong))] md:block lg:hidden"
             >
-              {tabletSidebar}
+              <FadeIn duration={0.24} className="h-full">
+                {tabletSidebar}
+              </FadeIn>
             </aside>
           )}
 
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-            <header className="shrink-0 border-b border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel-strong)] gc-safe-top md:pt-0">
-              <div className="flex h-[3.1rem] items-center justify-between px-2.5 md:px-4">
+            <header className="shrink-0 border-b border-[color:var(--gc-border-soft)] bg-[linear-gradient(180deg,var(--gc-surface-panel-strong),var(--gc-surface-panel))] gc-safe-top md:pt-0">
+              <div className="flex h-[3.45rem] items-center justify-between px-3 md:px-5">
                 <div className="flex min-w-0 items-center gap-2">
                   <IconButton
                     label="Abrir conversas"
@@ -246,7 +260,7 @@ export function WorkspaceFrameV2({
                   >
                     <Menu className="size-4" />
                   </IconButton>
-                  <div className="hidden size-8 items-center justify-center rounded-lg border border-cyan-300/14 bg-cyan-300/8 md:flex">
+                  <div className="hidden size-8 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 shadow-[0_8px_20px_rgba(14,116,144,0.14)] md:flex">
                     <GPTLogo size={22} />
                   </div>
                   <div className="min-w-0 leading-tight">
@@ -262,7 +276,7 @@ export function WorkspaceFrameV2({
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <div className="hidden items-center gap-1.5 rounded-lg border border-emerald-300/20 bg-emerald-300/10 px-2 py-1 text-nano font-medium text-emerald-200 lg:flex">
+                  <div className="hidden items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 px-2 py-1 text-nano font-medium text-primary lg:flex">
                     <ShieldCheck className="size-3.5" />
                     Salvo
                   </div>
@@ -287,7 +301,7 @@ export function WorkspaceFrameV2({
                   >
                     <PanelRightOpen className="size-4" />
                     {!!artifactCount && artifactCount > 0 && (
-                      <span className="absolute -right-0.5 -top-0.5 flex size-3.5 items-center justify-center rounded-full bg-cyan-300 text-[8px] font-bold leading-none text-slate-950">
+                      <span className="absolute -right-0.5 -top-0.5 flex size-3.5 items-center justify-center rounded-full bg-primary text-[8px] font-bold leading-none text-primary-foreground">
                         {artifactCount > 9 ? "9+" : artifactCount}
                       </span>
                     )}
@@ -295,7 +309,7 @@ export function WorkspaceFrameV2({
                 </div>
               </div>
 
-              <div className="flex min-h-[2.2rem] items-center justify-between border-t border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-2.5 py-1.5 md:px-4">
+              <div className="flex min-h-[2.35rem] items-center justify-between border-t border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-3 py-1.5 md:px-5">
                 <div className="flex min-w-0 items-center gap-1.5">
                   <div className="hidden min-w-0 flex-wrap items-center gap-1.5 md:flex">
                     <ContextChip label="Workspace" value="Anders" />
@@ -320,49 +334,55 @@ export function WorkspaceFrameV2({
                     )}
                   </span>
                 </div>
-                <span className="hidden items-center gap-1 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-0.5 text-nano font-medium text-cyan-100 md:inline-flex">
-                  <span className="size-1.5 rounded-full bg-cyan-200" />
+                <span className="hidden items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-nano font-medium text-primary md:inline-flex">
+                  <span className="size-1.5 rounded-full bg-primary" />
                   online
                 </span>
               </div>
             </header>
 
             <main data-workspace-region="chat" className="min-h-0 flex-1">
-              {chat}
+              <FadeIn delay={0.04} duration={0.24} className="h-full">
+                {chat}
+              </FadeIn>
             </main>
 
-            {composer}
+            {composer ? (
+              <SlideIn from="bottom" distance={10} duration={0.24}>
+                {composer}
+              </SlideIn>
+            ) : null}
           </div>
 
-          <aside
-            data-workspace-region="context"
-            className={cn(
-              "hidden min-h-0 shrink-0 overflow-hidden border-l border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] transition-[width] duration-200 xl:block",
-              contextCollapsed
-                ? "w-12"
-                : contextExpanded
-                ? "w-[30rem] 2xl:w-[36rem]"
-                : "w-[22rem] 2xl:w-[28rem]"
-            )}
-          >
+            <aside
+              data-workspace-region="context"
+              className={cn(
+                "hidden min-h-0 shrink-0 overflow-hidden border-l border-[color:var(--gc-border-soft)] bg-[linear-gradient(180deg,var(--gc-surface-panel),var(--gc-surface-panel-strong))] transition-[width] duration-200 xl:block",
+                contextCollapsed
+                  ? "w-12"
+                  : contextExpanded
+                  ? "w-[31rem] 2xl:w-[37rem]"
+                  : "w-[23rem] 2xl:w-[29rem]"
+              )}
+            >
             {contextCollapsed ? (
               <div className="flex h-full flex-col items-center gap-3 py-3">
                 <IconButton label="Abrir painel" onClick={() => setContextCollapsed(false)}>
                   <PanelRightOpen className="size-4" />
                 </IconButton>
-                <div className="h-px w-6 bg-white/10" />
+                <div className="h-px w-6 bg-[var(--gc-border-soft)]" />
                 <span className="rotate-90 whitespace-nowrap text-nano font-medium uppercase tracking-eyebrow text-muted-foreground">
                   Artefato
                 </span>
               </div>
             ) : (
-              <div className="flex h-full flex-col">
-                <div className="flex h-[3.25rem] items-center justify-between border-b border-white/8 px-3">
-                  <div>
-                    <p className="text-xs font-semibold text-foreground">Painel operacional</p>
-                    <p className="text-nano uppercase tracking-label text-muted-foreground">
-                      Canvas · artefato · atividade
-                    </p>
+                <div className="flex h-full flex-col">
+                  <div className="flex h-[3.25rem] items-center justify-between border-b border-[color:var(--gc-border-soft)] px-3">
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">Painel operacional</p>
+                      <p className="text-nano uppercase tracking-label text-muted-foreground">
+                        Canvas · artefato · atividade
+                      </p>
                   </div>
                   <div className="flex items-center gap-1">
                     <IconButton
@@ -380,7 +400,11 @@ export function WorkspaceFrameV2({
                     </IconButton>
                   </div>
                 </div>
-                <div className="min-h-0 flex-1">{contextPanel}</div>
+                <div className="min-h-0 flex-1">
+                  <SlideIn from="right" distance={12} duration={0.24} className="h-full">
+                    {contextPanel}
+                  </SlideIn>
+                </div>
               </div>
             )}
           </aside>
@@ -391,7 +415,7 @@ export function WorkspaceFrameV2({
         <SheetContent
           side="left"
           showCloseButton={false}
-          className="w-[88vw] max-w-[20rem] gap-0 border-white/10 bg-[var(--gc-surface-panel)] p-0 gc-safe-top"
+          className="w-[88vw] max-w-[20rem] gap-0 border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] p-0 gc-safe-top"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Conversas</SheetTitle>
@@ -405,7 +429,7 @@ export function WorkspaceFrameV2({
         <SheetContent
           side="right"
           showCloseButton={false}
-          className="w-[96vw] max-w-none gap-0 border-white/10 bg-[var(--gc-surface-panel)] p-0 gc-safe-top sm:max-w-[34rem]"
+          className="w-[96vw] max-w-none gap-0 border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] p-0 gc-safe-top sm:max-w-[34rem]"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Painel contextual</SheetTitle>
@@ -435,6 +459,7 @@ export function CommandComposerV2({
   responseMode,
   modelControl,
   reasoningControl,
+  costControl,
   error,
   speechError,
   fileErrors = [],
@@ -460,8 +485,8 @@ export function CommandComposerV2({
   const statusMessage = error || speechError || fileErrors[0] || null;
 
   return (
-    <footer className="shrink-0 border-t border-white/8 bg-[var(--gc-surface-panel-strong)] px-2.5 pb-[calc(env(safe-area-inset-bottom)+0.45rem)] pt-2 md:px-4 md:pb-3">
-      <div className="mx-auto max-w-3xl lg:max-w-5xl">
+    <footer className="shrink-0 border-t border-[color:var(--gc-border-soft)] bg-[linear-gradient(180deg,var(--gc-surface-panel-strong),var(--gc-surface-panel))] px-2.5 pb-[calc(env(safe-area-inset-bottom)+0.45rem)] pt-2 md:px-4 md:pb-3">
+      <div className="mx-auto max-w-[74rem]">
         {statusMessage && (
           <div className="mb-2 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
             {statusMessage}
@@ -469,11 +494,11 @@ export function CommandComposerV2({
         )}
 
         <div
-          className={cn(
-            "relative overflow-hidden rounded-xl border border-white/10 bg-[var(--gc-surface-composer)] shadow-[0_18px_54px_rgba(0,0,0,0.28)] transition-colors",
-            "focus-within:border-cyan-300/35",
-            isDragging && "border-cyan-300/55 bg-cyan-300/8"
-          )}
+            className={cn(
+              "relative overflow-hidden rounded-2xl border border-[color:var(--gc-border)] bg-[var(--gc-surface-composer)] shadow-[0_22px_62px_rgba(15,23,42,0.22)] transition-colors",
+              "focus-within:border-primary/35 focus-within:shadow-[0_20px_56px_rgba(14,116,144,0.16)]",
+              isDragging && "border-primary/55 bg-primary/8"
+            )}
           onDragEnter={onDragEnter}
           onDragLeave={onDragLeave}
           onDragOver={onDragOver}
@@ -481,7 +506,7 @@ export function CommandComposerV2({
         >
           {isDragging && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70 backdrop-blur-sm">
-              <div className="flex items-center gap-2 rounded-lg border border-cyan-300/25 bg-cyan-300/10 px-3 py-2 text-sm text-cyan-100">
+              <div className="flex items-center gap-2 rounded-lg border border-primary/25 bg-primary/10 px-3 py-2 text-sm text-primary">
                 <Upload className="size-4 animate-bounce" />
                 Solte os arquivos aqui
               </div>
@@ -505,9 +530,9 @@ export function CommandComposerV2({
               {attachments.map((attachment) => (
                 <div
                   key={attachment.id}
-                  className="flex min-w-0 items-center gap-2 rounded-lg border border-white/8 bg-white/[0.035] px-2 py-1.5 text-micro"
+                  className="flex min-w-0 items-center gap-2 rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-2 py-1.5 text-micro"
                 >
-                  <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-cyan-300/10 text-cyan-100">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                     <FileText className="size-3.5" />
                   </span>
                   <span className="min-w-0">
@@ -533,7 +558,7 @@ export function CommandComposerV2({
             </div>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/6 px-2 py-2 md:px-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[color:var(--gc-border-soft)] px-2 py-2 md:px-3">
             <div className="flex min-w-0 flex-wrap items-center gap-1.5">
               <Button
                 type="button"
@@ -542,8 +567,8 @@ export function CommandComposerV2({
                 disabled={disabled || isProcessing}
                 onClick={onFileSelect}
                 aria-label="Adicionar arquivos"
-                className="size-8 rounded-lg border border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
-              >
+                  className={cn("size-8 rounded-lg", COMPOSER_CONTROL_BUTTON_CLASS)}
+                >
                 {isProcessing ? (
                   <LoaderCircle className="size-4 animate-spin" />
                 ) : (
@@ -554,7 +579,10 @@ export function CommandComposerV2({
               {modelControl ?? (
                 <button
                   type="button"
-                  className="flex h-8 max-w-[6.5rem] items-center gap-1 rounded-lg border border-white/8 bg-white/[0.035] px-1.5 text-nano font-medium text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
+                  className={cn(
+                    "flex h-8 max-w-[6.5rem] items-center gap-1 rounded-lg px-1.5 text-nano font-medium",
+                    COMPOSER_CONTROL_BUTTON_CLASS
+                  )}
                 >
                   <span className="truncate">{modelName}</span>
                   <ChevronDown className="size-3.5 shrink-0" />
@@ -566,7 +594,10 @@ export function CommandComposerV2({
                   <button
                     type="button"
                     aria-label="Ajustar nível de raciocínio"
-                    className="flex h-8 items-center rounded-lg border border-white/8 bg-white/[0.035] px-1.5 text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
+                    className={cn(
+                      "flex h-8 items-center rounded-lg px-1.5",
+                      COMPOSER_CONTROL_BUTTON_CLASS
+                    )}
                   >
                     <Brain className="size-3.5" />
                   </button>
@@ -579,13 +610,13 @@ export function CommandComposerV2({
                 size="sm"
                 disabled={disabled}
                 onClick={onToggleDocument}
-                className={cn(
-                  "hidden h-8 rounded-lg border px-2 text-micro md:flex",
-                  responseMode === "document"
-                    ? "border-cyan-300/25 bg-cyan-300/12 text-cyan-100"
-                    : "border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
-                )}
-              >
+                  className={cn(
+                    "hidden h-8 rounded-lg border px-2 text-micro md:flex",
+                    responseMode === "document"
+                      ? "border-primary/25 bg-primary/10 text-primary"
+                      : COMPOSER_CONTROL_BUTTON_CLASS
+                  )}
+                >
                 <FileText className="mr-1 size-3.5" />
                 Documento
               </Button>
@@ -596,13 +627,13 @@ export function CommandComposerV2({
                 size="sm"
                 disabled={disabled}
                 onClick={onToggleQuiz}
-                className={cn(
-                  "hidden h-8 rounded-lg border px-2 text-micro md:flex",
-                  responseMode === "quiz"
-                    ? "border-amber-300/25 bg-amber-300/12 text-amber-100"
-                    : "border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
-                )}
-              >
+                  className={cn(
+                    "hidden h-8 rounded-lg border px-2 text-micro md:flex",
+                    responseMode === "quiz"
+                      ? "border-amber-300/25 bg-amber-300/12 text-amber-100"
+                      : COMPOSER_CONTROL_BUTTON_CLASS
+                  )}
+                >
                 <ClipboardList className="mr-1 size-3.5" />
                 Quiz
               </Button>
@@ -614,7 +645,10 @@ export function CommandComposerV2({
                     variant="ghost"
                     size="icon"
                     disabled={disabled}
-                    className="size-8 rounded-lg border border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground md:hidden"
+                    className={cn(
+                      "size-8 rounded-lg md:hidden",
+                      COMPOSER_CONTROL_BUTTON_CLASS
+                    )}
                     aria-label="Mais opções"
                   >
                     <Ellipsis className="size-3.5" />
@@ -625,10 +659,10 @@ export function CommandComposerV2({
                     <FileText
                       className={cn(
                         "mr-2 size-3.5",
-                        responseMode === "document" ? "text-cyan-300" : "text-muted-foreground"
+                        responseMode === "document" ? "text-primary" : "text-muted-foreground"
                       )}
                     />
-                    <span className={responseMode === "document" ? "text-cyan-100" : ""}>
+                    <span className={responseMode === "document" ? "text-primary" : ""}>
                       Documento
                     </span>
                   </DropdownMenuItem>
@@ -660,9 +694,9 @@ export function CommandComposerV2({
                   "h-8 rounded-lg border px-2 text-micro transition-shadow",
                   isRecording
                     ? "border-rose-300/40 bg-rose-300/12 text-rose-100"
-                    : isTranscribing
-                    ? "border-cyan-300/25 bg-cyan-300/12 text-cyan-100"
-                    : "border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
+                  : isTranscribing
+                    ? "border-primary/25 bg-primary/10 text-primary"
+                    : COMPOSER_CONTROL_BUTTON_CLASS
                 )}
               >
                 {isTranscribing ? (
@@ -678,6 +712,7 @@ export function CommandComposerV2({
             </div>
 
             <div className="flex items-center gap-1.5">
+              {costControl}
               {isLoading || isTranscribing ? (
                 <Button
                   type="button"
@@ -697,7 +732,7 @@ export function CommandComposerV2({
                   disabled={!hasContent || isRecording || isProcessing}
                   onClick={onSubmit}
                   aria-label="Enviar mensagem"
-                  className="h-8 rounded-lg bg-cyan-300 px-3 text-xs font-semibold text-slate-950 hover:bg-cyan-200 disabled:opacity-30"
+                  className="h-8 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-30"
                 >
                   <Send className="size-3.5" />
                 </Button>

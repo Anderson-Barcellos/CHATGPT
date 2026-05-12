@@ -23,7 +23,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { CommandComposerV2 } from "@/components/workspace-v2/WorkspaceLayoutV2";
+import { CostCounter } from "@/components/chat/CostCounter";
 import { useFileAttachments } from "@/hooks/useFileAttachments";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -92,6 +98,7 @@ export function CommandComposerContainerV2({
     clearFiles,
   } = useFileAttachments();
   const {
+    audioLevel,
     error: speechError,
     isSupported: speechSupported,
     recordingDurationMs,
@@ -143,7 +150,16 @@ export function CommandComposerContainerV2({
       }
       textareaRef.current?.focus();
     }
-  }, [attachments, clearFiles, hasContent, input, isProcessing, responseMode, sendMessage]);
+  }, [
+    attachments,
+    clearFiles,
+    hasContent,
+    input,
+    isProcessing,
+    responseMode,
+    sendMessage,
+    setResponseMode,
+  ]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -252,7 +268,7 @@ export function CommandComposerContainerV2({
     };
     window.addEventListener("gaucho:set-response-mode", handler);
     return () => window.removeEventListener("gaucho:set-response-mode", handler);
-  }, []);
+  }, [setResponseMode]);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -277,7 +293,7 @@ export function CommandComposerContainerV2({
 
     textarea.addEventListener("focus", handleFocus);
     return () => textarea.removeEventListener("focus", handleFocus);
-  }, []);
+  }, [isMobile]);
 
   const modelControl = (
     <DropdownMenu>
@@ -287,7 +303,7 @@ export function CommandComposerContainerV2({
           size="sm"
           disabled={isLoading || isTranscribing}
           aria-label="Selecionar modelo"
-          className="h-8 max-w-[9.5rem] gap-1.5 rounded-lg border border-white/8 bg-white/[0.035] px-2 text-micro font-medium text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
+          className="h-8 max-w-[7rem] gap-1.5 rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-1.5 text-nano font-medium text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground"
         >
           <span className="truncate">{currentModel?.name || parameters.model}</span>
           <ChevronDown className="size-3.5 shrink-0" />
@@ -302,7 +318,7 @@ export function CommandComposerContainerV2({
             onClick={() => updateParameters({ model: model.id })}
             className={cn(
               "flex flex-col items-start gap-0.5 py-2",
-              parameters.model === model.id && "bg-primary/10"
+              parameters.model === model.id && "bg-primary/10 text-foreground"
             )}
           >
             <div className="flex w-full items-center justify-between gap-2">
@@ -322,21 +338,35 @@ export function CommandComposerContainerV2({
     </DropdownMenu>
   );
 
+  const reasoningOpacity = useMemo(() => {
+    const map: Record<ReasoningEffort, number> = {
+      none: 0.3,
+      low: 0.45,
+      medium: 0.6,
+      high: 0.8,
+      xhigh: 1.0,
+    };
+    return map[parameters.reasoningEffort] ?? 0.6;
+  }, [parameters.reasoningEffort]);
+
   const reasoningControl = (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={isLoading || isTranscribing}
-          aria-label="Ajustar nível de raciocínio"
-          className="h-8 gap-1.5 rounded-lg border border-white/8 bg-white/[0.035] px-2 text-micro font-medium text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
-        >
-          <Brain className="size-3.5" />
-          <span>{currentReasoning?.label || "Medio"}</span>
-          <ChevronDown className="size-3.5" />
-        </Button>
-      </DropdownMenuTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={isLoading || isTranscribing}
+              aria-label="Ajustar nível de raciocínio"
+              className="h-8 rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-1.5 text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground"
+            >
+              <Brain className="size-3.5" style={{ opacity: reasoningOpacity }} />
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent>Raciocínio: {currentReasoning?.label || "Medio"}</TooltipContent>
+      </Tooltip>
       <DropdownMenuContent align="start" className="w-48">
         <DropdownMenuLabel>Raciocinio</DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -346,7 +376,7 @@ export function CommandComposerContainerV2({
             onClick={() => updateParameters({ reasoningEffort: option.value })}
             className={cn(
               "flex flex-col items-start gap-0.5",
-              parameters.reasoningEffort === option.value && "bg-primary/10"
+              parameters.reasoningEffort === option.value && "bg-primary/10 text-foreground"
             )}
           >
             <span className="text-xs font-medium">{option.label}</span>
@@ -381,6 +411,7 @@ export function CommandComposerContainerV2({
         isProcessing={isProcessing}
         isRecording={isRecording}
         isTranscribing={isTranscribing}
+        audioLevel={audioLevel}
         speechSupported={speechSupported}
         speechStatusLabel={speechStatusLabel}
         hasContent={hasContent}
@@ -396,6 +427,7 @@ export function CommandComposerContainerV2({
         }
         modelControl={modelControl}
         reasoningControl={hasReasoning ? reasoningControl : undefined}
+        costControl={<CostCounter />}
         onValueChange={setInput}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}

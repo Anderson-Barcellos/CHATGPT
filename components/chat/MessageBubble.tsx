@@ -106,15 +106,15 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
       data-message-id={message.id}
     >
       {!isUser && (
-        <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 md:h-8 md:w-8">
+        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 md:h-9 md:w-9">
           <OpenAIIcon className="h-3 w-3 text-primary md:h-4 md:w-4" />
         </div>
       )}
 
-      <div className={cn("max-w-[93%] min-w-0 sm:max-w-[80%] xl:max-w-[75%]", isUser && "order-first")}>
+      <div className={cn("w-full max-w-full min-w-0", isUser && "order-first")}>
         <Card
           className={cn(
-            "relative min-w-0 gap-0 overflow-hidden break-words border px-2.5 py-2 text-left text-body-sm leading-relaxed md:px-4 md:py-3 md:text-body",
+            "relative w-full min-w-0 gap-0 overflow-hidden break-words border px-2.5 py-2 text-left text-body-sm leading-relaxed md:px-4 md:py-3 md:text-body",
             isUser
               ? "gc-user-bubble rounded-2xl rounded-br-md"
               : "gc-assistant-bubble rounded-2xl rounded-bl-md text-foreground/90"
@@ -160,7 +160,7 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
                           "flex items-center gap-1.5 rounded-lg px-2 py-1 text-nano md:text-micro",
                           isUser
                             ? "bg-white/15 text-white/90"
-                            : "bg-white/8 text-foreground/75"
+                            : "bg-[var(--gc-surface-control)] text-foreground/75"
                         )}
                       >
                         {att.type === "pdf" ? (
@@ -205,7 +205,10 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
               </div>
             </div>
           ) : (
-            <MessageContent message={message} />
+            <>
+              {!message.isGeneratingImage && <ReasoningPanel message={message} />}
+              <MessageContent message={message} />
+            </>
           )}
 
           {message.isSearching && (
@@ -227,12 +230,12 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
           )}
 
           {message.citations && message.citations.length > 0 && (
-            <div className="mt-3 space-y-1.5">
-              <div className="flex items-center gap-1.5 text-nano font-semibold text-muted-foreground/70 uppercase tracking-wider">
-                <Globe className="h-3 w-3" />
+            <div className="mt-3 space-y-1">
+              <div className="flex items-center gap-1 text-[9px] font-semibold text-muted-foreground/60 uppercase tracking-wider md:text-[10px]">
+                <Globe className="h-2 w-2" />
                 Fontes
               </div>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1">
                 {message.citations.map((cite, i) => (
                   <a
                     key={i}
@@ -240,22 +243,20 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
                     target="_blank"
                     rel="noopener noreferrer"
                     className={cn(
-                      "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-nano font-medium",
+                      "inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[11px] font-medium leading-none md:text-[11px]",
                       "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
                       "border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors",
-                      "max-w-[170px] truncate md:max-w-[200px]"
+                      "max-w-[150px] truncate md:max-w-[170px]"
                     )}
                     title={cite.url}
                   >
-                    <ExternalLink className="h-2.5 w-2.5 shrink-0" />
+                    <ExternalLink className="h-1.5 w-1.5 shrink-0" />
                     {cite.title || new URL(cite.url).hostname}
                   </a>
                 ))}
               </div>
             </div>
           )}
-
-          {!message.isGeneratingImage && <ReasoningPanel message={message} />}
         </Card>
 
         <div className={cn(
@@ -337,7 +338,7 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
       </div>
 
       {isUser && (
-        <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[color:var(--gc-border)] bg-[var(--gc-surface-control)] shadow-[0_0_18px_rgba(34,211,238,0.16)] md:h-8 md:w-8">
+        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[color:var(--gc-border)] bg-[var(--gc-surface-control)] shadow-[0_0_18px_rgba(14,116,144,0.16)] md:h-9 md:w-9">
           {/* eslint-disable-next-line @next/next/no-img-element -- small local avatar */}
           <img
             src={USER_AVATAR_SRC}

@@ -1,126 +1,85 @@
 # Model Configuration
 
-**Last updated:** 2026-04-26
+**Last updated:** 2026-05-08  
 **Source:** `lib/models/modelConfig.ts`
 
-## Available Models (8 chat + 2 image)
+## Available Models (6 chat/reasoning + 2 image)
 
-### GPT-5 Series
+### Chat and Reasoning
 
-| ID | Name | Reasoning | Temperature | Context | Pricing (in/out per 1M) | Badge |
-|----|------|-----------|-------------|---------|--------------------------|-------|
-| `gpt-5.5` | GPT-5.5 | Yes | No | 1.05M | $5 / $30 | Frontier |
-| `gpt-5.3-chat-latest` | GPT-5.3 Chat | No | Yes | 128K | $1.75 / $14 | ChatGPT |
-| `gpt-5.3-codex` | GPT-5.3 Codex | Yes | No | 400K | $1.75 / $14 | Codex |
-
-### GPT-4 Series
-
-| ID | Name | Reasoning | Temperature | Context | Pricing (in/out per 1M) | Badge |
-|----|------|-----------|-------------|---------|--------------------------|-------|
-| `gpt-4o` | GPT-4o | No | Yes | 128K | $2.5 / $10 | — |
-| `gpt-4.1` | GPT-4.1 | No | Yes | 128K | $2.5 / $10 | Confiavel |
-
-### O-Series (reasoning specialists)
-
-| ID | Name | Reasoning | Temperature | Context | Pricing (in/out per 1M) | Badge |
-|----|------|-----------|-------------|---------|--------------------------|-------|
-| `o3` | o3 | Yes | No | 200K | $10 / $40 | Raciocinio |
-| `o4-mini` | o4-mini | Yes | No | 200K | $1.1 / $4.4 | Novo |
+| ID | Name | Family | Reasoning | Context | Max Output | Pricing (in/out per 1M) | Badge |
+|----|------|--------|-----------|---------|------------|---------------------------|-------|
+| `chat-latest` | GPT-5.5 Instant | `gpt-5` | No | 128K | 16K | $1 / $4 | Padrao |
+| `gpt-5.5` | GPT-5.5 | `gpt-5` | Yes | 1.05M | 128K | $5 / $30 | Frontier |
+| `gpt-5.4-mini` | GPT-5.4 mini | `gpt-5` | Yes | 128K | 16K | $1.1 / $4.4 | Eficiente |
+| `gpt-5.1` | GPT-5.1 | `gpt-5` | Yes | 400K | 128K | $1.75 / $14 | Codex |
+| `gpt-4.1` | GPT-4.1 | `gpt-4.1` | No | 1.05M | 32K | $2.5 / $10 | Confiavel |
+| `o3` | o3 | `o-series` | Yes | 200K | 100K | $10 / $40 | Raciocinio |
 
 ### Image Generation
 
-| ID | Name | Context | Pricing |
-|----|------|---------|---------|
-| `gpt-image-1.5` | GPT Image 1.5 | 4K | $0.04/image |
-| `dall-e-3` | DALL-E 3 | 4K | $0.04/image |
+| ID | Name | Family | Pricing |
+|----|------|--------|---------|
+| `gpt-image-2.0` | GPT Image 2.0 | `gpt-image` | $0.04/input |
+| `dall-e-3` | DALL-E 3 | `dall-e` | $0.04/input |
 
-## Reasoning vs Temperature Logic
+## Runtime Defaults
 
-Reasoning models and temperature are **mutually exclusive** in the OpenAI API. The system enforces this at three levels:
+- Default selected model: `chat-latest` (`stores/settingsStore.ts`).
+- Default `reasoningEffort`:
+  - `gpt-5.4-mini`: `none`
+  - other reasoning models: `medium`
+  - non-reasoning models: `none`
+- Default `reasoningSummary`: `off` when effort is `none`, otherwise `concise`.
 
-### 1. Model Config Flags
+## Reasoning vs Temperature Rules
 
-Each model declares:
-- `capabilities: [...]` — includes `"reasoning"` for thinking models
-- `supportsTemperature: boolean` — `false` for all reasoning models
+The API only sends `temperature` and `top_p` when `modelSupportsTemperature(model)` is true.
 
-### 2. Frontend + Store
+Current catalog note:
+- all active chat/reasoning models currently have `supportsTemperature: false`.
 
-```
-Model selected
-  → isReasoningModel(model) ?
-    → Show reasoning effort selector (none/low/medium/high/xhigh)
-    → Hide temperature/topP from API request body
-  : → Hide reasoning effort selector
-    → Include temperature/topP in request body
-```
+## Verbosity and Code Interpreter
 
-The app now stores tuning per model, so switching models restores the last settings used for that specific model.
+- `verbosity` is only sent when `modelSupportsVerbosity(model)` is true.
+- `codeInterpreterEnabled` only adds the tool when `modelSupportsCodeInterpreter(model)` is true.
 
-### 3. Verbosity and Code Interpreter
+## Chat API Guardrails
 
-- `supportsVerbosity: boolean` gates the GPT-5-only verbosity control.
-- `supportsCodeInterpreter: boolean` gates whether the model can expose the built-in Code Interpreter tool.
-- `verbosity` is serialized to the Responses API `text.verbosity` field.
-- `codeInterpreterEnabled` adds `tools: [{ type: "code_interpreter", container: { type: "auto" } }]` when enabled.
+`app/api/chat/route.ts` enforces:
 
-### 4. API Routes (chat/route.ts)
-
-```typescript
-const reasoningConfig = isReasoningModel(model) ? reasoning : undefined;
-const useTemp = modelSupportsTemperature(model);
-
-await openai.responses.create({
-  model,
-  ...(useTemp && { temperature, top_p: topP }),
-  reasoning: reasoningConfig,
-  ...(useVerbosity && { text: { verbosity } }),
-  tools,
-});
-```
-
-This prevents `400 Unsupported parameter` errors from the OpenAI API.
-
-## Reasoning Effort Options
-
-| Value | Label | Description |
-|-------|-------|-------------|
-| `none` | Sem | Direct response, no chain-of-thought |
-| `low` | Baixo | Light reasoning |
-| `medium` | Medio | Balanced (default) |
-| `high` | Alto | Deep reasoning |
-| `xhigh` | Maximo | Exhaustive analysis |
-
-## Reasoning Summary Options
-
-| Value | Description |
-|-------|-------------|
-| `off` | No summary returned |
-| `auto` | Model decides (default) |
-| `concise` | Brief summary |
-| `detailed` | Full reasoning breakdown |
+- Allowed models are derived from `MODELS` and restricted to chat/reasoning capabilities.
+- `maxOutputTokens` is clamped to each model's `maxOutput`.
+- `responseMode = "quiz"` forces:
+  - model: `gpt-5.5`
+  - reasoning effort: `high`
+  - strict JSON schema output.
 
 ## Helper Functions
 
-| Function | Purpose |
-|----------|---------|
-| `isReasoningModel(id)` | Check if model has `"reasoning"` capability |
-| `modelSupportsTemperature(id)` | Check `supportsTemperature` flag |
-| `modelSupportsVerbosity(id)` | Check `supportsVerbosity` flag |
-| `modelSupportsCodeInterpreter(id)` | Check `supportsCodeInterpreter` flag |
-| `getChatModels()` | Filter out DALL-E, return chat/reasoning models |
-| `getModelsByCapability(cap)` | Filter by any capability string |
-| `getModelsByFamily(family)` | Filter by family (gpt-5, o-series, etc.) |
-| `calculateCost(in, out, id, cached?)` | Compute USD cost |
-| `estimateCost(prompt, outputTokens, id)` | Estimate from raw text |
-| `fitsInContextWindow(in, out, id)` | Check token limits |
-| `getBestModelForTask(task, budget?)` | Auto-recommend model |
-| `formatCost(cost)` | Pretty-print USD |
-| `formatTokenCount(tokens)` | Pretty-print token count (e.g. "12.5K") |
+`lib/models/modelConfig.ts` exports:
 
-## Adding a New Model
+- `isReasoningModel`
+- `getReasoningLabel`
+- `modelSupportsTemperature`
+- `modelSupportsVerbosity`
+- `modelSupportsCodeInterpreter`
+- `calculateCost`
+- `estimateCost`
+- `fitsInContextWindow`
+- `getModelsByCapability`
+- `getModelsByFamily`
+- `getChatModels`
+- `formatCost`
+- `formatTokenCount`
 
-1. Add entry to `MODELS` in `lib/models/modelConfig.ts`
-2. If new family: add to `ModelFamily` union in `types/index.ts`
-3. If new family: add keys to all `Record<ModelFamily, ...>` in `components/settings/ModelSelector.tsx` (grouped, familyLabels, familyIcons)
-4. Build and verify: `npm run build`
+## Adding/Changing Models
+
+1. Update `MODELS` in `lib/models/modelConfig.ts`.
+2. If introducing a new family, update `ModelFamily` in `types/index.ts`.
+3. Validate with:
+
+```bash
+npx tsc --noEmit
+npm run build
+```

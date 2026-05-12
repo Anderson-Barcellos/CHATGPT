@@ -9,12 +9,12 @@ The project focuses on a ChatGPT-like experience with conversation history, reas
 - Real-time chat experience with streaming responses and incremental persistence (auto-save throttled during stream, beacon on unload, interrupted-stream recovery on load)
 - Dedicated reasoning panel with explicit state transitions
 - Conversation history with editing and deletion flows
-- Model picker with support for `gpt-5.5`, `gpt-5.3-codex`, and `gpt-5.3-chat-latest`
+- Model picker with support for `chat-latest` (default), `gpt-5.5`, `gpt-5.4-mini`, `gpt-5.1`, `gpt-4.1`, and `o3`
 - Persistent memory and custom instructions stored server-side
 - Workspace v2 shell with conversation rail, chat canvas, command composer, and right-side Canvas/Artifact panel
 - Artifact and Canvas rendering flows, including Markdown, HTML, quiz, copy, and PDF export
 - Mobile-first shell refinements for Safari and installed PWA usage
-- Local persistence for conversations, memories, and persona bootstrap data
+- Server-side JSON persistence for conversations, memories, and persona (`data/*.json`)
 
 ## Tech Stack
 

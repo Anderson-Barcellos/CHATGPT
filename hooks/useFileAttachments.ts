@@ -13,41 +13,84 @@ const MAX_TEXT_CHARS = 100_000;
 const MAX_PDF_PAGES = 50;
 
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif"]);
+const PDF_EXTENSIONS = new Set([".pdf"]);
 const TEXT_EXTENSIONS = new Set([".txt", ".md", ".csv", ".json", ".xml", ".log", ".yaml", ".yml", ".toml", ".ini", ".env", ".sh", ".py", ".js", ".ts", ".tsx", ".jsx", ".html", ".css"]);
 
+function getFileExtension(fileName: string): string {
+  const index = fileName.lastIndexOf(".");
+  return index >= 0 ? fileName.slice(index).toLowerCase() : "";
+}
+
 function getAttachmentType(file: File): FileAttachmentType | null {
-  if (IMAGE_TYPES.has(file.type)) return "image";
-  if (file.type === "application/pdf") return "pdf";
-  const ext = "." + file.name.split(".").pop()?.toLowerCase();
+  const mimeType = file.type.toLowerCase();
+  const ext = getFileExtension(file.name);
+
+  if (IMAGE_TYPES.has(mimeType) || mimeType.startsWith("image/") || IMAGE_EXTENSIONS.has(ext)) {
+    return "image";
+  }
+  if (mimeType === "application/pdf" || PDF_EXTENSIONS.has(ext)) return "pdf";
   if (TEXT_EXTENSIONS.has(ext) || file.type.startsWith("text/")) return "text";
   return null;
 }
 
-function resizeImage(file: File, maxDim: number): Promise<string> {
+function readAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Failed to read image as data URL"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImageElement(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      let { width, height } = img;
-      if (width > maxDim || height > maxDim) {
-        const ratio = Math.min(maxDim / width, maxDim / height);
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) { reject(new Error("Canvas context failed")); return; }
-      ctx.drawImage(img, 0, 0, width, height);
-      const mimeOut = file.type === "image/png" ? "image/png" : "image/jpeg";
-      const quality = file.type === "image/png" ? undefined : 0.85;
-      resolve(canvas.toDataURL(mimeOut, quality));
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image load failed")); };
-    img.src = url;
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Image load failed"));
+    img.src = src;
   });
+}
+
+async function loadImageForResize(file: File): Promise<HTMLImageElement> {
+  const objectUrl = URL.createObjectURL(file);
+
+  try {
+    return await loadImageElement(objectUrl);
+  } catch {
+    const dataUrl = await readAsDataUrl(file);
+    try {
+      return await loadImageElement(dataUrl);
+    } catch {
+      const ext = getFileExtension(file.name) || "(sem extensão)";
+      const mime = file.type || "desconhecido";
+      throw new Error(`Image load failed (type: ${mime}, ext: ${ext}, size: ${file.size} bytes)`);
+    }
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+async function resizeImage(file: File, maxDim: number): Promise<string> {
+  const img = await loadImageForResize(file);
+
+  let { width, height } = img;
+  if (width > maxDim || height > maxDim) {
+    const ratio = Math.min(maxDim / width, maxDim / height);
+    width = Math.round(width * ratio);
+    height = Math.round(height * ratio);
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas context failed");
+
+  ctx.drawImage(img, 0, 0, width, height);
+  const mimeOut = file.type === "image/png" ? "image/png" : "image/jpeg";
+  const quality = file.type === "image/png" ? undefined : 0.85;
+  return canvas.toDataURL(mimeOut, quality);
 }
 
 function makeThumbnail(dataUrl: string): Promise<string> {
@@ -148,6 +191,11 @@ export function useFileAttachments() {
     const processed: FileAttachment[] = [];
 
     for (const file of toProcess) {
+      if (file.size <= 0) {
+        newErrors.push({ fileName: file.name, error: "Arquivo vazio ou inválido" });
+        continue;
+      }
+
       const type = getAttachmentType(file);
       if (!type) {
         newErrors.push({ fileName: file.name, error: "Tipo de arquivo nao suportado" });

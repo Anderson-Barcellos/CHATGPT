@@ -104,6 +104,10 @@ export interface Message {
   citations?: UrlCitation[];
   artifact?: MessageArtifact;
   attachments?: FileAttachment[];
+  inputTokens?: number;
+  outputTokens?: number;
+  cachedTokens?: number;
+  reasoningTokens?: number;
 }
 
 export interface SerializedMessage extends Omit<Message, "timestamp"> {
@@ -148,7 +152,7 @@ export interface SerializedConversation {
   updatedAt: string;
 }
 
-export type ActivePanelTab = "artifact" | "activity" | "notes";
+export type ActivePanelTab = "activity" | "notes";
 
 export interface CanvasOverlayState {
   x: number;

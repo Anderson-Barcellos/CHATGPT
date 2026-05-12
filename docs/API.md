@@ -1,209 +1,181 @@
 # API Reference
 
-**Last updated:** 2026-04-01  
-**Base URL:** `https://ultrassom.ai/chat`
+**Last updated:** 2026-05-08  
+**Base URL:** `https://ultrassom.ai/chat` (respects `NEXT_PUBLIC_BASE_PATH`)
 
-All endpoints are Next.js API routes under `app/api/`.
+All endpoints are implemented as Next.js route handlers under `app/api/`.
 
 ---
 
 ## POST /api/chat
 
-Chat completion with streaming.
+Chat completion endpoint with SSE streaming support.
 
 **File:** `app/api/chat/route.ts`
 
-### Request
+### Request (example)
 
 ```json
 {
   "input": [
-    { "role": "user", "content": "Hello" },
-    { "role": "assistant", "content": "Hi there!" },
-    { "role": "user", "content": "How are you?" }
+    { "role": "user", "content": "Explique neurite vestibular em tópicos." }
   ],
-  "model": "gpt-5.3-chat-latest",
+  "model": "chat-latest",
   "instructions": "You are a helpful assistant.",
-  "maxOutputTokens": 32768,
-  "temperature": 0.7,
-  "topP": 1,
+  "maxOutputTokens": 4096,
   "verbosity": "medium",
   "codeInterpreterEnabled": false,
+  "responseMode": "default",
   "stream": true,
   "reasoning": {
     "effort": "medium",
-    "summary": "auto"
+    "summary": "concise"
   }
 }
 ```
 
+### Request fields
+
 | Field | Type | Default | Notes |
 |-------|------|---------|-------|
-| `input` | array | **required** | Conversation history in OpenAI Responses API format |
-| `model` | string | `gpt-5.3-chat-latest` | Model ID from modelConfig |
-| `instructions` | string | — | System prompt (built by contextBuilder) |
-| `maxOutputTokens` | number | 1024 | Max response tokens |
-| `temperature` | number | 0.7 | Omit for reasoning models |
-| `topP` | number | 1 | Omit for reasoning models |
-| `verbosity` | string | — | Sent as `text.verbosity` for GPT-5 models that support it |
-| `codeInterpreterEnabled` | boolean | false | Adds the built-in `code_interpreter` tool with `container.type = "auto"` |
-| `stream` | boolean | true | SSE streaming |
+| `input` | array | **required** | OpenAI Responses API input payload |
+| `model` | string | `chat-latest` | Must be an allowed chat/reasoning model from `lib/models/modelConfig.ts` |
+| `instructions` | string | — | System instructions |
+| `maxOutputTokens` | number | model max output | Clamped to selected model max |
+| `temperature` | number | — | Sent only if model supports temperature |
+| `topP` | number | — | Sent only if model supports temperature |
+| `verbosity` | string | — | Sent as `text.verbosity` only for models that support verbosity |
+| `codeInterpreterEnabled` | boolean | `false` | Adds `code_interpreter` tool only when model supports it |
+| `responseMode` | `default \| document \| quiz` | `default` | `quiz` uses forced model/schema path |
+| `stream` | boolean | `true` | Enables SSE stream for non-quiz mode |
 | `reasoning` | object | — | Only sent for reasoning models |
 
-### Response (streaming)
+### Streaming response
 
-Content-Type: `text/event-stream`
+`Content-Type: text/event-stream`
 
-```
-data: {"type":"response.output_text.delta","delta":"Hello"}
-data: {"type":"response.reasoning_summary_text.delta","delta":"The user..."}
-data: {"type":"response.reasoning_text.delta","delta":"Let me think..."}
+```text
+data: {"type":"response.output_text.delta","delta":"..."}
+data: {"type":"response.reasoning_summary_text.delta","delta":"..."}
 data: [DONE]
 ```
 
-### Response (non-streaming)
+### Non-streaming response
 
-Returns the raw OpenAI response object as JSON.
+Returns raw OpenAI response JSON.
 
-### Signal propagation
+### Runtime notes
 
-`route.ts` passes `signal: request.signal` to `openai.responses.create()`. When the client disconnects, the upstream OpenAI stream is aborted immediately, avoiding unnecessary token consumption. Cancelled streams return HTTP `499` (Client Closed Request).
+- Request body size is limited to ~10MB (`readJsonWithLimit`).
+- Client disconnects propagate to OpenAI via `signal: request.signal`.
+- Aborted streams return HTTP `499`.
+- `quiz` mode forces:
+  - model: `gpt-5.5`
+  - reasoning effort: `high`
+  - strict JSON schema (`quizResponseSchema`)
 
 ### Errors
 
 | Status | Meaning |
 |--------|---------|
-| 400 | Missing `input` or invalid parameters |
+| 400 | Invalid input/model/payload |
+| 401 | Unauthorized (when auth enabled) |
 | 429 | Rate limited |
-| 499 | Client disconnected — upstream stream aborted |
-| 500 | OpenAI API error or internal error |
+| 499 | Client disconnected (stream aborted) |
+| 500 | Internal/OpenAI error |
 
 ---
 
-## GET /api/memories
+## Conversations
 
-Lista as memórias persistidas no servidor.
+### GET /api/conversations
 
-**File:** `app/api/memories/route.ts`
+List conversations.
 
-### Response
+### POST /api/conversations
 
-```json
-[
-  {
-    "id": "mem-1",
-    "content": "Prefere respostas narrativas.",
-    "category": "preferences",
-    "isActive": true,
-    "priority": 10,
-    "createdAt": "2026-04-02T00:00:00.000Z",
-    "updatedAt": "2026-04-02T00:00:00.000Z"
-  }
-]
-```
+Create a conversation (`{ title?: string }`).
 
-## POST /api/memories
+### GET /api/conversations/[id]
 
-Cria uma nova memória.
+Read a single conversation.
 
-### Request
+### PUT /api/conversations/[id]
 
-```json
-{
-  "content": "Prefere respostas narrativas.",
-  "category": "preferences",
-  "isActive": true,
-  "priority": 10
-}
-```
+Update conversation data (`title`, `messages`, and/or `workspace`).
 
-## PUT /api/memories/[id]
+### POST /api/conversations/[id]
 
-Atualiza uma memória existente.
+Alias of `PUT` for beacon compatibility (`navigator.sendBeacon` only sends `POST`).
 
-## DELETE /api/memories/[id]
+### DELETE /api/conversations/[id]
 
-Remove uma memória existente.
+Delete conversation.
+
+**Files:** `app/api/conversations/route.ts`, `app/api/conversations/[id]/route.ts`
 
 ---
 
-## GET /api/conversations/[id]
+## Memories
 
-Returns a single conversation by ID.
+### GET /api/memories
 
-## PUT /api/conversations/[id]
+List memories.
 
-Full conversation update (standard JSON body).
+### POST /api/memories
 
-## POST /api/conversations/[id]
+Create memory.
 
-Alias for `PUT`. Accepted because `navigator.sendBeacon` only sends POST. Used by the incremental-persistence beacon path to flush in-progress messages on page unload.
+### PUT /api/memories/[id]
 
-**File:** `app/api/conversations/[id]/route.ts`
+Update memory.
 
-## PATCH /api/conversations/[id]
+### DELETE /api/memories/[id]
 
-Partial update (title rename, etc.).
+Delete memory.
 
-## DELETE /api/conversations/[id]
-
-Deletes the conversation.
+**Files:** `app/api/memories/route.ts`, `app/api/memories/[id]/route.ts`
 
 ---
 
-## GET /api/persona
+## Persona
 
-Retorna as instruções customizadas persistidas no servidor.
+### GET /api/persona
 
-## PUT /api/persona
+Read persisted custom instructions.
 
-Atualiza `contextAboutUser` e `responsePreferences`.
+### PUT /api/persona
 
-## GET /api/health
+Update `contextAboutUser` and `responsePreferences`.
 
-Health check endpoint.
+**File:** `app/api/persona/route.ts`
+
+---
+
+## Authentication
+
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/check`
+
+**Files:** `app/api/auth/*`
+
+---
+
+## Transcription
+
+### POST /api/transcribe
+
+Audio transcription via `gpt-4o-transcribe`.
+
+**File:** `app/api/transcribe/route.ts`
+
+---
+
+## Health
+
+### GET /api/health
+
+Operational health check.
 
 **File:** `app/api/health/route.ts`
-
-### Response
-
-```json
-{
-  "status": "healthy",
-  "timestamp": "2026-01-30T17:56:00.000Z",
-  "service": "ChatGPT Clone",
-  "version": "1.0.0",
-  "environment": "production",
-  "basePath": "/chat",
-  "port": "3040",
-  "uptime": 3600,
-  "memory": {
-    "rss": 134217728,
-    "heapTotal": 67108864,
-    "heapUsed": 52428800,
-    "external": 1048576
-  }
-}
-```
-
----
-
-## Rate Limiting
-
-Configured in `proxy.ts`. Limits per endpoint:
-
-| Endpoint | Default limit |
-|----------|--------------|
-| `/api/chat` | 20 req/min |
-| `/api/transcribe` | 10 req/min |
-
-Configurable via environment variables: `RATE_LIMIT_CHAT_RPM`, `RATE_LIMIT_TRANSCRIBE_RPM`.
-
-Rate limit headers returned:
-- `X-RateLimit-Limit`
-- `X-RateLimit-Remaining`
-- `X-RateLimit-Reset`
-
-## Authentication (optional)
-
-Enable with `AUTH_ENABLED=true`. Browser access is protected with an HTTP-only JWT cookie issued by `/api/auth/login`.

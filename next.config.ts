@@ -33,7 +33,7 @@ const nextConfig: NextConfig = {
       "@tanstack/react-query",
     ],
     serverActions: {
-      bodySizeLimit: "2mb",
+      bodySizeLimit: "10mb",
     },
   },
 

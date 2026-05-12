@@ -60,10 +60,11 @@ export function StreamingMarkdown({
 
   return (
     <div
-      className={cn("max-w-full text-left", className)}
+      className={cn("max-w-full text-left text-body-sm md:text-body", className)}
       aria-live="polite"
     >
       <ReactMarkdown
+        skipHtml
         remarkPlugins={chatMarkdownRemarkPlugins}
         rehypePlugins={rehypePlugins}
         components={components}

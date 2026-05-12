@@ -89,7 +89,7 @@ export function QuizCanvas({
 
       {isSubmitted && (
         <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/8 p-4">
-          <div className="flex items-center gap-2 text-emerald-300">
+          <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
             <Trophy className="h-4 w-4" />
             <span className="text-sm font-semibold">
               Nota final: {session.score ?? 0}% ({correctAnswerCount}/{artifact.quiz.questions.length})
@@ -102,8 +102,8 @@ export function QuizCanvas({
       )}
 
       {!isSubmitted && (
-        <div className="rounded-2xl border border-cyan-500/15 bg-cyan-500/8 p-4">
-          <div className="flex items-center gap-2 text-cyan-100">
+        <div className="rounded-2xl border border-primary/15 bg-primary/8 p-4">
+          <div className="flex items-center gap-2 text-primary">
             <CircleDashed className="h-4 w-4" />
             <span className="text-sm font-semibold">
               Responde tudo primeiro e depois envia para corrigir.
@@ -126,7 +126,7 @@ export function QuizCanvas({
           return (
             <section
               key={question.id}
-              className="rounded-[24px] border border-white/10 bg-background/55 p-4 shadow-sm"
+              className="rounded-[24px] border border-[color:var(--gc-border-soft)] bg-background/55 p-4 shadow-sm"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -139,7 +139,7 @@ export function QuizCanvas({
                 </div>
                 {isSubmitted && (
                   selectedOptionId === question.correctOptionId ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/12 px-2.5 py-1 text-micro font-medium text-emerald-300">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/12 px-2.5 py-1 text-micro font-medium text-emerald-700 dark:text-emerald-300">
                       <CheckCircle2 className="h-3.5 w-3.5" />
                       Correta
                     </span>
@@ -168,8 +168,8 @@ export function QuizCanvas({
                         "flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left transition-colors",
                         "disabled:cursor-default",
                         isSelected && !isSubmitted
-                          ? "border-cyan-400/35 bg-cyan-500/10"
-                          : "border-white/10 bg-background/60 hover:border-white/20 hover:bg-background/80",
+                          ? "border-primary/35 bg-primary/10"
+                          : "border-[color:var(--gc-border-soft)] bg-background/60 hover:border-primary/25 hover:bg-background/80",
                         showSubmittedState &&
                           (isCorrect
                             ? "border-emerald-500/25 bg-emerald-500/10"
@@ -187,7 +187,7 @@ export function QuizCanvas({
                         {option.label}
                       </span>
                       {isSubmitted && isCorrect && (
-                        <span className="rounded-full bg-emerald-500/12 px-2 py-0.5 text-nano font-semibold uppercase tracking-wide text-emerald-300">
+                        <span className="rounded-full bg-emerald-500/12 px-2 py-0.5 text-nano font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
                           Gabarito
                         </span>
                       )}
@@ -197,7 +197,7 @@ export function QuizCanvas({
               </div>
 
               {isSubmitted && (
-                <div className="mt-4 rounded-2xl border border-white/10 bg-background/70 p-4">
+                <div className="mt-4 rounded-2xl border border-[color:var(--gc-border-soft)] bg-background/70 p-4">
                   <div className="text-micro font-semibold uppercase tracking-eyebrow text-muted-foreground/70">
                     Explicacao
                   </div>
@@ -210,7 +210,7 @@ export function QuizCanvas({
       </div>
 
       {!isSubmitted && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-background/55 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[color:var(--gc-border-soft)] bg-background/55 p-4">
           <p className="text-sm leading-6 text-foreground/80">
             {unansweredCount > 0
               ? `Ainda faltam ${unansweredCount} questoes para completar o quiz.`

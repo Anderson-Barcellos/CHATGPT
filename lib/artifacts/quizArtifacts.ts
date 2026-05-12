@@ -1,7 +1,7 @@
 import { QuizArtifactPayload, QuizMessageArtifact, QuizQuestion, QuizSession } from "@/types";
 
 export const QUIZ_MIN_QUESTION_COUNT = 20;
-export const QUIZ_FORCED_MODEL = "gpt-5.5";
+export const QUIZ_FORCED_MODEL = "gpt-5.4";
 export const QUIZ_FORCED_REASONING_EFFORT = "high";
 
 type RawQuizOption = {

@@ -56,7 +56,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
       <p
         className={cn(
           "mt-3 text-sm tracking-splash uppercase font-medium transition-all duration-700 delay-200",
-          "text-cyan-400/70",
+          "text-primary/75",
           phase === "logo" && "opacity-0",
           phase === "brand" && "opacity-100",
           phase === "shrink" && "opacity-0"

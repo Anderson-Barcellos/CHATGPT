@@ -13,7 +13,6 @@ import {
   Plus,
   Settings,
   StickyNote,
-  Zap,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useCommandPaletteContext } from "@/components/command/CommandPaletteProvider";
@@ -70,7 +69,7 @@ export function CommandPalette() {
       >
         <DialogTitle className="sr-only">Paleta de comandos</DialogTitle>
         <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-nano [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-label [&_[cmdk-group-heading]]:text-muted-foreground">
-          <div className="flex items-center border-b border-white/8 px-3">
+          <div className="flex items-center border-b border-[color:var(--gc-border-soft)] px-3">
             <Command.Input
               placeholder="Buscar comando..."
               className="flex h-11 w-full bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
@@ -106,7 +105,7 @@ export function CommandPalette() {
                   <Bot className="size-4 shrink-0 text-muted-foreground" />
                   <span className="flex-1 min-w-0 truncate">{model.name}</span>
                   {parameters.model === model.id && (
-                    <Check className="size-3.5 shrink-0 text-emerald-400" />
+                    <Check className="size-3.5 shrink-0 text-primary" />
                   )}
                 </Command.Item>
               ))}
@@ -124,7 +123,7 @@ export function CommandPalette() {
                   <Brain className="size-4 shrink-0 text-muted-foreground" />
                   <span className="flex-1">{label}</span>
                   {parameters.reasoningEffort === value ? (
-                    <Check className="size-3.5 shrink-0 text-emerald-400" />
+                    <Check className="size-3.5 shrink-0 text-primary" />
                   ) : (
                     <span className="text-nano text-muted-foreground">{hint}</span>
                   )}

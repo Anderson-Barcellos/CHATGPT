@@ -16,7 +16,7 @@ This directory contains the comprehensive architectural documentation for the Ch
 
 3. **[Data Architecture](./03-DATA-ARCHITECTURE.md)**
    - Client-side State (Zustand).
-   - Data Persistence (Dexie.js / IndexedDB).
+   - Data Persistence (server-side JSON with file locking).
    - Data Fetching (TanStack Query).
    - Domain Models.
 

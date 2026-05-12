@@ -1,14 +1,14 @@
 import { ModelCapability, ModelFamily, ModelInfo, TokenUsage } from "@/types";
 
 export const MODELS: Record<string, ModelInfo> = {
-  "gpt-5.5": {
-    id: "gpt-5.5",
-    name: "GPT-5.5",
+  "gpt-5.4": {
+    id: "gpt-5.4",
+    name: "GPT-5.4",
     family: "gpt-5",
-    description: "Modelo frontier mais novo para coding e trabalho profissional complexo",
+    description: "Modelo frontier para coding, raciocinio avancado e trabalho profissional",
     contextWindow: 1050000,
     maxOutput: 128000,
-    pricing: { input: 5.0, output: 30.0, cachedInput: 0.5 },
+    pricing: { input: 3.75, output: 22.5, cachedInput: 0.375 },
     capabilities: ["chat", "reasoning", "vision", "function-calling", "json-mode"],
     supportsStreaming: true,
 
@@ -18,14 +18,14 @@ export const MODELS: Record<string, ModelInfo> = {
     recommendedFor: ["Analise profunda", "Tarefas profissionais complexas", "Raciocinio avancado"],
     badge: "Frontier",
   },
-  "gpt-5.3-chat-latest": {
-    id: "gpt-5.3-chat-latest",
-    name: "GPT-5.3",
+  "gpt-5.1-chat-latest": {
+    id: "gpt-5.1-chat-latest",
+    name: "GPT-5.1 Instant",
     family: "gpt-5",
-    description: "Modelo de chat rapido e eficiente para uso geral",
+    description: "Modelo de chat rapido e eficiente para uso geral — alias chat-latest da serie GPT-5.1",
     contextWindow: 128000,
     maxOutput: 16384,
-    pricing: { input: 1.0, output: 4.0, cachedInput: 0.1 },
+    pricing: { input: 1.75, output: 4.0, cachedInput: 0.175 },
     capabilities: ["chat", "vision", "function-calling", "json-mode"],
     supportsStreaming: true,
 
@@ -34,23 +34,6 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsCodeInterpreter: true,
     recommendedFor: ["Chat geral", "Respostas rapidas", "Uso diario"],
     badge: "Padrao",
-  },
-  "gpt-5.4": {
-    id: "gpt-5.4",
-    name: "GPT-5.4",
-    family: "gpt-5",
-    description: "Modelo instantaneo usado no ChatGPT para chat geral",
-    contextWindow: 128000,
-    maxOutput: 16384,
-    pricing: { input: 1.75, output: 14.0, cachedInput: 0.175 },
-    capabilities: ["chat", "vision", "function-calling", "json-mode"],
-    supportsStreaming: true,
-
-    supportsTemperature: false,
-    supportsVerbosity: true,
-    supportsCodeInterpreter: true,
-    recommendedFor: ["Chat geral", "Respostas rapidas", "Teste das melhorias do ChatGPT"],
-    badge: "ChatGPT",
   },
   "gpt-5.4-mini": {
     id: "gpt-5.4-mini",
@@ -68,6 +51,23 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsCodeInterpreter: true,
     recommendedFor: ["Uso diario", "Coding economico", "Raciocinio com menor custo"],
     badge: "Eficiente",
+  },
+  "gpt-5.4-nano": {
+    id: "gpt-5.4-nano",
+    name: "GPT-5.4 Nano",
+    family: "gpt-5",
+    description: "Modelo ultra-economico para tarefas simples e leves",
+    contextWindow: 128000,
+    maxOutput: 16384,
+    pricing: { input: 0.04, output: 0.16, cachedInput: 0.004 },
+    capabilities: ["chat", "reasoning", "vision", "function-calling", "json-mode"],
+    supportsStreaming: true,
+
+    supportsTemperature: false,
+    supportsVerbosity: true,
+    supportsCodeInterpreter: false,
+    recommendedFor: ["Titulos automaticos", "Tarefas simples", "Custo minimo"],
+    badge: "Economico",
   },
   "gpt-5.1": {
     id: "gpt-5.1",
@@ -120,9 +120,9 @@ export const MODELS: Record<string, ModelInfo> = {
     recommendedFor: ["Matematica avancada", "Coding complexo", "Pesquisa cientifica"],
     badge: "Raciocinio",
   },
-  "gpt-image-2.0": {
-    id: "gpt-image-2.0",
-    name: "GPT Image 2.0",
+  "gpt-image-2": {
+    id: "gpt-image-2",
+    name: "GPT Image 2",
     family: "gpt-image",
     description: "Geracao de imagens de alta qualidade com IA",
     contextWindow: 4000,

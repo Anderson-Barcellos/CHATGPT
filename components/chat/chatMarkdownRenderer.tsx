@@ -43,7 +43,7 @@ const renderCode: Components["code"] = ({
 export const chatMarkdownComponents: Components = {
   code: renderCode,
   h1: ({ children }) => (
-    <h1 className="mt-5 mb-3 text-xl font-bold tracking-tight text-foreground">
+    <h1 className="mt-5 mb-3 text-lg font-bold tracking-tight text-foreground">
       {children}
     </h1>
   ),
@@ -79,11 +79,11 @@ export const chatMarkdownComponents: Components = {
   ),
   li: ({ children }) => <li className="pl-1 leading-relaxed">{children}</li>,
   blockquote: ({ children }) => (
-    <blockquote className="my-3 border-l-[3px] border-l-cyan-400/50 bg-cyan-500/[0.04] px-4 py-2 text-foreground/80 italic">
+    <blockquote className="my-3 border-l-[3px] border-l-primary/50 bg-primary/[0.04] px-4 py-2 text-foreground/80 italic">
       {children}
     </blockquote>
   ),
-  hr: () => <hr className="my-6 border-white/10" />,
+  hr: () => <hr className="my-6 border-[color:var(--gc-border-soft)]" />,
   strong: ({ children }) => (
     <strong className="font-semibold text-foreground">{children}</strong>
   ),
@@ -99,17 +99,17 @@ export const chatMarkdownComponents: Components = {
   ),
   table: ({ children }) => (
     <div className="my-4 overflow-x-auto">
-      <table className="min-w-full divide-y divide-white/10 text-sm">
+      <table className="min-w-full divide-y divide-border text-sm">
         {children}
       </table>
     </div>
   ),
   th: ({ children }) => (
-    <th className="border-b border-white/10 bg-white/[0.04] px-3 py-2 text-left text-xs font-semibold">
+    <th className="border-b border-border bg-muted/45 px-3 py-2 text-left text-xs font-semibold">
       {children}
     </th>
   ),
   td: ({ children }) => (
-    <td className="border-b border-white/5 px-3 py-2">{children}</td>
+    <td className="border-b border-border/70 px-3 py-2">{children}</td>
   ),
 };

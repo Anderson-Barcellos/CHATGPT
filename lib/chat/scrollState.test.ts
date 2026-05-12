@@ -46,4 +46,23 @@ describe("scroll state helpers", () => {
 
     expect(AUTO_SCROLL_THRESHOLD).toBeGreaterThan(0);
   });
+
+  it("keeps reading position when user is away from bottom", () => {
+    expect(
+      shouldAutoScroll({
+        initialLoadComplete: true,
+        isTrackingBottom: false,
+        isNearBottom: false,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldAutoScroll({
+        initialLoadComplete: true,
+        isTrackingBottom: false,
+        isNearBottom: false,
+        force: true,
+      })
+    ).toBe(true);
+  });
 });

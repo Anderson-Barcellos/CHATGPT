@@ -40,7 +40,7 @@ export function ExportDropdown() {
               size="icon"
               aria-label="Exportar conversa"
               disabled={disabled}
-              className="size-8 rounded-lg border border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground disabled:opacity-40"
+              className="size-8 rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground disabled:opacity-40"
             >
               {progress.isExporting ? (
                 <Loader2 className="size-4 animate-spin" />

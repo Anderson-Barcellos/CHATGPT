@@ -32,6 +32,10 @@ describe("stream machine", () => {
       },
     });
     state = reduceAssistantStreamEvent(state, {
+      type: "response.reasoning_text.delta",
+      delta: "Pensando",
+    });
+    state = reduceAssistantStreamEvent(state, {
       type: "response.reasoning_summary_text.delta",
       delta: "Resumo",
     });
@@ -49,6 +53,7 @@ describe("stream machine", () => {
     });
 
     expect(state.content).toBe("Ola");
+    expect(state.reasoningText).toBe("Pensando");
     expect(state.reasoningSummary).toBe("Resumo");
     expect(state.reasoningStatus).toBe("thinking");
     expect(state.citations).toEqual([
@@ -75,6 +80,7 @@ describe("stream machine", () => {
       content: "Ola",
       imageBase64: "final-image",
       imageMimeType: "image/png",
+      reasoningText: "Pensando",
       reasoningSummary: "Resumo",
       reasoningStatus: "complete",
       streamStatus: "completed",

@@ -23,6 +23,18 @@ export function getStreamingBufferStepDelay(pendingChars: number): number {
   return 56;
 }
 
+// Função pura extraída para teste: calcula o estado inicial do buffer
+// na MONTAGEM do componente. Se o componente remontar mid-stream
+// (streamStatus === "streaming"), o buffer reinicia em "". Por isso
+// é crítico que o consumer mantenha identidade do componente estável
+// — ver `key={message.id}` em MessageContent.tsx.
+export function computeInitialDisplayed(
+  content: string,
+  streamStatus: MessageStreamStatus | undefined
+): string {
+  return streamStatus === "streaming" ? "" : content;
+}
+
 interface UseStreamingTextBufferOptions {
   content: string;
   streamStatus?: MessageStreamStatus;
@@ -38,7 +50,7 @@ export function useStreamingTextBuffer({
   streamStatus,
 }: UseStreamingTextBufferOptions): UseStreamingTextBufferResult {
   const isStreamingStart = streamStatus === "streaming";
-  const initialDisplayed = isStreamingStart ? "" : content;
+  const initialDisplayed = computeInitialDisplayed(content, streamStatus);
 
   const [displayed, setDisplayed] = useState(initialDisplayed);
   const [isSettling, setIsSettling] = useState(false);

@@ -28,12 +28,12 @@ import { useChatStore } from "@/stores/chatStore";
 import { Message } from "@/types";
 
 const SUGGESTIONS = [
-  { icon: Code, label: "Escrever codigo", desc: "Gere, refatore ou debug", prompt: "Me ajude a escrever um código em ", accent: "from-blue-500/20 to-indigo-500/20", iconColor: "text-blue-400" },
-  { icon: Scan, label: "Analisar imagem", desc: "DICOM, exames, fotos", prompt: "Analise a seguinte imagem: ", accent: "from-violet-500/20 to-purple-500/20", iconColor: "text-violet-400" },
-  { icon: Lightbulb, label: "Explicar conceito", desc: "Simples, com exemplos", prompt: "Explique de forma simples e com exemplos o conceito de ", accent: "from-amber-500/20 to-orange-500/20", iconColor: "text-amber-400" },
-  { icon: Wand2, label: "Gerar imagem", desc: "Crie com DALL-E", prompt: "Gere uma imagem de ", accent: "from-rose-500/20 to-pink-500/20", iconColor: "text-rose-400" },
-  { icon: FileText, label: "Resumir texto", desc: "Conciso e claro", prompt: "Resuma o seguinte texto de forma clara e concisa:\n\n", accent: "from-cyan-500/20 to-teal-500/20", iconColor: "text-cyan-400" },
-  { icon: Languages, label: "Traduzir", desc: "Qualquer idioma", prompt: "Traduza o seguinte texto para ", accent: "from-emerald-500/20 to-green-500/20", iconColor: "text-emerald-400" },
+  { icon: Code, label: "Escrever codigo", desc: "Gere, refatore ou debug", prompt: "Me ajude a escrever um código em ", accent: "from-primary/20 to-accent/10", iconColor: "text-primary" },
+  { icon: Scan, label: "Analisar imagem", desc: "DICOM, exames, fotos", prompt: "Analise a seguinte imagem: ", accent: "from-accent/20 to-primary/10", iconColor: "text-accent" },
+  { icon: Lightbulb, label: "Explicar conceito", desc: "Simples, com exemplos", prompt: "Explique de forma simples e com exemplos o conceito de ", accent: "from-amber-500/20 to-primary/10", iconColor: "text-amber-600 dark:text-amber-300" },
+  { icon: Wand2, label: "Gerar imagem", desc: "Crie com DALL-E", prompt: "Gere uma imagem de ", accent: "from-rose-500/20 to-primary/10", iconColor: "text-rose-600 dark:text-rose-300" },
+  { icon: FileText, label: "Resumir texto", desc: "Conciso e claro", prompt: "Resuma o seguinte texto de forma clara e concisa:\n\n", accent: "from-primary/20 to-accent/10", iconColor: "text-primary" },
+  { icon: Languages, label: "Traduzir", desc: "Qualquer idioma", prompt: "Traduza o seguinte texto para ", accent: "from-emerald-500/20 to-accent/10", iconColor: "text-emerald-700 dark:text-emerald-300" },
 ];
 
 const SUBTITLES = [
@@ -64,7 +64,7 @@ function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
     <div className="flex flex-1 flex-col items-center justify-center px-3 py-6 md:px-4 md:py-16">
       <div className="relative mb-4 md:mb-6">
         <GPTLogo size={120} className="animate-float" />
-        <div className="absolute -inset-6 -z-10 rounded-full bg-gradient-to-br from-cyan-500/15 via-blue-500/10 to-indigo-500/15 blur-3xl md:-inset-8" />
+        <div className="absolute -inset-6 -z-10 rounded-full bg-gradient-to-br from-primary/20 via-accent/10 to-primary/10 blur-3xl md:-inset-8" />
       </div>
 
       <h2 className="mb-1.5 text-[1.7rem] font-semibold tracking-tight md:mb-2 md:text-4xl">
@@ -80,7 +80,7 @@ function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
             key={label}
             onClick={() => onSuggestionClick(prompt)}
             className={cn(
-              "group flex flex-col items-start gap-1.5 rounded-xl border border-white/10 p-3 text-left md:gap-2 md:rounded-2xl md:p-4",
+              "group flex flex-col items-start gap-1.5 rounded-xl border border-[color:var(--gc-border-soft)] p-3 text-left md:gap-2 md:rounded-2xl md:p-4",
               "glass-hover",
               "transition-all duration-200",
               "hover:shadow-lg hover:shadow-primary/10",
@@ -115,6 +115,21 @@ export function getChatMessageRenderKey(message: Message): string {
   return message.id;
 }
 
+function getLatestMessageMarker(message: Message | undefined): string {
+  if (!message) return "";
+
+  return [
+    message.id,
+    message.streamStatus ?? "completed",
+    message.reasoningStatus ?? "",
+    message.content.length,
+    message.reasoningSummary?.length ?? 0,
+    message.reasoningText?.length ?? 0,
+    message.artifact?.id ?? "",
+    message.imageBase64 ? "img" : "",
+  ].join(":");
+}
+
 export function ChatContainer({
   messages,
   isLoading,
@@ -137,6 +152,15 @@ export function ChatContainer({
   const scrollFrameRef = useRef<number | null>(null);
   const syncFrameRef = useRef<number | null>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [hasUnreadUpdates, setHasUnreadUpdates] = useState(false);
+  const latestMessageMarkerRef = useRef<string>("");
+  const pendingUnreadRef = useRef(false);
+
+  const queueUnreadReset = useCallback(() => {
+    window.requestAnimationFrame(() => {
+      setHasUnreadUpdates(false);
+    });
+  }, []);
 
   const getViewport = useCallback(() => {
     return scrollAreaRef.current?.querySelector<HTMLDivElement>(
@@ -181,8 +205,14 @@ export function ChatContainer({
 
     if (snapshot.mode === "reading-history") {
       isTrackingBottomRef.current = false;
+      if (pendingUnreadRef.current) {
+        pendingUnreadRef.current = false;
+        setHasUnreadUpdates(true);
+      }
     } else if (snapshot.isNearBottom) {
       isTrackingBottomRef.current = true;
+      queueUnreadReset();
+      pendingUnreadRef.current = false;
     }
 
     setShowScrollBtn((current) =>
@@ -190,7 +220,7 @@ export function ChatContainer({
         ? current
         : snapshot.shouldShowScrollButton
     );
-  }, [getViewport, messages.length]);
+  }, [getViewport, messages.length, queueUnreadReset]);
 
   const scheduleScrollStateSync = useCallback(() => {
     if (syncFrameRef.current !== null) {
@@ -206,8 +236,11 @@ export function ChatContainer({
   useEffect(() => {
     initialLoadCompleteRef.current = false;
     isTrackingBottomRef.current = true;
+    latestMessageMarkerRef.current = "";
+    pendingUnreadRef.current = false;
+    queueUnreadReset();
     scheduleScrollStateSync();
-  }, [activeConversationId, scheduleScrollStateSync]);
+  }, [activeConversationId, queueUnreadReset, scheduleScrollStateSync]);
 
   useEffect(() => {
     const container = getViewport();
@@ -225,6 +258,9 @@ export function ChatContainer({
     if (messages.length === 0) {
       initialLoadCompleteRef.current = true;
       isTrackingBottomRef.current = true;
+      latestMessageMarkerRef.current = "";
+      pendingUnreadRef.current = false;
+      queueUnreadReset();
       scheduleScrollStateSync();
       return;
     }
@@ -251,12 +287,33 @@ export function ChatContainer({
       scrollToBottom("auto");
       isTrackingBottomRef.current = true;
       initialLoadCompleteRef.current = true;
+      pendingUnreadRef.current = false;
+      queueUnreadReset();
+      latestMessageMarkerRef.current = getLatestMessageMarker(lastMessage);
       return;
     }
 
+    const latestMarker = getLatestMessageMarker(lastMessage);
+    if (
+      initialLoadCompleteRef.current &&
+      snapshot.mode === "reading-history" &&
+      latestMarker !== latestMessageMarkerRef.current
+    ) {
+      pendingUnreadRef.current = true;
+    }
+
+    latestMessageMarkerRef.current = latestMarker;
+
     initialLoadCompleteRef.current = true;
     scheduleScrollStateSync();
-  }, [getViewport, isLoading, messages, scheduleScrollStateSync, scrollToBottom]);
+  }, [
+    getViewport,
+    isLoading,
+    messages,
+    queueUnreadReset,
+    scheduleScrollStateSync,
+    scrollToBottom,
+  ]);
 
   useEffect(() => {
     const content = contentRef.current;
@@ -356,11 +413,17 @@ export function ChatContainer({
           )}
           onClick={() => {
             isTrackingBottomRef.current = true;
+            pendingUnreadRef.current = false;
             setShowScrollBtn(false);
+            setHasUnreadUpdates(false);
             scrollToBottom("smooth");
           }}
         >
           <ArrowDown className="h-4 w-4" />
+          {hasUnreadUpdates && (
+            <span className="absolute right-0.5 top-0.5 size-2 rounded-full bg-primary" />
+          )}
+          <span className="sr-only">Ir para mensagens mais recentes</span>
         </Button>
       )}
     </div>

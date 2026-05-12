@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useChatStore } from "@/stores/chatStore";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { useUIStore } from "@/stores/uiStore";
 import { parseApiErrorResponse } from "@/lib/api/errors";
 import {
   assistantStreamStateToMessagePatch,
@@ -132,6 +133,19 @@ function appendDocumentModeInstructions(
 - Do not add a chatty intro, outro, or follow-up question.
 - Deliver the final document directly.`;
 
+  const deepResearchFoundationInstructions = `## Deep Research Foundation
+- Treat document mode as a research-grade writing flow, not a quick chat reply.
+- Build the document from a clear chain: scope -> assumptions -> method -> findings -> synthesis -> conclusion.
+- Go beyond summary: compare viewpoints, expose tradeoffs, and flag relevant uncertainty.
+- Use evidence-oriented language and clearly separate facts, inferences, and recommendations.
+- Never invent external citations, studies, or statistics. If no source exists in the provided context, state this limitation transparently.
+- Keep depth proportional to the request: concise when asked for brevity, comprehensive for broad or complex tasks.`;
+
+  const styleAnchorInstructions = `## Style Anchor (Must Preserve)
+- The writing style defined by the base system prompt and custom instructions remains the source of truth.
+- Apply deep-research rigor without overriding the existing voice, tone, and stylistic constraints.
+- If there is tension between structure and style, preserve style while improving analytical depth and clarity.`;
+
   const clinicalReportInstructions = `## Clinical Report Style
 - When the request is for a medical imaging report, ultrasound report, Doppler report, or technical clinical write-up, prefer the style of a polished diagnostic report rather than an essay.
 - Use a professional medical tone, objective phrasing, and concise technical language.
@@ -140,7 +154,7 @@ function appendDocumentModeInstructions(
 - Avoid decorative prose, motivational phrasing, or generic explanatory filler.
 - If the user is rewriting or adapting an existing report, preserve the original medical structure and terminology as much as possible while improving readability and consistency.`;
 
-  return `${systemMessage}\n\n---\n\n${documentInstructions}${
+  return `${systemMessage}\n\n---\n\n${documentInstructions}\n\n${deepResearchFoundationInstructions}\n\n${styleAnchorInstructions}${
     isClinicalReportRequest(content) ? `\n\n${clinicalReportInstructions}` : ""
   }`;
 }
@@ -211,6 +225,7 @@ async function persistConversationSnapshot(
 
 export function useChat() {
   const queryClient = useQueryClient();
+  const { imageQuality, imageSize } = useUIStore();
   const {
     messages,
     setMessages,
@@ -416,6 +431,8 @@ export function useChat() {
         );
       }, STREAM_AUTO_SAVE_INTERVAL_MS);
 
+      let sent = false;
+
       try {
         try {
           await withConversationPersistenceRetry(() =>
@@ -460,6 +477,8 @@ export function useChat() {
             ...(modelSupportsCodeInterpreter(requestModel) && {
               codeInterpreterEnabled: parameters.codeInterpreterEnabled,
             }),
+            imageQuality,
+            imageSize,
             stream: responseMode !== "quiz",
             reasoning,
             responseMode,
@@ -555,11 +574,15 @@ export function useChat() {
           console.error("[useChat] Falha ao salvar conversa:", saveErr);
           toast.error("Mensagem enviada, mas não foi salva. Tente recarregar.");
         }
+
+        sent = true;
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
           updateMessage(assistantMessageId, {
             ...buildAbortedAssistantMessagePatch(streamState, usesReasoning),
           });
+
+          sent = true;
         } else {
           const message =
             err instanceof Error ? err.message : "Erro desconhecido";
@@ -576,6 +599,8 @@ export function useChat() {
           updateMessage(assistantMessageId, {
             content: `❌ ${message}`,
           });
+
+          sent = false;
         }
       } finally {
         throttledAutoSave.cancel();
@@ -584,7 +609,7 @@ export function useChat() {
         abortControllerRef.current = null;
       }
 
-      return true;
+      return sent;
     },
     [
       activeConversationId,
@@ -606,6 +631,8 @@ export function useChat() {
       responsePreferences,
       setIsStreaming,
       updateMessage,
+      imageQuality,
+      imageSize,
     ]
   );
 

@@ -54,6 +54,13 @@ const SECTION_ORDER: ConversationSection[] = [
   "Arquivadas",
 ];
 
+const RAIL_CONTROL_BUTTON_CLASS =
+  "rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground";
+const RAIL_SURFACE_CARD_CLASS =
+  "rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)]";
+const RAIL_FILTER_BUTTON_CLASS =
+  "h-6 rounded-md text-nano font-medium text-muted-foreground transition-colors hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground data-[active=true]:bg-primary/10 data-[active=true]:text-primary";
+
 function getConversationDate(value: Date | string): Date {
   const parsed = value instanceof Date ? value : new Date(value);
   return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
@@ -124,19 +131,17 @@ function ConversationRowV2({
         disabled={disabled}
         aria-current={isActive ? "page" : undefined}
         aria-disabled={disabled}
+        data-active={isActive}
         onClick={onSelect}
         className={cn(
-          "flex w-full min-w-0 items-start gap-2 rounded-lg border px-2.5 py-2 pr-9 text-left transition-colors",
-          isActive
-            ? "border-cyan-300/25 bg-cyan-300/10 text-foreground"
-            : "border-transparent text-muted-foreground hover:border-white/8 hover:bg-white/[0.035] hover:text-foreground",
+          "flex w-full min-w-0 items-start gap-2 rounded-lg border border-transparent px-2.5 py-2 pr-9 text-left text-muted-foreground transition-colors hover:border-[color:var(--gc-border-soft)] hover:bg-[var(--gc-surface-control)] hover:text-foreground data-[active=true]:border-primary/25 data-[active=true]:bg-primary/10 data-[active=true]:text-foreground",
           disabled && "cursor-not-allowed opacity-70"
         )}
       >
         <span
           className={cn(
             "mt-1.5 size-1.5 shrink-0 rounded-full",
-            isActive ? "bg-cyan-300" : "bg-white/25"
+            isActive ? "bg-primary" : "bg-muted-foreground/35"
           )}
         />
         <span className="min-w-0 flex-1">
@@ -145,7 +150,7 @@ function ConversationRowV2({
               {conversation.title || "Nova conversa"}
             </span>
             {isPinned && (
-              <span className="inline-flex shrink-0 rounded border border-cyan-300/20 bg-cyan-300/12 px-1 py-0.5 text-nano font-medium text-cyan-100">
+              <span className="inline-flex shrink-0 rounded border border-primary/20 bg-primary/10 px-1 py-0.5 text-nano font-medium text-primary">
                 fixada
               </span>
             )}
@@ -163,7 +168,7 @@ function ConversationRowV2({
             variant="ghost"
             size="icon"
             disabled={disabled}
-            className="absolute right-1 top-1/2 size-7 -translate-y-1/2 rounded-md opacity-0 transition-opacity hover:bg-white/8 group-hover:opacity-100 data-[state=open]:opacity-100 [@media(pointer:coarse)]:opacity-100"
+            className="absolute right-1 top-1/2 size-7 -translate-y-1/2 rounded-md opacity-0 transition-opacity hover:bg-[var(--gc-surface-control-hover)] group-hover:opacity-100 data-[state=open]:opacity-100 [@media(pointer:coarse)]:opacity-100"
           >
             <MoreVertical className="size-3.5" />
           </Button>
@@ -370,13 +375,22 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
     return sortedConversations.filter((c) => ids.has(c.id));
   }, [pinnedIds, sortedConversations]);
 
+  const todayCount = useMemo(
+    () =>
+      sortedConversations.filter(
+        (conversation) =>
+          getConversationSection(getConversationDate(conversation.updatedAt)) === "Hoje"
+      ).length,
+    [sortedConversations]
+  );
+
   if (compact) {
     return (
       <div className="flex h-full flex-col items-center gap-1 py-2.5">
-        <div className="flex size-8 items-center justify-center rounded-lg border border-cyan-300/14 bg-cyan-300/8">
+        <div className="flex size-8 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
           <GPTLogo size={18} />
         </div>
-        <div className="h-px w-5 bg-white/10" />
+        <div className="h-px w-5 bg-[var(--gc-border-soft)]" />
         <div className="flex min-h-0 flex-1 flex-col items-center gap-1 overflow-hidden">
           {pinnedConversations.slice(0, 8).map((conv) => (
             <button
@@ -388,8 +402,8 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
               className={cn(
                 "flex size-8 shrink-0 items-center justify-center rounded-lg text-micro font-medium transition-colors",
                 conv.id === activeConversationId
-                  ? "border border-cyan-300/25 bg-cyan-300/12 text-cyan-100"
-                  : "border border-transparent text-muted-foreground hover:border-white/8 hover:bg-white/[0.035] hover:text-foreground"
+                  ? "border border-primary/25 bg-primary/10 text-primary"
+                  : "border border-transparent text-muted-foreground hover:border-[color:var(--gc-border-soft)] hover:bg-[var(--gc-surface-control)] hover:text-foreground"
               )}
             >
               {(conv.title || "N")[0].toUpperCase()}
@@ -401,14 +415,14 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
           size="icon"
           disabled={isStreaming}
           onClick={handleCreateConversation}
-          className="size-8 rounded-lg border border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
+          className={cn("size-8", RAIL_CONTROL_BUTTON_CLASS)}
         >
           <Plus className="size-3.5" />
         </Button>
         <button
           type="button"
           onClick={onClose}
-          className="size-8 flex items-center justify-center rounded-lg border border-white/8 bg-white/[0.035] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
+          className={cn("size-8 flex items-center justify-center", RAIL_CONTROL_BUTTON_CLASS)}
           aria-label="Abrir sidebar completa"
         >
           <Menu className="size-3.5" />
@@ -421,7 +435,7 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="shrink-0 border-b border-[color:var(--gc-border-soft)] px-3 py-3">
         <div className="mb-3 flex items-center gap-2">
-          <div className="flex size-9 items-center justify-center rounded-lg border border-cyan-300/14 bg-cyan-300/8">
+          <div className="flex size-9 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
             <GPTLogo size={25} />
           </div>
           <div className="min-w-0 flex-1">
@@ -435,7 +449,7 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
             size="icon"
             disabled={isStreaming}
             onClick={handleCreateConversation}
-            className="size-8 rounded-lg border border-white/8 bg-white/[0.035] hover:bg-white/[0.07]"
+            className={cn("size-8", RAIL_CONTROL_BUTTON_CLASS)}
           >
             <Plus className="size-4" />
           </Button>
@@ -447,26 +461,33 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Buscar"
-            className="h-8 rounded-lg border-white/8 bg-white/[0.035] pl-8 text-xs focus-visible:border-cyan-300/35 focus-visible:ring-cyan-300/15"
+            className="h-8 rounded-lg border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] pl-8 text-xs focus-visible:border-primary/35 focus-visible:ring-primary/15"
           />
         </div>
 
-        <div className="mt-2 grid grid-cols-4 gap-1 rounded-lg border border-white/8 bg-white/[0.025] p-1">
+        <div className={cn("mt-2 grid grid-cols-4 gap-1 p-1", RAIL_SURFACE_CARD_CLASS)}>
           {FILTER_OPTIONS.map((option) => (
             <button
               key={option.value}
               type="button"
               onClick={() => setFilter(option.value)}
-              className={cn(
-                "h-6 rounded-md text-nano font-medium transition-colors",
-                filter === option.value
-                  ? "bg-cyan-300/14 text-cyan-100"
-                  : "text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
-              )}
+              data-active={filter === option.value}
+              className={RAIL_FILTER_BUTTON_CLASS}
             >
               {option.label}
             </button>
           ))}
+        </div>
+
+        <div className="mt-2 grid grid-cols-2 gap-1.5">
+          <div className={cn("px-2 py-1.5", RAIL_SURFACE_CARD_CLASS)}>
+            <p className="text-nano uppercase tracking-label text-muted-foreground">Hoje</p>
+            <p className="text-xs font-semibold text-foreground">{todayCount}</p>
+          </div>
+          <div className={cn("px-2 py-1.5", RAIL_SURFACE_CARD_CLASS)}>
+            <p className="text-nano uppercase tracking-label text-muted-foreground">Fixadas</p>
+            <p className="text-xs font-semibold text-foreground">{pinnedConversations.length}</p>
+          </div>
         </div>
       </div>
 
@@ -477,7 +498,7 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
               {Array.from({ length: 6 }).map((_, index) => (
                 <div
                   key={index}
-                  className="h-12 animate-pulse rounded-lg border border-white/8 bg-white/[0.035]"
+                  className={cn("h-12 animate-pulse", RAIL_SURFACE_CARD_CLASS)}
                 />
               ))}
             </div>
@@ -521,7 +542,7 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
             ))}
 
           {!isLoading && !error && visibleConversations.length === 0 && (
-            <div className="rounded-lg border border-white/8 bg-white/[0.025] px-3 py-6 text-center text-xs text-muted-foreground">
+            <div className={cn("px-3 py-6 text-center text-xs text-muted-foreground", RAIL_SURFACE_CARD_CLASS)}>
               Nenhuma conversa encontrada.
             </div>
           )}
@@ -532,7 +553,7 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
         <Button
           variant="ghost"
           onClick={onOpenSettings}
-          className="h-9 w-full justify-start rounded-lg px-2 text-xs text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
+          className={cn("h-9 w-full justify-start px-2 text-xs", RAIL_CONTROL_BUTTON_CLASS)}
         >
           <Settings className="mr-2 size-4" />
           Configurações

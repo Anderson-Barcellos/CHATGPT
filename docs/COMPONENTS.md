@@ -1,225 +1,153 @@
 # Components, Hooks & Stores
 
-**Last updated:** 2026-04-29
+**Last updated:** 2026-05-08
 
-## Component Tree
+## Runtime component tree
 
-```
-layout.tsx
-  └── ThemeProvider (next-themes)
-      └── QueryProvider (TanStack Query)
-          └── page.tsx
+```text
+app/layout.tsx
+  └── QueryProvider
+      └── ThemeProvider
+          └── app/page.tsx
               └── GauchoChatShellV2
                   ├── WorkspaceFrameV2
-                  │   ├── ConversationRailV2 (desktop + mobile sheet)
+                  │   ├── ConversationRailV2
                   │   ├── ChatCanvasV2
                   │   │   └── ChatContainer
-                  │   │       ├── WelcomeScreen
-                  │   │       ├── MessageBubble[]
-                  │   │       ├── TypingIndicator
-                  │   │       └── Scroll-to-bottom button
+                  │   │       └── MessageBubble[]
                   │   ├── CommandComposerContainerV2
                   │   │   └── CommandComposerV2
-                  │   └── ContextPanelV2 (Canvas, Artefato, Atividade, Notas)
-                  └── SettingsDrawer
+                  │   └── ContextPanelV2
+                  ├── CanvasOverlayV2 (mobile sheet)
+                  ├── SettingsDrawer
+                  ├── SelectionToolbar
+                  └── CommandPalette
 ```
 
-## Key Components
+## Key components
 
-### GauchoChatShellV2 (`components/workspace-v2/GauchoChatShellV2.tsx`)
-Current main application shell. It wires `useChat`, `useConversations`, settings state, artifact state, splash handling, and recovery state into the workspace v2 layout.
+### `components/workspace-v2/GauchoChatShellV2.tsx`
 
-### WorkspaceFrameV2 (`components/workspace-v2/WorkspaceLayoutV2.tsx`)
-Three-region workspace frame:
-- conversation rail on the left
-- chat canvas and command composer in the center
-- right-side operational panel with collapse/expand controls
+Main shell for `/`. Wires chat flow (`useChat`), conversation list, settings, context panel behavior, splash lifecycle, and command palette.
 
-The frame uses `--v2-*` CSS tokens from `app/globals.css` instead of forcing the `dark` class. Light and dark themes therefore diverge through variables rather than component branches.
+### `components/workspace-v2/WorkspaceLayoutV2.tsx`
 
-### ConversationRailV2 (`components/workspace-v2/ConversationRailV2.tsx`)
-Conversation navigation for workspace v2:
-- create conversation
-- search
-- filter tabs
-- grouped conversation sections
-- active state
-- guarded switching/deletion while streaming
-- internal `ScrollArea` with `min-h-0`/`flex-1` so the rail scrolls inside the fixed-height shell
+Defines the frame and composer layout primitives:
 
-### ChatContainer (`components/chat/ChatContainer.tsx`)
-Renders the message list or `WelcomeScreen` when empty. Handles auto-scroll, scroll-to-bottom button, and suggestion chip injection via native setter pattern.
+- desktop + tablet + mobile region orchestration
+- context panel collapse/expand
+- header chips (model, reasoning, mode, artifacts)
+- mobile sheets for sidebar/context
 
-Message rows are keyed by stable `message.id` only. Do not include `artifact.id` or other completion-time data in the React key: streamed assistant bubbles must stay mounted when `streamStatus` changes or when an artifact is attached, otherwise the streaming buffer can appear to restart from the beginning.
+### `components/workspace-v2/ConversationRailV2.tsx`
 
-### MessageBubble (`components/chat/MessageBubble.tsx`)
-Renders individual messages with:
-- role-specific token-backed bubble surfaces (`v2-user-bubble`, `v2-assistant-bubble`)
-- attachments
-- citations
-- timestamps
-- edit/delete menu and long-press behavior
-- `MessageActions`
-- `ReasoningPanel`
+Conversation navigation with:
 
-The bubble delegates text, streaming, artifacts, images, rich content, document mode, and quiz mode to `MessageContent`.
+- search and filter tabs
+- grouped sections (`Hoje`, `Ontem`, `Esta semana`, `Arquivadas`)
+- pin/unpin and delete actions
+- streaming guards while generation is active
 
-### MessageContent (`components/chat/MessageContent.tsx`)
-Routes message body rendering:
-- streaming assistant text through `StreamingMarkdown`
-- completed assistant text through `ChatMarkdown`
-- document/quiz artifacts through `DocumentCanvas` or `QuizCanvas`
-- image generation output through an inline image
-- rich Markdown/HTML through panel-opening artifact helpers
+### `components/chat/ChatContainer.tsx`
 
-Inline artifact visibility is tracked per `artifact.id` without a synchronous state-setting effect. When a document/quiz artifact appears after streaming, the same mounted message component expands it without resetting the buffered text.
+Renders the active message list and manages scroll behavior (including "scroll to bottom" affordances).
 
-When `streamStatus === "interrupted"`, renders an inline orange banner (`AlertTriangle`) with the message "Resposta interrompida — pode regenerar pra completar."
+### `components/chat/MessageBubble.tsx`
 
-### StreamingMarkdown (`components/chat/StreamingMarkdown.tsx`)
-Renders assistant streaming text with the STT-style buffer from `useStreamingTextBuffer`. The hook incrementally reveals `content` while `streamStatus === "streaming"` and keeps a short cursor settle after completion. It expects its parent bubble to remain mounted across completion.
+Message row renderer with quick actions, edit/delete controls, artifacts, and reasoning panel support.
 
-### ContextPanelV2 (`components/workspace-v2/ContextPanelV2.tsx`)
-Right-side operational panel with four tabs:
-- **Canvas:** default tab; renders the active or latest artifact in a larger reading/production surface using `DocumentCanvas`, `ChatMarkdown`, `HtmlPreview`, or `QuizCanvas`
-- **Artefato:** metadata, preview/source, and export-oriented view
-- **Atividade:** timeline and conversation execution summary
-- **Notas:** per-conversation workspace notes persisted server-side
+Important invariant: assistant bubbles stay keyed by stable `message.id` only.
 
-### CommandComposerContainerV2 (`components/workspace-v2/CommandComposerContainerV2.tsx`)
-Container for the current composer. It manages text input, file attachments, speech-to-text, model selection, reasoning selection, document mode, quiz mode, and send/stop behavior.
+### `components/chat/MessageContent.tsx`
 
-### SidebarModern (`components/sidebar/SidebarModern.tsx`)
-Legacy conversation list used by the older `ChatShell`. It is still present and tested, but workspace v2 uses `ConversationRailV2`.
+Routes message body rendering for:
 
-Features:
-- `relativeDate()` helper (agora/5min/2h/3d/2sem/3m)
-- Search filtering
-- Empty state illustration
-- Delete with hover color change
+- streaming markdown
+- completed markdown
+- image outputs
+- document/quiz artifact previews
+- interrupted/aborted/failed stream states
 
-### SettingsDrawer (`components/settings/SettingsDrawer.tsx`)
-Full settings panel for tuning, memory, and persona. The tuning tab now renders controls conditionally from the current model capabilities.
+### `components/workspace-v2/ContextPanelV2.tsx`
 
----
+Right panel with 3 tabs:
 
-## Zustand Stores
+- `Canvas` (artifact surface)
+- `Atividade` (timeline/status summary)
+- `Notas` (workspace notes per conversation)
 
-### uiStore (`stores/uiStore.ts`)
+### `components/workspace-v2/canvas/CanvasOverlayV2.tsx`
 
-| State | Type | Purpose |
-|-------|------|---------|
-| `activeMode` | `"chat" \| "image"` | Current mode tab |
-| `imageSize` | string | DALL-E image dimensions |
-| `imageQuality` | string | DALL-E quality level |
+Mobile artifact sheet (opened from artifact state), reusing shared artifact copy/download actions.
 
-### chatStore (`stores/chatStore.ts`)
+### Canvas contract (`lib/artifacts/canvasContract.ts`)
 
-| State | Type | Purpose |
-|-------|------|---------|
-| `activeConversationId` | `string \| null` | Currently active conversation |
-| `messages` | `Message[]` | Messages for active conversation |
+Canvas content editing is explicitly locked (`viewer-only`).
 
-Actions: `setActiveConversationId`, `setMessages`, `addMessage`, `updateMessage`, `clearMessages`
+- document artifacts: read-only preview/source
+- quiz artifacts: interactive session (answers) without content editing
 
-### settingsStore (`stores/settingsStore.ts`)
+### `components/settings/SettingsDrawer.tsx`
 
-| State | Type | Purpose |
-|-------|------|---------|
-| `parameters` | `ModelParameters` | Active model + effective settings for that model |
-| `modelSettingsById` | `Record<string, ModelScopedParameters>` | Per-model tuning memory |
-| `customInstructions` | `CustomInstructions \| null` | User context + response preferences |
-| `memories` | `Memory[]` | Active memories for context injection |
+Settings UI for model tuning, memories, persona instructions, theme toggle, and image-mode options.
 
-Default model: `gpt-5.3-chat-latest`, temperature: 0.8, topP: 0.95, maxOutputTokens: 16384, verbosity: medium, code interpreter: off
+## Chat states
 
----
+`MessageStreamStatus` (`types/index.ts`):
 
-## Custom Hooks
+- `streaming`
+- `completed`
+- `aborted`
+- `failed`
+- `interrupted`
 
-### useChat (`hooks/useChat.ts`)
-Core chat logic. Manages message send/receive cycle with SSE streaming.
+## Custom hooks (active runtime)
 
-| Return | Type | Purpose |
-|--------|------|---------|
-| `messages` | `Message[]` | Current conversation messages |
-| `isLoading` | boolean | Generation in progress |
-| `error` | `string \| null` | Last error message |
-| `sendMessage(content)` | function | Send user message and stream response |
-| `stopGeneration()` | function | Abort current generation |
+- `hooks/useChat.ts` - chat orchestration, streaming reducer, persistence, abort handling
+- `hooks/useConversations.ts` - list/create/delete wrappers
+- `hooks/queries/useConversationQuery.ts` - TanStack Query keys + mutations
+- `hooks/useCustomInstructions.ts` - persona load/autosave via `/api/persona`
+- `hooks/useMemories.ts` - memory CRUD via `/api/memories`
+- `hooks/useFileAttachments.ts` - composer file pipeline
+- `hooks/useSpeechToText.ts` - microphone/transcription flow
+- `hooks/useTextSelection.ts` - selection toolbar behavior
+- `hooks/useExport.ts` - markdown/json/pdf/clipboard exports
 
-Internally handles: `buildInputFromMessages`, `buildReasoningConfig`, `buildSystemPrompt`, SSE parsing, IndexedDB persistence.
+## Zustand stores
 
-**Incremental persistence (5 defensive rings):**
-1. Flush user message + assistant placeholder to server synchronously before fetch.
-2. Throttled auto-save (2 s interval via `createThrottle`) during the stream loop.
-3. `beforeunload`/`pagehide` listener that aborts the `AbortController` and calls `saveConversationMessagesViaBeacon` (POST via `navigator.sendBeacon`, fallback `fetch keepalive`).
-4. `useEffect` on mount normalises any message with `streamStatus === "streaming"` to `"interrupted"` and re-persists — recovers from mid-stream reload.
-5. (Server-side) `signal: request.signal` forwarded to OpenAI SDK; stream aborts when client disconnects.
+### `stores/chatStore.ts`
 
-### useCustomInstructions (`hooks/useCustomInstructions.ts`)
+Active conversation and in-memory message stream state:
 
-| Return | Type | Purpose |
-|--------|------|---------|
-| `contextAboutUser` | `string` | Extra context about the user |
-| `responsePreferences` | `string` | Style and formatting preferences |
-| `saveContextAboutUser()` | function | Save current draft to the server |
+- `activeConversationId`
+- `messages`
+- `isStreaming`
 
-### useMemories (`hooks/useMemories.ts`)
+### `stores/settingsStore.ts`
 
-| Return | Type | Purpose |
-|--------|------|---------|
-| `memories` | `Memory[]` | All memories (sorted by priority) |
-| `addMemory(data)` | function | Create new memory |
-| `updateMemory(id, updates)` | function | Update memory |
-| `deleteMemory(id)` | function | Delete memory |
+Model-scoped tuning + persona + memories:
 
-### useConversations (`hooks/useConversations.ts`)
-CRUD operations for conversation list, search, create, delete, switch.
+- `parameters`
+- `modelSettingsById`
+- `customInstructions`
+- `memories`
 
-### useExport (`hooks/useExport.ts`)
-Export current conversation in Markdown, JSON, PDF, or clipboard formats.
+Default model: `chat-latest`.
 
----
+### `stores/uiStore.ts`
 
-## shadcn/ui Components (23)
+UI mode and artifact/panel state:
 
-Located in `components/ui/`:
+- `activeMode` (`chat` / `image`)
+- `imageSize`, `imageQuality`
+- `activePanelTab`
+- `activeSelection`
+- `artifactOpen`, `activeArtifact`, `artifactMessageId`
 
-alert, badge, button, card, collapsible, dialog, dropdown-menu, icons, input, label, scroll-area, select, separator, sheet, slider, switch, tabs, textarea, theme-toggle, tooltip
+## UI primitives in use
 
-Plus custom:
-- `icons.tsx` — OpenAI SVG logo component (`OpenAIIcon`)
-- `theme-toggle.tsx` — Dark/light mode toggle button
+`components/ui/` currently contains:
 
----
-
-## TypeScript Types
-
-### Core types (`types/index.ts`)
-
-| Type | Key Fields |
-|------|-----------|
-| `Message` | id, role, content, timestamp, reasoningSummary?, reasoningText?, imageBase64? |
-| `Conversation` | id, title, messages[], createdAt, updatedAt |
-| `ModelParameters` | model, maxOutputTokens, temperature, topP, systemPrompt, reasoningEffort, reasoningSummary, verbosity, codeInterpreterEnabled |
-| `ModelScopedParameters` | maxOutputTokens, temperature, topP, reasoningEffort, reasoningSummary, verbosity, codeInterpreterEnabled |
-| `CustomInstructions` | id, contextAboutUser, responsePreferences |
-| `Memory` | id, content, category, isActive, priority, createdAt, updatedAt |
-| `ModelInfo` | id, name, family, description, contextWindow, maxOutput, pricing, capabilities[], supportsTemperature, supportsVerbosity, supportsCodeInterpreter, supportsStreaming, badge? |
-| `ModelFamily` | `"gpt-5" \| "gpt-4.1" \| "gpt-4o" \| "o-series" \| "dall-e" \| "gpt-image"` |
-| `ReasoningEffort` | `"none" \| "low" \| "medium" \| "high" \| "xhigh"` |
-| `ReasoningSummary` | `"off" \| "auto" \| "concise" \| "detailed"` |
-| `AppMode` | `"chat" \| "image"` |
-| `TokenUsage` | inputTokens, outputTokens, cachedTokens?, totalCost |
-| `ModelRecommendation` | modelId, reason, confidence |
-| `MessageStreamStatus` | `"streaming" \| "completed" \| "aborted" \| "failed" \| "interrupted"` — `aborted` = user stop, `interrupted` = connection drop/reload mid-stream, `failed` = API error |
-
-### Utility: createThrottle (`lib/performance/throttle.ts`)
-
-Imperative (non-React) throttle factory. Returns `{ call, flush, cancel }`.
-- `call(value)` — invokes `fn` at most once per `intervalMs`; later calls within the interval are queued and emitted on the next tick
-- `flush()` — forces immediate emit of the pending value
-- `cancel()` — discards any pending call
-
-Used in `useChat.ts` for the 2 s auto-save during streaming. Reusable for any side-effect throttling (telemetry, auto-save in other flows).
+- `badge`, `button`, `card`, `collapsible`, `confirm-dialog`, `dialog`
+- `dropdown-menu`, `gpt-logo`, `icons`, `input`, `scroll-area`, `sheet`
+- `slider`, `splash-screen`, `switch`, `tabs`, `textarea`, `theme-toggle`, `tooltip`

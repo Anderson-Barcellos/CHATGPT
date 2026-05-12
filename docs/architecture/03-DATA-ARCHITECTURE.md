@@ -1,49 +1,60 @@
 # Data Architecture
 
-## 1. Data Persistence (Local-First Strategy)
+## 1. Persistence model (server-side JSON)
 
-The application employs a **Local-First** architecture using **Dexie.js**, a wrapper around the browser's **IndexedDB**.
+Persistence is server-backed via JSON files under `data/`, not browser IndexedDB.
 
-### Database Schema
--   **Conversations Table:** Stores metadata about chat sessions (ID, title, timestamp, model used).
--   **Messages Table:** Stores individual messages linked to a conversation ID.
--   **Memories Table:** Stores long-term user facts injected into the context.
+- `data/conversations.json`
+- `data/memories.json`
+- `data/persona.json`
 
-### Rationale
--   **Privacy:** User data remains on their device.
--   **Offline Capability:** The app can function (view history) without internet.
--   **Performance:** No network latency for loading history.
+The API layer serializes/deserializes runtime types and writes through `lib/server/jsonFileStore.ts` with per-file locking (`withDataFileLock`) to avoid concurrent write corruption.
 
-## 2. State Management
+## 2. State management split
 
-The application uses a hybrid state management approach:
+### 2.1 Local UI/session state (Zustand)
 
-### Global Ephemeral State (Zustand)
-Used for UI state and active session data that doesn't need strict persistence or needs high-frequency updates.
--   **Store:** `stores/chatStore.ts`
--   **Scope:** Active Conversation ID, Current Message List (in-memory buffer), UI toggles.
+- `stores/chatStore.ts`: active conversation ID, active message list, streaming flag
+- `stores/settingsStore.ts`: model parameters, per-model settings, persona snapshot, memories snapshot
+- `stores/uiStore.ts`: mode toggles, panel state, artifact state, text selection state
 
-### Server State (TanStack Query)
-Used for asynchronous data operations, primarily interacting with the local Dexie DB (treating it as an async "server").
--   **Hooks:** `hooks/queries/useChatQuery.ts`, `useConversationQuery.ts`.
--   **Role:** Handles caching, refetching, and synchronization of database reads.
+### 2.2 Async server state (TanStack Query)
 
-## 3. Data Flow
+`hooks/queries/useConversationQuery.ts` handles:
 
-### Chat Interaction Flow
-1.  **User Input:** User types in `InputArea`.
-2.  **Optimistic UI:** `useChatStore` updates to show the user's message immediately.
-3.  **API Request:** `useChat` hook sends the message + context to `/api/chat`.
-4.  **Context Building:** Server (`api/chat`) calls `lib/openai/contextBuilder` to retrieve `Memories` and `CustomInstructions`.
-5.  **Stream Handling:** Response streams back to the client.
-6.  **Persistence:**
-    -   Completed messages are saved to `Dexie` (IndexedDB).
-    -   `TanStack Query` invalidates relevant queries to refresh the sidebar list.
+- conversation list/detail queries
+- optimistic create/delete
+- cache invalidation after persistence mutations
 
-## 4. Domain Models
+## 3. Data flow
 
-Key TypeScript interfaces (`types/index.ts`):
+### Chat flow
 
--   **Message:** `{ id, role: 'user' | 'assistant', content, timestamp }`
--   **Conversation:** `{ id, title, createdAt, updatedAt, messages[] }`
--   **Memory:** `{ id, content, priority, isActive }`
+1. User submits message from `CommandComposerContainerV2`.
+2. `useChat` appends optimistic user + assistant placeholder state to `chatStore`.
+3. `useChat` builds request payload (`buildInputFromMessages`, model/reasoning/options) and calls `/api/chat`.
+4. SSE events are reduced by `lib/chat/streamMachine.ts` and applied incrementally to the assistant message.
+5. Conversation snapshots are persisted through `/api/conversations/[id]` with retry (`withConversationPersistenceRetry`).
+
+### Incremental streaming persistence safeguards
+
+`useChat` applies five protections during streaming:
+
+1. Synchronous flush before fetch.
+2. Throttled auto-save during stream.
+3. `pagehide` beacon flush (`sendBeacon` with keepalive fallback).
+4. Reload normalization from `streaming` to `interrupted`.
+5. Upstream abort propagation using `request.signal`.
+
+## 4. Domain models (`types/index.ts`)
+
+- `Message`
+- `Conversation`
+- `ConversationWorkspace`
+- `Memory`
+- `CustomInstructions`
+- `ModelParameters` / `ModelScopedParameters`
+- `MessageArtifact` (`document` | `quiz`)
+- `MessageStreamStatus`
+
+These models are serialized at API boundaries via helpers in `lib/storage/serializers.ts`.

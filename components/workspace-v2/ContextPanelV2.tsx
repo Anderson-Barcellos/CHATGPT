@@ -6,8 +6,6 @@ import { toast } from "sonner";
 import {
   AlertTriangle,
   Check,
-  Copy,
-  Download,
   LoaderCircle,
   PanelRightClose,
   PlayCircle,
@@ -18,7 +16,6 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CanvasContent } from "@/components/workspace-v2/canvas/CanvasContent";
 import { useNotesContext } from "@/components/workspace-v2/NotesProvider";
 import { useConversations } from "@/hooks/useConversations";
 import { conversationKeys } from "@/hooks/queries/useConversationQuery";
@@ -212,10 +209,10 @@ function ActivityTimeline({
   const visibleEvents = compact ? events.slice(0, 5) : events;
 
   return (
-    <section className="rounded-lg border border-white/8 bg-white/[0.025] p-3">
+    <section className="rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-3">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-xs font-semibold text-foreground">{title}</h3>
-        <span className="text-nano text-cyan-100/85">
+        <span className="text-nano text-primary">
           {events.length} evento(s)
         </span>
       </div>
@@ -229,9 +226,9 @@ function ActivityTimeline({
               ) : event.status === "warning" ? (
                 <AlertTriangle className="size-3 text-amber-200" />
               ) : event.status === "running" ? (
-                <PlayCircle className="size-3 text-cyan-100" />
+                <PlayCircle className="size-3 text-primary" />
               ) : (
-                <Check className="size-3 text-emerald-200" />
+                <Check className="size-3 text-emerald-700 dark:text-emerald-300" />
               );
 
             const badgeClass =
@@ -240,13 +237,13 @@ function ActivityTimeline({
                 : event.status === "warning"
                   ? "bg-amber-300/20 text-amber-100"
                   : event.status === "running"
-                    ? "bg-cyan-300/16 text-cyan-100"
-                    : "bg-emerald-300/16 text-emerald-100";
+                    ? "bg-primary/10 text-primary"
+                    : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
 
             return (
               <div
                 key={event.id}
-                className="flex items-start justify-between gap-2 rounded-md border border-white/6 bg-black/20 px-2.5 py-2"
+                className="flex items-start justify-between gap-2 rounded-md border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-2.5 py-2"
               >
                 <div className="flex min-w-0 items-start gap-2">
                   <span
@@ -271,7 +268,7 @@ function ActivityTimeline({
           })}
         </div>
       ) : (
-        <div className="rounded-md border border-white/8 bg-black/20 px-3 py-4 text-micro text-muted-foreground">
+        <div className="rounded-md border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-3 py-4 text-micro text-muted-foreground">
           Sem eventos ainda nesta conversa.
         </div>
       )}
@@ -279,24 +276,9 @@ function ActivityTimeline({
   );
 }
 
-function EmptyArtifactState() {
-  return (
-    <div className="flex min-h-[220px] items-center justify-center rounded-lg border border-dashed border-white/10 bg-black/20 p-4">
-      <div className="max-w-[17rem] text-center">
-        <p className="text-sm font-semibold text-foreground">Sem artefato disponível</p>
-        <p className="mt-1 text-micro leading-relaxed text-muted-foreground">
-          Gere um documento ou quiz para habilitar preview, fonte e exportações.
-        </p>
-      </div>
-    </div>
-  );
-}
-
 export function ContextPanelV2() {
   const queryClient = useQueryClient();
   const {
-    activeArtifact,
-    closeArtifact,
     activePanelTab,
     setActivePanelTab,
   } = useUIStore();
@@ -304,7 +286,6 @@ export function ContextPanelV2() {
   const { activeConversationId, messages } = useChatStore();
   const { conversations = [] } = useConversations();
 
-  const [copied, setCopied] = useState(false);
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [notesDirty, setNotesDirty] = useState(false);
   const [notesDraft, setNotesDraft] = useState<NotesDraft>(EMPTY_NOTES_DRAFT);
@@ -342,28 +323,6 @@ export function ContextPanelV2() {
     }
   }, [activeConversationId, notesDirty, notesUpdatedAtKey, persistedNotes]);
 
-  const fallbackArtifactMessage = useMemo(
-    () => [...messages].reverse().find((message) => message.artifact),
-    [messages]
-  );
-
-  const effectiveArtifact = activeArtifact ?? fallbackArtifactMessage?.artifact ?? null;
-
-  const documentArtifact =
-    effectiveArtifact?.kind === "document" ? effectiveArtifact : null;
-
-  const artifactTitle = effectiveArtifact?.title || "Sem artefato";
-  const artifactPayload = effectiveArtifact
-    ? effectiveArtifact.kind === "document"
-      ? effectiveArtifact.content
-      : JSON.stringify(effectiveArtifact.quiz, null, 2)
-    : "";
-  const artifactExtension = documentArtifact
-    ? documentArtifact.type === "html"
-      ? "html"
-      : "md"
-    : "json";
-
   const activityEvents = useMemo(() => buildActivityEvents(messages), [messages]);
   const latestEvent = activityEvents[0];
   const promptsCount = activityEvents.filter((event) =>
@@ -375,47 +334,6 @@ export function ContextPanelV2() {
   const citationEventsCount = activityEvents.filter((event) =>
     event.id.includes(":citations")
   ).length;
-
-  const handleCopy = useCallback(async () => {
-    if (!effectiveArtifact) {
-      toast.info("Sem artefato para copiar nesta conversa.");
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(artifactPayload);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1600);
-    } catch {
-      toast.error("Nao consegui copiar o artefato.");
-    }
-  }, [artifactPayload, effectiveArtifact]);
-
-  const handleDownload = useCallback(() => {
-    if (!effectiveArtifact) {
-      toast.info("Sem artefato para baixar nesta conversa.");
-      return;
-    }
-
-    const mime = documentArtifact
-      ? documentArtifact.type === "html"
-        ? "text/html"
-        : "text/markdown"
-      : "application/json";
-    const blob = new Blob([artifactPayload], { type: mime });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `${artifactTitle || "artefato"}.${artifactExtension}`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-  }, [
-    artifactPayload,
-    artifactExtension,
-    artifactTitle,
-    documentArtifact,
-    effectiveArtifact,
-  ]);
 
   const handleSaveNotes = useCallback(async () => {
     if (!activeConversationId) {
@@ -472,7 +390,7 @@ export function ContextPanelV2() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-white/8 px-3 py-3 xl:hidden">
+      <div className="flex items-center justify-between border-b border-[color:var(--gc-border-soft)] px-3 py-3 xl:hidden">
         <div className="min-w-0">
           <h2 className="truncate text-sm font-semibold">Painel operacional</h2>
           <p className="text-nano uppercase tracking-label text-muted-foreground">
@@ -484,9 +402,6 @@ export function ContextPanelV2() {
           size="icon"
           className="size-8"
           onClick={() => {
-            closeArtifact();
-            // Fechar o Sheet mobile (controlado em GauchoChatShellV2) — closeArtifact sozinho
-            // não reseta mobileContextOpen, então o Sheet fica aberto mostrando estado vazio
             window.dispatchEvent(new CustomEvent("gaucho:close-context-panel"));
           }}
         >
@@ -499,7 +414,7 @@ export function ContextPanelV2() {
         onValueChange={(v) => setActivePanelTab(v as ActivePanelTab)}
         className="flex min-h-0 flex-1 flex-col"
       >
-        <div className="border-b border-white/8 px-3 py-2">
+        <div className="border-b border-[color:var(--gc-border-soft)] px-3 py-2">
           <div className="mb-2 flex items-center justify-between gap-2">
             <div className="min-w-0">
               <h2 className="truncate text-sm font-semibold">Workspace</h2>
@@ -507,23 +422,8 @@ export function ContextPanelV2() {
                 acompanhamento em tempo real
               </p>
             </div>
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="size-8" onClick={handleCopy}>
-                {copied ? (
-                  <Check className="size-4 text-emerald-300" />
-                ) : (
-                  <Copy className="size-4" />
-                )}
-              </Button>
-              <Button variant="ghost" size="icon" className="size-8" onClick={handleDownload}>
-                <Download className="size-4" />
-              </Button>
-            </div>
           </div>
-          <TabsList className="w-full rounded-lg border border-white/8 bg-white/[0.03] p-1">
-            <TabsTrigger value="artifact" className="h-7 rounded-md text-xs">
-              Canvas
-            </TabsTrigger>
+          <TabsList className="w-full rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-1">
             <TabsTrigger value="activity" className="h-7 rounded-md text-xs">
               Atividade
             </TabsTrigger>
@@ -533,23 +433,11 @@ export function ContextPanelV2() {
           </TabsList>
         </div>
 
-        <TabsContent value="artifact" className="mt-0 min-h-0 flex-1 overflow-hidden">
-          {effectiveArtifact ? (
-            <div className="h-full">
-              <CanvasContent artifact={effectiveArtifact} />
-            </div>
-          ) : (
-            <div className="p-3">
-              <EmptyArtifactState />
-            </div>
-          )}
-        </TabsContent>
-
         <TabsContent value="activity" className="mt-0 min-h-0 flex-1 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="space-y-3 p-3">
               <ActivityTimeline title="Linha do tempo da conversa" events={activityEvents} />
-              <section className="rounded-lg border border-white/8 bg-white/[0.025] p-3">
+              <section className="rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-3">
                 <h3 className="mb-2 text-xs font-semibold text-foreground">
                   Resumo da execução
                 </h3>
@@ -572,7 +460,7 @@ export function ContextPanelV2() {
         <TabsContent value="notes" className="mt-0 min-h-0 flex-1 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="space-y-3 p-3">
-              <section className="rounded-lg border border-white/8 bg-white/[0.025] p-3">
+              <section className="rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-3">
                 <div className="mb-2 flex items-center justify-between">
                   <h3 className="text-xs font-semibold text-foreground">Notas da rodada</h3>
                   <span className="text-nano text-muted-foreground">
@@ -591,7 +479,7 @@ export function ContextPanelV2() {
                         updateNotesField("objective", event.target.value)
                       }
                       placeholder="Objetivo curto da conversa"
-                      className="h-8 rounded-md border-white/8 bg-black/20 text-xs"
+                      className="h-8 rounded-md border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] text-xs"
                     />
                   </div>
 
@@ -605,7 +493,7 @@ export function ContextPanelV2() {
                         updateNotesField("body", event.target.value)
                       }
                       placeholder="Resumo, decisões e contexto da rodada."
-                      className="min-h-24 rounded-md border-white/8 bg-black/20 text-xs"
+                      className="min-h-24 rounded-md border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] text-xs"
                     />
                   </div>
 
@@ -619,7 +507,7 @@ export function ContextPanelV2() {
                         updateNotesField("nextStepsText", event.target.value)
                       }
                       placeholder={"Ex:\nRodar build final\nPublicar no serviço"}
-                      className="min-h-20 rounded-md border-white/8 bg-black/20 text-xs"
+                      className="min-h-20 rounded-md border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] text-xs"
                     />
                   </div>
                 </div>
@@ -633,7 +521,7 @@ export function ContextPanelV2() {
                     size="sm"
                     onClick={handleSaveNotes}
                     disabled={isSavingNotes || !notesDirty}
-                    className="h-8 rounded-md bg-cyan-300 px-2.5 text-xs font-semibold text-slate-950 hover:bg-cyan-200 disabled:opacity-40"
+                    className="h-8 rounded-md bg-primary px-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
                   >
                     {isSavingNotes ? (
                       <>
@@ -650,7 +538,7 @@ export function ContextPanelV2() {
                 </div>
               </section>
 
-              <section className="rounded-lg border border-white/8 bg-white/[0.02] p-3 text-micro text-muted-foreground">
+              <section className="rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-3 text-micro text-muted-foreground">
                 Essas notas ficam vinculadas ao <span className="text-foreground">ID da conversa</span> e são carregadas automaticamente quando tu reabre o mesmo thread.
               </section>
             </div>

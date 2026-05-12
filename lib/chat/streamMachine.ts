@@ -22,10 +22,23 @@ export type AssistantStreamEvent =
       type: "response.output_text.annotation.added";
       annotation?: { type?: string; url?: string; title?: string };
     }
-  | { type: "response.reasoning_summary_text.delta"; delta?: string };
+  | { type: "response.reasoning_text.delta"; delta?: string }
+  | { type: "response.reasoning_summary_text.delta"; delta?: string }
+  | {
+      type: "response.completed";
+      response?: {
+        usage?: {
+          input_tokens?: number;
+          output_tokens?: number;
+          input_tokens_details?: { cached_tokens?: number };
+          output_tokens_details?: { reasoning_tokens?: number };
+        };
+      };
+    };
 
 export interface AssistantStreamState {
   content: string;
+  reasoningText: string;
   reasoningSummary: string;
   reasoningStatus?: ReasoningStatus;
   citations: UrlCitation[];
@@ -34,6 +47,10 @@ export interface AssistantStreamState {
   isGeneratingImage: boolean;
   isSearching: boolean;
   terminalStatus: AssistantStreamTerminalStatus;
+  inputTokens?: number;
+  outputTokens?: number;
+  cachedTokens?: number;
+  reasoningTokens?: number;
 }
 
 export function createInitialAssistantStreamState(
@@ -41,6 +58,7 @@ export function createInitialAssistantStreamState(
 ): AssistantStreamState {
   return {
     content: "",
+    reasoningText: "",
     reasoningSummary: "",
     reasoningStatus: usesReasoning ? "thinking" : undefined,
     citations: [],
@@ -120,11 +138,26 @@ export function reduceAssistantStreamEvent(
         };
       }
       return state;
+    case "response.reasoning_text.delta":
+      return {
+        ...state,
+        reasoningText: `${state.reasoningText}${event.delta || ""}`,
+        reasoningStatus: "thinking",
+      };
     case "response.reasoning_summary_text.delta":
       return {
         ...state,
         reasoningSummary: `${state.reasoningSummary}${event.delta || ""}`,
         reasoningStatus: "thinking",
+      };
+    case "response.completed":
+      return {
+        ...state,
+        inputTokens: event.response?.usage?.input_tokens,
+        outputTokens: event.response?.usage?.output_tokens,
+        cachedTokens: event.response?.usage?.input_tokens_details?.cached_tokens,
+        reasoningTokens:
+          event.response?.usage?.output_tokens_details?.reasoning_tokens,
       };
     default:
       return state;
@@ -150,11 +183,16 @@ export function assistantStreamStateToMessagePatch(
 ): Partial<Message> {
   return {
     content: state.content,
+    ...(state.reasoningText ? { reasoningText: state.reasoningText } : {}),
     ...(state.reasoningSummary ? { reasoningSummary: state.reasoningSummary } : {}),
     ...(state.reasoningStatus ? { reasoningStatus: state.reasoningStatus } : {}),
     ...(state.citations.length > 0 ? { citations: state.citations } : {}),
     ...(state.imageBase64 ? { imageBase64: state.imageBase64 } : {}),
     ...(state.imageMimeType ? { imageMimeType: state.imageMimeType } : {}),
+    ...(state.inputTokens != null ? { inputTokens: state.inputTokens } : {}),
+    ...(state.outputTokens != null ? { outputTokens: state.outputTokens } : {}),
+    ...(state.cachedTokens != null ? { cachedTokens: state.cachedTokens } : {}),
+    ...(state.reasoningTokens != null ? { reasoningTokens: state.reasoningTokens } : {}),
     streamStatus: state.terminalStatus,
     isGeneratingImage: state.isGeneratingImage,
     isSearching: state.isSearching,

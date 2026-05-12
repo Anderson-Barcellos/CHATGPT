@@ -83,7 +83,26 @@ describe("MessageContent streaming routing", () => {
       />
     );
 
-    expect(markup).toContain("Abrir documento");
+    expect(markup).toContain("Visualizar A4");
     expect(markup).toContain("Abrir Canvas");
+  });
+
+  it("renders an animated placeholder while an image is still being generated", () => {
+    const markup = renderToStaticMarkup(
+      <MessageContent
+        message={{
+          id: "assistant-image-loading",
+          role: "assistant",
+          content: "Cria um logo minimalista com fundo transparente.",
+          timestamp: new Date("2026-05-11T12:00:00.000Z"),
+          streamStatus: "streaming",
+          isGeneratingImage: true,
+        }}
+      />
+    );
+
+    expect(markup).toContain("Gerando imagem");
+    expect(markup).toContain("primeiro preview");
+    expect(markup).not.toContain("<img");
   });
 });

@@ -16,7 +16,7 @@ Principais areas:
 
 ## Estado Atual Do Projeto
 
-- Modelo padrao atual: `gpt-5.3-chat-latest`
+- Modelo padrao atual: `chat-latest` (GPT-5.5 Instant)
 - Shell ativo: `GauchoChatShellV2` / `WorkspaceFrameV2` — redesign completo (S0-S12)
 - Tokens `--gc-*` unificados em `app/globals.css`; light/dark completos
 - Canvas overlay flutuante draggable/resizable (`CanvasOverlayV2`); mobile = Sheet full-screen
@@ -97,6 +97,13 @@ Principais areas:
 - `QuickActionsBar`: botão Regenerar visível também em `streamStatus === "interrupted"`
 - `ContextPanelV2`: `aborted | interrupted` agrupados em status `"warning"`; labels distintos por valor
 
+### Rodada 8 — Ajuste de catalogo de modelos
+
+- Removido `gpt-5.3-chat-latest` e `gpt-5.4` do catalogo
+- Adicionado `chat-latest` (GPT-5.5 Instant) como novo modelo padrao — alias rapido da serie GPT-5
+- `DEFAULT_MODEL` trocado para `chat-latest` em `stores/settingsStore.ts` e `app/api/chat/route.ts`
+- Demais modelos mantidos: `gpt-5.5`, `gpt-5.4-mini`, `gpt-5.1`, `gpt-4.1`, `o3`, `gpt-image-2.0`, `dall-e-3`
+
 ## Proximos Pontos De Atencao
 
 ### Alta prioridade
@@ -128,3 +135,40 @@ Rodar, quando fizer sentido:
 - O repo remoto atual e `origin -> https://github.com/Anderson-Barcellos/CHATGPT.git`
 - O branch principal rastreado e `main`
 - Evitar sobrescrever mudancas locais nao relacionadas sem confirmar antes
+
+## Preferencia De Comunicacao
+
+- Em tarefas com varias etapas, enviar check-ins curtos entre etapas principais (etapa atual, achado rapido e proximo passo)
+
+### 2026-05-09 18:24 - Escala menor nas citacoes do MessageBubble
+
+Context:
+Ajuste visual cirurgico apenas no bloco de citacoes das mensagens para reduzir a percepcao de fonte grande nos chips de fontes.
+
+Details:
+`components/chat/MessageBubble.tsx` teve reducao local na tipografia das citacoes (`9px` mobile / `10px` md), espacamento mais compacto e icones `Globe`/`ExternalLink` menores. Nenhum outro componente foi redesenhado nesta rodada.
+
+Notes:
+Se esse bloco voltar a parecer grande demais, continuar afinando dentro do proprio `MessageBubble` antes de mexer na escala global `text-nano`.
+
+### 2026-05-11 23:25 - Geração de imagem com modelo novo + placeholder durante stream
+
+Context:
+O fluxo de imagem do chat estava sem feedback visual entre o início da `image_generation` e a chegada da primeira imagem, e o backend não fixava explicitamente o modelo GPT Image mais novo.
+
+Details:
+`app/api/chat/route.ts` passou a configurar a tool `image_generation` com `model: gpt-image-2`, `quality: "high"`, `size: "auto"`, `output_format: "png"` e `partial_images: 2` para antecipar previews no próprio streaming. `components/chat/MessageContent.tsx` ganhou um estado visual de “Gerando imagem” antes da primeira preview e um badge de “Refinando imagem...” enquanto a imagem parcial/final ainda está sendo atualizada. `components/chat/MessageContent.test.tsx` cobre o placeholder; validação desta rodada: `npm test`, `npx tsc --noEmit`, `npm run build`.
+
+Notes:
+O catálogo local de modelos de imagem continua desatualizado em relação ao uso real da tool; quando retomarmos esse tema, alinhar `docs/MODELS.md` e `lib/models/modelConfig.ts` ao naming atual da OpenAI evita confusão entre o catálogo legado e o modelo efetivo da tool.
+
+### 2026-05-11 23:34 - Qualidade e tamanho de imagem conectados ao request real
+
+Context:
+As opções de `imageQuality` e `imageSize` já existiam no estado/UI, mas ainda não chegavam ao backend. Na prática, o app seguia sempre em `quality: "high"` e `size: "auto"` fixos, independentemente do que fosse escolhido no drawer.
+
+Details:
+`hooks/useChat.ts` passou a enviar `imageQuality` e `imageSize` junto do payload para `/api/chat`. `app/api/chat/route.ts` agora aceita esses campos e os repassa para a tool `image_generation`, mantendo `gpt-image-2` como modelo padrão e `high` como fallback quando nenhuma qualidade é enviada. Validação desta rodada: `npm test`, `npx tsc --noEmit`, `npm run build`.
+
+Notes:
+Se o drawer continuar escondendo esses controles em fluxos comuns por causa do `activeMode`, lembrar que o wiring backend já está pronto; o que pode faltar no futuro é só tornar a troca mais descoberta no shell/composer.

@@ -6,6 +6,7 @@ const GLUED_BOLD_HEADING_RE =
   /([.!?:])([ \t]*\*\*[A-ZÀ-Ý0-9][^*\n]{2,120}\*\*)(?=(?:\s|$))/g;
 const SINGLE_BREAK_BOLD_HEADING_RE =
   /([^\n])\n(\*\*[A-ZÀ-Ý0-9][^*\n]{2,120}\*\*)(?=(?:\s|$))/g;
+const LIKELY_NEWLINE_TOKEN_RE = /\/n(?=\s*[-*#>\d]|[A-ZÀ-Ý(])/g;
 
 function normalizeMarkdownSegment(content: string): string {
   return content
@@ -13,13 +14,14 @@ function normalizeMarkdownSegment(content: string): string {
     .replace(/\\n/g, "\n")
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n")
-    .replace(/\/n(?=\s*[-*#>\d]|[A-ZÀ-Ý(])/g, "\n")
+    .replace(LIKELY_NEWLINE_TOKEN_RE, "\n")
     .replace(GLUED_HEADING_RE, "$1\n\n$2")
     .replace(SINGLE_BREAK_HEADING_RE, "$1\n\n$2")
     .replace(GLUED_BOLD_HEADING_RE, "$1\n\n$2")
     .replace(SINGLE_BREAK_BOLD_HEADING_RE, "$1\n\n$2")
+    .replace(/\n{3,}/g, "\n\n")
     .split("\n")
-    .map((line) => line.replace(/[ \t]{2,}/g, " ").trimEnd())
+    .map((line) => line.replace(/[ \t]+$/g, ""))
     .join("\n");
 }
 
@@ -33,7 +35,6 @@ export function normalizeChatMarkdown(content: string): string {
       segment.startsWith("```") ? segment : normalizeMarkdownSegment(segment)
     )
     .join("")
-    .replace(/\n{3,}/g, "\n\n")
     .trim();
 
   return normalized;

@@ -24,7 +24,7 @@ export function ChatRecoveryState({
           "w-full max-w-xl rounded-3xl border px-5 py-6 text-center shadow-[0_20px_80px_rgba(2,6,23,0.18)] backdrop-blur-xl md:px-8 md:py-8",
           isError
             ? "border-destructive/20 bg-destructive/5"
-            : "border-white/10 bg-background/45"
+            : "border-[color:var(--gc-border-soft)] bg-background/45"
         )}
       >
         <div
@@ -32,7 +32,7 @@ export function ChatRecoveryState({
             "mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full ring-1 md:h-16 md:w-16",
             isError
               ? "bg-destructive/10 text-destructive ring-destructive/20"
-              : "bg-cyan-500/10 text-cyan-400 ring-cyan-400/20"
+              : "bg-primary/10 text-primary ring-primary/20"
           )}
         >
           {isRecovering ? (
