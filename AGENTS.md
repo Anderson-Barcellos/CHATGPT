@@ -201,10 +201,10 @@ Context:
 A build estava quebrando por depender de fetch em runtime/build para Google Fonts (`next/font/google`), com falhas de conexão no ambiente.
 
 Details:
-Troca de `next/font/google` para `next/font/local` em `app/layout.tsx`, apontando para fontes versionadas no repositório (`public/fonts/SpaceGrotesk-Variable.ttf` e `public/fonts/JetBrainsMono-Variable.ttf`) baixadas do repositório oficial `google/fonts`. Isso removeu dependência de rede para fontes durante o build.
+Troca temporária de `next/font/google` para `next/font/local` em `app/layout.tsx`, apontando para fontes versionadas no repositório (`public/fonts/SpaceGrotesk-Variable.ttf` e `public/fonts/JetBrainsMono-Variable.ttf`) baixadas do repositório oficial `google/fonts`. Isso removeu dependência de rede para fontes durante o build naquela etapa.
 
 Notes:
-Com essa mudança, o erro de build passou a ser apenas ausência de `OPENAI_API_KEY` para coletar dados de `/api/chat`, indicando que o gargalo de fontes foi resolvido.
+Este foi um passo intermediário/histórico: mais tarde, a solução foi superseded pela entrada de `2026-05-12 16:16`, que removeu os binários versionados e também o uso de `next/font/local` em `app/layout.tsx`. Naquele momento, o erro de build passou a ser apenas ausência de `OPENAI_API_KEY` para coletar dados de `/api/chat`, indicando que o gargalo de fontes havia sido resolvido temporariamente.
 
 ### 2026-05-12 14:33 - APIs tolerantes a ausência de OPENAI_API_KEY em build
 
