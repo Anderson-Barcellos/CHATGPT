@@ -3,11 +3,11 @@
 ## 1. Authentication & Security
 
 ### Authentication
--   **Current State:** The project structure (`api/auth`, `useAuth.ts`) suggests an authentication mechanism is present, likely interfacing with an Identity Provider (IDP) or simple password protection depending on deployment.
+-   **Current State:** The project exposes simple password-based auth through `app/api/auth/*`, JWT cookies (`jose`), and guards in `proxy.ts` plus `app/page.tsx`.
 -   **JWT:** The presence of `jose` in `package.json` indicates JSON Web Token handling for stateless session verification.
 
 ### Security Boundaries
--   **API Route Protection:** `middleware.ts` likely guards sensitive routes (like `/api/chat`) to prevent unauthorized usage of the LLM API quota.
+-   **API Route Protection:** `proxy.ts` guards sensitive routes (like `/api/chat`) to prevent unauthorized usage of the LLM API quota.
 -   **Environment Variables:** Sensitive keys (OpenAI API Key) are stored in server-side environment variables (`process.env`), never exposed to the client bundle.
 
 ## 2. Error Handling & Resilience
@@ -23,13 +23,9 @@
 
 ## 3. Monitoring & Observability
 
-### Sentry Integration
--   **Configuration:** `sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`.
--   **Scope:** Captures unhandled exceptions, performance traces, and session replays (if enabled).
--   **Source Maps:** Uploaded during build (production only) to allow debugging minified code.
-
-### Telemetry
--   **Custom Events:** `api/telemetry` endpoint suggests a custom pipeline for tracking usage metrics (e.g., number of messages, token usage) independent of Sentry.
+### Current Tooling
+-   **Build/validation:** runtime confidence currently comes from `npm test`, `npx tsc --noEmit`, `npm run lint`, and `npm run build`.
+-   **Operational checks:** `systemctl status chatgpt.service` and `/chat/api/health` are the main production sanity checks.
 
 ## 4. Configuration Management
 

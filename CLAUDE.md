@@ -112,7 +112,7 @@ Qualquer refactor em `buildRequestParams` ou `buildTools` precisa manter esses o
 
 `lib/models/modelConfig.ts` define `MODELS` + helpers (`isReasoningModel`, `modelSupportsTemperature`, `modelSupportsVerbosity`, `modelSupportsCodeInterpreter`). O gate `ALLOWED_MODELS` na rota é derivado daí (apenas modelos com capability `chat` ou `reasoning`).
 
-Adicionar modelo novo → editar `MODELS`, conferir que o `ChatComposer`/`ModelSelector` o exibe e que helpers retornam o flag correto. Modelo padrão atual: `gpt-5.3-chat-latest`.
+Adicionar modelo novo → editar `MODELS`, conferir que o `ChatComposer`/`ModelSelector` o exibe e que helpers retornam o flag correto. Modelo padrão atual: `gpt-5.1-chat-latest`.
 
 ### 5. `useChat.ts` é o orquestrador-mãe
 
@@ -160,7 +160,7 @@ Se o usuário recarregar a página durante o stream, a mensagem parcial é prese
 
 - **Tokens `--gc-*`** em `app/globals.css` — substitui `--v2-*`/`--app-*`/`--glass-*`. Breakpoints: `md=768`, `lg=1024 (sidebar)`, `xl=1280 (painel contextual)`.
 - **`components/motion/`** — `FadeIn`, `SlideIn`, `Pop`, `Drawer` encapsulam framer-motion com tokens `--gc-duration-*`.
-- **`CanvasOverlayV2`** — overlay flutuante draggable/resizable em `components/workspace-v2/canvas/`. Mobile = Sheet full-screen.
+- **`ArtifactPreviewSheet`** — preview principal de artefatos acionado pelo chat canvas, com print/PDF/download para documentos e quizzes.
 - **`CommandPalette` + `CommandPaletteProvider`** — cmd+k via `cmdk`. Z-index 300 (acima do canvas 150).
 - **`NotesProvider`** — Context em `components/workspace-v2/NotesProvider.tsx`. `appendToNotes` lança toast se painel não montado.
 - **`SelectionToolbar`** + `useTextSelection` — toolbar Notion-like ao selecionar texto em balões.

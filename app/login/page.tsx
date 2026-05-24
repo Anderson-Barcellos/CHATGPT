@@ -1,13 +1,42 @@
 "use client";
 
-import { useState } from "react";
-import { Lock, LogIn } from "lucide-react";
+import { useEffect, useState } from "react";
+import { LoaderCircle, Lock, LogIn } from "lucide-react";
 import { apiUrl } from "@/lib/utils";
 
 export default function LoginPage() {
+  const [authEnabled, setAuthEnabled] = useState<boolean | null>(null);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    void fetch(apiUrl("/api/auth/check"), { cache: "no-store" })
+      .then((response) => response.json() as Promise<{
+        authenticated?: boolean;
+        authEnabled?: boolean;
+      }>)
+      .then((data) => {
+        if (!isCurrent) return;
+
+        if (data.authenticated) {
+          window.location.replace(process.env.NEXT_PUBLIC_BASE_PATH || "/");
+          return;
+        }
+
+        setAuthEnabled(data.authEnabled ?? true);
+      })
+      .catch(() => {
+        if (!isCurrent) return;
+        setAuthEnabled(true);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,48 +78,68 @@ export default function LoginPage() {
               Gaúcho Chat
             </h1>
             <p className="text-sm text-muted-foreground mt-2">
-              Entre com sua senha para continuar
+              {authEnabled === false
+                ? "A proteção do app está desligada. Pode entrar direto."
+                : "Entre com sua senha para continuar"}
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Senha
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Digite sua senha"
-                className="w-full rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-4 py-3 text-foreground transition-all placeholder:text-muted-foreground/55 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                autoFocus
-                disabled={loading}
-              />
+          {authEnabled === null ? (
+            <div className="flex items-center justify-center gap-2 rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-4 py-3 text-sm text-muted-foreground">
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+              <span>Verificando acesso...</span>
             </div>
-
-            {error && (
-              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                <p className="text-sm text-destructive">{error}</p>
-              </div>
-            )}
-
+          ) : authEnabled === false ? (
             <button
-              type="submit"
-              disabled={loading || !password}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              type="button"
+              onClick={() =>
+                window.location.replace(process.env.NEXT_PUBLIC_BASE_PATH || "/")
+              }
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 font-medium text-primary-foreground transition-opacity hover:opacity-90"
             >
-              {loading ? (
-                <span>Entrando...</span>
-              ) : (
-                <>
-                  <LogIn className="h-4 w-4" />
-                  <span>Entrar</span>
-                </>
-              )}
+              <LogIn className="h-4 w-4" />
+              <span>Entrar no chat</span>
             </button>
-          </form>
+          ) : (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label htmlFor="password" className="sr-only">
+                  Senha
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Digite sua senha"
+                  className="w-full rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-4 py-3 text-foreground transition-all placeholder:text-muted-foreground/55 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  autoFocus
+                  disabled={loading}
+                />
+              </div>
+
+              {error && (
+                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <p className="text-sm text-destructive">{error}</p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || !password}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? (
+                  <span>Entrando...</span>
+                ) : (
+                  <>
+                    <LogIn className="h-4 w-4" />
+                    <span>Entrar</span>
+                  </>
+                )}
+              </button>
+            </form>
+          )}
 
         </div>
       </div>

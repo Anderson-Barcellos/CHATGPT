@@ -180,21 +180,13 @@ function getPreferredDisplayMode(responseMode: ResponseMode) {
   return undefined;
 }
 
-function sanitizeMessagesForStorage(messages: Message[]): Message[] {
-  return messages.map((message) => {
-    if (!message.attachments?.length) return message;
-
-    return {
-      ...message,
-      attachments: message.attachments.map((attachment) => ({
-        ...attachment,
-        dataUrl: undefined,
-        extractedText: attachment.extractedText
-          ? `[${attachment.extractedText.length} chars]`
-          : undefined,
-      })),
-    };
-  });
+function cloneMessagesForStorage(messages: Message[]): Message[] {
+  return messages.map((message) => ({
+    ...message,
+    attachments: message.attachments?.map((attachment) => ({
+      ...attachment,
+    })),
+  }));
 }
 
 async function persistConversationSnapshot(
@@ -202,7 +194,7 @@ async function persistConversationSnapshot(
   queryClient: ReturnType<typeof useQueryClient>
 ) {
   const finalMessages = useChatStore.getState().messages;
-  const messagesForStorage = sanitizeMessagesForStorage(finalMessages);
+  const messagesForStorage = cloneMessagesForStorage(finalMessages);
   const userMessages = finalMessages.filter((message) => message.role === "user");
 
   if (userMessages.length === 1) {
@@ -221,6 +213,19 @@ async function persistConversationSnapshot(
   await queryClient.invalidateQueries({
     queryKey: conversationKeys.detail(conversationId),
   });
+}
+
+async function persistConversationSnapshotSafely(
+  conversationId: string,
+  queryClient: ReturnType<typeof useQueryClient>,
+  errorMessage: string
+) {
+  try {
+    await persistConversationSnapshot(conversationId, queryClient);
+  } catch (saveErr) {
+    console.error("[useChat] Falha ao salvar conversa:", saveErr);
+    toast.error(errorMessage);
+  }
 }
 
 export function useChat() {
@@ -310,7 +315,7 @@ export function useChat() {
             void withConversationPersistenceRetry(() =>
               saveConversationMessages(
                 activeConversationId,
-                sanitizeMessagesForStorage(normalized)
+                cloneMessagesForStorage(normalized)
               )
             ).catch((err) => {
               console.warn(
@@ -352,7 +357,7 @@ export function useChat() {
       const normalized = normalizeStreamingMessages(state.messages);
       saveConversationMessagesViaBeacon(
         state.activeConversationId,
-        sanitizeMessagesForStorage(normalized)
+        cloneMessagesForStorage(normalized)
       );
     };
 
@@ -421,7 +426,7 @@ export function useChat() {
       let streamState = createInitialAssistantStreamState(usesReasoning);
 
       const throttledAutoSave = createThrottle(() => {
-        const snapshot = sanitizeMessagesForStorage(
+        const snapshot = cloneMessagesForStorage(
           useChatStore.getState().messages
         );
         void saveConversationMessages(activeConversationId, snapshot).catch(
@@ -438,7 +443,7 @@ export function useChat() {
           await withConversationPersistenceRetry(() =>
             saveConversationMessages(
               activeConversationId,
-              sanitizeMessagesForStorage(useChatStore.getState().messages)
+              cloneMessagesForStorage(useChatStore.getState().messages)
             )
           );
         } catch (err) {
@@ -568,12 +573,11 @@ export function useChat() {
           });
         }
 
-        try {
-          await persistConversationSnapshot(activeConversationId, queryClient);
-        } catch (saveErr) {
-          console.error("[useChat] Falha ao salvar conversa:", saveErr);
-          toast.error("Mensagem enviada, mas não foi salva. Tente recarregar.");
-        }
+        await persistConversationSnapshotSafely(
+          activeConversationId,
+          queryClient,
+          "Mensagem enviada, mas não foi salva. Tente recarregar."
+        );
 
         sent = true;
       } catch (err) {
@@ -581,6 +585,12 @@ export function useChat() {
           updateMessage(assistantMessageId, {
             ...buildAbortedAssistantMessagePatch(streamState, usesReasoning),
           });
+
+          await persistConversationSnapshotSafely(
+            activeConversationId,
+            queryClient,
+            "A geração foi interrompida, mas não consegui salvar esse estado."
+          );
 
           sent = true;
         } else {
@@ -599,6 +609,12 @@ export function useChat() {
           updateMessage(assistantMessageId, {
             content: `❌ ${message}`,
           });
+
+          await persistConversationSnapshotSafely(
+            activeConversationId,
+            queryClient,
+            "A mensagem falhou e eu também não consegui persistir esse estado."
+          );
 
           sent = false;
         }
@@ -653,7 +669,7 @@ export function useChat() {
     async (messageId: string) => {
       deleteMessagePair(messageId);
       if (activeConversationId) {
-        const finalMessages = sanitizeMessagesForStorage(useChatStore.getState().messages);
+        const finalMessages = cloneMessagesForStorage(useChatStore.getState().messages);
         try {
           await withConversationPersistenceRetry(() =>
             saveConversationMessages(activeConversationId, finalMessages)

@@ -1,17 +1,18 @@
 # Model Configuration
 
-**Last updated:** 2026-05-08  
+**Last updated:** 2026-05-24  
 **Source:** `lib/models/modelConfig.ts`
 
-## Available Models (6 chat/reasoning + 2 image)
+## Available Models (7 chat/reasoning + 2 image)
 
 ### Chat and Reasoning
 
 | ID | Name | Family | Reasoning | Context | Max Output | Pricing (in/out per 1M) | Badge |
 |----|------|--------|-----------|---------|------------|---------------------------|-------|
-| `chat-latest` | GPT-5.5 Instant | `gpt-5` | No | 128K | 16K | $1 / $4 | Padrao |
-| `gpt-5.5` | GPT-5.5 | `gpt-5` | Yes | 1.05M | 128K | $5 / $30 | Frontier |
+| `gpt-5.1-chat-latest` | GPT-5.1 Instant | `gpt-5` | No | 128K | 16K | $1.75 / $4 | Padrao |
+| `gpt-5.4` | GPT-5.4 | `gpt-5` | Yes | 1.05M | 128K | $3.75 / $22.5 | Frontier |
 | `gpt-5.4-mini` | GPT-5.4 mini | `gpt-5` | Yes | 128K | 16K | $1.1 / $4.4 | Eficiente |
+| `gpt-5.4-nano` | GPT-5.4 Nano | `gpt-5` | Yes | 128K | 16K | $0.04 / $0.16 | Economico |
 | `gpt-5.1` | GPT-5.1 | `gpt-5` | Yes | 400K | 128K | $1.75 / $14 | Codex |
 | `gpt-4.1` | GPT-4.1 | `gpt-4.1` | No | 1.05M | 32K | $2.5 / $10 | Confiavel |
 | `o3` | o3 | `o-series` | Yes | 200K | 100K | $10 / $40 | Raciocinio |
@@ -20,12 +21,12 @@
 
 | ID | Name | Family | Pricing |
 |----|------|--------|---------|
-| `gpt-image-2.0` | GPT Image 2.0 | `gpt-image` | $0.04/input |
+| `gpt-image-2` | GPT Image 2 | `gpt-image` | $0.04/input |
 | `dall-e-3` | DALL-E 3 | `dall-e` | $0.04/input |
 
 ## Runtime Defaults
 
-- Default selected model: `chat-latest` (`stores/settingsStore.ts`).
+- Default selected model: `gpt-5.1-chat-latest` (`stores/settingsStore.ts`).
 - Default `reasoningEffort`:
   - `gpt-5.4-mini`: `none`
   - other reasoning models: `medium`
@@ -51,7 +52,7 @@ Current catalog note:
 - Allowed models are derived from `MODELS` and restricted to chat/reasoning capabilities.
 - `maxOutputTokens` is clamped to each model's `maxOutput`.
 - `responseMode = "quiz"` forces:
-  - model: `gpt-5.5`
+  - model: `gpt-5.4`
   - reasoning effort: `high`
   - strict JSON schema output.
 

@@ -1,6 +1,6 @@
 # API Reference
 
-**Last updated:** 2026-05-08  
+**Last updated:** 2026-05-24  
 **Base URL:** `https://ultrassom.ai/chat` (respects `NEXT_PUBLIC_BASE_PATH`)
 
 All endpoints are implemented as Next.js route handlers under `app/api/`.
@@ -20,7 +20,7 @@ Chat completion endpoint with SSE streaming support.
   "input": [
     { "role": "user", "content": "Explique neurite vestibular em tópicos." }
   ],
-  "model": "chat-latest",
+  "model": "gpt-5.1-chat-latest",
   "instructions": "You are a helpful assistant.",
   "maxOutputTokens": 4096,
   "verbosity": "medium",
@@ -39,7 +39,7 @@ Chat completion endpoint with SSE streaming support.
 | Field | Type | Default | Notes |
 |-------|------|---------|-------|
 | `input` | array | **required** | OpenAI Responses API input payload |
-| `model` | string | `chat-latest` | Must be an allowed chat/reasoning model from `lib/models/modelConfig.ts` |
+| `model` | string | `gpt-5.1-chat-latest` | Must be an allowed chat/reasoning model from `lib/models/modelConfig.ts` |
 | `instructions` | string | — | System instructions |
 | `maxOutputTokens` | number | model max output | Clamped to selected model max |
 | `temperature` | number | — | Sent only if model supports temperature |
@@ -70,7 +70,7 @@ Returns raw OpenAI response JSON.
 - Client disconnects propagate to OpenAI via `signal: request.signal`.
 - Aborted streams return HTTP `499`.
 - `quiz` mode forces:
-  - model: `gpt-5.5`
+  - model: `gpt-5.4`
   - reasoning effort: `high`
   - strict JSON schema (`quizResponseSchema`)
 
@@ -146,9 +146,31 @@ Read persisted custom instructions.
 
 ### PUT /api/persona
 
-Update `contextAboutUser` and `responsePreferences`.
+Update `contextAboutUser`, `responsePreferences`, `customSystemInstructions`, and `ttsPreferences`.
 
 **File:** `app/api/persona/route.ts`
+
+---
+
+## Artifacts / TTS
+
+### POST /api/artifacts/pdf
+
+Render a document artifact as server-side A4 PDF.
+
+**File:** `app/api/artifacts/pdf/route.ts`
+
+### POST /api/tts
+
+Generate assistant speech audio via the server-side TTS proxy.
+
+**File:** `app/api/tts/route.ts`
+
+### POST /api/realtime/tts-call
+
+Create the experimental Realtime mini SDP session used by the lab player.
+
+**File:** `app/api/realtime/tts-call/route.ts`
 
 ---
 

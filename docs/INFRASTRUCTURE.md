@@ -1,6 +1,6 @@
 # Infrastructure
 
-**Last updated:** 2026-04-07  
+**Last updated:** 2026-05-24  
 **Domain:** https://ultrassom.ai/chat  
 **Port:** 3040
 
@@ -43,7 +43,7 @@ OpenAI API (external)
 </Location>
 
 # Explicit API endpoints handled by the same Next.js service
-<LocationMatch "^/chat/api/(chat|conversations(?:/.*)?|memories(?:/.*)?|persona|auth/(login|check|logout)|transcribe|health)$">
+<LocationMatch "^/chat/api/(chat|conversations(?:/.*)?|memories(?:/.*)?|persona|auth/(login|check|logout)|transcribe|health|tts|realtime/tts-call|artifacts/pdf)$">
     ProxyPass http://localhost:3040/chat/api
     ProxyTimeout 300
 </LocationMatch>
@@ -96,7 +96,7 @@ Environment="NEXT_PUBLIC_BASE_PATH=/chat"
 EnvironmentFile=/root/CHATGPT/.env.production
 ExecStartPre=/bin/bash -c 'fuser -k 3040/tcp 2>/dev/null; sleep 1; exit 0'
 ExecStart=/usr/bin/npm start
-Restart=on-failure
+Restart=always
 RestartSec=15
 StartLimitBurst=5
 KillMode=mixed
@@ -181,7 +181,7 @@ Key settings:
 - `poweredByHeader: false` — strip X-Powered-By
 - `reactStrictMode: true`
 - `optimizePackageImports` for lucide-react, @radix-ui, react-syntax-highlighter, @tanstack/react-query
-- Image domains: `**.openai.com`, `chat.ultrassom.ai`
+- Image domains: `**.openai.com`, `ultrassom.ai`
 
 ## SSL / HTTPS
 

@@ -1,6 +1,6 @@
 # Components, Hooks & Stores
 
-**Last updated:** 2026-05-08
+**Last updated:** 2026-05-24
 
 ## Runtime component tree
 
@@ -13,12 +13,12 @@ app/layout.tsx
                   ├── WorkspaceFrameV2
                   │   ├── ConversationRailV2
                   │   ├── ChatCanvasV2
-                  │   │   └── ChatContainer
-                  │   │       └── MessageBubble[]
+                  │   │   ├── ChatContainer
+                  │   │   │   └── MessageBubble[]
+                  │   │   └── ArtifactPreviewSheet
                   │   ├── CommandComposerContainerV2
                   │   │   └── CommandComposerV2
                   │   └── ContextPanelV2
-                  ├── CanvasOverlayV2 (mobile sheet)
                   ├── SettingsDrawer
                   ├── SelectionToolbar
                   └── CommandPalette
@@ -70,15 +70,14 @@ Routes message body rendering for:
 
 ### `components/workspace-v2/ContextPanelV2.tsx`
 
-Right panel with 3 tabs:
+Right panel with 2 tabs:
 
-- `Canvas` (artifact surface)
 - `Atividade` (timeline/status summary)
 - `Notas` (workspace notes per conversation)
 
-### `components/workspace-v2/canvas/CanvasOverlayV2.tsx`
+### `components/workspace-v2/canvas/ArtifactPreviewSheet.tsx`
 
-Mobile artifact sheet (opened from artifact state), reusing shared artifact copy/download actions.
+Artifact sheet opened from the chat canvas, reusing shared print/PDF/download actions for document and quiz outputs.
 
 ### Canvas contract (`lib/artifacts/canvasContract.ts`)
 
@@ -132,7 +131,7 @@ Model-scoped tuning + persona + memories:
 - `customInstructions`
 - `memories`
 
-Default model: `chat-latest`.
+Default model: `gpt-5.1-chat-latest`.
 
 ### `stores/uiStore.ts`
 

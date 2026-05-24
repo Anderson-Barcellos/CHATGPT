@@ -12,6 +12,7 @@ import {
   Sparkles,
   Trash2,
   User,
+  Volume2,
   X,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -33,6 +34,7 @@ import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { TTS_VOICES } from "@/lib/tts/speechText";
 import type { Memory } from "@/types";
 
 const IMAGE_SIZES = [
@@ -47,6 +49,11 @@ const IMAGE_QUALITIES = [
   { id: "medium", label: "Média" },
   { id: "high", label: "Alta" },
 ];
+
+const TTS_MODES = [
+  { id: "turbo", label: "Rápido" },
+  { id: "balanced", label: "Equilibrado" },
+] as const;
 
 const VERBOSITY_OPTIONS = [
   { id: "low", label: "Baixo", description: "Resposta mais enxuta." },
@@ -237,8 +244,10 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   const {
     contextAboutUser,
     responsePreferences,
+    ttsPreferences,
     updateContextAboutUser,
     updateResponsePreferences,
+    updateTtsPreferences,
     isSaving,
     isLoaded,
     saveStatus,
@@ -255,7 +264,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   const minTokensLimit = Math.min(256, maxTokensLimit);
 
   const panelStatus = useMemo<SaveStatus>(() => {
-    if (activeTab === "persona") return saveStatus;
+    if (activeTab === "persona" || activeTab === "tuning") return saveStatus;
     if (isCreatingMemory) return "saving";
     return "idle";
   }, [activeTab, isCreatingMemory, saveStatus]);
@@ -307,7 +316,11 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
               <div className="flex items-center gap-2">
                 <SaveStatusBadge
                   status={panelStatus}
-                  idleLabel={activeTab === "persona" ? "Autosave" : "Sincronizado"}
+                  idleLabel={
+                    activeTab === "persona" || activeTab === "tuning"
+                      ? "Autosave"
+                      : "Sincronizado"
+                  }
                 />
                 <ThemeToggle />
                 <Button
@@ -465,6 +478,82 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                         </div>
                       </div>
                     )}
+
+                    <div className="space-y-3">
+                      <h3 className="flex items-center gap-1.5 text-micro font-semibold uppercase tracking-eyebrow text-muted-foreground">
+                        <Volume2 className="h-3 w-3" />
+                        Voz
+                      </h3>
+                      <div className="space-y-4 rounded-2xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-4">
+                        <label className="flex flex-col gap-1 text-xs">
+                          <span className="text-muted-foreground">Modo</span>
+                          <select
+                            value={ttsPreferences.mode}
+                            onChange={(e) =>
+                              updateTtsPreferences({
+                                mode: e.target.value === "balanced" ? "balanced" : "turbo",
+                              })
+                            }
+                            className="rounded-xl border border-white/10 bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/20"
+                          >
+                            {TTS_MODES.map((mode) => (
+                              <option key={mode.id} value={mode.id}>
+                                {mode.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label className="flex flex-col gap-1 text-xs">
+                          <span className="text-muted-foreground">Voz</span>
+                          <select
+                            value={ttsPreferences.voice}
+                            onChange={(e) => updateTtsPreferences({ voice: e.target.value })}
+                            className="rounded-xl border border-white/10 bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/20"
+                          >
+                            {TTS_VOICES.map((voice) => (
+                              <option key={voice} value={voice}>
+                                {voice}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-medium">Velocidade</p>
+                              <p className="text-micro text-muted-foreground">
+                                Ajusta o ritmo da fala gerada.
+                              </p>
+                            </div>
+                            <span className="text-xs font-mono font-semibold">
+                              {ttsPreferences.speed.toFixed(2)}x
+                            </span>
+                          </div>
+                          <Slider
+                            min={0.75}
+                            max={1.5}
+                            step={0.05}
+                            value={[ttsPreferences.speed]}
+                            onValueChange={([value]) => updateTtsPreferences({ speed: value })}
+                          />
+                        </div>
+
+                        <label className="flex flex-col gap-1 text-xs">
+                          <span className="text-muted-foreground">Instruções da voz</span>
+                          <textarea
+                            value={ttsPreferences.instructions}
+                            onChange={(e) =>
+                              updateTtsPreferences({ instructions: e.target.value })
+                            }
+                            placeholder="Ex: Fale com tom calmo, natural e levemente gaúcho."
+                            rows={3}
+                            className="min-h-[78px] resize-none rounded-xl border border-white/10 bg-background px-3 py-2 text-xs outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
+                          />
+                        </label>
+                      </div>
+                    </div>
                   </>
                 )}
 

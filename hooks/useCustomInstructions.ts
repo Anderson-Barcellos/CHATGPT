@@ -3,16 +3,29 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { apiUrl } from "@/lib/utils";
-import { CustomInstructions } from "@/types";
+import { CustomInstructions, TtsPreferences } from "@/types";
 import { useDebounce } from "@/lib/performance/debounce";
+import { DEFAULT_TTS_PREFERENCES, normalizeTtsPreferences } from "@/lib/tts/speechText";
 
-let instructionsBootstrapPromise: Promise<void> | null = null;
+let instructionsBootstrapPromise: Promise<CustomInstructions> | null = null;
+let instructionsBootstrapData: CustomInstructions | null = null;
+let instructionsBootstrapSnapshot: string | null = null;
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
-function toSnapshot(instructions: Pick<CustomInstructions, "contextAboutUser" | "responsePreferences">) {
+function toSnapshot(
+  instructions: Pick<
+    CustomInstructions,
+    | "contextAboutUser"
+    | "responsePreferences"
+    | "customSystemInstructions"
+    | "ttsPreferences"
+  >
+) {
   return JSON.stringify({
     contextAboutUser: instructions.contextAboutUser,
     responsePreferences: instructions.responsePreferences,
+    customSystemInstructions: instructions.customSystemInstructions || "",
+    ttsPreferences: normalizeTtsPreferences(instructions.ttsPreferences),
   });
 }
 
@@ -30,6 +43,8 @@ export function useCustomInstructions() {
       id: "default",
       contextAboutUser: "",
       responsePreferences: "",
+      customSystemInstructions: "",
+      ttsPreferences: DEFAULT_TTS_PREFERENCES,
     } satisfies CustomInstructions);
   const debouncedSnapshot = useDebounce(
     toSnapshot(instructions),
@@ -39,6 +54,14 @@ export function useCustomInstructions() {
   useEffect(() => {
     if (bootstrapRef.current) return;
     bootstrapRef.current = true;
+
+    if (instructionsBootstrapData) {
+      lastSavedSnapshotRef.current =
+        instructionsBootstrapSnapshot ?? toSnapshot(instructionsBootstrapData);
+      setCustomInstructions(instructionsBootstrapData);
+      setIsLoaded(true);
+      return;
+    }
 
     if (!instructionsBootstrapPromise) {
       instructionsBootstrapPromise = fetch(apiUrl("/api/persona"))
@@ -54,19 +77,31 @@ export function useCustomInstructions() {
             id: data.id || "default",
             contextAboutUser: data.contextAboutUser || "",
             responsePreferences: data.responsePreferences || "",
+            customSystemInstructions: data.customSystemInstructions || "",
+            ttsPreferences: normalizeTtsPreferences(data.ttsPreferences),
           };
-          lastSavedSnapshotRef.current = toSnapshot(hydrated);
-          setCustomInstructions(hydrated);
-        })
-        .catch((err) => {
-          console.error("[useCustomInstructions] Failed to load persona:", err);
-          setSaveStatus("error");
+          instructionsBootstrapData = hydrated;
+          instructionsBootstrapSnapshot = toSnapshot(hydrated);
+          return hydrated;
         })
         .finally(() => {
-          setIsLoaded(true);
           instructionsBootstrapPromise = null;
         });
     }
+
+    instructionsBootstrapPromise
+      .then((hydrated) => {
+        lastSavedSnapshotRef.current =
+          instructionsBootstrapSnapshot ?? toSnapshot(hydrated);
+        setCustomInstructions(hydrated);
+      })
+      .catch((err) => {
+        console.error("[useCustomInstructions] Failed to load persona:", err);
+        setSaveStatus("error");
+      })
+      .finally(() => {
+        setIsLoaded(true);
+      });
   }, [setCustomInstructions]);
 
   const updateContextAboutUser = useCallback((value: string) => {
@@ -76,6 +111,8 @@ export function useCustomInstructions() {
       id: current?.id || "default",
       contextAboutUser: value,
       responsePreferences: current?.responsePreferences || "",
+      customSystemInstructions: current?.customSystemInstructions || "",
+      ttsPreferences: normalizeTtsPreferences(current?.ttsPreferences),
     });
   }, [setCustomInstructions]);
 
@@ -86,6 +123,23 @@ export function useCustomInstructions() {
       id: current?.id || "default",
       contextAboutUser: current?.contextAboutUser || "",
       responsePreferences: value,
+      customSystemInstructions: current?.customSystemInstructions || "",
+      ttsPreferences: normalizeTtsPreferences(current?.ttsPreferences),
+    });
+  }, [setCustomInstructions]);
+
+  const updateTtsPreferences = useCallback((updates: Partial<TtsPreferences>) => {
+    const current = useSettingsStore.getState().getCustomInstructions();
+    setCustomInstructions({
+      ...(current ?? {}),
+      id: current?.id || "default",
+      contextAboutUser: current?.contextAboutUser || "",
+      responsePreferences: current?.responsePreferences || "",
+      customSystemInstructions: current?.customSystemInstructions || "",
+      ttsPreferences: normalizeTtsPreferences({
+        ...normalizeTtsPreferences(current?.ttsPreferences),
+        ...updates,
+      }),
     });
   }, [setCustomInstructions]);
 
@@ -101,8 +155,17 @@ export function useCustomInstructions() {
       });
       if (!res.ok) throw new Error("Failed to save");
       const data = (await res.json()) as CustomInstructions;
-      lastSavedSnapshotRef.current = toSnapshot(data);
-      setCustomInstructions(data);
+      const hydrated = {
+        id: data.id || "default",
+        contextAboutUser: data.contextAboutUser || "",
+        responsePreferences: data.responsePreferences || "",
+        customSystemInstructions: data.customSystemInstructions || "",
+        ttsPreferences: normalizeTtsPreferences(data.ttsPreferences),
+      };
+      lastSavedSnapshotRef.current = toSnapshot(hydrated);
+      instructionsBootstrapData = hydrated;
+      instructionsBootstrapSnapshot = lastSavedSnapshotRef.current;
+      setCustomInstructions(hydrated);
       setSaveStatus("saved");
       return true;
     } catch (err) {
@@ -120,14 +183,18 @@ export function useCustomInstructions() {
 
     const parsed = JSON.parse(debouncedSnapshot) as Pick<
       CustomInstructions,
-      "contextAboutUser" | "responsePreferences"
+      | "contextAboutUser"
+      | "responsePreferences"
+      | "customSystemInstructions"
+      | "ttsPreferences"
     >;
 
     void saveContextAboutUser({
       id: instructions.id,
       contextAboutUser: parsed.contextAboutUser,
       responsePreferences: parsed.responsePreferences,
-      customSystemInstructions: instructions.customSystemInstructions,
+      customSystemInstructions: parsed.customSystemInstructions || "",
+      ttsPreferences: normalizeTtsPreferences(parsed.ttsPreferences),
     });
   }, [
     debouncedSnapshot,
@@ -150,9 +217,11 @@ export function useCustomInstructions() {
   return {
     contextAboutUser: instructions.contextAboutUser,
     responsePreferences: instructions.responsePreferences,
-    customSystemInstructions: instructions.customSystemInstructions,
+    customSystemInstructions: instructions.customSystemInstructions || "",
+    ttsPreferences: normalizeTtsPreferences(instructions.ttsPreferences),
     updateContextAboutUser,
     updateResponsePreferences,
+    updateTtsPreferences,
     saveContextAboutUser,
     isSaving,
     saveStatus,

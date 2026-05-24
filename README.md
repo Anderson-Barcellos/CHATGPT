@@ -9,10 +9,10 @@ The project focuses on a ChatGPT-like experience with conversation history, reas
 - Real-time chat experience with streaming responses and incremental persistence (auto-save throttled during stream, beacon on unload, interrupted-stream recovery on load)
 - Dedicated reasoning panel with explicit state transitions
 - Conversation history with editing and deletion flows
-- Model picker with support for `chat-latest` (default), `gpt-5.5`, `gpt-5.4-mini`, `gpt-5.1`, `gpt-4.1`, and `o3`
+- Model picker with support for `gpt-5.1-chat-latest` (default), `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.4-nano`, `gpt-5.1`, `gpt-4.1`, and `o3`
 - Persistent memory and custom instructions stored server-side
-- Workspace v2 shell with conversation rail, chat canvas, command composer, and right-side Canvas/Artifact panel
-- Artifact and Canvas rendering flows, including Markdown, HTML, quiz, copy, and PDF export
+- Workspace v2 shell with conversation rail, chat canvas, command composer, and right-side operational panel
+- Artifact rendering flows, including Markdown, HTML, quiz, source download, print, and PDF export
 - Mobile-first shell refinements for Safari and installed PWA usage
 - Server-side JSON persistence for conversations, memories, and persona (`data/*.json`)
 
@@ -74,14 +74,14 @@ data/
 
 ### Settings
 
-- Persona/custom instructions persisted through `/api/persona`
+- Persona/custom instructions and TTS preferences persisted through `/api/persona`
 - Memory management persisted through `/api/memories`
 - Inline editing and autosave behavior for settings workflows
 
 ### Artifacts and Export
 
-- Right-side Canvas/Artifact panel for document-like outputs
-- Canvas tab renders Markdown, HTML, and quiz artifacts in a larger reading/production surface
+- Artifact preview sheet opened from the chat canvas for document-like outputs
+- Context panel tracks activity and notes per conversation
 - PDF export tuned for cleaner layout and OpenAI-branded header
 - Support for document and quiz-oriented artifact rendering
 
@@ -93,6 +93,9 @@ data/
 - `GET/POST /api/memories`
 - `PATCH/DELETE /api/memories/[id]`
 - `GET/PUT /api/persona`
+- `POST /api/artifacts/pdf`
+- `POST /api/tts`
+- `POST /api/realtime/tts-call`
 - `POST /api/transcribe`
 - `POST /api/auth/login`
 - `POST /api/auth/logout`

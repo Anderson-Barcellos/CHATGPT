@@ -84,18 +84,6 @@ export async function saveConversationMessages(
   await assertOk(res);
 }
 
-export async function updateConversationTitle(
-  id: string,
-  title: string
-): Promise<void> {
-  const res = await fetch(`${BASE()}/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title }),
-  });
-  await assertOk(res);
-}
-
 export async function saveConversationMessagesAndTitle(
   id: string,
   messages: Message[],

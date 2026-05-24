@@ -190,6 +190,24 @@ else
 fi
 
 ################################################################################
+# Test Suite
+################################################################################
+
+print_header "Test Suite"
+
+if [ -f "package.json" ] && grep -q "\"test\"" package.json; then
+  print_info "Running tests..."
+  
+  if npm test; then
+    print_success "Tests passed"
+  else
+    print_error "Test suite failed"
+  fi
+else
+  print_warning "Test script not found in package.json"
+fi
+
+################################################################################
 # Build Verification
 ################################################################################
 

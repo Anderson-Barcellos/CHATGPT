@@ -14,7 +14,7 @@ The project uses the Next.js App Router.
 
 Current primary shell.
 
-- **Key components:** `GauchoChatShellV2`, `WorkspaceFrameV2`, `ConversationRailV2`, `ChatCanvasV2`, `CommandComposerContainerV2`, `ContextPanelV2`, `CanvasOverlayV2`.
+- **Key components:** `GauchoChatShellV2`, `WorkspaceFrameV2`, `ConversationRailV2`, `ChatCanvasV2`, `ArtifactPreviewSheet`, `CommandComposerContainerV2`, `ContextPanelV2`.
 - **Layout contract:** document-level overflow is hidden; scroll happens in explicit internal containers (`ScrollArea` + `min-h-0` + `flex-1`).
 
 ### 2.2 Chat (`components/chat/`)

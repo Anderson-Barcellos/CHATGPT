@@ -192,7 +192,18 @@ export interface CustomInstructions {
   contextAboutUser: string;
   responsePreferences: string;
   customSystemInstructions?: string;
+  ttsPreferences?: TtsPreferences;
 }
+
+export interface TtsPreferences {
+  model: "gpt-4o-mini-tts";
+  voice: string;
+  speed: number;
+  instructions: string;
+  mode: TtsMode;
+}
+
+export type TtsMode = "balanced" | "turbo";
 
 export type MemoryCategory =
   | "personal"

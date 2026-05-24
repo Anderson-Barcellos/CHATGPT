@@ -27,11 +27,6 @@ function buildArtifactExportMeta(artifact: MessageArtifact): ArtifactExportMeta 
   };
 }
 
-export async function copyArtifactToClipboard(artifact: MessageArtifact): Promise<void> {
-  const { content } = buildArtifactExportMeta(artifact);
-  await navigator.clipboard.writeText(content);
-}
-
 export function downloadArtifact(artifact: MessageArtifact): void {
   const { content, mimeType, fileName } = buildArtifactExportMeta(artifact);
   const blob = new Blob([content], { type: mimeType });

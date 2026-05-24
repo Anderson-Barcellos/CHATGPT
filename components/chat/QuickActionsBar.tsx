@@ -5,13 +5,23 @@ import {
   ArrowDown,
   Check,
   Copy,
+  LoaderCircle,
   MessageSquareQuote,
   Minimize2,
+  Pause,
+  Play,
+  Radio,
   RefreshCw,
+  RotateCcw,
+  RotateCw,
+  Square,
   StickyNote,
+  Volume2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { FadeIn } from "@/components/motion/FadeIn";
+import { useAssistantTts } from "@/hooks/useAssistantTts";
+import { useRealtimeTtsLab } from "@/hooks/useRealtimeTtsLab";
 import { useNotes } from "@/hooks/useNotes";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useUIStore } from "@/stores/uiStore";
@@ -29,10 +39,12 @@ interface QuickActionsBarProps {
 function ActionButton({
   onClick,
   title,
+  disabled,
   children,
 }: {
   onClick: () => void;
   title: string;
+  disabled?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -40,10 +52,112 @@ function ActionButton({
       type="button"
       title={title}
       onClick={onClick}
-      className="flex size-7 items-center justify-center rounded-md text-muted-foreground/70 hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground"
+      disabled={disabled}
+      className="flex size-7 items-center justify-center rounded-md text-muted-foreground/70 hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
     >
       {children}
     </button>
+  );
+}
+
+function TtsPlayer({
+  tts,
+  realtime,
+}: {
+  tts: ReturnType<typeof useAssistantTts>;
+  realtime: ReturnType<typeof useRealtimeTtsLab>;
+}) {
+  if (!tts.isOpen) return null;
+
+  const isLoading = tts.status === "loading";
+
+  return (
+    <div className="mt-1.5 w-full max-w-[320px] rounded-xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-2 py-1.5 text-muted-foreground shadow-sm">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={tts.togglePlay}
+          disabled={isLoading && !tts.isPlaying}
+          className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-background/80 text-foreground hover:bg-background disabled:opacity-50"
+          title={tts.isPlaying ? "Pausar" : "Tocar"}
+        >
+          {isLoading ? (
+            <LoaderCircle className="size-3.5 animate-spin" />
+          ) : tts.isPlaying ? (
+            <Pause className="size-3.5" />
+          ) : (
+            <Play className="size-3.5" />
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => tts.seekBy(-15)}
+          className="flex size-7 shrink-0 items-center justify-center rounded-lg hover:bg-background/70"
+          title="Voltar 15s"
+        >
+          <RotateCcw className="size-3.5" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => tts.seekBy(15)}
+          className="flex size-7 shrink-0 items-center justify-center rounded-lg hover:bg-background/70"
+          title="Avançar 15s"
+        >
+          <RotateCw className="size-3.5" />
+        </button>
+
+        <div className="min-w-0 flex-1">
+          <div className="h-1.5 overflow-hidden rounded-full bg-background/80">
+            <div
+              className="h-full rounded-full bg-primary transition-[width]"
+              style={{ width: `${tts.progress}%` }}
+            />
+          </div>
+          <div className="mt-1 flex items-center justify-between gap-2 text-[10px] leading-none">
+            <span>{tts.formattedCurrentTime}</span>
+            <span className="truncate">
+              {tts.error || `Parte ${tts.clipIndex + 1}/${tts.totalClips}`}
+            </span>
+            <span>{tts.formattedDuration}</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={tts.stop}
+          className="flex size-7 shrink-0 items-center justify-center rounded-lg hover:bg-background/70"
+          title="Parar"
+        >
+          <Square className="size-3.5" />
+        </button>
+      </div>
+
+      <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-[color:var(--gc-border-soft)] pt-1.5 text-[10px] leading-none">
+        <button
+          type="button"
+          onClick={realtime.isActive ? realtime.stop : realtime.start}
+          className="inline-flex h-6 items-center gap-1 rounded-lg bg-background/70 px-2 font-medium text-foreground hover:bg-background"
+          title="Laboratório Realtime mini"
+        >
+          {realtime.status === "connecting" || realtime.status === "ready" ? (
+            <LoaderCircle className="size-3 animate-spin" />
+          ) : (
+            <Radio className="size-3" />
+          )}
+          {realtime.isActive ? "Parar realtime" : "Realtime mini"}
+        </button>
+        <span className="min-w-0 truncate text-muted-foreground/80">
+          {realtime.error ||
+            (realtime.firstAudioMs
+              ? `1º áudio ${realtime.firstAudioMs}ms`
+              : realtime.status === "idle"
+              ? "Lab isolado"
+              : realtime.status)}
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -58,6 +172,8 @@ export function QuickActionsBar({
   const [copied, setCopied] = useState(false);
   const [touched, setTouched] = useState(false);
   const touchTimer = useRef<number | undefined>(undefined);
+  const tts = useAssistantTts(content, messageId);
+  const realtime = useRealtimeTtsLab(content);
 
   const handleTouchStart = useCallback(() => {
     if (!isMobile) return;
@@ -128,6 +244,13 @@ export function QuickActionsBar({
           <RefreshCw className="size-3.5" />
         </ActionButton>
       )}
+      <ActionButton
+        onClick={tts.openAndPlay}
+        title="Ler em voz alta"
+        disabled={!tts.canPlay}
+      >
+        <Volume2 className="size-3.5" />
+      </ActionButton>
       <ActionButton onClick={handleContinue} title="Continuar">
         <ArrowDown className="size-3.5" />
       </ActionButton>
@@ -143,14 +266,21 @@ export function QuickActionsBar({
     </div>
   );
 
+  const wrappedBar = (
+    <div className={cn("flex flex-col items-start", className)}>
+      {bar}
+      <TtsPlayer tts={tts} realtime={realtime} />
+    </div>
+  );
+
   if (
     streamStatus === "completed" ||
     streamStatus === "interrupted" ||
     streamStatus === "aborted" ||
     streamStatus === "failed"
   ) {
-    return <FadeIn delay={0.3}>{bar}</FadeIn>;
+    return <FadeIn delay={0.3}>{wrappedBar}</FadeIn>;
   }
 
-  return bar;
+  return wrappedBar;
 }

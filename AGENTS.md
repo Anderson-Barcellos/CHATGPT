@@ -7,7 +7,7 @@ Projeto de chat multimodal em `Next.js 16` com `React 19`, `TypeScript`, `Zustan
 Principais areas:
 
 - `components/chat/*`: experiencia principal do chat, baloes, input, reasoning e export
-- `components/workspace-v2/*`: shell atual do Gaucho Chat, rail de conversas, canvas central, composer e painel Canvas/Artefato
+- `components/workspace-v2/*`: shell atual do Gaucho Chat, rail de conversas, canvas central, composer e painel operacional
 - `hooks/useChat.ts`: streaming, reasoning, citacoes, persistencia e fluxo de envio
 - `lib/chat/useStreamingTextBuffer.ts`: buffer STT-style do texto do assistente
 - `lib/models/modelConfig.ts`: catalogo de modelos e metadados usados no seletor
@@ -16,10 +16,10 @@ Principais areas:
 
 ## Estado Atual Do Projeto
 
-- Modelo padrao atual: `chat-latest` (GPT-5.5 Instant)
+- Modelo padrao atual: `gpt-5.1-chat-latest` (GPT-5.1 Instant)
 - Shell ativo: `GauchoChatShellV2` / `WorkspaceFrameV2` — redesign completo (S0-S12)
 - Tokens `--gc-*` unificados em `app/globals.css`; light/dark completos
-- Canvas overlay flutuante draggable/resizable (`CanvasOverlayV2`); mobile = Sheet full-screen
+- Preview de artefatos via `ArtifactPreviewSheet`; painel lateral focado em atividade e notas
 - Command palette cmd+k (`CommandPalette` + `cmdk`)
 - Quick actions nos balões do assistente (`QuickActionsBar`)
 - Toolbar de seleção de texto estilo Notion (`SelectionToolbar` + `useTextSelection`)
@@ -172,3 +172,102 @@ Details:
 
 Notes:
 Se o drawer continuar escondendo esses controles em fluxos comuns por causa do `activeMode`, lembrar que o wiring backend já está pronto; o que pode faltar no futuro é só tornar a troca mais descoberta no shell/composer.
+
+### 2026-05-14 00:12 - Exportação PDF A4 server-side para documentos
+
+Context:
+A exportação PDF dos documentos A4 estava dependente de `html2canvas/jsPDF` no cliente, o que era frágil para o preview real com scroll/iframe e ficava distante do comportamento de PDF estilo Deep Research.
+
+Details:
+`lib/export/documentPdf.ts` agora chama `apiUrl("/api/artifacts/pdf")` e baixa o blob retornado. A rota `app/api/artifacts/pdf/route.ts` valida auth e artefato de documento, respeita limite de 5 MB e usa `lib/server/documentArtifactPdf.ts` para renderizar PDF A4 via Playwright/Chrome server-side, com JavaScript desativado e CSS printável. Foi adicionada a dependência `rehype-stringify` para renderizar markdown via pipeline `unified/remark/rehype`, evitando `react-dom/server` em App Route.
+
+Notes:
+Validação desta rodada: `npm test`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service` e chamada real local em `/chat/api/artifacts/pdf` retornando `200 application/pdf`; `pdfinfo` confirmou página A4 e JavaScript ausente. O Chrome usado no host é `/usr/bin/google-chrome-stable` quando o browser cacheado do Playwright não existe.
+
+### 2026-05-14 00:18 - Polimento visual do PDF A4 de documentos
+
+Context:
+Depois da migração da exportação PDF para renderização server-side, o template precisava ficar mais próximo de um documento final estilo Deep Research, não apenas uma página A4 funcional.
+
+Details:
+`lib/server/documentArtifactPdf.ts` ganhou cabeçalho visual com marca discreta Gaucho Chat, faixa superior, grid de metadados, melhor tratamento de blockquotes, tabelas zebrada, URLs impressas depois de links HTTP e rodapé Playwright com paginação `Pagina X de Y`. `lib/server/documentArtifactPdf.test.ts` cobre o shell visual e garante que HTML ativo continue sendo removido antes do PDF.
+
+Notes:
+Validação desta rodada: `npm test`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service` e geração real de PDF em `/chat/api/artifacts/pdf`; `pdfinfo` confirmou PDF A4 de 3 páginas e `pdftotext` confirmou `Gaucho Chat`, URLs impressas e rodapé `Pagina 1 de 3`.
+
+### 2026-05-20 12:45 - TTS nas respostas do assistente
+
+Context:
+Adicionado recurso pessoal de leitura em voz alta para respostas do assistente, com player compacto anexado abaixo dos ícones do balão.
+
+Details:
+`components/chat/QuickActionsBar.tsx` ganhou botão de alto-falante e player com play/pause, parar e saltos de 15s. `hooks/useAssistantTts.ts` faz cache em memória por mensagem/configuração e toca chunks sequenciais. `app/api/tts/route.ts` usa OpenAI Speech API com `gpt-4o-mini-tts`; `lib/tts/speechText.ts` centraliza vozes, defaults, sanitização e chunking seguro. Preferências de voz persistem via `ttsPreferences` em `/api/persona` e aparecem na aba Tuning do `SettingsDrawer`. `/etc/apache2/APACHE.md` foi atualizado com `/chat/api/tts`.
+
+Notes:
+Validação desta rodada: `npm test`, `npx tsc --noEmit`, `npm run build`. O limite prático usa chunking abaixo de 4096 caracteres por chamada, com margem; a doc do modelo também cita 2000 input tokens, então evitar aumentar `TTS_SAFE_INPUT_LIMIT` sem teste real.
+
+### 2026-05-20 13:01 - TTS Turbo Queue
+
+Context:
+O primeiro TTS funcional ainda gerava chunks em série, o que deixava a experiência lenta em respostas longas.
+
+Details:
+`lib/tts/speechText.ts` ganhou perfis `balanced` e `turbo`; `turbo` usa primeiro chunk menor e concorrência 4. `ttsPreferences.mode` passou a ser persistido em `/api/persona` e aparece na seção Voz do Settings. `hooks/useAssistantTts.ts` agora prioriza o primeiro chunk e gera os demais em paralelo com ordem preservada, abortando requests em andamento no stop.
+
+Notes:
+Validação desta rodada: `npm test`, `npx tsc --noEmit`, `npm run build`. Se ainda houver gap perceptível entre partes, o próximo refinamento é Web Audio API/AudioContext para agendar buffers contínuos; não migrar direto para Realtime antes de comparar latência real do turbo.
+
+### 2026-05-20 13:26 - Realtime mini TTS Lab
+
+Context:
+Criado módulo experimental isolado para comparar latência de leitura por `gpt-realtime-mini` contra o TTS padrão/turbo.
+
+Details:
+`app/api/realtime/tts-call/route.ts` recebe SDP do navegador e cria chamada server-side em `/v1/realtime/calls`, mantendo `OPENAI_API_KEY` fora do cliente. `hooks/useRealtimeTtsLab.ts` abre `RTCPeerConnection`, recebe áudio remoto e envia `response.create` out-of-band para ler o texto da mensagem. `components/chat/QuickActionsBar.tsx` mostra botão `Realtime mini` dentro do player de TTS, sem substituir o botão normal. Vozes incompatíveis com Realtime são normalizadas para `marin`.
+
+Notes:
+Este módulo é laboratório: sem cache, sem seek e sem substituir `gpt-4o-mini-tts`. Validar manualmente latência e fidelidade verbatim antes de promover para fluxo principal. `/etc/apache2/APACHE.md` inclui `/chat/api/realtime/tts-call`.
+
+### 2026-05-20 18:27 - TTS libera áudio bloqueado pelo navegador
+
+Context:
+O player de voz podia cair em erro "Não consegui iniciar o áudio no navegador" porque o MP3 só chegava depois do clique inicial, fora do gesto aceito pelas políticas de autoplay.
+
+Details:
+`lib/tts/browserAudio.ts` adiciona um prime silencioso curto para aquecer o elemento `<audio>` dentro do clique do usuário. `hooks/useAssistantTts.ts` usa esse prime antes de gerar clips e, se o browser ainda bloquear, deixa o clip pronto em pausa para o próximo toque em vez de marcar erro fatal. `hooks/useRealtimeTtsLab.ts` usa o mesmo prime no áudio WebRTC e reporta bloqueio de autoplay como tentativa manual necessária.
+
+Notes:
+Validação desta rodada: `npm test`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service` e health local em `/chat/api/health`. Ainda precisa de teste manual no navegador real do Anders, porque política de autoplay varia por browser/dispositivo.
+
+### 2026-05-20 18:41 - Debug front/console + hardening cross-browser de áudio
+
+Context:
+Mesmo com `/api/tts` funcional, persistia relato de falha para iniciar áudio no navegador real. Precisávamos validar no front e console com automação e reforçar compatibilidade.
+
+Details:
+Diagnóstico com Playwright em `http://127.0.0.1:3040/chat`: envio real de mensagem, clique em `Ler em voz alta`, respostas `200` em `/chat/api/tts` e sem erro de autoplay no console (apenas warnings KaTeX já existentes). Foram aplicadas melhorias em `hooks/useAssistantTts.ts` e `hooks/useRealtimeTtsLab.ts`: elemento `<audio>` agora é criado no DOM com `playsinline`, mantendo o prime silencioso antes da reprodução. `lib/tts/browserAudio.ts` ganhou `describeAudioPlayError()` para exibir motivo real (`NotAllowedError`, `NotSupportedError` etc.) em vez de mensagem genérica.
+
+Notes:
+Validação desta rodada: `npm test`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service`, health `healthy` em `/chat/api/health` e replay Playwright com `--autoplay-policy=user-gesture-required` mostrando player ativo (`Pausar`).
+
+### 2026-05-21 11:25 - Recuperacao do chatgpt.service apos saida limpa
+
+Context:
+O Gaucho Chat caiu porque `chatgpt.service` estava `inactive (dead)` desde 2026-05-21 09:31, com `status=0/SUCCESS`. A porta 3040 estava sem listener e `/chat/api/health` recusava conexao.
+
+Details:
+O servico foi iniciado manualmente e voltou healthy. A unit `/etc/systemd/system/chatgpt.service` usava `Restart=on-failure`; como a saida foi limpa, o systemd nao religou. A politica foi alterada para `Restart=always`, seguida de `systemctl daemon-reload` e `systemctl restart chatgpt.service`.
+
+Notes:
+Validacao desta rodada: `systemctl is-active chatgpt.service` retornou `active`, `systemctl status` mostrou `npm start` + `next-server (v16.1.6)`, health local em `http://127.0.0.1:3040/chat/api/health` retornou `healthy` e health publico em `https://ultrassom.ai/chat/api/health` retornou HTTP 200.
+
+### 2026-05-24 19:40 - Auditoria fechada com correcoes de persistencia e alinhamento de runtime
+
+Context:
+Depois da varredura geral, priorizamos correcoes reais de funcionamento em vez de mexer no renderer HTML de artifacts, que ficou explicitamente aceito como risco para uso pessoal do Anders.
+
+Details:
+`hooks/useCustomInstructions.ts` foi endurecido para evitar race entre multiplas instancias do hook no bootstrap de `/api/persona`; isso remove a condicao que podia deixar `isLoaded=false` para sempre e quebrar o autosave das preferencias de voz/TTS. `app/api/persona/route.ts` passou a ler/gravar tambem `customSystemInstructions`, e o `SettingsDrawer` agora reflete o status de autosave tambem na aba `Tuning`, onde ficam as opcoes de voz. `hooks/useChat.ts` deixou de sanitizar anexos persistidos para placeholders, preservando contexto real de PDF/texto/imagem apos reload e `edit/resend`, e passou a persistir estados terminais tambem em abort/failure, nao so no caminho feliz. O shell foi limpo de sobras nao usadas (`CanvasContent`, `DocumentPreviewModal`, `copyArtifactToClipboard`, `updateConversationTitle` e SVGs padrao do template), a documentacao foi realinhada ao runtime real (`gpt-5.1-chat-latest`, `gpt-5.4` no quiz, `gpt-image-2`, painel de `Atividade` + `Notas`, endpoints `/api/tts`, `/api/realtime/tts-call`, `/api/artifacts/pdf`) e o pipeline passou a rodar `npm test` em CI/pre-deploy. A unit versionada `systemd/chatgpt.service` foi alinhada ao estado produtivo com `Restart=always`. A pagina `/login` foi mantida simples no proprio app e agora trata melhor o caso em que a auth do app estiver desligada.
+
+Notes:
+Validacao desta rodada: `npm test`, `npx tsc --noEmit` e `npm run build` passaram. O comando `npm test -- --run` nao deve ser usado aqui porque o script ja embute `vitest --run`. A decisao consciente foi nao endurecer agora o preview/print HTML client-side dos artifacts, porque o fluxo e pessoal do Anders e o renderer atual esta aprovado.
