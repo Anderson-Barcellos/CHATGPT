@@ -271,3 +271,14 @@ Details:
 
 Notes:
 Validacao desta rodada: `npm test`, `npx tsc --noEmit` e `npm run build` passaram. O comando `npm test -- --run` nao deve ser usado aqui porque o script ja embute `vitest --run`. A decisao consciente foi nao endurecer agora o preview/print HTML client-side dos artifacts, porque o fluxo e pessoal do Anders e o renderer atual esta aprovado.
+
+### 2026-05-24 19:50 - Login do app com usuario/senha e correcao de basePath/cookie
+
+Context:
+Anders pediu um login simples com credenciais no proprio Gaucho Chat. O gate inicial existia so por senha e a primeira ligacao real expôs dois problemas de integracao: redirect duplicando o `basePath` (`/chat/chat/login`) e cookie de sessao sendo reescrito para `/code/` pelo Apache.
+
+Details:
+`app/api/auth/login/route.ts` passou a validar `username` + `password`, e `lib/server/auth.ts` ganhou `AUTH_USERNAME` alem de fixar o `Path` do cookie no `NEXT_PUBLIC_BASE_PATH` (`/chat` em producao). `app/login/page.tsx` agora renderiza formulario com usuario e senha, e `app/page.tsx` parou de prefixar manualmente `/login`, deixando o redirect server-side respeitar o `basePath` nativo do Next. Em producao, `.env.production` ficou com `AUTH_ENABLED=true`, `AUTH_USERNAME=anders` e `AUTH_PASSWORD=1103`. No Apache, `ProxyPassReverseCookiePath / /code/` foi restringido ao bloco de `/code/`, `APACHE.md` foi atualizado para refletir que `/chat` usa JWT/app auth, e o `chatgpt.service` + `apache2` foram recarregados com validacao real.
+
+Notes:
+Validacao desta rodada: `npm test`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service`, `apachectl configtest`, `systemctl reload apache2`, `curl -I https://ultrassom.ai/chat` retornando `location: /chat/login`, e login publico em `/chat/api/auth/login` seguido de `/chat/api/auth/check` retornando `authenticated:true`. O arquivo `/etc/apache2/sites-available/ultrassom.ai-optimized.conf` e mantido com atributo imutavel; para futuras mudancas, remover `chattr +i`, editar, validar e recolocar a protecao.

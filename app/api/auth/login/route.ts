@@ -2,12 +2,13 @@ import { timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import {
   getAuthPassword,
+  getAuthUsername,
   isAuthEnabled,
   setAuthCookie,
   signAuthToken,
 } from "@/lib/server/auth";
 
-function passwordsMatch(a: string, b: string): boolean {
+function valuesMatch(a: string, b: string): boolean {
   const encoder = new TextEncoder();
   const bufA = encoder.encode(a);
   const bufB = encoder.encode(b);
@@ -17,17 +18,21 @@ function passwordsMatch(a: string, b: string): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    const { password } = await request.json();
+    const { username, password } = await request.json();
 
     if (!isAuthEnabled()) {
       return NextResponse.json({ success: true });
     }
 
+    const correctUsername = getAuthUsername();
     const correctPassword = getAuthPassword();
 
-    if (!passwordsMatch(password ?? "", correctPassword)) {
+    const usernameMatches = valuesMatch(username ?? "", correctUsername);
+    const passwordMatches = valuesMatch(password ?? "", correctPassword);
+
+    if (!usernameMatches || !passwordMatches) {
       return NextResponse.json(
-        { error: "Senha incorreta" },
+        { error: "Credenciais incorretas" },
         { status: 401 }
       );
     }

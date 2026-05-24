@@ -22,6 +22,16 @@ export function isAuthEnabled(): boolean {
   return process.env.AUTH_ENABLED === "true";
 }
 
+export function getAuthUsername(): string {
+  const username = process.env.AUTH_USERNAME?.trim();
+
+  if (!username) {
+    throw new Error("AUTH_USERNAME must be configured when AUTH_ENABLED=true.");
+  }
+
+  return username;
+}
+
 export function getAuthPassword(): string {
   const password = process.env.AUTH_PASSWORD?.trim();
 
@@ -75,6 +85,16 @@ function shouldUseSecureCookie(request?: NextRequest): boolean {
   return process.env.NODE_ENV === "production";
 }
 
+function getAuthCookiePath(): string {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.trim();
+
+  if (!basePath) {
+    return "/";
+  }
+
+  return basePath.startsWith("/") ? basePath : `/${basePath}`;
+}
+
 export function setAuthCookie(
   response: NextResponse,
   token: string,
@@ -85,7 +105,7 @@ export function setAuthCookie(
     secure: shouldUseSecureCookie(request),
     sameSite: "lax",
     maxAge: AUTH_TOKEN_TTL_SECONDS,
-    path: "/",
+    path: getAuthCookiePath(),
   });
 }
 
@@ -95,6 +115,6 @@ export function clearAuthCookie(response: NextResponse, request?: NextRequest): 
     secure: shouldUseSecureCookie(request),
     sameSite: "lax",
     maxAge: 0,
-    path: "/",
+    path: getAuthCookiePath(),
   });
 }

@@ -6,6 +6,7 @@ import { apiUrl } from "@/lib/utils";
 
 export default function LoginPage() {
   const [authEnabled, setAuthEnabled] = useState<boolean | null>(null);
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -47,7 +48,7 @@ export default function LoginPage() {
       const response = await fetch(apiUrl("/api/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ username, password }),
       });
 
       const data = await response.json();
@@ -80,7 +81,7 @@ export default function LoginPage() {
             <p className="text-sm text-muted-foreground mt-2">
               {authEnabled === false
                 ? "A proteção do app está desligada. Pode entrar direto."
-                : "Entre com sua senha para continuar"}
+                : "Entre com seu usuario e senha para continuar"}
             </p>
           </div>
 
@@ -103,6 +104,25 @@ export default function LoginPage() {
           ) : (
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
+                <label htmlFor="username" className="sr-only">
+                  Usuario
+                </label>
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Digite seu usuario"
+                  className="w-full rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-4 py-3 text-foreground transition-all placeholder:text-muted-foreground/55 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  autoFocus
+                  disabled={loading}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                />
+              </div>
+
+              <div>
                 <label htmlFor="password" className="sr-only">
                   Senha
                 </label>
@@ -113,7 +133,6 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Digite sua senha"
                   className="w-full rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-4 py-3 text-foreground transition-all placeholder:text-muted-foreground/55 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  autoFocus
                   disabled={loading}
                 />
               </div>
@@ -126,7 +145,7 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                disabled={loading || !password}
+                disabled={loading || !username || !password}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? (
