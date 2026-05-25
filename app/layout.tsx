@@ -45,12 +45,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `if("serviceWorker"in navigator){navigator.serviceWorker.register("${process.env.NEXT_PUBLIC_BASE_PATH||""}/sw.js")}`,
+            __html: `if("serviceWorker"in navigator){navigator.serviceWorker.getRegistrations().then(function(registrations){registrations.forEach(function(registration){if(registration.scope.indexOf(location.origin+"${basePath}/")===0){registration.unregister();}});});}`,
           }}
         />
       </head>

@@ -282,3 +282,14 @@ Details:
 
 Notes:
 Validacao desta rodada: `npm test`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service`, `apachectl configtest`, `systemctl reload apache2`, `curl -I https://ultrassom.ai/chat` retornando `location: /chat/login`, e login publico em `/chat/api/auth/login` seguido de `/chat/api/auth/check` retornando `authenticated:true`. O arquivo `/etc/apache2/sites-available/ultrassom.ai-optimized.conf` e mantido com atributo imutavel; para futuras mudancas, remover `chattr +i`, editar, validar e recolocar a protecao.
+
+### 2026-05-24 21:23 - Corrigido loop de redirects no mobile apos login
+
+Context:
+No mobile, o login podia falhar com erro de "numero alto de redirecionamentos". A reproducao com Chrome em viewport iPhone mostrou loop entre `/chat` e `/chat/login` apos autenticar.
+
+Details:
+A causa era o cookie publico saindo com `Path=/chat/`, que autentica `/chat/login` e `/chat/api/*`, mas nao autentica `/chat` sem barra final. O Apache foi ajustado para `ProxyPassReverseCookiePath / /chat` em vez de `/chat/`, preservando o escopo correto do cookie. No app, `proxy.ts` passou a redirecionar login autenticado para `/chat` sem barra final, e `app/layout.tsx` passou a desregistrar service workers antigos do escopo `/chat`, ja que o service worker existente era minimo e nao fazia cache offline.
+
+Notes:
+Validacao desta rodada: `npm test`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service`, `apachectl configtest`, `systemctl reload apache2`, `curl` confirmando `Set-Cookie: Path=/chat` e `auth/check authenticated:true`, alem de Playwright/Chrome mobile concluindo login em `https://ultrassom.ai/chat` sem `ERR_TOO_MANY_REDIRECTS`.

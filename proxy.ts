@@ -62,6 +62,10 @@ function buildLoginUrl(request: NextRequest): URL {
   return new URL(`${BASE_PATH}/login`, request.url);
 }
 
+function buildHomeUrl(request: NextRequest): URL {
+  return new URL(BASE_PATH || "/", request.url);
+}
+
 function addSecurityHeaders(response: NextResponse): NextResponse {
   const headers = response.headers;
   const csp = [
@@ -103,7 +107,7 @@ export async function proxy(request: NextRequest) {
   if (pathname === "/login" && isAuthEnabled()) {
     const authenticated = await isAuthenticatedRequest(request);
     if (authenticated) {
-      return NextResponse.redirect(new URL(`${BASE_PATH}/`, request.url));
+      return NextResponse.redirect(buildHomeUrl(request));
     }
   }
 
