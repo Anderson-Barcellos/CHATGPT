@@ -293,3 +293,14 @@ A causa era o cookie publico saindo com `Path=/chat/`, que autentica `/chat/logi
 
 Notes:
 Validacao desta rodada: `npm test`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service`, `apachectl configtest`, `systemctl reload apache2`, `curl` confirmando `Set-Cookie: Path=/chat` e `auth/check authenticated:true`, alem de Playwright/Chrome mobile concluindo login em `https://ultrassom.ai/chat` sem `ERR_TOO_MANY_REDIRECTS`.
+
+### 2026-05-25 00:30 - Documentacao consolidada e docs antigos removidos
+
+Context:
+Depois da estabilizacao do login e do loop mobile, Anders pediu uma limpeza maior da documentacao, com uso de agentes para mapear docs antigas e consolidar uma fonte atualizada.
+
+Details:
+A documentacao publica foi reduzida para fontes canonicas: `README.md`, `docs/README.md`, `docs/API.md`, `docs/ARCHITECTURE.md`, `docs/INFRASTRUCTURE.md` e `docs/MODELS.md`. Foram removidos docs antigos/duplicados que apontavam para Vercel, Docker, Nginx, instalacao Apache legada ou arquitetura gerada: `docs/APACHE_INSTALL.md`, `docs/DEPLOYMENT.md`, `docs/COMPONENTS.md` e `docs/architecture/*`. `apache-config/chat.conf` foi atualizado para incluir `ProxyPassReverseCookiePath / /chat` e endpoints atuais de PDF/TTS/Realtime.
+
+Notes:
+O criterio novo e manter `README.md` como entrada, `docs/API.md` para contrato de rotas, `docs/ARCHITECTURE.md` para desenho do app, `docs/INFRASTRUCTURE.md` para Apache/systemd/env/deploy, `docs/MODELS.md` para catalogo, e `AGENTS.md` como memoria operacional append-only. Nao recriar docs separados de deploy Apache/Vercel sem necessidade; isso foi a fonte principal de drift.

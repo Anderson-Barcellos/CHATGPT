@@ -40,7 +40,7 @@ Este `CLAUDE.md` complementa — não substitui — outros docs vivos do repo:
 - **`AGENTS.md`** — estado atual do produto, últimas rodadas e pontos de atenção. Sempre conferir antes de mudar UX/markdown/streaming.
 - **`README.md`** — highlights de produto, endpoints e estrutura de pastas.
 - **`docs/INFRASTRUCTURE.md`** — Apache reverse proxy, systemd, deploy, env vars.
-- **`docs/MODELS.md`**, **`docs/API.md`**, **`docs/COMPONENTS.md`** — referências específicas.
+- **`docs/API.md`**, **`docs/ARCHITECTURE.md`**, **`docs/MODELS.md`** — referências específicas.
 
 Se você for tocar em UX/UI ou markdown rendering, leia também a seção *"Lembrete explicito"* em `AGENTS.md`.
 
@@ -85,11 +85,11 @@ Logs em `/var/log/chatgpt/{app,error}.log`. Service unit canônico em `systemd/c
 
 Next 16 renomeou `middleware.ts` → `proxy.ts`. **Não há `middleware.ts` no repo.** O arquivo `proxy.ts` na raiz exporta `proxy()` + `config.matcher` e roda em todas as rotas não-estáticas, encadeando três responsabilidades num pipeline único:
 
-1. **Auth gate** (se `AUTH_ENABLED=true`): valida cookie JWT `auth-token` via `lib/server/auth.ts`. Rotas em `PUBLIC_PATHS` passam direto. Rotas `/api/*` retornam 401 JSON; demais redirecionam para `/login`.
+1. **Auth gate** (se `AUTH_ENABLED=true`): valida cookie JWT `auth-token` via `lib/server/auth.ts`. Login usa `AUTH_USERNAME` + `AUTH_PASSWORD`. Rotas em `PUBLIC_PATHS` passam direto. Rotas `/api/*` retornam 401 JSON; demais redirecionam para `/login`.
 2. **Rate limit**: paths em `RATE_LIMITED_PATHS` (`/api/chat`, `/api/transcribe`, `/api/auth/login`) passam por `lib/security/rateLimit.ts`. Login é rate-limited mesmo sendo público.
 3. **Security headers**: CSP, HSTS, X-Frame-Options DENY etc. — aplicados em todas as respostas.
 
-Auth tem **dupla checagem**: além do proxy, `app/page.tsx` faz server-side guard via `verifyAuthToken` antes de renderizar. Mexer em auth exige atualizar os dois pontos.
+Auth tem **dupla checagem**: além do proxy, `app/page.tsx` faz server-side guard via `verifyAuthToken` antes de renderizar. Mexer em auth exige atualizar os dois pontos. Em produção, o cookie precisa sair com `Path=/chat`, sem barra final; `Path=/chat/` reabre o loop mobile entre `/chat` e `/chat/login`.
 
 ### 2. OpenAI Responses API (não completions)
 
@@ -146,6 +146,8 @@ O shell legado (`components/layout/*`, `components/sidebar/*`, `components/chat/
 
 Apache vhost canônico: `/etc/apache2/sites-enabled/ultrassom.ai-optimized.conf`. Config local: `apache-config/chat.conf`.
 
+Para `/chat`, a regra crítica de cookie no Apache é `ProxyPassReverseCookiePath / /chat`. Não trocar para `/chat/`.
+
 ### 9. Tools default-on (exceto quiz)
 
 `buildTools` em `/api/chat/route.ts` adiciona por padrão `image_generation` + `web_search_preview` (country `BR`, `search_context_size: medium`). `code_interpreter` é opt-in via `codeInterpreterEnabled` + capability do modelo.
@@ -179,6 +181,7 @@ Se o usuário recarregar a página durante o stream, a mensagem parcial é prese
 ## Anti-patterns conhecidos
 
 - Tentar adicionar trailing-slash rewrite a `/chat` no Apache → loop de redirect com basePath do Next.
+- Trocar o cookie path para `/chat/` → login funciona em `/chat/login`, mas `/chat` fica sem cookie e entra em loop no mobile.
 - Usar `chat.completions` em vez de `responses.create` → quebra reasoning/citations/artifacts.
 - Subir o app com `nohup npx next start` em vez de systemd → `ExecStartPre` do unit faz `fuser -k 3040/tcp` antes de subir, então duas instâncias se atropelam.
 - Esquecer do `AUTH_ENABLED` ao testar local: com flag `false` o proxy passa direto e `app/page.tsx` não redireciona.

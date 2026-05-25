@@ -1,64 +1,57 @@
-# Model Configuration
+# Modelos
 
-**Last updated:** 2026-05-24  
-**Source:** `lib/models/modelConfig.ts`
+**Última atualização:** 2026-05-25  
+**Fonte:** `lib/models/modelConfig.ts`
 
-## Available Models (7 chat/reasoning + 2 image)
+## Catálogo Atual
 
-### Chat and Reasoning
+### Chat e Reasoning
 
-| ID | Name | Family | Reasoning | Context | Max Output | Pricing (in/out per 1M) | Badge |
-|----|------|--------|-----------|---------|------------|---------------------------|-------|
-| `gpt-5.1-chat-latest` | GPT-5.1 Instant | `gpt-5` | No | 128K | 16K | $1.75 / $4 | Padrao |
-| `gpt-5.4` | GPT-5.4 | `gpt-5` | Yes | 1.05M | 128K | $3.75 / $22.5 | Frontier |
-| `gpt-5.4-mini` | GPT-5.4 mini | `gpt-5` | Yes | 128K | 16K | $1.1 / $4.4 | Eficiente |
-| `gpt-5.4-nano` | GPT-5.4 Nano | `gpt-5` | Yes | 128K | 16K | $0.04 / $0.16 | Economico |
-| `gpt-5.1` | GPT-5.1 | `gpt-5` | Yes | 400K | 128K | $1.75 / $14 | Codex |
-| `gpt-4.1` | GPT-4.1 | `gpt-4.1` | No | 1.05M | 32K | $2.5 / $10 | Confiavel |
-| `o3` | o3 | `o-series` | Yes | 200K | 100K | $10 / $40 | Raciocinio |
+| ID | Nome | Família | Reasoning | Contexto | Max output | Badge |
+|---|---|---|---|---|---|---|
+| `gpt-5.1-chat-latest` | GPT-5.1 Instant | `gpt-5` | Não | 128K | 16K | Padrao |
+| `gpt-5.4` | GPT-5.4 | `gpt-5` | Sim | 1.05M | 128K | Frontier |
+| `gpt-5.4-mini` | GPT-5.4 mini | `gpt-5` | Sim | 128K | 16K | Eficiente |
+| `gpt-5.4-nano` | GPT-5.4 Nano | `gpt-5` | Sim | 128K | 16K | Economico |
+| `gpt-5.1` | GPT-5.1 | `gpt-5` | Sim | 400K | 128K | Codex |
+| `gpt-4.1` | GPT-4.1 | `gpt-4.1` | Não | 1.05M | 32K | Confiavel |
+| `o3` | o3 | `o-series` | Sim | 200K | 100K | Raciocinio |
 
-### Image Generation
+### Imagem
 
-| ID | Name | Family | Pricing |
-|----|------|--------|---------|
-| `gpt-image-2` | GPT Image 2 | `gpt-image` | $0.04/input |
-| `dall-e-3` | DALL-E 3 | `dall-e` | $0.04/input |
+| ID | Nome | Família | Uso |
+|---|---|---|---|
+| `gpt-image-2` | GPT Image 2 | `gpt-image` | Tool real de geração de imagem em `/api/chat` |
+| `dall-e-3` | DALL-E 3 | `dall-e` | Modelo legado/listado no catálogo |
 
-## Runtime Defaults
+## Defaults
 
-- Default selected model: `gpt-5.1-chat-latest` (`stores/settingsStore.ts`).
-- Default `reasoningEffort`:
-  - `gpt-5.4-mini`: `none`
-  - other reasoning models: `medium`
-  - non-reasoning models: `none`
-- Default `reasoningSummary`: `off` when effort is `none`, otherwise `concise`.
+- Modelo padrão do chat: `gpt-5.1-chat-latest`.
+- Modelo de imagem usado pela tool: `gpt-image-2`.
+- Quiz força `gpt-5.4` com reasoning `high`.
+- TTS usa `gpt-4o-mini-tts` em `lib/tts/speechText.ts`.
+- Realtime TTS lab usa `gpt-realtime-mini`.
+- Transcrição usa `gpt-4o-transcribe`.
 
-## Reasoning vs Temperature Rules
+## Regras de Runtime
 
-The API only sends `temperature` and `top_p` when `modelSupportsTemperature(model)` is true.
+`app/api/chat/route.ts`:
 
-Current catalog note:
-- all active chat/reasoning models currently have `supportsTemperature: false`.
+- aceita apenas modelos com capacidade `chat` ou `reasoning`;
+- limita `maxOutputTokens` ao `maxOutput` do modelo;
+- só envia `temperature` e `top_p` quando `modelSupportsTemperature()` permite;
+- só envia `verbosity` quando `modelSupportsVerbosity()` permite;
+- só adiciona `code_interpreter` quando o usuário habilita e o modelo suporta.
 
-## Verbosity and Code Interpreter
+Tools padrão em modos não-quiz:
 
-- `verbosity` is only sent when `modelSupportsVerbosity(model)` is true.
-- `codeInterpreterEnabled` only adds the tool when `modelSupportsCodeInterpreter(model)` is true.
+- `image_generation`
+- `web_search_preview`
+- `code_interpreter` opcional
 
-## Chat API Guardrails
+## Helpers Exportados
 
-`app/api/chat/route.ts` enforces:
-
-- Allowed models are derived from `MODELS` and restricted to chat/reasoning capabilities.
-- `maxOutputTokens` is clamped to each model's `maxOutput`.
-- `responseMode = "quiz"` forces:
-  - model: `gpt-5.4`
-  - reasoning effort: `high`
-  - strict JSON schema output.
-
-## Helper Functions
-
-`lib/models/modelConfig.ts` exports:
+`lib/models/modelConfig.ts` exporta:
 
 - `isReasoningModel`
 - `getReasoningLabel`
@@ -74,13 +67,10 @@ Current catalog note:
 - `formatCost`
 - `formatTokenCount`
 
-## Adding/Changing Models
+## Checklist Para Alterar Modelos
 
-1. Update `MODELS` in `lib/models/modelConfig.ts`.
-2. If introducing a new family, update `ModelFamily` in `types/index.ts`.
-3. Validate with:
-
-```bash
-npx tsc --noEmit
-npm run build
-```
+1. Atualizar `MODELS` em `lib/models/modelConfig.ts`.
+2. Atualizar `types/index.ts` se entrar uma nova família.
+3. Revisar defaults em `stores/settingsStore.ts` e `app/api/chat/route.ts`.
+4. Atualizar este documento.
+5. Rodar `npm test`, `npx tsc --noEmit` e `npm run build`.

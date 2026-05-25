@@ -1,160 +1,91 @@
 # Celer Chat
 
-Multimodal chat application built with `Next.js 16`, `React 19`, `TypeScript`, `Zustand`, `TanStack Query`, and the OpenAI `Responses API`.
+Chat multimodal pessoal construído com `Next.js 16`, `React 19`, `TypeScript`, `Zustand`, `TanStack Query` e a OpenAI `Responses API`.
 
-The project focuses on a ChatGPT-like experience with conversation history, reasoning display, model selection, prompt tuning, persistent memory, artifact rendering, and polished mobile/PWA behavior.
+O app roda em produção em `https://ultrassom.ai/chat`, atrás do Apache, com `next start` gerenciado pelo `chatgpt.service`.
 
-## Highlights
+## O que o projeto faz
 
-- Real-time chat experience with streaming responses and incremental persistence (auto-save throttled during stream, beacon on unload, interrupted-stream recovery on load)
-- Dedicated reasoning panel with explicit state transitions
-- Conversation history with editing and deletion flows
-- Model picker with support for `gpt-5.1-chat-latest` (default), `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.4-nano`, `gpt-5.1`, `gpt-4.1`, and `o3`
-- Persistent memory and custom instructions stored server-side
-- Workspace v2 shell with conversation rail, chat canvas, command composer, and right-side operational panel
-- Artifact rendering flows, including Markdown, HTML, quiz, source download, print, and PDF export
-- Mobile-first shell refinements for Safari and installed PWA usage
-- Server-side JSON persistence for conversations, memories, and persona (`data/*.json`)
+- Chat com streaming, reasoning, web search, geração de imagens e code interpreter opcional.
+- Histórico de conversas com persistência incremental durante streaming e recuperação de respostas interrompidas.
+- Memórias, persona, instruções customizadas e preferências de TTS persistidas server-side.
+- Player TTS nas respostas do assistente com modo turbo e laboratório separado de Realtime mini.
+- Artefatos de documento/quiz com preview, download, impressão e PDF A4 server-side.
+- Auth simples do app por usuário/senha, sessão JWT e cookie `auth-token`.
 
-## Tech Stack
+## Stack
 
-- `Next.js 16` with App Router
-- `React 19`
-- `TypeScript`
-- `Tailwind CSS 4`
-- `Zustand`
-- `@tanstack/react-query`
-- `Radix UI`
-- `OpenAI Node SDK`
-- `Vitest`
+- `Next.js 16.1.6` com App Router e `basePath=/chat`.
+- `React 19.2.3`, `TypeScript`, `Tailwind CSS 4`.
+- `Zustand`, `TanStack Query`, `Radix UI`, `framer-motion`, `cmdk`.
+- `OpenAI Node SDK 6.17.0`, `jose`, `Vitest`, `Playwright`.
+- Persistência simples em JSON local sob `data/*.json`.
 
-## Project Structure
+## Estrutura principal
 
 ```text
 app/
-  api/
-    auth/                Authentication endpoints
-    chat/                Server-side OpenAI proxy
-    conversations/       Conversation CRUD
-    memories/            Memory CRUD
-    persona/             Custom instructions endpoint
-    transcribe/          Audio transcription endpoint
+  api/                  Rotas BFF: chat, auth, persona, memoria, PDF, TTS
+  login/                Tela de login do app
 components/
-  artifacts/             Artifact viewers and export entry points
-  chat/                  Main chat experience (bubbles, reasoning, composer)
-  settings/              Persona and memory settings
-  workspace-v2/          Gaucho Chat workspace shell, conversation rail, and Canvas panel
+  chat/                 Balões, markdown, reasoning, ações rápidas e TTS
+  settings/             Drawer de persona, memória, tuning e voz
+  workspace-v2/         Shell atual do Gaucho Chat
 hooks/
-  useChat.ts             Streaming chat orchestration
+  useChat.ts            Orquestra streaming, persistência e anexos
 lib/
-  artifacts/             Artifact generation/parsing helpers
-  export/                PDF and export utilities
-  models/                Model catalog and selector metadata
+  chat/                 Reducer de stream e helpers de estado
+  models/               Catálogo de modelos
+  server/               Auth, limites de body e helpers server-side
+  storage/              Persistência JSON e beacon
+  tts/                  Sanitização, chunking e áudio TTS
 data/
-  conversations.json     Local conversation persistence
-  memories.json          Local memory persistence
-  persona.json           Persona bootstrap persistence
+  conversations.json    Conversas locais
+  memories.json         Memórias locais
+  persona.json          Persona e preferências
 ```
 
-## Current Product Areas
+## Documentação
 
-### Chat
+- [Índice de docs](./docs/README.md)
+- [API](./docs/API.md)
+- [Arquitetura](./docs/ARCHITECTURE.md)
+- [Infraestrutura](./docs/INFRASTRUCTURE.md)
+- [Modelos](./docs/MODELS.md)
 
-- Streaming responses with reasoning state handling
-- Markdown rendering with code, math, and rich formatting support
-- Message actions for editing, exporting, and artifact handling
-- Stable assistant bubble mounting during stream completion so the buffered text does not restart when an artifact is attached
-- Improved mobile composer behavior and safe-area handling
+`AGENTS.md` é a memória operacional do projeto. Ele deve ser atualizado ao fim de rodadas relevantes, mas não substitui os documentos acima.
 
-### Sidebar and Navigation
-
-- Workspace v2 conversation rail with clearer active state, filters, search, and fixed internal scrolling
-- Safer delete flow for the currently open conversation
-- Shared panel sizing between conversation sidebar and settings drawer
-
-### Settings
-
-- Persona/custom instructions and TTS preferences persisted through `/api/persona`
-- Memory management persisted through `/api/memories`
-- Inline editing and autosave behavior for settings workflows
-
-### Artifacts and Export
-
-- Artifact preview sheet opened from the chat canvas for document-like outputs
-- Context panel tracks activity and notes per conversation
-- PDF export tuned for cleaner layout and OpenAI-branded header
-- Support for document and quiz-oriented artifact rendering
-
-## API Endpoints
-
-- `GET/POST /api/chat`
-- `GET/POST /api/conversations`
-- `GET/PUT/POST/PATCH/DELETE /api/conversations/[id]`
-- `GET/POST /api/memories`
-- `PATCH/DELETE /api/memories/[id]`
-- `GET/PUT /api/persona`
-- `POST /api/artifacts/pdf`
-- `POST /api/tts`
-- `POST /api/realtime/tts-call`
-- `POST /api/transcribe`
-- `POST /api/auth/login`
-- `POST /api/auth/logout`
-- `GET /api/auth/check`
-- `GET /api/health`
-
-## Local Development
-
-### Requirements
-
-- `Node.js 20+`
-- `npm`
-
-### Install
+## Desenvolvimento local
 
 ```bash
 npm install
-```
-
-### Run in development
-
-```bash
 npm run dev
 ```
 
-The development server uses port `3040` by default.
+Por padrão, o dev server usa a porta `3040`. Em produção, o app depende de `NEXT_PUBLIC_BASE_PATH=/chat`.
 
-## Scripts
+## Validação
 
-```bash
-npm run dev
-npm run build
-npm run start
-npm run lint
-npm test
-npx tsc --noEmit
-```
-
-## Validation Checklist
-
-Before shipping a change, the repo is typically validated with:
+Use estes comandos conforme o risco da mudança:
 
 ```bash
 npm test
-npm run build
 npx tsc --noEmit
+npm run build
 npm run lint
 ```
 
-Run only the commands that are applicable to the current change if you are doing a narrow, documentation-only update.
+Para mudanças de runtime/deploy, valide também:
 
-## Infrastructure Notes
+```bash
+systemctl restart chatgpt.service
+curl -s http://127.0.0.1:3040/chat/api/health
+curl -s https://ultrassom.ai/chat/api/health
+```
 
-- The canonical service configuration is documented in `systemd/chatgpt.service`
-- Additional infrastructure notes live in `docs/INFRASTRUCTURE.md`
-- If you are also managing Apache or reverse proxy behavior, check the repo's infrastructure docs before changing ports or service bindings
+## Notas de operação
 
-## Notes
-
-- Local JSON files in `data/` are used for simple persistence during development and server-side flows
-- The repository also contains project-specific operational guidance in `AGENTS.md`
-- If you need to adjust the OpenAI model catalog, start with `lib/models/modelConfig.ts`
+- Não coloque segredos em documentação. `.env.production` e `.env.local` contêm credenciais reais.
+- Não adicione rewrite com barra final para `/chat`; isso conflita com o `basePath` do Next.
+- O cookie de auth precisa ficar em `Path=/chat`, sem barra final, para autenticar tanto `/chat` quanto `/chat/*`.
+- O Apache canônico está em `/etc/apache2/sites-enabled/ultrassom.ai-optimized.conf`; o registro de portas/rotas fica em `/etc/apache2/APACHE.md`.
