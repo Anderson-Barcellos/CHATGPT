@@ -25,7 +25,6 @@ import {
 import { withConversationPersistenceRetry } from "@/lib/storage/conversationPersistence";
 import {
   Message,
-  ReasoningSummary,
   ResponseMode,
   SendMessageOptions,
 } from "@/types";
@@ -53,6 +52,7 @@ import {
 } from "@/lib/artifacts/quizArtifacts";
 
 const STREAM_AUTO_SAVE_INTERVAL_MS = 2000;
+const DEEPSEARCH_FORCED_MODEL = "gpt-5.4-mini";
 
 function normalizeStreamingMessages(messages: Message[]): Message[] {
   return messages.map((message) => {
@@ -75,24 +75,11 @@ function normalizeStreamingMessages(messages: Message[]): Message[] {
   });
 }
 
-function buildReasoningConfig(
-  model: string,
-  effort: string,
-  summary: ReasoningSummary
-) {
+function buildReasoningConfig(model: string, effort: string) {
   if (!isReasoningModel(model)) return undefined;
+  if (!effort || effort === "none") return undefined;
 
-  const reasoning: Record<string, string> = {};
-
-  if (effort && effort !== "none") {
-    reasoning.effort = effort;
-  }
-
-  if (summary && summary !== "off") {
-    reasoning.summary = summary;
-  }
-
-  return Object.keys(reasoning).length ? reasoning : undefined;
+  return { effort, summary: "detailed" } as Record<string, string>;
 }
 
 function isClinicalReportRequest(content: string): boolean {
@@ -159,6 +146,19 @@ function appendDocumentModeInstructions(
   }`;
 }
 
+function isDocumentLikeMode(responseMode: ResponseMode): boolean {
+  return (
+    responseMode === "document" ||
+    responseMode === "deepsearch_medium" ||
+    responseMode === "deepsearch_high"
+  );
+}
+
+function resolveDeepsearchReasoningEffort(responseMode: ResponseMode): string {
+  if (responseMode === "deepsearch_high") return "high";
+  return "medium";
+}
+
 function appendQuizModeInstructions(systemMessage: string): string {
   const quizInstructions = `## Quiz Mode
 - The user wants a multiple-choice quiz rendered in an interactive canvas.
@@ -175,7 +175,7 @@ function appendQuizModeInstructions(systemMessage: string): string {
 }
 
 function getPreferredDisplayMode(responseMode: ResponseMode) {
-  if (responseMode === "document") return "document" as const;
+  if (isDocumentLikeMode(responseMode)) return "document" as const;
   if (responseMode === "quiz") return "quiz" as const;
   return undefined;
 }
@@ -399,16 +399,20 @@ export function useChat() {
       const input = buildInputFromMessages(useChatStore.getState().messages);
 
       const assistantMessageId = crypto.randomUUID();
-      const requestModel =
-        responseMode === "quiz" ? QUIZ_FORCED_MODEL : parameters.model;
+      const requestModel = responseMode === "quiz"
+        ? QUIZ_FORCED_MODEL
+        : responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
+        ? DEEPSEARCH_FORCED_MODEL
+        : parameters.model;
       const requestReasoningEffort =
         responseMode === "quiz"
           ? QUIZ_FORCED_REASONING_EFFORT
+          : responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
+          ? resolveDeepsearchReasoningEffort(responseMode)
           : parameters.reasoningEffort;
       const reasoning = buildReasoningConfig(
         requestModel,
-        requestReasoningEffort,
-        parameters.reasoningSummary
+        requestReasoningEffort
       );
       const usesReasoning = !!reasoning && responseMode !== "quiz";
       const preferredDisplayMode = getPreferredDisplayMode(responseMode);
@@ -458,7 +462,7 @@ export function useChat() {
           memories
         );
         const systemMessage =
-          responseMode === "document"
+          isDocumentLikeMode(responseMode)
             ? appendDocumentModeInstructions(baseSystemMessage, content)
             : responseMode === "quiz"
             ? appendQuizModeInstructions(baseSystemMessage)
@@ -551,7 +555,7 @@ export function useChat() {
             updateMessage(assistantMessageId, patch);
           } else {
             const artifact =
-              responseMode === "document"
+              isDocumentLikeMode(responseMode)
                 ? createMessageArtifact(accumulated, {
                     force: true,
                     displayMode: "document",
@@ -638,7 +642,6 @@ export function useChat() {
       parameters.model,
       parameters.codeInterpreterEnabled,
       parameters.reasoningEffort,
-      parameters.reasoningSummary,
       parameters.systemPrompt,
       parameters.temperature,
       parameters.topP,

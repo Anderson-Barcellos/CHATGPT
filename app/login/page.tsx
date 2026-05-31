@@ -6,6 +6,7 @@ import { apiUrl } from "@/lib/utils";
 
 export default function LoginPage() {
   const [authEnabled, setAuthEnabled] = useState<boolean | null>(null);
+  const [alreadyAuthenticated, setAlreadyAuthenticated] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -23,7 +24,8 @@ export default function LoginPage() {
         if (!isCurrent) return;
 
         if (data.authenticated) {
-          window.location.replace(process.env.NEXT_PUBLIC_BASE_PATH || "/");
+          setAlreadyAuthenticated(true);
+          setAuthEnabled(true);
           return;
         }
 
@@ -103,6 +105,19 @@ export default function LoginPage() {
             </button>
           ) : (
             <form onSubmit={handleLogin} className="space-y-4">
+              {alreadyAuthenticated && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    window.location.replace(process.env.NEXT_PUBLIC_BASE_PATH || "/")
+                  }
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-[var(--gc-surface-panel)]"
+                >
+                  <LogIn className="h-4 w-4" />
+                  <span>Continuar com sessão atual</span>
+                </button>
+              )}
+
               <div>
                 <label htmlFor="username" className="sr-only">
                   Usuario

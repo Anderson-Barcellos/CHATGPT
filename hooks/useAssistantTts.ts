@@ -21,6 +21,7 @@ type TtsStatus = "idle" | "loading" | "playing" | "paused" | "error";
 
 interface AudioClip {
   url: string;
+  blob: Blob;
   duration: number;
   audioBuffer: AudioBuffer | null;
 }
@@ -35,6 +36,7 @@ interface CachedSpeech {
 const speechCache = new Map<string, CachedSpeech>();
 const BROWSER_AUDIO_BLOCKED_MESSAGE =
   "Áudio pronto — clique em tocar para liberar o navegador.";
+const TTS_DOWNLOAD_MIME_TYPE = "audio/mpeg";
 
 function hashText(value: string): string {
   let hash = 5381;
@@ -49,6 +51,20 @@ function formatDuration(value: number): string {
   const minutes = Math.floor(value / 60);
   const seconds = Math.floor(value % 60).toString().padStart(2, "0");
   return `${minutes}:${seconds}`;
+}
+
+function buildTtsDownloadFilename(messageId: string): string {
+  const safeId = messageId.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 24) || "resposta";
+  return `gaucho-chat-voz-${safeId}.mp3`;
+}
+
+function isCacheDownloadReady(cache: CachedSpeech | null | undefined): cache is CachedSpeech {
+  return Boolean(
+    cache?.complete &&
+      !cache.failed &&
+      cache.clips.length === cache.chunks.length &&
+      cache.chunks.every((_, index) => Boolean(cache.clips[index]?.blob))
+  );
 }
 
 export function useAssistantTts(content: string, messageId: string) {
@@ -87,6 +103,7 @@ export function useAssistantTts(content: string, messageId: string) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [, setDownloadRevision] = useState(0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUnlockedRef = useRef(false);
@@ -298,6 +315,7 @@ export function useAssistantTts(content: string, messageId: string) {
     const audioBuffer = await decodeBrowserAudio(await blob.arrayBuffer());
     return {
       url: URL.createObjectURL(blob),
+      blob,
       duration: audioBuffer?.duration ?? 0,
       audioBuffer,
     };
@@ -371,6 +389,7 @@ export function useAssistantTts(content: string, messageId: string) {
       await Promise.all([firstClipPromise, ...workers]);
 
       cache.complete = true;
+      setDownloadRevision((value) => value + 1);
       generatingKeyRef.current = null;
       if (status === "loading" && cache.clips.length > 0 && !requestedPlayRef.current) {
         setStatus("paused");
@@ -553,6 +572,29 @@ export function useAssistantTts(content: string, messageId: string) {
     }
   }, [currentTime, duration, getWebAudioPosition, playClip, status]);
 
+  const downloadAudio = useCallback(() => {
+    const cache = activeCacheRef.current ?? speechCache.get(cacheKey);
+
+    if (!isCacheDownloadReady(cache)) {
+      toast.info("Espera a voz terminar de gerar para baixar o áudio inteiro.");
+      return;
+    }
+
+    const mergedBlob = new Blob(
+      cache.chunks.map((_, index) => cache.clips[index].blob),
+      { type: TTS_DOWNLOAD_MIME_TYPE }
+    );
+    const url = URL.createObjectURL(mergedBlob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = buildTtsDownloadFilename(messageId);
+    anchor.rel = "noopener";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }, [cacheKey, messageId]);
+
   useEffect(() => {
     const audio = document.createElement("audio");
     audio.hidden = true;
@@ -617,9 +659,11 @@ export function useAssistantTts(content: string, messageId: string) {
     formattedCurrentTime: formatDuration(currentTime),
     formattedDuration: formatDuration(duration),
     progress: duration > 0 ? Math.min((currentTime / duration) * 100, 100) : 0,
+    canDownload: isCacheDownloadReady(activeCacheRef.current),
     openAndPlay,
     togglePlay,
     stop,
     seekBy,
+    downloadAudio,
   };
 }

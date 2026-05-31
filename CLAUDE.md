@@ -112,7 +112,9 @@ Qualquer refactor em `buildRequestParams` ou `buildTools` precisa manter esses o
 
 `lib/models/modelConfig.ts` define `MODELS` + helpers (`isReasoningModel`, `modelSupportsTemperature`, `modelSupportsVerbosity`, `modelSupportsCodeInterpreter`). O gate `ALLOWED_MODELS` na rota é derivado daí (apenas modelos com capability `chat` ou `reasoning`).
 
-Adicionar modelo novo → editar `MODELS`, conferir que o `ChatComposer`/`ModelSelector` o exibe e que helpers retornam o flag correto. Modelo padrão atual: `gpt-5.1-chat-latest`.
+Adicionar modelo novo → editar `MODELS`, conferir que o `ChatComposer`/`ModelSelector` o exibe e que helpers retornam o flag correto. Modelo padrão atual: `gpt-5.4-mini`.
+
+Os modos `deepsearch_medium` e `deepsearch_high` reaproveitam o pipeline de documento/canvas, com modelo forçado para `gpt-5.4-mini` e reasoning `medium`/`high`, respectivamente.
 
 ### 5. `useChat.ts` é o orquestrador-mãe
 

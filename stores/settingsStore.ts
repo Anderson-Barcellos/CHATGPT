@@ -24,20 +24,38 @@ interface SettingsState {
   getActiveMemories: () => Memory[];
 }
 
-const DEFAULT_MODEL = "gpt-5.1-chat-latest";
+const DEFAULT_MODEL = "gpt-5.4-mini";
+
+const LEGACY_MODEL_FALLBACKS: Record<string, string> = {
+  "gpt-5.1-chat-latest": DEFAULT_MODEL,
+  "gpt-5.3-chat-latest": DEFAULT_MODEL,
+  "gpt-5.1": DEFAULT_MODEL,
+  "gpt-4.1": DEFAULT_MODEL,
+  o3: DEFAULT_MODEL,
+};
+
+function resolveSupportedModelId(modelId: string | undefined): string {
+  if (!modelId) return DEFAULT_MODEL;
+  if (MODELS[modelId]) return modelId;
+  return LEGACY_MODEL_FALLBACKS[modelId] ?? DEFAULT_MODEL;
+}
+
+function usesNoReasoningByDefault(modelId: string): boolean {
+  return modelId.includes("-mini") || modelId.includes("-nano");
+}
 
 function buildDefaultModelSettings(modelId: string): ModelScopedParameters {
+  const resolvedModelId = resolveSupportedModelId(modelId);
   const defaultReasoningEffort =
-    modelId === "gpt-5.4-mini"
+    usesNoReasoningByDefault(resolvedModelId)
       ? "none"
-      : isReasoningModel(modelId)
+      : isReasoningModel(resolvedModelId)
       ? "medium"
       : "none";
-  const defaultReasoningSummary =
-    defaultReasoningEffort === "none" ? "off" : "concise";
+  const defaultReasoningSummary = "detailed" as const;
 
   return {
-    maxOutputTokens: MODELS[modelId]?.maxOutput || 32768,
+    maxOutputTokens: MODELS[resolvedModelId]?.maxOutput || 32768,
     temperature: 0.8,
     topP: 0.95,
     reasoningEffort: defaultReasoningEffort,
@@ -51,7 +69,8 @@ function clampModelSettings(
   modelId: string,
   settings: ModelScopedParameters
 ): ModelScopedParameters {
-  const modelMaxOutput = MODELS[modelId]?.maxOutput;
+  const resolvedModelId = resolveSupportedModelId(modelId);
+  const modelMaxOutput = MODELS[resolvedModelId]?.maxOutput;
   const maxOutputTokens = modelMaxOutput
     ? Math.min(Math.max(Math.round(settings.maxOutputTokens), 256), modelMaxOutput)
     : Math.max(Math.round(settings.maxOutputTokens), 256);
@@ -92,9 +111,10 @@ function resolveModelSettings(
   modelId: string,
   modelSettingsById: ModelSettingsMap
 ): ModelScopedParameters {
+  const resolvedModelId = resolveSupportedModelId(modelId);
   return clampModelSettings(modelId, {
-    ...buildDefaultModelSettings(modelId),
-    ...modelSettingsById[modelId],
+    ...buildDefaultModelSettings(resolvedModelId),
+    ...modelSettingsById[resolvedModelId],
   });
 }
 
@@ -142,8 +162,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   memories: [],
   updateParameters: (updates) =>
     set((state) => {
-      const currentModel = state.parameters.model;
-      const nextModel = updates.model ?? currentModel;
+      const currentModel = resolveSupportedModelId(state.parameters.model);
+      const nextModel = resolveSupportedModelId(updates.model ?? currentModel);
       const nextSystemPrompt = updates.systemPrompt ?? state.parameters.systemPrompt;
       const scopedUpdates = pickModelScopedUpdates(updates);
       const modelSettingsById = {

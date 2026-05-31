@@ -5,6 +5,7 @@ import {
   ArrowDown,
   Check,
   Copy,
+  Download,
   LoaderCircle,
   MessageSquareQuote,
   Minimize2,
@@ -63,9 +64,11 @@ function ActionButton({
 function TtsPlayer({
   tts,
   realtime,
+  onRealtimeToggle,
 }: {
   tts: ReturnType<typeof useAssistantTts>;
   realtime: ReturnType<typeof useRealtimeTtsLab>;
+  onRealtimeToggle: () => void;
 }) {
   if (!tts.isOpen) return null;
 
@@ -132,12 +135,26 @@ function TtsPlayer({
         >
           <Square className="size-3.5" />
         </button>
+
+        <button
+          type="button"
+          onClick={tts.downloadAudio}
+          disabled={!tts.canDownload}
+          className="flex size-7 shrink-0 items-center justify-center rounded-lg hover:bg-background/70 disabled:pointer-events-none disabled:opacity-40"
+          title={
+            tts.canDownload
+              ? "Baixar áudio completo"
+              : "Baixar áudio quando terminar de gerar"
+          }
+        >
+          <Download className="size-3.5" />
+        </button>
       </div>
 
       <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-[color:var(--gc-border-soft)] pt-1.5 text-[10px] leading-none">
         <button
           type="button"
-          onClick={realtime.isActive ? realtime.stop : realtime.start}
+          onClick={onRealtimeToggle}
           className="inline-flex h-6 items-center gap-1 rounded-lg bg-background/70 px-2 font-medium text-foreground hover:bg-background"
           title="Laboratório Realtime mini"
         >
@@ -205,6 +222,16 @@ export function QuickActionsBar({
     );
   }, [content]);
 
+  const handleRealtimeToggle = useCallback(() => {
+    if (realtime.isActive) {
+      realtime.stop();
+      return;
+    }
+
+    tts.stop();
+    void realtime.start();
+  }, [realtime, tts]);
+
   const handleContinue = useCallback(() => {
     window.dispatchEvent(
       new CustomEvent("gaucho:send-message", { detail: { text: "Continue." } }),
@@ -251,6 +278,17 @@ export function QuickActionsBar({
       >
         <Volume2 className="size-3.5" />
       </ActionButton>
+      <ActionButton
+        onClick={handleRealtimeToggle}
+        title={realtime.isActive ? "Parar Realtime mini" : "Testar Realtime mini"}
+        disabled={!tts.canPlay}
+      >
+        {realtime.status === "connecting" || realtime.status === "ready" ? (
+          <LoaderCircle className="size-3.5 animate-spin" />
+        ) : (
+          <Radio className="size-3.5" />
+        )}
+      </ActionButton>
       <ActionButton onClick={handleContinue} title="Continuar">
         <ArrowDown className="size-3.5" />
       </ActionButton>
@@ -269,7 +307,11 @@ export function QuickActionsBar({
   const wrappedBar = (
     <div className={cn("flex flex-col items-start", className)}>
       {bar}
-      <TtsPlayer tts={tts} realtime={realtime} />
+      <TtsPlayer
+        tts={tts}
+        realtime={realtime}
+        onRealtimeToggle={handleRealtimeToggle}
+      />
     </div>
   );
 

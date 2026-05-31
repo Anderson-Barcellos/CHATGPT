@@ -21,7 +21,7 @@ describe("/api/realtime/tts-call route", () => {
       "fetch",
       vi.fn().mockResolvedValue(
         new Response("answer-sdp", {
-          status: 200,
+          status: 201,
           headers: { "Content-Type": "application/sdp" },
         })
       )
@@ -49,19 +49,39 @@ describe("/api/realtime/tts-call route", () => {
     });
   });
 
-  it("posts a realtime mini session with a normalized voice", async () => {
-    const { POST, buildRealtimeTtsSessionConfig } = await import("./route");
+  it("posts a realtime mini session with typed multipart SDP and a normalized voice", async () => {
+    const {
+      POST,
+      buildRealtimeCallMultipartBody,
+      buildRealtimeTtsSessionConfig,
+    } = await import("./route");
 
     expect(buildRealtimeTtsSessionConfig("onyx").audio.output.voice).toBe("marin");
+    expect(buildRealtimeTtsSessionConfig("cedar").instructions).toContain(
+      "subtle southern Brazilian gaucho cadence"
+    );
+    expect(buildRealtimeTtsSessionConfig("cedar").instructions).toContain(
+      "Do not add regional slang"
+    );
+    const multipart = buildRealtimeCallMultipartBody("v=0\r\n", "cedar");
+
+    expect(multipart.contentType).toContain("multipart/form-data; boundary=");
+    expect(multipart.body).toContain('Content-Disposition: form-data; name="sdp"');
+    expect(multipart.body).toContain("Content-Type: application/sdp");
+    expect(multipart.body).toContain("v=0\r\n");
+    expect(multipart.body).toContain('Content-Disposition: form-data; name="session"');
+    expect(multipart.body).toContain("Content-Type: application/json");
+    expect(multipart.body).toContain('"model":"gpt-realtime-mini"');
+    expect(multipart.body).toContain("Codex-like presence");
 
     const response = await POST(
       new NextRequest("http://localhost/api/realtime/tts-call?voice=cedar", {
         method: "POST",
-        body: "offer-sdp",
+        body: "v=0\r\n",
       })
     );
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(201);
     expect(response.headers.get("Content-Type")).toContain("application/sdp");
     expect(fetch).toHaveBeenCalledWith(
       "https://api.openai.com/v1/realtime/calls",
@@ -70,7 +90,9 @@ describe("/api/realtime/tts-call route", () => {
         headers: expect.objectContaining({
           Authorization: "Bearer test-key",
           "OpenAI-Safety-Identifier": "gaucho-chat-tts-lab",
+          "Content-Type": expect.stringContaining("multipart/form-data; boundary="),
         }),
+        body: expect.stringContaining('Content-Disposition: form-data; name="sdp"'),
       })
     );
   });

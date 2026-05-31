@@ -1,6 +1,6 @@
 # API
 
-**Última atualização:** 2026-05-25  
+**Última atualização:** 2026-05-31  
 **Base URL pública:** `https://ultrassom.ai/chat`  
 **Base path interno:** `NEXT_PUBLIC_BASE_PATH=/chat`
 
@@ -19,7 +19,7 @@ Proxy server-side para a OpenAI `Responses API`, com suporte a SSE streaming.
   "input": [
     { "role": "user", "content": "Explique neurite vestibular em tópicos." }
   ],
-  "model": "gpt-5.1-chat-latest",
+  "model": "gpt-5.4-mini",
   "instructions": "You are a helpful assistant.",
   "maxOutputTokens": 4096,
   "verbosity": "medium",
@@ -38,14 +38,14 @@ Proxy server-side para a OpenAI `Responses API`, com suporte a SSE streaming.
 | Campo | Tipo | Padrão | Observação |
 |---|---|---|---|
 | `input` | array | obrigatório | Payload compatível com Responses API |
-| `model` | string | `gpt-5.1-chat-latest` | Precisa existir em `lib/models/modelConfig.ts` com capacidade `chat` ou `reasoning` |
+| `model` | string | `gpt-5.4-mini` | Precisa existir em `lib/models/modelConfig.ts` com capacidade `chat` ou `reasoning`; modelos removidos conhecidos caem para esse default |
 | `instructions` | string | nenhum | Instruções de sistema |
 | `maxOutputTokens` | number | máximo do modelo | Sempre limitado ao `maxOutput` do modelo |
 | `temperature` | number | nenhum | Só enviado se o modelo suportar temperatura |
 | `topP` | number | nenhum | Só enviado se o modelo suportar temperatura |
 | `verbosity` | string | nenhum | Só enviado se o modelo suportar verbosity |
 | `codeInterpreterEnabled` | boolean | `false` | Adiciona `code_interpreter` quando o modelo suporta |
-| `responseMode` | `default`, `document`, `quiz` | `default` | `quiz` usa fluxo forçado sem streaming |
+| `responseMode` | `default`, `document`, `deepsearch_medium`, `deepsearch_high`, `quiz` | `default` | `quiz` usa fluxo forçado sem streaming; `deepsearch_*` usa documento com perfil de pesquisa |
 | `stream` | boolean | `true` | Ignorado em `quiz`, que é sempre não-streaming |
 | `reasoning` | object | nenhum | Só usado por modelos de reasoning |
 | `imageQuality` | `low`, `medium`, `high`, `auto` | `high` | Repassado para `image_generation` |
@@ -65,6 +65,12 @@ Em `responseMode="quiz"`, as tools são removidas e o backend força:
 - reasoning `high`;
 - schema JSON estrito de quiz;
 - `stream=false`.
+
+Em `responseMode="deepsearch_medium"` e `responseMode="deepsearch_high"`:
+
+- artifact final segue o mesmo fluxo de documento/canvas;
+- modelo é forçado para `gpt-5.4-mini`;
+- reasoning é forçado para `medium` (`deepsearch_medium`) ou `high` (`deepsearch_high`).
 
 ### Streaming
 
@@ -140,7 +146,7 @@ Limpa o cookie de autenticação.
 
 Lê persona persistida.
 
-### `PUT /api/persona`
+### `PUT /api/persona` / `POST /api/persona`
 
 Atualiza:
 
@@ -148,6 +154,10 @@ Atualiza:
 - `responsePreferences`
 - `customSystemInstructions`
 - `ttsPreferences`
+
+`POST` é aceito como alias para autosave forte/flush de saída do navegador
+(`sendBeacon`/`keepalive`). `ttsPreferences` persiste `mode`, `voice`,
+`speed` e `instructions` em `data/persona.json`.
 
 **Arquivo:** `app/api/persona/route.ts`
 

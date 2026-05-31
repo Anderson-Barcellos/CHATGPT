@@ -1,6 +1,6 @@
 # Arquitetura
 
-**Última atualização:** 2026-05-25
+**Última atualização:** 2026-05-31
 
 ## Visão Geral
 
@@ -97,7 +97,7 @@ O TTS padrão usa `/api/tts` com `gpt-4o-mini-tts`.
 
 ## Modelos
 
-O catálogo vive em `lib/models/modelConfig.ts`. O default atual é `gpt-5.1-chat-latest`. `responseMode="quiz"` força `gpt-5.4` com reasoning `high` e schema JSON.
+O catálogo vive em `lib/models/modelConfig.ts`. O default atual é `gpt-5.4-mini`; modelos removidos conhecidos caem para esse default. `gpt-5.2` inicia com reasoning `medium`, modelos `mini` iniciam com reasoning `none`, `responseMode="quiz"` força `gpt-5.4` com reasoning `high` e schema JSON, e `responseMode="deepsearch_medium|deepsearch_high"` força `gpt-5.4-mini` com reasoning `medium|high` mantendo saída em artifact de documento/canvas.
 
 ## Regras Quebráveis
 

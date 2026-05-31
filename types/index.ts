@@ -1,6 +1,11 @@
 export type MessageRole = "user" | "assistant";
 export type AppMode = "chat" | "image";
-export type ResponseMode = "default" | "document" | "quiz";
+export type ResponseMode =
+  | "default"
+  | "document"
+  | "deepsearch_medium"
+  | "deepsearch_high"
+  | "quiz";
 export type MessageStreamStatus =
   | "streaming"
   | "completed"
@@ -246,8 +251,6 @@ export type ModelCapability =
   | "image-generation";
 
 export type ModelFamily =
-  | "gpt-4.1"
-  | "o-series"
   | "gpt-4o"
   | "gpt-5"
   | "dall-e"

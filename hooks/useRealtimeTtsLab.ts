@@ -104,6 +104,7 @@ export function useRealtimeTtsLab(content: string) {
     try {
       const peer = new RTCPeerConnection();
       peerRef.current = peer;
+      peer.addTransceiver("audio", { direction: "recvonly" });
 
       const audio = document.createElement("audio");
       audio.autoplay = true;
@@ -219,6 +220,10 @@ export function useRealtimeTtsLab(content: string) {
 
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
+      const offerSdp = peer.localDescription?.sdp ?? offer.sdp ?? "";
+      if (!offerSdp.trim()) {
+        throw new Error("O navegador gerou um offer SDP vazio para o Realtime.");
+      }
 
       const response = await fetch(
         apiUrl(
@@ -229,7 +234,7 @@ export function useRealtimeTtsLab(content: string) {
         {
           method: "POST",
           headers: { "Content-Type": "application/sdp" },
-          body: offer.sdp,
+          body: offerSdp,
         }
       );
 

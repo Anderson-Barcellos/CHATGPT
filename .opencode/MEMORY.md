@@ -901,6 +901,28 @@ Details:
 Notes:
 - Validação executada: `npx tsc --noEmit`, `npm test`, `npm run build` — tudo OK.
 
+### 2026-05-21 11:47 - TTS via Web Audio para contornar autoplay/CSP
+
+Context:
+Anders relatou que o TTS das mensagens do assistente e o laboratório Realtime mini falhavam no navegador com erro de áudio, apesar de `/api/tts` gerar áudio.
+
+Details:
+`lib/tts/browserAudio.ts` passou a desbloquear também `AudioContext`, tocar o prime silencioso sem `muted` e evitar que o prime pause o áudio real se resolver atrasado. `hooks/useAssistantTts.ts` agora decodifica os blobs MP3 com `AudioContext.decodeAudioData` e toca por Web Audio quando disponível, mantendo `<audio>` apenas como fallback. `hooks/useRealtimeTtsLab.ts` conecta o stream WebRTC ao destino do `AudioContext` antes de cair para `<audio>`. `proxy.ts` adicionou `media-src 'self' blob: data:` e `wss:` no CSP do app.
+
+Notes:
+Validação executada: `npx tsc --noEmit`, `npm test`, `npm run build`, `systemctl restart chatgpt.service`, health local e publico OK. A tentativa de alterar o CSP global do Apache em `/etc/apache2/sites-available/ultrassom.ai-optimized.conf` falhou por permissão do ambiente; por isso o caminho principal evita depender de `blob:` em `<audio>`.
+
+### 2026-05-21 11:51 - CSP global do Apache liberado para audio blob
+
+Context:
+Após notar que o vhost Apache estava com atributo immutable, Anders orientou remover temporariamente o immutable para aplicar o CSP correto.
+
+Details:
+`/etc/apache2/sites-available/ultrassom.ai-optimized.conf` teve `media-src 'self' blob: data: https:` adicionado ao `Content-Security-Policy` global. `/etc/apache2/APACHE.md` foi atualizado para refletir a regra. O atributo immutable foi removido com `chattr -i`, o Apache foi validado e recarregado, e o immutable foi restaurado com `chattr +i`.
+
+Notes:
+Validação: `apachectl configtest` retornou `Syntax OK`; `systemctl reload apache2` OK; `curl -fsSI https://ultrassom.ai/chat/api/health` mostrou HTTP 200 e o header global `Content-Security-Policy` já inclui `media-src 'self' blob: data: https:`.
+
 ### [2026-05-11 01:37] — Modo documento com fundamento de deep research
 
 Context:

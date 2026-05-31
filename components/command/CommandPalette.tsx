@@ -32,7 +32,8 @@ const REASONING_LEVELS: { label: string; value: ReasoningEffort; hint: string }[
 
 const RESPONSE_MODES = [
   { label: "Modo Chat", value: "default", icon: MessageSquare },
-  { label: "Modo Documento", value: "document", icon: FilePen },
+  { label: "Deepsearch Medium", value: "deepsearch_medium", icon: FilePen },
+  { label: "Deepsearch High", value: "deepsearch_high", icon: FilePen },
   { label: "Modo Quiz", value: "quiz", icon: HelpCircle },
 ] as const;
 

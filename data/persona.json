@@ -1,5 +1,13 @@
 {
   "id": "default",
   "contextAboutUser": "",
-  "responsePreferences": ""
+  "responsePreferences": "",
+  "customSystemInstructions": "",
+  "ttsPreferences": {
+    "model": "gpt-4o-mini-tts",
+    "voice": "verse",
+    "speed": 1.2,
+    "instructions": "Falar com sotaque brasileiro gaúcho, de forma fluente, e com fluente entonação ",
+    "mode": "balanced"
+  }
 }

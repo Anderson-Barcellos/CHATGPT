@@ -1,6 +1,6 @@
 # Modelos
 
-**Última atualização:** 2026-05-25  
+**Última atualização:** 2026-05-31  
 **Fonte:** `lib/models/modelConfig.ts`
 
 ## Catálogo Atual
@@ -9,13 +9,10 @@
 
 | ID | Nome | Família | Reasoning | Contexto | Max output | Badge |
 |---|---|---|---|---|---|---|
-| `gpt-5.1-chat-latest` | GPT-5.1 Instant | `gpt-5` | Não | 128K | 16K | Padrao |
+| `gpt-5.5` | GPT-5.5 | `gpt-5` | Sim | 1.05M | 128K | Frontier |
 | `gpt-5.4` | GPT-5.4 | `gpt-5` | Sim | 1.05M | 128K | Frontier |
 | `gpt-5.4-mini` | GPT-5.4 mini | `gpt-5` | Sim | 128K | 16K | Eficiente |
-| `gpt-5.4-nano` | GPT-5.4 Nano | `gpt-5` | Sim | 128K | 16K | Economico |
-| `gpt-5.1` | GPT-5.1 | `gpt-5` | Sim | 400K | 128K | Codex |
-| `gpt-4.1` | GPT-4.1 | `gpt-4.1` | Não | 1.05M | 32K | Confiavel |
-| `o3` | o3 | `o-series` | Sim | 200K | 100K | Raciocinio |
+| `gpt-5.2` | GPT-5.2 | `gpt-5` | Sim | 400K | 128K | Reasoning |
 
 ### Imagem
 
@@ -26,9 +23,12 @@
 
 ## Defaults
 
-- Modelo padrão do chat: `gpt-5.1-chat-latest`.
+- Modelo padrão do chat: `gpt-5.4-mini`.
+- `gpt-5.2` inicia com reasoning `medium` + summary `concise`.
+- Modelos mini iniciam com reasoning `none` + summary `off`.
 - Modelo de imagem usado pela tool: `gpt-image-2`.
 - Quiz força `gpt-5.4` com reasoning `high`.
+- Deepsearch Medium/High força `gpt-5.4-mini` com reasoning `medium/high`.
 - TTS usa `gpt-4o-mini-tts` em `lib/tts/speechText.ts`.
 - Realtime TTS lab usa `gpt-realtime-mini`.
 - Transcrição usa `gpt-4o-transcribe`.

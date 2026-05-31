@@ -62,6 +62,8 @@ import type { FileAttachment, ResponseMode } from "@/types";
 const RESPONSE_MODE_LABELS: Record<ResponseMode, string> = {
   default: "Chat",
   document: "Documento",
+  deepsearch_medium: "Deepsearch Medium",
+  deepsearch_high: "Deepsearch High",
   quiz: "Quiz",
 };
 
@@ -117,7 +119,7 @@ interface CommandComposerV2Props {
   onStop: () => void;
   onFileSelect: () => void;
   onMicrophoneClick: () => void;
-  onToggleDocument: () => void;
+  onSelectDocumentMode: (mode: Extract<ResponseMode, "document" | "deepsearch_medium" | "deepsearch_high">) => void;
   onToggleQuiz: () => void;
   onDragEnter?: DragEventHandler<HTMLDivElement>;
   onDragLeave?: DragEventHandler<HTMLDivElement>;
@@ -472,7 +474,7 @@ export function CommandComposerV2({
   onStop,
   onFileSelect,
   onMicrophoneClick,
-  onToggleDocument,
+  onSelectDocumentMode,
   onToggleQuiz,
   onDragEnter,
   onDragLeave,
@@ -604,22 +606,52 @@ export function CommandComposerV2({
                 )
               )}
 
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={disabled}
-                onClick={onToggleDocument}
-                  className={cn(
-                    "hidden h-8 rounded-lg border px-2 text-micro md:flex",
-                    responseMode === "document"
-                      ? "border-primary/25 bg-primary/10 text-primary"
-                      : COMPOSER_CONTROL_BUTTON_CLASS
-                  )}
-                >
-                <FileText className="mr-1 size-3.5" />
-                Documento
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={disabled}
+                    className={cn(
+                      "hidden h-8 rounded-lg border px-2 text-micro md:flex",
+                      responseMode === "document" ||
+                        responseMode === "deepsearch_medium" ||
+                        responseMode === "deepsearch_high"
+                        ? "border-primary/25 bg-primary/10 text-primary"
+                        : COMPOSER_CONTROL_BUTTON_CLASS
+                    )}
+                  >
+                    <FileText className="mr-1 size-3.5" />
+                    Documento
+                    <ChevronDown className="ml-1 size-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" side="top" className="min-w-[14rem]">
+                  <DropdownMenuItem onClick={() => onSelectDocumentMode("deepsearch_medium")}>
+                    <FileText
+                      className={cn(
+                        "mr-2 size-3.5",
+                        responseMode === "deepsearch_medium" ? "text-primary" : "text-muted-foreground"
+                      )}
+                    />
+                    <span className={responseMode === "deepsearch_medium" ? "text-primary" : ""}>
+                      Deepsearch Medium
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onSelectDocumentMode("deepsearch_high")}>
+                    <FileText
+                      className={cn(
+                        "mr-2 size-3.5",
+                        responseMode === "deepsearch_high" ? "text-primary" : "text-muted-foreground"
+                      )}
+                    />
+                    <span className={responseMode === "deepsearch_high" ? "text-primary" : ""}>
+                      Deepsearch High
+                    </span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               <Button
                 type="button"
@@ -655,15 +687,26 @@ export function CommandComposerV2({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" side="top" className="min-w-[10rem]">
-                  <DropdownMenuItem onClick={onToggleDocument}>
+                  <DropdownMenuItem onClick={() => onSelectDocumentMode("deepsearch_medium")}>
                     <FileText
                       className={cn(
                         "mr-2 size-3.5",
-                        responseMode === "document" ? "text-primary" : "text-muted-foreground"
+                        responseMode === "deepsearch_medium" ? "text-primary" : "text-muted-foreground"
                       )}
                     />
-                    <span className={responseMode === "document" ? "text-primary" : ""}>
-                      Documento
+                    <span className={responseMode === "deepsearch_medium" ? "text-primary" : ""}>
+                      Deepsearch Medium
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onSelectDocumentMode("deepsearch_high")}>
+                    <FileText
+                      className={cn(
+                        "mr-2 size-3.5",
+                        responseMode === "deepsearch_high" ? "text-primary" : "text-muted-foreground"
+                      )}
+                    />
+                    <span className={responseMode === "deepsearch_high" ? "text-primary" : ""}>
+                      Deepsearch High
                     </span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={onToggleQuiz}>

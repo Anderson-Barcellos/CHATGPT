@@ -17,13 +17,13 @@ describe("WorkspaceFrameV2", () => {
         mobileContextPanel={<div>Painel mobile</div>}
         onOpenSettings={() => undefined}
         activeConversationTitle="Workspace Console"
-        currentModelName="gpt-5.1-chat-latest"
+        currentModelName="gpt-5.3-chat-latest"
       />
     );
 
     expect(markup).toContain("Gaucho Chat");
     expect(markup).toContain("Workspace Console");
-    expect(markup).toContain("gpt-5.1-chat-latest");
+    expect(markup).toContain("gpt-5.3-chat-latest");
     expect(markup).toContain('data-workspace-region="sidebar"');
     expect(markup).toContain('data-workspace-region="chat"');
     expect(markup).toContain('data-workspace-region="context"');
@@ -48,7 +48,7 @@ describe("CommandComposerV2", () => {
         speechSupported
         speechStatusLabel="Voz"
         hasContent={false}
-        modelName="gpt-5.1-chat-latest"
+        modelName="gpt-5.3-chat-latest"
         reasoningLabel="Alto"
         hasReasoning
         responseMode="default"
@@ -57,13 +57,13 @@ describe("CommandComposerV2", () => {
         onStop={() => undefined}
         onFileSelect={() => undefined}
         onMicrophoneClick={() => undefined}
-        onToggleDocument={() => undefined}
+        onSelectDocumentMode={() => undefined}
         onToggleQuiz={() => undefined}
       />
     );
 
     expect(markup).toContain("Mensagem para o GPT...");
-    expect(markup).toContain("gpt-5.1-chat-latest");
+    expect(markup).toContain("gpt-5.3-chat-latest");
     expect(markup).toContain('aria-label="Ajustar nível de raciocínio"');
     expect(markup).toContain("Documento");
     expect(markup).toContain("Quiz");

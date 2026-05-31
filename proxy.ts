@@ -50,20 +50,16 @@ async function applyRateLimit(request: NextRequest, pathname: string) {
     );
 
     addRateLimitHeaders(response.headers, rateLimitResult, pathname);
-    return addSecurityHeaders(response);
+    return finalizeResponse(response);
   }
 
   const response = NextResponse.next();
   addRateLimitHeaders(response.headers, rateLimitResult, pathname);
-  return addSecurityHeaders(response);
+  return finalizeResponse(response);
 }
 
 function buildLoginUrl(request: NextRequest): URL {
   return new URL(`${BASE_PATH}/login`, request.url);
-}
-
-function buildHomeUrl(request: NextRequest): URL {
-  return new URL(BASE_PATH || "/", request.url);
 }
 
 function addSecurityHeaders(response: NextResponse): NextResponse {
@@ -101,22 +97,19 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
   return response;
 }
 
+function finalizeResponse(response: NextResponse): NextResponse {
+  return addSecurityHeaders(response);
+}
+
 export async function proxy(request: NextRequest) {
   const pathname = stripBasePath(request.nextUrl.pathname);
-
-  if (pathname === "/login" && isAuthEnabled()) {
-    const authenticated = await isAuthenticatedRequest(request);
-    if (authenticated) {
-      return NextResponse.redirect(buildHomeUrl(request));
-    }
-  }
 
   if (pathname === "/api/auth/login" && shouldRateLimitPath(pathname)) {
     return applyRateLimit(request, pathname);
   }
 
   if (isPublicPath(pathname)) {
-    return addSecurityHeaders(NextResponse.next());
+    return finalizeResponse(NextResponse.next());
   }
 
   if (isAuthEnabled()) {
@@ -124,7 +117,7 @@ export async function proxy(request: NextRequest) {
 
     if (!authenticated) {
       if (pathname.startsWith("/api/")) {
-        return addSecurityHeaders(
+        return finalizeResponse(
           NextResponse.json(
             { error: "Unauthorized", message: "Faça login para continuar." },
             { status: 401 }
@@ -132,7 +125,7 @@ export async function proxy(request: NextRequest) {
         );
       }
 
-      return addSecurityHeaders(NextResponse.redirect(buildLoginUrl(request)));
+      return finalizeResponse(NextResponse.redirect(buildLoginUrl(request)));
     }
   }
 
@@ -140,7 +133,7 @@ export async function proxy(request: NextRequest) {
     return applyRateLimit(request, pathname);
   }
 
-  return addSecurityHeaders(NextResponse.next());
+  return finalizeResponse(NextResponse.next());
 }
 
 export const config = {

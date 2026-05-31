@@ -16,7 +16,7 @@ Principais areas:
 
 ## Estado Atual Do Projeto
 
-- Modelo padrao atual: `gpt-5.1-chat-latest` (GPT-5.1 Instant)
+- Modelo padrao atual: `gpt-5.3-chat-latest` (GPT-5.3 Instant)
 - Shell ativo: `GauchoChatShellV2` / `WorkspaceFrameV2` — redesign completo (S0-S12)
 - Tokens `--gc-*` unificados em `app/globals.css`; light/dark completos
 - Preview de artefatos via `ArtifactPreviewSheet`; painel lateral focado em atividade e notas
@@ -294,6 +294,17 @@ A causa era o cookie publico saindo com `Path=/chat/`, que autentica `/chat/logi
 Notes:
 Validacao desta rodada: `npm test`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service`, `apachectl configtest`, `systemctl reload apache2`, `curl` confirmando `Set-Cookie: Path=/chat` e `auth/check authenticated:true`, alem de Playwright/Chrome mobile concluindo login em `https://ultrassom.ai/chat` sem `ERR_TOO_MANY_REDIRECTS`.
 
+### 2026-05-24 23:52 - Download do audio TTS completo
+
+Context:
+Anders pediu um botao no player de TTS para baixar a leitura completa depois da geracao.
+
+Details:
+`hooks/useAssistantTts.ts` agora preserva o `Blob` de cada chunk de voz no cache e expoe `downloadAudio()`/`canDownload`, montando um arquivo MP3 unico por concatenacao dos blobs ja gerados. `components/chat/QuickActionsBar.tsx` adicionou um botao `Download` no player, habilitado somente quando todos os chunks terminaram de gerar.
+
+Notes:
+Validacao desta rodada: `npm test`, `npx tsc --noEmit` e `npm run build` passaram. O download reaproveita os chunks existentes de `/api/tts`, sem nova chamada ao modelo e sem alterar o endpoint.
+
 ### 2026-05-25 00:30 - Documentacao consolidada e docs antigos removidos
 
 Context:
@@ -304,3 +315,113 @@ A documentacao publica foi reduzida para fontes canonicas: `README.md`, `docs/RE
 
 Notes:
 O criterio novo e manter `README.md` como entrada, `docs/API.md` para contrato de rotas, `docs/ARCHITECTURE.md` para desenho do app, `docs/INFRASTRUCTURE.md` para Apache/systemd/env/deploy, `docs/MODELS.md` para catalogo, e `AGENTS.md` como memoria operacional append-only. Nao recriar docs separados de deploy Apache/Vercel sem necessidade; isso foi a fonte principal de drift.
+
+### 2026-05-24 23:09 - Catalogo GPT-5.3/5.2 e autosave forte de voz
+
+Context:
+Atualizado o hall de modelos do Gaucho Chat e endurecida a persistencia server-side das preferencias de voz/TTS.
+
+Details:
+`lib/models/modelConfig.ts` removeu `gpt-5.1-chat-latest`, `gpt-5.1`, `gpt-4.1` e `o3`, adicionou `gpt-5.3-chat-latest` como default chat-only e `gpt-5.2` como reasoning model. `stores/settingsStore.ts` e `app/api/chat/route.ts` agora usam `gpt-5.3-chat-latest` como fallback/default e redirecionam modelos legados conhecidos para esse default. Mini/nano iniciam com reasoning `none`; `gpt-5.2` inicia com `medium`. `gpt-5.3-chat-latest` existe na API, mas rejeitou `text.verbosity=low`, entao ficou com `supportsVerbosity=false` para a rota nao enviar parametro recusado. `app/api/persona/route.ts` aceita `POST` como alias de save para flush via `sendBeacon`/`keepalive`; `hooks/useCustomInstructions.ts` ganhou autosave rapido para modo/voz/velocidade e debounce/flush para instrucoes. Docs atualizados em `docs/API.md`, `docs/MODELS.md`, `docs/ARCHITECTURE.md` e `CLAUDE.md`.
+
+Notes:
+Validacao: `npm test`, `npx tsc --noEmit`, `npm run build`, smoke isolado em `PORT=3051` para `/chat/api/persona` com restore do JSON original, smoke streaming em `/chat/api/chat` com `gpt-5.3-chat-latest` retornando HTTP 200/SSE `[DONE]`, Playwright/Chrome system mostrando `GPT-5.3 Instant` e persistencia de modo/voz/instrucoes apos reload, `systemctl restart chatgpt.service` e health local/publico em `/chat/api/health`. A primeira tentativa de smoke nao-stream mostrou que `partial_images` so e aceito em streaming; nao mudar isso sem revisar o contrato da tool de imagem.
+
+### 2026-05-28 00:45 - Loop de redirecionamento no login mobile mitigado no app
+
+Context:
+Havia ocorrencias reais de loop `307 /chat -> /chat/login` repetido em mobile (e Safari desktop) com erro de muitos redirecionamentos.
+
+Details:
+Foi confirmado em `ultrassom_ssl_access.log` que o loop envolvia tambem `GET /chat/login` retornando `307`, o que alimentava ping-pong infinito entre home e login. O hardening final ficou no app (sem alterar Apache): removido o auto-redirect server-side de usuario autenticado na rota `/login` em `proxy.ts`, e removido o auto-redirect client-side da tela de login quando `/api/auth/check` retorna `authenticated=true` em `app/login/page.tsx` (agora mostra botao explicito `Continuar no chat`). Durante a investigacao foi testada limpeza de cookie legado por path; essa abordagem foi descartada porque o `ProxyPassReverseCookiePath` do Apache reescreve path de cookie e podia conflitar com o cookie valido.
+
+Notes:
+Validacao desta rodada: `npm test -- lib/server/auth.test.ts`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service`, health publico `https://ultrassom.ai/chat/api/health` com HTTP 200, fluxo `anon /chat -> /chat/login (200)` e fluxo autenticado com `/chat` e `/chat/login` respondendo `200` sem ping-pong de `307`.
+
+### 2026-05-28 00:49 - Hotfix visual do login para sempre expor formulario
+
+Context:
+Depois do ajuste anti-loop, o login podia ficar sem campos visiveis quando a verificacao inicial marcava sessao como autenticada, causando UX de "faca login" sem area de credenciais.
+
+Details:
+`app/login/page.tsx` foi ajustado para sempre renderizar o formulario quando `authEnabled=true`, mesmo com `alreadyAuthenticated=true`. Nessa situacao, mantemos um CTA opcional `Continuar com sessao atual` no topo, mas sem esconder os campos de usuario/senha.
+
+Notes:
+Validacao desta rodada: `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service`, health publico `https://ultrassom.ai/chat/api/health` retornando HTTP 200.
+
+### 2026-05-28 08:45 - Realtime mini exposto como teste direto de voz
+
+Context:
+Anders cogitou trocar o TTS de `gpt-4o-mini-tts` para um modelo nao-mini, mas `tts-1-hd` foi considerado caro para leitura cotidiana de respostas longas.
+
+Details:
+`components/chat/QuickActionsBar.tsx` ganhou um botao direto de `Realtime mini` ao lado do alto-falante, reutilizando `useRealtimeTtsLab` e parando o TTS MP3 normal antes de iniciar a sessao Realtime para evitar audio/custo duplicado. O endpoint continua usando `gpt-realtime-mini`; o TTS MP3 principal continua em `gpt-4o-mini-tts`.
+
+Notes:
+Validacao desta rodada: `npx tsc --noEmit`, `npm run build` e `npm test` passaram. A decisao foi nao migrar para `tts-1-hd` agora; comparar qualidade/latencia pelo botao Realtime direto antes de promover qualquer troca de modelo padrao.
+
+### 2026-05-28 08:57 - Corrigido offer SDP do Realtime mini
+
+Context:
+O botao direto de `Realtime mini` retornou erro upstream da OpenAI `invalid_offer` / `Failed to parse offer: failed to unmarshal SDP: EOF`.
+
+Details:
+`app/api/realtime/tts-call/route.ts` deixou de repassar o `FormData` nativo do Node para `/v1/realtime/calls` e passou a montar multipart deterministico, com o campo `sdp` em `Content-Type: application/sdp` e `session` em `application/json`, preservando o status `201` da OpenAI. `hooks/useRealtimeTtsLab.ts` agora adiciona transceiver de audio `recvonly` antes de gerar o offer e valida `peer.localDescription.sdp` antes do fetch. `app/api/realtime/tts-call/route.test.ts` cobre o multipart e o status 201.
+
+Notes:
+Validacao desta rodada: `npm test -- app/api/realtime/tts-call/route.test.ts`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service`, health local/publico OK e smoke Playwright em Chrome system no `/chat` autenticado. O smoke real clicou `Realtime mini` e `/chat/api/realtime/tts-call` retornou `201` com SDP answer; sem `invalid_offer`, sem overlay Next e sem console errors relevantes.
+
+### 2026-05-28 09:02 - Direcao vocal Codex gaucha discreta no Realtime
+
+Context:
+Anders gostou da qualidade/custo do `gpt-realtime-mini` e pediu uma instrucao leve para deixar a leitura com entonacao Codex e um toque gaucho, sem criar secao nova no front.
+
+Details:
+`app/api/realtime/tts-call/route.ts` ganhou `REALTIME_TTS_STYLE_INSTRUCTIONS` server-side na session do Realtime. A instrucao pede presenca calma/curiosa/companheira de Codex e cadencia gaucha sul-brasileira muito sutil apenas em ritmo e entonacao, com trava explicita para nao adicionar girias, interjeicoes, piadas ou palavras extras se nao estiverem no texto.
+
+Notes:
+Validacao desta rodada: `npm test -- app/api/realtime/tts-call/route.test.ts`, `npx tsc --noEmit` e `npm run build` passaram. A direcao fica no backend e nao altera UI nem preferencias persistidas.
+
+### 2026-05-31 19:16 - Catalogo de modelos atualizado (GPT-5.5 + default GPT-5.4 mini)
+
+Context:
+Anders pediu ajuste direto na selecao de modelos: incluir `gpt-5.5`, remover `gpt-5.4-nano` e trocar o modelo padrao para `gpt-5.4-mini`, preservando reasoning default `none` para mini.
+
+Details:
+`lib/models/modelConfig.ts` passou a listar `gpt-5.5` (chat+reasoning) e removeu `gpt-5.4-nano` do catalogo. `stores/settingsStore.ts` e `app/api/chat/route.ts` agora usam `gpt-5.4-mini` como `DEFAULT_MODEL`/`DEFAULT_CHAT_MODEL`, com fallback legado de `gpt-5.3-chat-latest` para o novo default. `stores/settingsStore.test.ts` foi atualizado para refletir o novo default e remover expectativa de nano. `docs/MODELS.md` foi alinhado ao catalogo/runtime atual.
+
+Notes:
+Validacao desta rodada: `npm test -- stores/settingsStore.test.ts` e `npx tsc --noEmit` passaram. Se for preciso validar UX final do seletor, proximo passo e smoke manual no navegador em `/chat` para conferir ordenacao/labels.
+
+### 2026-05-31 19:22 - Modo Documento com Deepsearch Medium/High no Canvas
+
+Context:
+Anders pediu evoluir o fluxo de Documento para oferecer duas variantes de pesquisa profunda com retorno no Canvas: `Deepsearch Medium` e `Deepsearch High`.
+
+Details:
+`types/index.ts` expandiu `ResponseMode` com `deepsearch_medium` e `deepsearch_high`. No composer, o botao Documento virou menu com duas opcoes em `components/workspace-v2/WorkspaceLayoutV2.tsx` e o container `components/workspace-v2/CommandComposerContainerV2.tsx` passou a usar `onSelectDocumentMode`, placeholders dedicados e hints de acessibilidade. No pipeline de envio (`hooks/useChat.ts`), ambos os modos reaproveitam o fluxo de artifact de documento/canvas e forcam `gpt-5.4-mini` com reasoning fixo por modo (`medium` ou `high`), mantendo `quiz` inalterado. A command palette (`components/command/CommandPalette.tsx`) foi alinhada com os dois novos atalhos de modo.
+
+Notes:
+Validacao desta rodada: `npx tsc --noEmit` e `npm test -- components/workspace-v2/WorkspaceLayoutV2.test.tsx` passaram.
+
+### 2026-05-31 19:31 - Docs canonicos alinhados aos modos Deepsearch e defaults atuais
+
+Context:
+Depois da entrega de Deepsearch Medium/High e da troca de default para `gpt-5.4-mini`, Anders pediu checagem de documentacao em dia.
+
+Details:
+`docs/API.md` foi atualizado para refletir default `model: gpt-5.4-mini`, novos `responseMode` (`deepsearch_medium` e `deepsearch_high`) e comportamento forcado desses modos (`gpt-5.4-mini` + reasoning `medium/high`, mantendo artifact em Canvas). `docs/ARCHITECTURE.md` foi atualizado com o default atual, removendo referencia legada a `gpt-5.3-chat-latest` e registrando a regra de Deepsearch. `docs/MODELS.md` foi corrigido para o `contextWindow` real do `gpt-5.5` no catalogo local e incluiu o lembrete de forca dos modos Deepsearch.
+
+Notes:
+A memoria operacional (`AGENTS.md`) segue append-only; docs canonicos agora estao coerentes com runtime/modelos/response modes atuais.
+
+### 2026-05-31 19:35 - Varredura final README/CLAUDE sem drift
+
+Context:
+Anders pediu uma passada final para confirmar se README/CLAUDE estavam alinhados apos ajustes de modelos e modos Deepsearch.
+
+Details:
+`README.md` ja estava consistente com a documentacao canonica. `CLAUDE.md` tinha apenas uma referencia desatualizada de default (`gpt-5.3-chat-latest`), corrigida para `gpt-5.4-mini`, e recebeu nota curta dos modos `deepsearch_medium`/`deepsearch_high` (forca de modelo/raciocinio mantendo retorno em documento/canvas).
+
+Notes:
+Nao houve mudancas de runtime/codigo nesta rodada; ajuste foi somente de documentacao operacional para reduzir drift futuro.
