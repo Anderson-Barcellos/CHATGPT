@@ -122,6 +122,82 @@ O markdown das mensagens ainda precisa de uma passada dedicada. Isso ficou consc
 2. revisar renderer unico para mensagem + reasoning
 3. decidir o tratamento final de HTML bruto
 
+## Processo Operacional Do Agente
+
+### Checklist operacional vivo
+
+Quando a tarefa tiver mais de uma etapa real, usar o checklist/plano visivel como painel operacional da sessao.
+
+- Criar checklist apenas quando houver trabalho multi-etapa.
+- Manter no maximo um item `in_progress`.
+- Marcar `completed` assim que a etapa terminar, nao apenas no final.
+- Adicionar ou ajustar itens quando uma subtarefa real surgir e mudar o trabalho.
+- Antes da resposta final, conferir se o checklist reflete o que realmente aconteceu.
+
+### Escada de validacao
+
+Escolher validacao proporcional ao tipo de mudanca:
+
+- Documentacao/processo: `git diff --check`.
+- TypeScript, libs ou rotas sem UI: teste focado e `npx tsc --noEmit`.
+- Fluxo principal, API ou storage: teste focado, `npm test`, `npx tsc --noEmit` e `npm run build`.
+- Visual/frontend: validacao anterior e smoke/screenshot em browser quando viavel.
+- Servico ou rota publica: consultar `/etc/apache2/APACHE.md`, reiniciar o servico aplicavel e checar health local/publico.
+
+Se uma validacao ampla for pulada por motivo razoavel, registrar explicitamente no fechamento.
+
+### Dados runtime privados
+
+Arquivos como `data/conversations.json`, `data/persona.json`, `data/google-calendar-token.json`, `data/calendar-event-drafts.json` e `data/workspace-notes.json` sao dados runtime do Anders.
+
+Nao modificar, limpar, resetar, formatar ou usar como fixture de teste salvo pedido explicito ou necessidade inevitavel. Para smoke tests, preferir mocks, rotas sem cookie, fixtures temporarias com cleanup garantido ou ambiente isolado.
+
+### Smoke tests com efeitos persistentes
+
+Quando um smoke real puder criar dados persistidos, evento externo, nota, conversa, rascunho ou arquivo:
+
+- Preferir teste sem efeito persistente quando suficiente.
+- Se o smoke persistente for necessario, criar dado claramente temporario e remove-lo na mesma rodada.
+- Se nao houver endpoint seguro de cleanup, nao criar dado real sem avisar; validar por teste automatizado/mocked e registrar a limitacao.
+
+### Tooling
+
+- Usar `rg` ou `rg --files` antes de buscas lentas.
+- Usar leitura paralela apenas para comandos independentes de inspecao (`sed`, `rg`, `git status`, `git diff`, `ls`).
+- Nao rodar comandos mutantes em paralelo.
+- Para edicoes manuais, usar `apply_patch`.
+- Antes de editar arquivo existente, ler o trecho relevante na sessao.
+- Nao usar comandos destrutivos (`git reset`, `checkout --`, remocao ampla) sem pedido explicito.
+
+### Documentos vivos vs memoria operacional
+
+- Documento vivo de frente/ROADPACK: atualizado durante o processo, com status atual.
+- `AGENTS.md`: atualizado ao fim de rodada significativa, como memoria operacional append-only.
+- Kickoff antigo deve ser marcado como historico quando nao representar mais o estado atual.
+- Se uma frente tiver bundles, sempre manter um documento vivo de progresso ou indicar claramente qual documento cumpre esse papel.
+
+### Compatibilidade de instrucoes
+
+Quando uma regra local entrar em tensao com regras superiores do ambiente, seguir a regra superior e explicar de forma breve a limitacao pratica. O objetivo e preservar a intencao do Anders no maximo permitido, sem fingir que uma acao foi feita quando nao foi.
+
+### Subagentes
+
+Usar subagentes somente quando Anders pedir explicitamente ou quando houver autorizacao clara para trabalho paralelo. Subagentes devem ser preferencialmente read-only/scouting ou donos de um modulo isolado. O agente principal integra, valida e decide.
+
+### Fechamento
+
+Ao final de trabalho multi-etapa:
+
+- Confirmar que o checklist visivel foi atualizado.
+- Resumir arquivos/areas tocadas.
+- Informar validacoes executadas e resultado.
+- Informar validacoes nao executadas e por que.
+- Distinguir mudanca implementada, smoke real e revisao pendente do Anders.
+
+### Implementar sempre com efeito externo seguro
+
+Implementar sempre nao significa criar efeito externo irreversivel. Quando a acao puder persistir dado real, chamar API externa, apagar dados ou mudar servico publico, implementar o caminho seguro: rascunho, mock, teste sem efeito, backup ou confirmacao explicita.
+
 ## Validacao Antes De Fechar Trabalho
 
 Rodar, quando fizer sentido:
@@ -139,6 +215,7 @@ Rodar, quando fizer sentido:
 ## Preferencia De Comunicacao
 
 - Em tarefas com varias etapas, enviar check-ins curtos entre etapas principais (etapa atual, achado rapido e proximo passo)
+- Quando houver checklist/plano visivel da sessao, atualizar o status das tarefas ao longo do processo: marcar `in_progress` ao iniciar uma etapa, `completed` assim que ela terminar e adicionar/ajustar itens se uma subtarefa real surgir. Nao deixar para marcar tudo apenas no fechamento.
 
 ### 2026-05-09 18:24 - Escala menor nas citacoes do MessageBubble
 
@@ -425,3 +502,289 @@ Details:
 
 Notes:
 Nao houve mudancas de runtime/codigo nesta rodada; ajuste foi somente de documentacao operacional para reduzir drift futuro.
+
+### 2026-05-31 21:49 - Reasoning stream resiliente e payload fiel
+
+Context:
+Anders pediu revisar por que os resumos de raciocinio nao apareciam nos baloes e se a selecao de reasoning estava sendo repassada corretamente.
+
+Details:
+`lib/chat/streamMachine.ts` passou a capturar summaries que chegam por `response.reasoning_summary_text.done` e `response.reasoning_summary_part.done`, alem dos deltas ja existentes, e tambem preserva `response.reasoning_text.done` como fallback. `lib/chat/reasoningConfig.ts` centraliza a montagem do payload: nao envia reasoning para modelo sem capacidade nem para effort `none`, repassa `low|medium|high|xhigh` e mapeia summary local `off` para omissao segura, ja que a API aceita apenas `auto|concise|detailed`. `hooks/useChat.ts` agora usa a preferencia real `parameters.reasoningSummary` em vez de fixar sempre `detailed`. `ReasoningPanel` permanece visivel quando a API reporta `reasoning_tokens` sem emitir summary textual, mostrando esse estado explicitamente.
+
+Notes:
+Validacao desta rodada: `npm test`, `npx tsc --noEmit`, `npm run build`, restart de `chatgpt.service`, health local/publico e smoke real em `/chat/api/chat` com `reasoning_tokens` reportado. Se o painel de reasoning nao aparecer, conferir primeiro se o modelo/effort ativo nao esta em `Sem`, depois inspecionar os eventos SSE `reasoning_summary_*` e `response.completed.usage.output_tokens_details.reasoning_tokens`.
+
+### 2026-05-31 22:05 - Docs alinhados ao contrato real de reasoning
+
+Context:
+Anders pediu atualizar a documentacao apos o hardening do fluxo de reasoning.
+
+Details:
+`README.md`, `docs/ARCHITECTURE.md`, `docs/MODELS.md` e `CLAUDE.md` agora documentam o caminho suportado `settingsStore -> buildReasoningConfig -> /api/chat -> streamMachine -> ReasoningPanel`, a regra de `summary=off` como omissao segura, os eventos `reasoning_summary_*`/`reasoning_text.done` aceitos e o fallback visual por `reasoning_tokens` quando a API aplica raciocinio sem summary textual.
+
+Notes:
+Rodada documental; `git diff --check` foi usado para validar whitespace. Nao criar docs paralelos para reasoning sem necessidade: manter API/Architecture/Models/CLAUDE como fontes canonicas.
+
+### 2026-06-02 00:40 - Auditoria de documentacao com correcoes de naming e contratos reais
+
+Context:
+Anders pediu uma passada geral para confirmar se a documentacao ainda batia com o projeto depois das ultimas rodadas de modelo/reasoning/deepsearch.
+
+Details:
+`README.md`, `docs/README.md` e `docs/ARCHITECTURE.md` foram alinhados ao nome visivel do app (`Gaucho Chat`), preservando nota curta de que `Celer` segue apenas como rotulo historico em alguns artefatos internos como a unit systemd. `docs/MODELS.md` corrigiu um drift real: o estado inicial do app usa `reasoningSummary: "detailed"` em `stores/settingsStore.ts`, inclusive para modelos mini, embora o effort comece em `none`. `docs/API.md`, `docs/ARCHITECTURE.md` e `docs/MODELS.md` tambem deixaram explicito que `deepsearch_medium`/`deepsearch_high` sao presets montados hoje em `hooks/useChat.ts`; o handler `app/api/chat/route.ts` so faz enforcement estrito de `quiz`. `apache-config/chat.conf` teve comentarios atualizados para o naming atual.
+
+Notes:
+Durante a auditoria, `systemd/chatgpt.service` e `/etc/systemd/system/chatgpt.service` estavam alinhados entre si, e as regras `/chat` documentadas em `docs/INFRASTRUCTURE.md` batiam com `/etc/apache2/sites-enabled/ultrassom.ai-optimized.conf`. Se surgir duvida futura sobre Deepsearch, verificar primeiro `hooks/useChat.ts` antes de assumir que a regra mora no backend.
+
+### 2026-06-02 14:58 - Repaginada clinico claro do Gaucho Chat
+
+Context:
+Anders aprovou implementar a lapidacao visual forte do Gaucho Chat com direcao "clinico claro", preservando o shell `workspace-v2` e todas as funcoes existentes.
+
+Details:
+Criado `docs/REDESIGN_ROADPACK.md` com conceito, funcoes intocaveis, bundles e criterios de aceite. Os conceitos finais foram salvos em `docs/assets/redesign/clinical-clear-desktop-concept.png` e `docs/assets/redesign/clinical-clear-mobile-settings-concept.png`. A implementacao ficou visual/componentizada em `app/globals.css`, `components/workspace-v2/*`, `components/chat/*` e `components/settings/SettingsDrawer.tsx`: tokens mais frios e documentais, rail/header/composer mais silenciosos, chat central mais estreito, painel operacional mais claro e settings/mobile com melhor densidade. Apos Anders relatar que a diferenca ainda parecia imperceptivel em varios browsers, foi aplicada uma segunda passada mais evidente com classes `gc-clinical-shell`, `gc-clinical-rail`, `gc-clinical-header`, `gc-clinical-canvas`, `gc-clinical-panel` e `gc-clinical-composer`, alem de regua teal lateral nos baloes do assistente.
+
+Notes:
+Nao houve mudanca intencional de API, auth, storage, streaming, TTS, artifacts ou catalogo de modelos. Validacao da rodada: `npm test`, `npx tsc --noEmit`, `npm run build`, `git diff --check`, Playwright com Chrome system em desktop/mobile/settings e restart de `chatgpt.service` com health local/publico OK. Screenshots finais da primeira passada ficaram em `/tmp/gaucho-redesign-final2/`; screenshots publicos da passada mais visivel ficaram em `/tmp/gaucho-visible-redesign-public-ready-desktop.png` e `/tmp/gaucho-visible-redesign-public-ready-mobile.png`.
+
+### 2026-06-02 15:40 - Hotfix dos drawers apos repaginada clinico claro
+
+Context:
+Anders reportou que settings, sidebar e secoes em overlay pareciam quebrados ou abriam sem conteudo apos a passada visual mais forte.
+
+Details:
+A causa foi a classe decorativa `gc-clinical-panel`/`gc-clinical-rail` definindo `position: relative`, sobrescrevendo o `fixed` do Radix `SheetContent`. `app/globals.css` agora aplica `position: relative` apenas fora de `[data-slot="sheet-content"]`, preservando os drawers. `components/settings/SettingsDrawer.tsx` tambem voltou a renderizar `SheetTitle` e `SheetDescription` em `sr-only`, removendo os avisos de acessibilidade do Radix.
+
+Notes:
+Validacao: `git diff --check`, `npx tsc --noEmit`, `npm run build`, `npm test`, restart de `chatgpt.service`, health local/publico e Playwright no `/chat` publico. Screenshots de prova: `/tmp/gaucho-fixed-settings-desktop.png`, `/tmp/gaucho-fixed-sidebar-mobile.png` e `/tmp/gaucho-fixed-context-mobile.png`. Evitar no futuro colocar `position`, `inset` ou `transform` em classes visuais reutilizadas diretamente em `SheetContent`/`DialogContent`.
+
+### 2026-06-02 16:15 - Hotfix do dark mode clinico e resincronizacao de assets
+
+Context:
+Depois da repaginada clinico claro, Anders identificou que o problema principal nao era o light, e sim o dark mode mantendo superficies e gradientes claros no shell novo. Durante a auditoria tambem reapareceu o risco de runtime servir assets incoerentes quando `.next` fica desalinhado.
+
+Details:
+`app/globals.css` ganhou tokens dedicados para o shell clinico (`--gc-clinical-*`) com overrides reais em `.dark`, cobrindo shell, rail, painel, header, canvas, composer, subheader, cards, rows, active surface e input shadow. `components/workspace-v2/WorkspaceLayoutV2.tsx`, `ConversationRailV2.tsx`, `ContextPanelV2.tsx` e `components/settings/SettingsDrawer.tsx` passaram a consumir essas classes/tokens em vez de `linear-gradient(... rgba(255,255,255, ...))` e inset highlights claros hardcoded. Badges de estado/online/quiz/gravacao tambem foram ajustados para contraste aceitavel no dark. A rodada incluiu `npm test`, `npx tsc --noEmit`, `npm run build`, restart de `chatgpt.service`, health local/publico OK e smoke Playwright com Chrome system em light/dark. Os assets `/_next/static/*.css|js` voltaram a responder `200` depois do rebuild limpo e restart.
+
+Notes:
+Quando o sintoma for "layout quebrou" mas `health` estiver OK, checar primeiro se o problema e visual de dark mode ou se o runtime serviu chunks incoerentes por estado ruim de `.next`. O shell clinico agora depende dos tokens `--gc-clinical-*`; evitar reintroduzir `rgba(255,255,255,...)` direto em headers/cards/rows do workspace se a intencao for manter paridade entre light e dark.
+
+### 2026-06-02 17:06 - Lapidacao das superficies visiveis do shell clinico
+
+Context:
+Depois do hotfix de dark/runtime, Anders pediu implementar a segunda rodada visual nas superficies mais visiveis do app, preservando toda a arquitetura e sem mexer em fluxos de auth, chat, TTS, Realtime ou persistencia.
+
+Details:
+`app/globals.css` ganhou um pacote complementar de superficies refinadas (`gc-refined-*` e `gc-login-*`) para login, chips, citation tray, action tray, cards internos do drawer e caixas suaves de formulario. `app/login/page.tsx` foi remodelada para uma entrada mais editorial/clinica mantendo exatamente a mesma logica de auth, loading e redirect. `components/chat/ChatContainer.tsx` teve a empty state redesenhada como painel de boas-vindas com sugestoes mais coerentes com o shell. `components/chat/MessageBubble.tsx` passou a renderizar citations em bandeja dedicada, timestamp como chip e quick actions em superficie propria; `components/chat/QuickActionsBar.tsx` ganhou apenas o flag visual `alwaysVisible`, sem alterar a funcao de nenhum botao. `components/settings/SettingsDrawer.tsx` foi lapidado por dentro com cards, selects e textareas menos genericos e mais alinhados ao conceito aprovado. Validacao da rodada: `git diff --check`, `npm test`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service`, health local/publico OK e smoke visual com Playwright usando o Chrome do host (fallback porque o Browser plugin nao estava exposto na sessao). Screenshots desta rodada ficaram em `/tmp/gaucho-chat-remodel-qa/`.
+
+Notes:
+No smoke visual, o login claro, o workspace light/dark e o drawer desktop/mobile confirmaram a nova familia visual. Evitar reintroduzir controles internos do drawer com `bg-background` ou `border-white/10`, porque isso volta o aspecto generico e quebra a continuidade do pacote `gc-refined-*`.
+
+### 2026-06-02 17:34 - Login reorganizado com a cuia como simbolo principal
+
+Context:
+Anders pediu uma passada mais cirurgica no login, usando como referencia uma captura mobile do shell e deixando a cuia como protagonista visual no lugar do topo mais generico com cadeado.
+
+Details:
+`app/login/page.tsx` foi reorganizado sem tocar na logica de autenticacao: o topo agora enfatiza a marca e o acesso ao workspace, e a cuia passou a aparecer em um tile proprio com `GPTLogo`, inspirado na linguagem do shell principal. O restante do formulario manteve os mesmos campos, CTA e estados, mas com hierarchy e espacamento melhores para mobile. Validacao desta rodada: `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service`, health local OK em `/chat/api/health` e smoke visual do `/chat/login` com Playwright + Chrome do host. Screenshot final: `/tmp/gaucho-login-refresh.png`.
+
+Notes:
+Se o login voltar a parecer "correto mas sem alma", a primeira coisa a checar e se o simbolo principal ainda e a cuia/brand tile ou se algum icone utilitario voltou a dominar o topo. Para smoke rapido de design, o viewport mobile `430x932` foi suficiente para avaliar a composicao.
+
+### 2026-06-02 17:53 - Simbolo compartilhado da cuia redesenhado
+
+Context:
+Anders pediu seguir com o restante da lapidacao do loguinho/cuiazinho, indo alem do login e organizando a marca usada pelo shell.
+
+Details:
+`components/ui/gpt-logo.tsx` foi redesenhado com `viewBox` 64x64 e uma cuia/bombilla bem mais legivel em tamanhos pequenos, preservando as classes de animacao existentes. `app/globals.css` ajustou os `transform-origin` das animacoes `gpt-*` para o novo centro `32px 32px`. Como `GPTLogo` e compartilhado, a mudanca aparece no login, splash, rail de conversas e empty state do workspace.
+
+Notes:
+Validacao desta rodada: `npx tsc --noEmit` ja havia passado antes da retomada, `npm run build` passou, `systemctl restart chatgpt.service` foi executado, health local/publico ficou `healthy`, e Playwright/Chrome confirmou o login mobile e o workspace carregado depois da splash. Screenshots finais: `/tmp/gaucho-logo-login.png` e `/tmp/gaucho-logo-workspace-after-splash.png`. Ao mexer novamente na marca, validar tambem em tamanho pequeno (`18-25px`), porque a versao antiga escondia a cuia dentro de um canvas grande demais.
+
+### 2026-06-03 09:31 - Kickoff para continuidade dos refinamentos Codex
+
+Context:
+Anders pediu um kickoff para retomar as modificacoes de refinamento visual em uma nova sessao Codex sem precisar reconstruir todo o contexto.
+
+Details:
+Criado `docs/CODEX_KICKOFF.md` com estado atual, escopo seguro, fora de escopo, arquivos provaveis, validacao esperada e o proximo bundle recomendado: deixar o mobile cerca de 10% mais compacto sem usar `zoom` ou `transform: scale()` no shell inteiro.
+
+Notes:
+Ao retomar, abrir primeiro `docs/CODEX_KICKOFF.md` junto de `docs/REDESIGN_ROADPACK.md`. A prioridade sugerida e o bundle `M1 - Mobile 10% mais compacto sem zoom`, preservando touch targets principais e todos os fluxos existentes.
+
+### 2026-06-03 09:52 - M1 densidade mobile sem zoom
+
+Context:
+Anders confirmou que o layout mobile/desktop estava aprovado em direcao visual, mas queria o mobile aproximadamente 10% menor sem apelar para zoom, transform global ou reducao artificial da janela.
+
+Details:
+`components/workspace-v2/WorkspaceLayoutV2.tsx` recebeu compactacao responsiva apenas abaixo de `md`: header/subheader menores, composer levemente mais baixo, textarea `42px`, controles mais densos e radius menor no composer. `components/chat/ChatContainer.tsx` compactou o empty state mobile, reduziu cards de sugestao, manteve duas colunas no mobile e no desktop comum com painel aberto, liberando tres colunas so em `2xl`. Tambem foi corrigido o auto-scroll do empty state para nao abrir a tela no meio dos cards quando nao ha mensagens. `hooks/useChat.ts` recebeu uma correcao pontual de stale closure incluindo `parameters.reasoningSummary` nas dependencias do callback de envio, porque o diff de reasoning ja usava esse parametro.
+
+Notes:
+Validacao desta rodada: `git diff --check`, `npm test`, `npx tsc --noEmit`, testes focados de `streamMachine`/`reasoningConfig`/`ReasoningPanel`, `npm run build` e Playwright com Chrome system no servidor local `PORT=3052`. Metricas antes/depois em mobile `390x844`: header `94px -> 81px`, composer `104px -> 96px`, textarea `46px -> 42px`, cards `170px -> 130-146px`, `scrollTop=0` no empty state. Screenshots finais: `/tmp/gaucho-final-mobile390-workspace.png`, `/tmp/gaucho-final-mobile430-workspace.png` e `/tmp/gaucho-final-desktop1440-workspace-v2.png`.
+
+### 2026-06-03 10:19 - C1 backend Agenda Google + notas locais
+
+Context:
+Iniciado o bundle C1 da feature "Agenda Google + Notas locais com STT", limitado a fundacao server-side e contratos. UI da aba Agenda e captura STT no painel ficam para bundles seguintes.
+
+Details:
+Criados contratos/storage/rotas para OAuth Google server-side, token local criptografado, listagem de eventos, rascunhos confirmaveis e notas locais globais. `lib/google/tokenStore.ts` salva `data/google-calendar-token.json` com AES-256-GCM e permissao `0600`; `lib/calendar/eventDrafts.ts` persiste rascunhos em `data/calendar-event-drafts.json`; `lib/storage/workspaceNotes.ts` persiste capturas em `data/workspace-notes.json`. Novas rotas: `/api/integrations/google/status`, `/api/integrations/google/auth/start`, `/api/integrations/google/auth/callback`, `/api/integrations/google/disconnect`, `/api/calendar/events`, `/api/calendar/events/draft`, `/api/calendar/events/drafts`, `/api/calendar/events/confirm`, `/api/workspace-notes` e `/api/workspace-notes/[id]`.
+
+Notes:
+`POST /api/calendar/events/draft` nunca chama Google; apenas `/api/calendar/events/confirm` escreve no Calendar e somente para draft `pending`. Google Keep segue fora da V1. Arquivos runtime privados novos foram adicionados ao `.gitignore`. Antes de ativar OAuth real, configurar sem expor valores: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_OAUTH_REDIRECT_URI`, `GOOGLE_CALENDAR_DEFAULT_ID`, `GOOGLE_CALENDAR_DEFAULT_TIME_ZONE` e `GOOGLE_TOKEN_ENCRYPTION_KEY`.
+
+### 2026-06-03 11:07 - Kickoff C2 Agenda no painel direito
+
+Context:
+Anders pediu deixar um kickoff para o proximo bundle antes de revisar/seguir implementando a agenda.
+
+Details:
+Criado `docs/CALENDAR_NOTES_C2_KICKOFF.md` como handoff do bundle C2. O escopo e somente UI/estado de conexao no `ContextPanelV2`: nova tab `Agenda`, status Google, eventos de hoje/proximos 7 dias e rascunhos pendentes usando as rotas do C1.
+
+Notes:
+C2 nao deve incluir interpretacao automatica do chat, STT no painel, Google Keep ou ampliacao de escopo OAuth. Se `ContextPanelV2` crescer demais, extrair `AgendaPanelV2` localmente em `components/workspace-v2/` sem redesenhar o painel inteiro.
+
+### 2026-06-03 11:27 - C2 aba Agenda no painel direito
+
+Context:
+Implementado o bundle C2 da feature "Agenda Google + Notas locais com STT", limitado a UI/estado no painel direito e usando apenas os contratos server-side do C1.
+
+Details:
+`types/index.ts` ampliou `ActivePanelTab` para incluir `calendar`. `components/workspace-v2/ContextPanelV2.tsx` ganhou a tab `Agenda` e delega o conteudo para `components/workspace-v2/AgendaPanelV2.tsx`, mantendo o painel principal enxuto. `lib/calendar/calendarApi.ts` criou wrappers client-side com `apiUrl()` e `parseApiErrorResponse()` para status Google, eventos, drafts, disconnect e confirmacao. `components/command/CommandPalette.tsx` ganhou comando `Ver Agenda`. `lib/calendar/calendarApi.test.ts` cobre basePath, erro recuperavel de Google desconectado e confirmacao com `sendUpdates: "none"`.
+
+Notes:
+`Ocultar` rascunho em C2 e apenas visual/local porque ainda nao existe endpoint de descarte; nao tratar isso como exclusao persistida. Confirmacao real continua somente em `/api/calendar/events/confirm` e fica desabilitada quando o Google nao esta conectado. Validacao desta rodada: `git diff --check`, teste focado do wrapper, `npm test`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service`, health local/publico OK, rotas novas sem cookie retornando `401`, smoke Playwright desktop e mobile confirmando a tab `Agenda`.
+
+### 2026-06-03 11:39 - C3 captura STT para notas globais
+
+Context:
+Implementado o bundle C3 da feature "Agenda Google + Notas locais com STT", limitado a captura de voz no painel e persistencia em notas locais globais.
+
+Details:
+`components/workspace-v2/WorkspaceCapturesPanelV2.tsx` adiciona bloco reutilizavel de capturas locais com gravacao via `useSpeechToText`, transcricao por `/api/transcribe`, salvamento como `source: "stt"` em `/api/workspace-notes`, listagem recente e exclusao. `components/workspace-v2/ContextPanelV2.tsx` encaixa o bloco na aba `Notas` com `conversationId` quando existe conversa ativa. `components/workspace-v2/AgendaPanelV2.tsx` encaixa o mesmo bloco de forma compacta na aba `Agenda`, com tag `agenda`, mas sem transformar captura em rascunho de evento. `lib/storage/workspaceNotesApi.ts` criou wrappers client-side para listar/criar/excluir notas locais; `lib/storage/workspaceNotesApi.test.ts` cobre basePath, criacao STT com metadados e delete.
+
+Notes:
+C3 nao altera `/api/transcribe` nem cria eventos de agenda. Capturas feitas pela Agenda continuam sendo notas STT globais com tag `agenda`; a conversao de linguagem natural para draft fica para C4. Validacao desta rodada: `git diff --check`, teste focado do wrapper, `npm test`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service`, health local/publico OK, `/api/workspace-notes` e `/api/transcribe` sem cookie retornando `401`, smoke autenticado desktop/mobile confirmando `Capturas locais` em `Notas` e `Agenda`, e smoke API criando nota STT temporaria `201` e removendo `200`.
+
+### 2026-06-03 23:07 - C4 rascunho de agenda por linguagem natural
+
+Context:
+Implementado o bundle C4 da feature "Agenda Google + Notas locais com STT", limitado a transformar texto do chat ou captura de voz em rascunho local de agenda com revisao visual antes de qualquer escrita no Google Calendar.
+
+Details:
+`app/api/calendar/events/draft-from-text/route.ts` cria a rota privada de extracao por linguagem natural. `lib/calendar/naturalLanguageDraft.ts` chama o modelo com schema JSON estrito, interpreta datas relativas usando o fuso configurado, recusa textos incompletos com erro `422` e persiste somente em `data/calendar-event-drafts.json` via `createCalendarEventDraft`. `lib/calendar/calendarApi.ts` ganhou `createCalendarDraftFromText`. `components/chat/QuickActionsBar.tsx` e o menu de `MessageBubble` adicionam acao `Rascunhar agenda` para texto do chat. `components/workspace-v2/WorkspaceCapturesPanelV2.tsx` tenta criar rascunho automaticamente quando a captura e feita na aba Agenda e tambem oferece botao `Rascunhar` nas capturas listadas. `AgendaPanelV2` escuta `gaucho:calendar-draft-created` e recarrega os pendentes.
+
+Notes:
+C4 nao confirma nem escreve no Google; a escrita continua exclusivamente em `/api/calendar/events/confirm`. Validacao desta rodada: testes focados da rota/wrapper, `npx tsc --noEmit`, `git diff --check`, `npm test` com 50 arquivos/146 testes, `npm run build`, `systemctl restart chatgpt.service`, health local/publico OK e rota nova sem cookie retornando `401`. Nao foi feito smoke autenticado criando draft real para evitar deixar rascunho temporario persistido no storage do Anders.
+
+### 2026-06-03 23:10 - Quadro vivo de tarefas da frente Agenda/Notas
+
+Context:
+Anders observou que as tarefas nao estavam sendo atualizadas ao longo do processo, apesar dos fechamentos ficarem registrados no `AGENTS.md`.
+
+Details:
+Criado `docs/CALENDAR_NOTES_PROGRESS.md` como quadro vivo do ROADPACK Agenda Google + Notas locais, com status C1-C4, proximo bundle candidato C5 e tarefas abertas. `docs/README.md` agora instrui atualizar o documento de progresso/ROADPACK ativo durante o processo, nao apenas no fechamento. `docs/CALENDAR_NOTES_KICKOFF.md` e `docs/CALENDAR_NOTES_C2_KICKOFF.md` foram marcados como historicos para evitar retomada por documento stale.
+
+Notes:
+Para futuras frentes com bundles, manter sempre um documento vivo de progresso alem do registro append-only no `AGENTS.md`. Kickoff antigo deve ser marcado como historico quando deixar de representar o estado atual.
+
+### 2026-06-03 23:18 - Checklist visivel atualizado ao longo da execucao
+
+Context:
+Anders esclareceu que a observacao sobre "tarefas concluidas" era sobre o recurso visual de tarefas/checklist da sessao, nao sobre docs de ROADPACK.
+
+Details:
+`AGENTS.md` agora instrui explicitamente que, quando houver checklist/plano visivel da sessao, o agente deve atualizar os estados ao longo do processo: marcar `in_progress` ao iniciar uma etapa, `completed` assim que terminar e adicionar/ajustar itens quando uma subtarefa real surgir.
+
+Notes:
+Em tarefas multi-etapa, tratar o checklist como painel operacional vivo para Anders acompanhar o andamento, nao como formalidade a preencher no final.
+
+### 2026-06-03 23:19 - Regras operacionais de tooling e validacao
+
+Context:
+Anders pediu adicionar ao prompt local as sugestoes de melhoria que ajudam o agente a trabalhar melhor em termos de tooling, validacao, dados runtime, documentos vivos e fechamento.
+
+Details:
+Adicionada a secao `Processo Operacional Do Agente` no topo operacional do `AGENTS.md`, com regras para checklist vivo, escada de validacao proporcional, preservacao de dados runtime privados, smoke tests sem sujeira persistente, uso de tooling, separacao entre documento vivo e memoria append-only, compatibilidade com instrucoes superiores, subagentes, fechamento e seguranca para efeitos externos.
+
+Notes:
+Essas regras devem ser aplicadas antes do historico append-only em tarefas futuras. Para docs/processo, `git diff --check` basta; para mudancas de runtime, seguir a escada de validacao nova.
+
+### 2026-06-03 23:19 - Kickoff fresh para Agenda/Notas C5
+
+Context:
+Anders pediu um kickoff para seguir a frente Agenda Google + Notas locais em uma sessao fresh.
+
+Details:
+Criado `docs/CALENDAR_NOTES_FRESH_KICKOFF.md` como handoff curto para retomada. O arquivo resume C1-C4 implementados, reforca que apenas `/api/calendar/events/confirm` escreve no Google, recomenda C5 como revisao/edicao de rascunhos antes de confirmar, lista arquivos-chave, tarefas abertas e validacao esperada. `docs/CALENDAR_NOTES_PROGRESS.md` e `docs/README.md` foram atualizados para apontar para o kickoff fresh.
+
+Notes:
+Ao retomar em sessao nova, ler primeiro `AGENTS.md`, `docs/CALENDAR_NOTES_PROGRESS.md` e `docs/CALENDAR_NOTES_FRESH_KICKOFF.md`. Proximo passo recomendado: C5, salvo se Anders quiser revisar manualmente C3/C4 antes.
+
+### 2026-06-04 02:37 - C5 edicao e descarte persistente de rascunhos
+
+Context:
+Implementado o bundle C5 da frente "Agenda Google + Notas locais com STT", focado em revisar rascunhos locais antes de qualquer escrita no Google Calendar.
+
+Details:
+`lib/calendar/eventDrafts.ts` ganhou normalizacao de edicao para rascunhos `pending`, erro de estado para rascunhos ja processados e descarte persistente local. Foram adicionadas as rotas privadas `PATCH /api/calendar/events/drafts/[id]` e `POST /api/calendar/events/drafts/[id]/discard`; ambas operam somente no JSON local e nao chamam Google. `lib/calendar/calendarApi.ts` ganhou wrappers `updateCalendarDraft` e `discardCalendarDraft`. `components/workspace-v2/AgendaPanelV2.tsx` substituiu o `Ocultar` em memoria por `Descartar` persistente e adicionou modo inline para editar titulo, inicio, duracao, local e descricao antes de `Confirmar`. `docs/API.md`, `docs/ARCHITECTURE.md` e `docs/CALENDAR_NOTES_PROGRESS.md` foram alinhados ao novo contrato.
+
+Notes:
+`/api/calendar/events/confirm` continua sendo o unico caminho que escreve no Google Calendar. Validacao desta rodada: testes focados C5, `npx tsc --noEmit`, `npm test` com 52 arquivos/158 testes, `npm run build`, `git diff --check`, `systemctl restart chatgpt.service`, health local healthy e health publico HTTP 200. Nao foi feito smoke autenticado criando rascunho real para evitar sujeira persistente em `data/calendar-event-drafts.json`.
+
+### 2026-06-04 20:31 - Side quest futura de densidade responsiva
+
+Context:
+Depois do ajuste compacto para iPhone 16 Pro Max, Anders perguntou se faria mais sentido substituir ajustes locais de padding/margin por um sistema globalmente reativo.
+
+Details:
+Decidimos registrar como plano futuro, nao refatorar imediatamente. `docs/REDESIGN_ROADPACK.md` ganhou a side quest "Densidade Responsiva", propondo tokens semanticos para shell, header, subheader, composer, paineis, sheets, chips e controles recorrentes, com degraus discretos de densidade (`comfortable`, `default`, `compact`) em vez de `transform: scale` no app inteiro.
+
+Notes:
+Quando essa frente for ativada, preservar o criterio: espacamento, altura, raio e agrupamento podem ser reativos; tipografia nao deve escalar por viewport. Comecar por `app/globals.css` e `components/workspace-v2/WorkspaceLayoutV2.tsx`, depois migrar componentes conforme forem tocados.
+
+### 2026-06-04 20:45 - Painel de situacao Agenda/Notas
+
+Context:
+Anders pediu um painel para se situar rapidamente no plano da frente Agenda Google + Notas locais antes de testar as implementacoes e preparar OAuth Google real.
+
+Details:
+`docs/CALENDAR_NOTES_PROGRESS.md` ganhou um `Painel Rapido` com estado por area, proximo passo, regra de seguranca e teste recomendado. `docs/CALENDAR_NOTES_FRESH_KICKOFF.md` foi atualizado de C5-futuro para C1-C5 implementados, com painel de retomada, checklist de env OAuth e redirect URI esperado.
+
+Notes:
+Ao retomar essa frente, usar primeiro o painel rapido em `docs/CALENDAR_NOTES_PROGRESS.md`. Proximo foco pratico: revisao manual C3-C5 no browser real e configuracao das credenciais Google sem expor segredo.
+
+### 2026-06-04 20:39 - Docs da densidade mobile paralela ao Codex
+
+Context:
+Depois da implementacao da compactacao mobile em ~15% por tokens, Anders pediu atualizar as docs e deixar claro que essa foi uma implementacao paralela ao fluxo Codex de refinamentos visuais.
+
+Details:
+`docs/REDESIGN_ROADPACK.md` passou a marcar a side quest de Densidade Responsiva Mobile como implementada em paralelo. `docs/CODEX_KICKOFF.md` deixou o M1 antigo como historico/concluido e apontou o proximo passo para QA visual/micro-ajustes. `docs/README.md`, `README.md`, `docs/ARCHITECTURE.md` e `CLAUDE.md` documentam o contrato `--gc-mobile-*`, a regra de nao usar `zoom`, viewport artificial ou `transform: scale()` global, e a preferencia por ajustar tokens em `app/globals.css`.
+
+Notes:
+Nao houve mudanca de API, modelos, auth, storage ou infraestrutura nesta rodada documental. Validar com `git diff --check`; se houver ajuste visual posterior, começar pelos tokens `--gc-mobile-*` antes de espalhar novas classes locais no mobile.
+
+### 2026-06-05 00:35 - Fix: cookie de auth revertido para Path=/
+
+Context:
+Apos o commit `8396769` (login com usuario/senha), `lib/server/auth.ts` passou a emitir o cookie com `Path=/chat` (via `getAuthCookiePath()`). Em producao o Apache tem `ProxyPassReverseCookiePath / /chat`, que reescreve paths de cookie: `/` vira `/chat`, `/api/...` vira `/chat/api/...`. Ao receber `Path=/chat` do servidor, o Apache reescrevia para `Path=/chat/chat` — path invalido, cookie descartado pelo browser na proxima requisicao. Resultado: logout forcado em navegacoes e falha silenciosa no PUT /api/persona (instrucoes de voz e preferencias de TTS nao persistiam apos reload).
+
+Details:
+`lib/server/auth.ts` teve `getAuthCookiePath()` removida e `setAuthCookie`/`clearAuthCookie` voltaram a usar `path: "/"` hardcoded. O Apache ja converte `Path=/` para `Path=/chat` corretamente via `ProxyPassReverseCookiePath / /chat` — o servidor nao precisa saber o basePath publico. `lib/server/auth.test.ts` foi atualizado: os dois testes que esperavam `Path=/chat` passaram a esperar `Path=/`.
+
+Notes:
+A regra que vale: o servidor sempre emite `Path=/`; o Apache e responsavel pelo rewrite para o path publico via `ProxyPassReverseCookiePath / /chat`. Nunca alterar o path do cookie server-side para incluir o basePath — isso cria duplo-rewrite. Commit: `ff7fd33`.
+
+### 2026-06-05 00:37 - Fix: campos invalidos na session config do Realtime TTS
+
+Context:
+O botao `Realtime mini` estabelecia conexao WebRTC normalmente (retornava `201` com SDP answer) mas nao produzia audio. Auditoria identificou tres campos errados em `buildRealtimeTtsSessionConfig` que a OpenAI Realtime API ignorava silenciosamente, deixando o modelo sem instrucao de gerar saida de audio.
+
+Details:
+`app/api/realtime/tts-call/route.ts`: removido `type: "realtime"` (nao faz parte do schema de session da `/v1/realtime/calls`); `output_modalities: ["audio"]` corrigido para `modalities: ["audio"]` (campo correto da Realtime API); `audio: { output: { voice } }` achatado para `voice` no nivel raiz (formato esperado pela API). `hooks/useRealtimeTtsLab.ts`: `output_modalities` no evento `response.create` enviado pelo data channel corrigido para `modalities`. `app/api/realtime/tts-call/route.test.ts` atualizado: `.audio.output.voice` → `.voice`.
+
+Notes:
+A conexao WebRTC em si nunca foi afetada — o SDP handshake funciona independente dos campos de session. O sintoma era audio ausente sem erro visivel. Commit: `7941a1b`. O modelo continua `gpt-realtime-mini`; o TTS MP3 principal continua em `gpt-4o-mini-tts`.
