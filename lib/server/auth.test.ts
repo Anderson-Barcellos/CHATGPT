@@ -47,7 +47,7 @@ describe("auth helpers", () => {
     await expect(verifyAuthToken(`${token}-corrompido`)).resolves.toBe(false);
   });
 
-  it("sets auth cookie on base path scope", () => {
+  it("sets auth cookie with root path", () => {
     const response = new NextResponse(null, { status: 200 });
     setAuthCookie(response, "token-de-teste");
 
@@ -57,20 +57,18 @@ describe("auth helpers", () => {
     expect(setCookies.some((value) => value.includes("auth-token=token-de-teste"))).toBe(
       true
     );
-    expect(setCookies.some((value) => value.includes("Path=/chat"))).toBe(true);
-    expect(setCookies.some((value) => value.includes("Path=/chat/"))).toBe(false);
+    expect(setCookies.some((value) => value.includes("Path=/"))).toBe(true);
+    expect(setCookies.some((value) => value.includes("Path=/chat"))).toBe(false);
   });
 
-  it("clears auth cookie on base path scope", () => {
+  it("clears auth cookie with root path", () => {
     const response = new NextResponse(null, { status: 200 });
     clearAuthCookie(response);
 
     const setCookies =
       response.headers.getSetCookie?.() ?? [response.headers.get("set-cookie") ?? ""];
 
-    expect(setCookies.some((value) => value.includes("auth-token=; Path=/chat"))).toBe(
-      true
-    );
-    expect(setCookies.some((value) => value.includes("Path=/chat/"))).toBe(false);
+    expect(setCookies.some((value) => value.includes("auth-token=; Path=/"))).toBe(true);
+    expect(setCookies.some((value) => value.includes("Path=/chat"))).toBe(false);
   });
 });

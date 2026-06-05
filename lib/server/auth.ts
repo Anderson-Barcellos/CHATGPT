@@ -85,16 +85,6 @@ function shouldUseSecureCookie(request?: NextRequest): boolean {
   return process.env.NODE_ENV === "production";
 }
 
-function getAuthCookiePath(): string {
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.trim();
-
-  if (!basePath) {
-    return "/";
-  }
-
-  return basePath.startsWith("/") ? basePath : `/${basePath}`;
-}
-
 export function setAuthCookie(
   response: NextResponse,
   token: string,
@@ -105,7 +95,7 @@ export function setAuthCookie(
     secure: shouldUseSecureCookie(request),
     sameSite: "lax",
     maxAge: AUTH_TOKEN_TTL_SECONDS,
-    path: getAuthCookiePath(),
+    path: "/",
   });
 }
 
@@ -115,6 +105,6 @@ export function clearAuthCookie(response: NextResponse, request?: NextRequest): 
     secure: shouldUseSecureCookie(request),
     sameSite: "lax",
     maxAge: 0,
-    path: getAuthCookiePath(),
+    path: "/",
   });
 }
