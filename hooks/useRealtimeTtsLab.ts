@@ -189,7 +189,7 @@ export function useRealtimeTtsLab(content: string) {
             response: {
               conversation: "none",
               metadata: { source: "gaucho-realtime-tts-lab" },
-              output_modalities: ["audio"],
+              modalities: ["audio"],
               instructions: buildRealtimeReadInstructions(
                 text,
                 preferences.instructions

@@ -20,14 +20,9 @@ function jsonError(error: string, status: number) {
 
 export function buildRealtimeTtsSessionConfig(voice: unknown) {
   return {
-    type: "realtime",
     model: REALTIME_TTS_MODEL,
-    output_modalities: ["audio"],
-    audio: {
-      output: {
-        voice: normalizeRealtimeTtsVoice(voice),
-      },
-    },
+    voice: normalizeRealtimeTtsVoice(voice),
+    modalities: ["audio"],
     instructions: REALTIME_TTS_STYLE_INSTRUCTIONS,
   };
 }

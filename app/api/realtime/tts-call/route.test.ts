@@ -56,7 +56,7 @@ describe("/api/realtime/tts-call route", () => {
       buildRealtimeTtsSessionConfig,
     } = await import("./route");
 
-    expect(buildRealtimeTtsSessionConfig("onyx").audio.output.voice).toBe("marin");
+    expect(buildRealtimeTtsSessionConfig("onyx").voice).toBe("marin");
     expect(buildRealtimeTtsSessionConfig("cedar").instructions).toContain(
       "subtle southern Brazilian gaucho cadence"
     );
