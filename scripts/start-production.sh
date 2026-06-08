@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Script para iniciar o ChatGPT Clone em produção na porta 3040
+# Script para iniciar o Gaucho Chat em produção na porta 3040
 
-echo "🚀 Iniciando ChatGPT Clone em produção..."
+echo "🚀 Iniciando Gaucho Chat em produção..."
 
 # Diretório da aplicação
 APP_DIR="/root/CHATGPT"

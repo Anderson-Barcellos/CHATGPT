@@ -40,6 +40,22 @@ describe("stream machine", () => {
       delta: "Resumo",
     });
     state = reduceAssistantStreamEvent(state, {
+      type: "response.reasoning_summary_text.done",
+      text: "Resumo final",
+    });
+    state = reduceAssistantStreamEvent(state, {
+      type: "response.reasoning_summary_part.added",
+      part: { type: "summary_text", text: "Resumo inicial ignorado" },
+    });
+    state = reduceAssistantStreamEvent(state, {
+      type: "response.reasoning_summary_part.done",
+      part: { type: "summary_text", text: "Resumo final" },
+    });
+    state = reduceAssistantStreamEvent(state, {
+      type: "response.reasoning_text.done",
+      text: "Pensando final",
+    });
+    state = reduceAssistantStreamEvent(state, {
       type: "response.output_item.added",
       item: { type: "web_search_call" },
     });
@@ -53,8 +69,8 @@ describe("stream machine", () => {
     });
 
     expect(state.content).toBe("Ola");
-    expect(state.reasoningText).toBe("Pensando");
-    expect(state.reasoningSummary).toBe("Resumo");
+    expect(state.reasoningText).toBe("Pensando final");
+    expect(state.reasoningSummary).toBe("Resumo final");
     expect(state.reasoningStatus).toBe("thinking");
     expect(state.citations).toEqual([
       { title: "Fonte", url: "https://example.com" },
@@ -80,12 +96,42 @@ describe("stream machine", () => {
       content: "Ola",
       imageBase64: "final-image",
       imageMimeType: "image/png",
-      reasoningText: "Pensando",
-      reasoningSummary: "Resumo",
+      reasoningText: "Pensando final",
+      reasoningSummary: "Resumo final",
       reasoningStatus: "complete",
       streamStatus: "completed",
       isSearching: false,
       isGeneratingImage: false,
+    });
+  });
+
+  it("captures a reasoning summary that arrives only as a done event", () => {
+    let state = createInitialAssistantStreamState(true);
+
+    state = reduceAssistantStreamEvent(state, {
+      type: "response.reasoning_summary_text.done",
+      text: "Resumo completo sem delta",
+    });
+    state = finalizeAssistantStreamState(state, "completed", true);
+
+    expect(assistantStreamStateToMessagePatch(state)).toMatchObject({
+      reasoningSummary: "Resumo completo sem delta",
+      reasoningStatus: "complete",
+    });
+  });
+
+  it("captures a reasoning summary that arrives only as a completed part", () => {
+    let state = createInitialAssistantStreamState(true);
+
+    state = reduceAssistantStreamEvent(state, {
+      type: "response.reasoning_summary_part.done",
+      part: { type: "summary_text", text: "Resumo por parte finalizada" },
+    });
+    state = finalizeAssistantStreamState(state, "completed", true);
+
+    expect(assistantStreamStateToMessagePatch(state)).toMatchObject({
+      reasoningSummary: "Resumo por parte finalizada",
+      reasoningStatus: "complete",
     });
   });
 

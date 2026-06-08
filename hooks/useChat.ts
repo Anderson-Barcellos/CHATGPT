@@ -25,6 +25,7 @@ import {
 import { withConversationPersistenceRetry } from "@/lib/storage/conversationPersistence";
 import {
   Message,
+  ReasoningEffort,
   ResponseMode,
   SendMessageOptions,
 } from "@/types";
@@ -35,9 +36,9 @@ import { apiUrl } from "@/lib/utils";
 import { buildEditResendOptions } from "@/lib/chat/resendOptions";
 import { buildQuizCompletionPatch } from "@/lib/chat/quizCompletion";
 import { buildAbortedAssistantMessagePatch } from "@/lib/chat/abortCompletion";
+import { buildReasoningConfig } from "@/lib/chat/reasoningConfig";
 import { createThrottle } from "@/lib/performance/throttle";
 import {
-  isReasoningModel,
   modelSupportsCodeInterpreter,
   modelSupportsTemperature,
   modelSupportsVerbosity,
@@ -52,7 +53,8 @@ import {
 } from "@/lib/artifacts/quizArtifacts";
 
 const STREAM_AUTO_SAVE_INTERVAL_MS = 2000;
-const DEEPSEARCH_FORCED_MODEL = "gpt-5.4-mini";
+const DEEPSEARCH_MEDIUM_MODEL = "gpt-5.4-mini";
+const DEEPSEARCH_HIGH_MODEL = "gpt-5.4";
 
 function normalizeStreamingMessages(messages: Message[]): Message[] {
   return messages.map((message) => {
@@ -73,13 +75,6 @@ function normalizeStreamingMessages(messages: Message[]): Message[] {
       ...reasoningCleanup,
     };
   });
-}
-
-function buildReasoningConfig(model: string, effort: string) {
-  if (!isReasoningModel(model)) return undefined;
-  if (!effort || effort === "none") return undefined;
-
-  return { effort, summary: "detailed" } as Record<string, string>;
 }
 
 function isClinicalReportRequest(content: string): boolean {
@@ -154,9 +149,14 @@ function isDocumentLikeMode(responseMode: ResponseMode): boolean {
   );
 }
 
-function resolveDeepsearchReasoningEffort(responseMode: ResponseMode): string {
+function resolveDeepsearchReasoningEffort(responseMode: ResponseMode): ReasoningEffort {
   if (responseMode === "deepsearch_high") return "high";
   return "medium";
+}
+
+function resolveDeepsearchModel(responseMode: ResponseMode): string {
+  if (responseMode === "deepsearch_high") return DEEPSEARCH_HIGH_MODEL;
+  return DEEPSEARCH_MEDIUM_MODEL;
 }
 
 function appendQuizModeInstructions(systemMessage: string): string {
@@ -402,7 +402,7 @@ export function useChat() {
       const requestModel = responseMode === "quiz"
         ? QUIZ_FORCED_MODEL
         : responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
-        ? DEEPSEARCH_FORCED_MODEL
+        ? resolveDeepsearchModel(responseMode)
         : parameters.model;
       const requestReasoningEffort =
         responseMode === "quiz"
@@ -410,9 +410,14 @@ export function useChat() {
           : responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
           ? resolveDeepsearchReasoningEffort(responseMode)
           : parameters.reasoningEffort;
+      const requestVerbosity =
+        responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
+          ? "high"
+          : parameters.verbosity;
       const reasoning = buildReasoningConfig(
         requestModel,
-        requestReasoningEffort
+        requestReasoningEffort,
+        parameters.reasoningSummary
       );
       const usesReasoning = !!reasoning && responseMode !== "quiz";
       const preferredDisplayMode = getPreferredDisplayMode(responseMode);
@@ -481,7 +486,7 @@ export function useChat() {
               topP: parameters.topP,
             }),
             ...(modelSupportsVerbosity(requestModel) && {
-              verbosity: parameters.verbosity,
+              verbosity: requestVerbosity,
             }),
             ...(modelSupportsCodeInterpreter(requestModel) && {
               codeInterpreterEnabled: parameters.codeInterpreterEnabled,
@@ -642,6 +647,7 @@ export function useChat() {
       parameters.model,
       parameters.codeInterpreterEnabled,
       parameters.reasoningEffort,
+      parameters.reasoningSummary,
       parameters.systemPrompt,
       parameters.temperature,
       parameters.topP,

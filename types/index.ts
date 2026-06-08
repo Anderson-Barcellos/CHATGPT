@@ -157,7 +157,7 @@ export interface SerializedConversation {
   updatedAt: string;
 }
 
-export type ActivePanelTab = "activity" | "notes";
+export type ActivePanelTab = "activity" | "notes" | "calendar";
 
 export interface CanvasOverlayState {
   x: number;

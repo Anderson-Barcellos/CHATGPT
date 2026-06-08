@@ -788,3 +788,25 @@ Details:
 
 Notes:
 A conexao WebRTC em si nunca foi afetada — o SDP handshake funciona independente dos campos de session. O sintoma era audio ausente sem erro visivel. Commit: `7941a1b`. O modelo continua `gpt-realtime-mini`; o TTS MP3 principal continua em `gpt-4o-mini-tts`.
+
+### 2026-06-05 15:00 - Fix: session.type obrigatorio no Realtime TTS GA
+
+Context:
+Depois de novos testes reais, o fluxo `Realtime mini` voltou a falhar porque a OpenAI Realtime API GA passou a exigir `session.type` no POST `/v1/realtime/calls`. A nota anterior de 2026-06-05 00:37 ficou desatualizada/invertida para o contrato atual.
+
+Details:
+`app/api/realtime/tts-call/route.ts` voltou a enviar a sessao GA com `type: "realtime"`, `output_modalities: ["audio"]` e `audio.output.voice`. `hooks/useRealtimeTtsLab.ts` voltou a usar `output_modalities` no `response.create`. `app/api/realtime/tts-call/route.test.ts` cobre esse shape.
+
+Notes:
+Validacao desta rodada: teste focado da rota, `npx tsc --noEmit`, `npm run build` e sonda WebRTC real com Chrome headless contra `/v1/realtime/calls`. Resultado da sonda: `session.type + audio.output.voice + output_modalities` retornou `201` e `response.done`; `session.type + modalities` retornou `Unknown parameter: session.modalities`. Para o contrato atual, nao voltar ao formato beta/raiz.
+
+### 2026-06-06 12:35 - Limpeza documental e remocao do legado Docker/Nginx
+
+Context:
+Anders pediu uma passada de atualizacao geral das docs, correcao de drift com o runtime real e limpeza da arvore do que nao estava mais em uso no projeto.
+
+Details:
+Foram alinhados `docs/README.md`, `docs/INFRASTRUCTURE.md`, `CLAUDE.md`, `.env.example`, `scripts/README.md` e os workflows `.github/workflows/deploy.yml` e `.github/workflows/pr-checks.yml` ao stack real `Apache + chatgpt.service + basePath /chat`. O health passou a se identificar como `Gaucho Chat` em `app/api/health/route.ts`. Foram removidos arquivos legados de deploy/proxy que nao refletiam mais o projeto: `Dockerfile`, `docker-compose.yml`, `nginx/nginx.conf`, `nginx/ssl/README.md` e `scripts/install-apache.sh`. `scripts/start-production.sh` e `scripts/test-local.sh` ficaram com naming atualizado para `Gaucho Chat`.
+
+Notes:
+Validacao desta rodada: `git diff --check`, `npx tsc --noEmit`, `npm test` e `npm run build` passaram. O repo nao deve voltar a anunciar deploy por Vercel/Docker/Nginx enquanto o runtime oficial continuar sendo Apache + systemd; se algum dia isso mudar, atualizar primeiro `docs/INFRASTRUCTURE.md`, `.env.example` e os workflows juntos para evitar drift de novo.

@@ -1,5 +1,27 @@
 # Gaucho Chat — Project Memory
 
+### 2026-06-04 20:29 - Densidade mobile compacta por tokens
+
+Context:
+Anders observou que reduzir as dimensões do layout mobile em ~15% acomodava melhor o Gaucho Chat, mas pediu uma solução robusta sem gambiarras de viewport, `zoom` ou `transform: scale()` global.
+
+Details:
+`app/globals.css` passou a centralizar um contrato de densidade mobile abaixo de `md`, com tokens `--gc-mobile-*` para shell, header, subheader, composer, área do chat, welcome state, painel/contexto e settings. `WorkspaceLayoutV2`, `ChatContainer`, `ContextPanelV2`, `ConversationRailV2`, `AgendaPanelV2` e `SettingsDrawer` passaram a consumir esses tokens nos pontos principais de padding, gap, altura e radius. A solução preserva a tipografia deliberada das mensagens e evita escalar o app inteiro como bitmap.
+
+Notes:
+Validação desta rodada: `npx tsc --noEmit`, `git diff --check` focado, `npm test` e `npm run build` passaram. O `chatgpt.service` foi reiniciado e o health local `/chat/api/health` respondeu `healthy`. Se for ajustar mais a densidade, preferir alterar os tokens em `app/globals.css` antes de voltar a espalhar `px-*`, `py-*`, `h-*` locais no mobile.
+
+### 2026-06-04 20:39 - Docs da densidade mobile paralela ao Codex
+
+Context:
+Anders pediu atualizar a documentação para registrar que a compactação mobile por tokens foi uma implementação paralela ao fluxo Codex de refinamentos visuais.
+
+Details:
+Atualizados `docs/REDESIGN_ROADPACK.md`, `docs/CODEX_KICKOFF.md`, `docs/README.md`, `README.md`, `docs/ARCHITECTURE.md`, `CLAUDE.md` e `AGENTS.md`. O M1 antigo do kickoff Codex agora está marcado como histórico/concluído; o roadpack registra a side quest de densidade mobile como implementada; as docs canônicas mencionam o contrato `--gc-mobile-*` e a regra de não usar `zoom`, viewport artificial ou `transform: scale()` global.
+
+Notes:
+Validação documental: `git diff --check` focado passou. O serviço foi reiniciado via `systemctl restart chatgpt.service`; health local retornou `healthy` e health público retornou HTTP 200.
+
 ### [2026-05-03 18:30] — Correção do fluxo de anexos de arquivos no chat
 
 Context:
@@ -936,3 +958,58 @@ Details:
 
 Notes:
 - Validação executada: `npx tsc --noEmit`, `npm test`, `npm run build` — tudo OK.
+
+### 2026-06-05 16:15 - Realtime TTS: payload GA corrigido (session/output)
+
+Context:
+Erro real em `/api/realtime/tts-call`: OpenAI retornando `Unknown parameter: 'session.modalities'` ao iniciar chamadas Realtime.
+
+Details:
+`app/api/realtime/tts-call/route.ts` voltou ao shape GA aceito pela `/v1/realtime/calls`: `type: "realtime"`, `output_modalities: ["audio"]` e `audio.output.voice` (em vez de `modalities` na raiz e `voice` direto). `hooks/useRealtimeTtsLab.ts` alinhado para enviar `output_modalities` também no evento `response.create` pelo data channel. `app/api/realtime/tts-call/route.test.ts` atualizado para validar o contrato novo (`output_modalities` + `audio.output.voice`).
+
+Notes:
+Validação desta rodada: `npm test -- app/api/realtime/tts-call/route.test.ts`, `npx tsc --noEmit`, `npm test`, `npm run build` — tudo OK.
+
+### 2026-06-05 16:22 - Realtime mini validado em runtime (local/public)
+
+Context:
+Mesmo após o hotfix do payload GA, Anders reportou que o fluxo ainda parecia falhar.
+
+Details:
+Foi feito diagnóstico no serviço em execução: `chatgpt.service` ativo, restart aplicado e health local/público OK. Sondas autenticadas em `http://127.0.0.1:3040/chat/api/realtime/tts-call` e `https://ultrassom.ai/chat/api/realtime/tts-call` não reproduziram `session.modalities`; ambas retornaram erro esperado de SDP inválido (`invalid_offer`) quando o offer era fake. Smoke real com browser headless (Chrome do host) clicando `Realtime mini` no app público retornou `201` com SDP answer, confirmando que o backend ativo está no shape GA (`output_modalities` + `audio.output.voice`).
+
+Notes:
+Se o usuário ainda vir erro antigo no navegador, priorizar hard reload/aba nova e inspeção de Network em `/chat/api/realtime/tts-call` para capturar a resposta atual (não confiar em mensagem cacheada de tentativa anterior).
+
+### 2026-06-05 16:28 - Catchers de log para falhas do Realtime mini
+
+Context:
+Anders pediu endurecer o fluxo de logs do Realtime TTS porque algumas falhas não estavam aparecendo de forma útil durante o uso no navegador.
+
+Details:
+`app/api/realtime/tts-call/route.ts` agora normaliza erro upstream (`error.message`), inclui `diagnosticId` em respostas de erro e registra `status`, `x-request-id` da OpenAI e body truncado no log do servidor. Foi criada a rota autenticada `POST /api/realtime/tts-call/log` em `app/api/realtime/tts-call/log/route.ts` para receber logs do cliente (event/message/details) e escrever em log server-side. `hooks/useRealtimeTtsLab.ts` passou a reportar eventos críticos: `icecandidateerror`, erro/close do data channel, parse error de eventos do servidor, `response.error`, erro de playback, `response !ok` da rota e catch final de start. Também foi incluído contexto de `diagnosticId/openaiRequestId` quando a rota retorna não-OK.
+
+Notes:
+Validação desta rodada: `npm test -- app/api/realtime/tts-call/route.test.ts app/api/realtime/tts-call/log/route.test.ts`, `npm test`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service` e smoke autenticado em `/chat/api/realtime/tts-call/log` retornando `200 {"ok":true}` com entrada visível em `/var/log/chatgpt/error.log`.
+
+### 2026-06-05 16:42 - Realtime restaurado ao core pré-Agenda com logs preservados
+
+Context:
+Anders pediu comparar com o estado anterior à frente Google Agenda/Notas e restaurar o Realtime mini mantendo os catchers de log.
+
+Details:
+O commit pré-Agenda relevante é `d2b2ec4` (2026-05-31). O core atual foi mantido alinhado a esse snapshot: sessão `/v1/realtime/calls` com `type: "realtime"`, `output_modalities: ["audio"]` e `audio.output.voice`; `response.create` no data channel também usa `output_modalities`. Os logs client→server foram preservados e ajustados para sempre aparecerem em `/var/log/chatgpt/error.log`. `hooks/useRealtimeTtsLab.ts` agora registra `settings.applied` sem vazar o texto das instruções: loga `voice`, `realtimeVoice`, `model`, `speed`, `mode`, presença/tamanho das instruções e quais campos são efetivamente aplicados ao Realtime.
+
+Notes:
+Smoke browser público confirmou `/chat/api/realtime/tts-call` retornando `201`, logs `settings.applied`, `peer.connection_state: connected` e `track.unmuted`. Exemplo observado: `voice=cedar`, `speed=1.2`, `mode=turbo`, instruções presentes; no Realtime só `voice` e `instructions` são aplicados, enquanto `speed/mode/model` pertencem ao TTS MP3 (`gpt-4o-mini-tts`). Validação: testes focados Realtime, `npx tsc --noEmit`, `npm test`, `npm run build`, restart do serviço e health local OK.
+
+### 2026-06-05 16:50 - Realtime mini ganhou mini-player visível
+
+Context:
+Anders identificou que o botão Realtime mini apenas ativava a sessão, diferente do TTS MP3 que abre um player com controle visual; isso deixava o fluxo sem feedback de playback.
+
+Details:
+`components/chat/QuickActionsBar.tsx` agora separa o painel Realtime do `tts.isOpen`: clicar direto em Realtime abre um mini-player próprio com botão `Tocar/Parar Realtime` e status claro (`Conectando`, `Sessão pronta`, `Recebendo áudio ao vivo`, `Leitura concluída`, erro). O painel MP3 continua igual quando aberto. `hooks/useRealtimeTtsLab.ts` também recebeu correção de race: `datachannel.open` não sobrescreve mais `speaking`, e o primeiro áudio agora registra `audio.started` com latência.
+
+Notes:
+Smoke browser público após rebuild/restart confirmou `/chat/api/realtime/tts-call` `201` e UI mostrando `Recebendo áudio ao vivo · 1º áudio 514ms`. Validação: `npx tsc --noEmit`, testes focados Realtime, `npm run build`, `systemctl restart chatgpt.service` e health local OK.

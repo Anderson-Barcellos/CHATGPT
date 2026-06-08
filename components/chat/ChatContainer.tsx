@@ -61,44 +61,81 @@ function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
   );
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-3 py-6 md:px-4 md:py-16">
-      <div className="relative mb-4 md:mb-6">
-        <GPTLogo size={120} className="animate-float" />
-        <div className="absolute -inset-6 -z-10 rounded-full bg-gradient-to-br from-primary/20 via-accent/10 to-primary/10 blur-3xl md:-inset-8" />
-      </div>
+    <div className="flex flex-1 items-start justify-center px-[var(--gc-mobile-welcome-outer-x)] py-[var(--gc-mobile-welcome-outer-y)] md:items-center md:px-4 md:py-10">
+      <div className="w-full max-w-5xl">
+        <div className="gc-refined-panel rounded-[var(--gc-mobile-welcome-panel-radius)] border px-[var(--gc-mobile-welcome-panel-x)] py-[var(--gc-mobile-welcome-panel-y)] md:rounded-[2rem] md:px-7 md:py-7">
+          <div className="grid gap-[var(--gc-mobile-welcome-grid-gap)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.45fr)] lg:gap-8">
+            <div className="flex flex-col justify-between">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary md:px-3 md:py-1 md:text-[11px] md:tracking-[0.22em]">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Workspace clínico
+                </div>
 
-      <h2 className="mb-1.5 text-[1.7rem] font-semibold tracking-tight md:mb-2 md:text-4xl">
-        <span className="gc-text-gradient">GPT</span>
-      </h2>
-      <p className="mb-7 max-w-[18rem] text-center text-sm text-muted-foreground/80 md:mb-10 md:max-w-sm md:text-base">
-        {getGreeting()}, Anders! {subtitle}
-      </p>
+                <div className="relative mt-5 hidden md:inline-flex">
+                  <div className="gc-refined-accent-surface rounded-[1.8rem] border p-4 shadow-[0_20px_40px_rgba(15,118,110,0.14)]">
+                    <GPTLogo size={72} className="animate-float" />
+                  </div>
+                  <div className="absolute -inset-6 -z-10 rounded-full bg-gradient-to-br from-primary/20 via-accent/10 to-primary/10 blur-3xl" />
+                </div>
 
-      <div className="grid w-full max-w-3xl grid-cols-2 gap-2.5 sm:grid-cols-3 md:gap-3 lg:max-w-5xl">
-        {SUGGESTIONS.map(({ icon: Icon, label, desc, prompt, accent, iconColor }) => (
-          <button
-            key={label}
-            onClick={() => onSuggestionClick(prompt)}
-            className={cn(
-              "group flex flex-col items-start gap-1.5 rounded-xl border border-[color:var(--gc-border-soft)] p-3 text-left md:gap-2 md:rounded-2xl md:p-4",
-              "glass-hover",
-              "transition-all duration-200",
-              "hover:shadow-lg hover:shadow-primary/10",
-              "active:scale-[0.98]"
-            )}
-          >
-            <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br md:h-9 md:w-9 md:rounded-xl", accent)}>
-              <Icon className={cn("h-4 w-4", iconColor)} />
+                <h2 className="mt-3 text-[var(--gc-mobile-welcome-title-size)] font-semibold leading-none tracking-[-0.04em] text-foreground md:mt-6 md:text-[2.6rem]">
+                  {getGreeting()}, Anders.
+                </h2>
+                <p className="mt-2 max-w-md text-[13px] leading-relaxed text-muted-foreground md:mt-3 md:text-base">
+                  {subtitle} Escolhe um ponto de partida e eu já deixo o composer pronto com o contexto inicial.
+                </p>
+              </div>
+
+              <div className="mt-3 rounded-2xl border border-[color:var(--gc-border-soft)] px-3 py-2 text-[11px] leading-relaxed text-muted-foreground/80 dark:bg-white/[0.02] md:mt-6 md:px-4 md:py-3 md:text-xs">
+                O Gaucho Chat combina chat, leitura clínica e memória operacional no mesmo workspace.
+              </div>
             </div>
-            <span className="text-body-sm font-semibold md:text-sm">{label}</span>
-            <span className="text-xs text-muted-foreground/80 leading-tight">{desc}</span>
-          </button>
-        ))}
-      </div>
 
-      <div className="mt-7 flex items-center gap-2 text-micro text-muted-foreground/60 md:mt-10 md:text-xs">
-        <Sparkles className="h-3 w-3" />
-        <span>Com tecnologia OpenAI</span>
+            <div>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.20em] text-muted-foreground">
+                    Sugestões de partida
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Escolhe um atalho e seguimos dali.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid w-full grid-cols-2 gap-[var(--gc-mobile-welcome-suggestion-gap)] md:gap-2.5 2xl:grid-cols-3">
+                {SUGGESTIONS.map(({ icon: Icon, label, desc, prompt, accent, iconColor }) => (
+                  <button
+                    key={label}
+                    onClick={() => onSuggestionClick(prompt)}
+                    className={cn(
+                      "gc-refined-panel group flex min-h-[var(--gc-mobile-welcome-suggestion-min-height)] flex-col items-start gap-[var(--gc-mobile-welcome-suggestion-gap)] rounded-[1rem] border p-[var(--gc-mobile-welcome-suggestion-pad)] text-left transition-all duration-200 md:min-h-[10.5rem] md:gap-3 md:rounded-[1.4rem] md:p-4",
+                      "hover:-translate-y-0.5 hover:shadow-[0_18px_36px_rgba(15,118,110,0.10)]",
+                      "active:scale-[0.99]"
+                    )}
+                  >
+                    <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br shadow-[0_10px_24px_rgba(15,118,110,0.08)] md:h-10 md:w-10 md:rounded-2xl", accent)}>
+                      <Icon className={cn("h-3.5 w-3.5 md:h-4 md:w-4", iconColor)} />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="block text-[13px] font-semibold leading-tight text-foreground md:text-sm">{label}</span>
+                      <span className="block text-[11px] leading-snug text-muted-foreground/85 md:text-xs md:leading-relaxed">{desc}</span>
+                    </div>
+                    <span className="mt-auto inline-flex items-center rounded-full border border-[color:var(--gc-border-soft)] px-2 py-0.5 text-[10px] font-medium text-muted-foreground/75 md:px-2.5 md:py-1 md:text-[11px]">
+                      Preencher<span className="hidden 2xl:inline"> no composer</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-center justify-center gap-2 text-micro text-muted-foreground/60 md:mt-5 md:text-xs">
+          <Sparkles className="h-3 w-3" />
+          <span>Com tecnologia OpenAI</span>
+        </div>
       </div>
     </div>
   );
@@ -320,6 +357,11 @@ export function ChatContainer({
     if (!content) return;
 
     const observer = new ResizeObserver(() => {
+      if (messages.length === 0) {
+        syncScrollState();
+        return;
+      }
+
       const container = getViewport();
       const isNearBottom = container
         ? getDistanceFromBottom(container) <= AUTO_SCROLL_THRESHOLD
@@ -340,7 +382,7 @@ export function ChatContainer({
 
     observer.observe(content);
     return () => observer.disconnect();
-  }, [getViewport, scrollToBottom, syncScrollState]);
+  }, [getViewport, messages.length, scrollToBottom, syncScrollState]);
 
   useEffect(() => {
     return () => {
@@ -369,7 +411,7 @@ export function ChatContainer({
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden">
       <ScrollArea ref={scrollAreaRef} className="h-full">
-        <div ref={contentRef} className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-3 py-4 md:gap-6 md:px-4 md:py-6 lg:max-w-5xl">
+        <div ref={contentRef} className="mx-auto flex w-full max-w-3xl flex-col gap-[var(--gc-mobile-chat-content-gap)] px-[var(--gc-mobile-chat-content-x)] py-[var(--gc-mobile-chat-content-y)] md:gap-5 md:px-5 md:py-7 lg:max-w-[54rem]">
           {messages.length === 0 ? (
             <WelcomeScreen onSuggestionClick={handleSuggestion} />
           ) : (

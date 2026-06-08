@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import {
   ArrowDown,
+  CalendarPlus,
   Check,
   Copy,
   Download,
@@ -26,6 +27,7 @@ import { useRealtimeTtsLab } from "@/hooks/useRealtimeTtsLab";
 import { useNotes } from "@/hooks/useNotes";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useUIStore } from "@/stores/uiStore";
+import { createCalendarDraftFromText } from "@/lib/calendar/calendarApi";
 import { cn } from "@/lib/utils";
 import type { MessageStreamStatus } from "@/types";
 
@@ -35,6 +37,7 @@ interface QuickActionsBarProps {
   streamStatus?: MessageStreamStatus;
   onRegenerate?: () => void;
   className?: string;
+  alwaysVisible?: boolean;
 }
 
 function ActionButton({
@@ -64,114 +67,153 @@ function ActionButton({
 function TtsPlayer({
   tts,
   realtime,
+  realtimePanelOpen,
   onRealtimeToggle,
 }: {
   tts: ReturnType<typeof useAssistantTts>;
   realtime: ReturnType<typeof useRealtimeTtsLab>;
+  realtimePanelOpen: boolean;
   onRealtimeToggle: () => void;
 }) {
-  if (!tts.isOpen) return null;
+  const shouldShowTtsPlayer = tts.isOpen;
+  const shouldShowRealtimePlayer = realtimePanelOpen || realtime.status !== "idle";
+
+  if (!shouldShowTtsPlayer && !shouldShowRealtimePlayer) return null;
 
   const isLoading = tts.status === "loading";
+  const realtimeIsStarting =
+    realtime.status === "connecting" || realtime.status === "ready";
+  const realtimeIsLive = realtime.status === "speaking";
+  const realtimeStatusLabel = realtime.error
+    ? realtime.error
+    : realtime.status === "idle"
+    ? "Pronto para testar a voz em tempo real"
+    : realtime.status === "connecting"
+    ? "Conectando sessão WebRTC..."
+    : realtime.status === "ready"
+    ? "Sessão pronta, solicitando áudio..."
+    : realtime.status === "speaking"
+    ? realtime.firstAudioMs
+      ? `Recebendo áudio ao vivo · 1º áudio ${realtime.firstAudioMs}ms`
+      : "Recebendo áudio ao vivo"
+    : realtime.status === "completed"
+    ? realtime.firstAudioMs
+      ? `Leitura concluída · 1º áudio ${realtime.firstAudioMs}ms`
+      : "Leitura concluída"
+    : "Falha no Realtime mini";
 
   return (
     <div className="mt-1.5 w-full max-w-[320px] rounded-xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-2 py-1.5 text-muted-foreground shadow-sm">
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={tts.togglePlay}
-          disabled={isLoading && !tts.isPlaying}
-          className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-background/80 text-foreground hover:bg-background disabled:opacity-50"
-          title={tts.isPlaying ? "Pausar" : "Tocar"}
-        >
-          {isLoading ? (
-            <LoaderCircle className="size-3.5 animate-spin" />
-          ) : tts.isPlaying ? (
-            <Pause className="size-3.5" />
-          ) : (
-            <Play className="size-3.5" />
-          )}
-        </button>
+      {shouldShowTtsPlayer && (
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={tts.togglePlay}
+            disabled={isLoading && !tts.isPlaying}
+            className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-background/80 text-foreground hover:bg-background disabled:opacity-50"
+            title={tts.isPlaying ? "Pausar" : "Tocar"}
+          >
+            {isLoading ? (
+              <LoaderCircle className="size-3.5 animate-spin" />
+            ) : tts.isPlaying ? (
+              <Pause className="size-3.5" />
+            ) : (
+              <Play className="size-3.5" />
+            )}
+          </button>
 
-        <button
-          type="button"
-          onClick={() => tts.seekBy(-15)}
-          className="flex size-7 shrink-0 items-center justify-center rounded-lg hover:bg-background/70"
-          title="Voltar 15s"
-        >
-          <RotateCcw className="size-3.5" />
-        </button>
+          <button
+            type="button"
+            onClick={() => tts.seekBy(-15)}
+            className="flex size-7 shrink-0 items-center justify-center rounded-lg hover:bg-background/70"
+            title="Voltar 15s"
+          >
+            <RotateCcw className="size-3.5" />
+          </button>
 
-        <button
-          type="button"
-          onClick={() => tts.seekBy(15)}
-          className="flex size-7 shrink-0 items-center justify-center rounded-lg hover:bg-background/70"
-          title="Avançar 15s"
-        >
-          <RotateCw className="size-3.5" />
-        </button>
+          <button
+            type="button"
+            onClick={() => tts.seekBy(15)}
+            className="flex size-7 shrink-0 items-center justify-center rounded-lg hover:bg-background/70"
+            title="Avançar 15s"
+          >
+            <RotateCw className="size-3.5" />
+          </button>
 
-        <div className="min-w-0 flex-1">
-          <div className="h-1.5 overflow-hidden rounded-full bg-background/80">
-            <div
-              className="h-full rounded-full bg-primary transition-[width]"
-              style={{ width: `${tts.progress}%` }}
-            />
+          <div className="min-w-0 flex-1">
+            <div className="h-1.5 overflow-hidden rounded-full bg-background/80">
+              <div
+                className="h-full rounded-full bg-primary transition-[width]"
+                style={{ width: `${tts.progress}%` }}
+              />
+            </div>
+            <div className="mt-1 flex items-center justify-between gap-2 text-[10px] leading-none">
+              <span>{tts.formattedCurrentTime}</span>
+              <span className="truncate">
+                {tts.error || `Parte ${tts.clipIndex + 1}/${tts.totalClips}`}
+              </span>
+              <span>{tts.formattedDuration}</span>
+            </div>
           </div>
-          <div className="mt-1 flex items-center justify-between gap-2 text-[10px] leading-none">
-            <span>{tts.formattedCurrentTime}</span>
-            <span className="truncate">
-              {tts.error || `Parte ${tts.clipIndex + 1}/${tts.totalClips}`}
-            </span>
-            <span>{tts.formattedDuration}</span>
-          </div>
+
+          <button
+            type="button"
+            onClick={tts.stop}
+            className="flex size-7 shrink-0 items-center justify-center rounded-lg hover:bg-background/70"
+            title="Parar"
+          >
+            <Square className="size-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={tts.downloadAudio}
+            disabled={!tts.canDownload}
+            className="flex size-7 shrink-0 items-center justify-center rounded-lg hover:bg-background/70 disabled:pointer-events-none disabled:opacity-40"
+            title={
+              tts.canDownload
+                ? "Baixar áudio completo"
+                : "Baixar áudio quando terminar de gerar"
+            }
+          >
+            <Download className="size-3.5" />
+          </button>
         </div>
+      )}
 
-        <button
-          type="button"
-          onClick={tts.stop}
-          className="flex size-7 shrink-0 items-center justify-center rounded-lg hover:bg-background/70"
-          title="Parar"
-        >
-          <Square className="size-3.5" />
-        </button>
-
-        <button
-          type="button"
-          onClick={tts.downloadAudio}
-          disabled={!tts.canDownload}
-          className="flex size-7 shrink-0 items-center justify-center rounded-lg hover:bg-background/70 disabled:pointer-events-none disabled:opacity-40"
-          title={
-            tts.canDownload
-              ? "Baixar áudio completo"
-              : "Baixar áudio quando terminar de gerar"
-          }
-        >
-          <Download className="size-3.5" />
-        </button>
-      </div>
-
-      <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-[color:var(--gc-border-soft)] pt-1.5 text-[10px] leading-none">
+      <div
+        className={cn(
+          "flex items-center justify-between gap-2 text-[10px] leading-none",
+          shouldShowTtsPlayer &&
+            "mt-1.5 border-t border-[color:var(--gc-border-soft)] pt-1.5",
+        )}
+      >
         <button
           type="button"
           onClick={onRealtimeToggle}
-          className="inline-flex h-6 items-center gap-1 rounded-lg bg-background/70 px-2 font-medium text-foreground hover:bg-background"
-          title="Laboratório Realtime mini"
-        >
-          {realtime.status === "connecting" || realtime.status === "ready" ? (
-            <LoaderCircle className="size-3 animate-spin" />
-          ) : (
-            <Radio className="size-3" />
+          className={cn(
+            "inline-flex h-7 shrink-0 items-center gap-1 rounded-lg px-2 font-medium text-foreground hover:bg-background",
+            realtimeIsLive
+              ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+              : "bg-background/70",
           )}
-          {realtime.isActive ? "Parar realtime" : "Realtime mini"}
+          title={
+            realtime.isActive
+              ? "Parar leitura Realtime mini"
+              : "Tocar com Realtime mini"
+          }
+        >
+          {realtimeIsStarting ? (
+            <LoaderCircle className="size-3 animate-spin" />
+          ) : realtime.isActive ? (
+            <Square className="size-3" />
+          ) : (
+            <Play className="size-3" />
+          )}
+          {realtime.isActive ? "Parar Realtime" : "Tocar Realtime"}
         </button>
         <span className="min-w-0 truncate text-muted-foreground/80">
-          {realtime.error ||
-            (realtime.firstAudioMs
-              ? `1º áudio ${realtime.firstAudioMs}ms`
-              : realtime.status === "idle"
-              ? "Lab isolado"
-              : realtime.status)}
+          {realtimeStatusLabel}
         </span>
       </div>
     </div>
@@ -184,10 +226,13 @@ export function QuickActionsBar({
   streamStatus,
   onRegenerate,
   className,
+  alwaysVisible = false,
 }: QuickActionsBarProps) {
   const isMobile = useIsMobile();
   const [copied, setCopied] = useState(false);
   const [touched, setTouched] = useState(false);
+  const [isDraftingCalendar, setIsDraftingCalendar] = useState(false);
+  const [realtimePanelOpen, setRealtimePanelOpen] = useState(false);
   const touchTimer = useRef<number | undefined>(undefined);
   const tts = useAssistantTts(content, messageId);
   const realtime = useRealtimeTtsLab(content);
@@ -216,6 +261,28 @@ export function QuickActionsBar({
     setActivePanelTab("notes");
   }, [content, messageId, appendToNotes, setActivePanelTab]);
 
+  const handleCalendarDraft = useCallback(async () => {
+    setIsDraftingCalendar(true);
+    try {
+      await createCalendarDraftFromText({
+        text: content,
+        source: "chat",
+        sourceMessageId: messageId,
+      });
+      setActivePanelTab("calendar");
+      window.dispatchEvent(new CustomEvent("gaucho:calendar-draft-created"));
+      toast.success("Rascunho de agenda criado para revisar.");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Nao consegui rascunhar agenda com esse texto.";
+      toast.error(message);
+    } finally {
+      setIsDraftingCalendar(false);
+    }
+  }, [content, messageId, setActivePanelTab]);
+
   const handleQuote = useCallback(() => {
     window.dispatchEvent(
       new CustomEvent("gaucho:quote-text", { detail: { text: content } }),
@@ -223,6 +290,8 @@ export function QuickActionsBar({
   }, [content]);
 
   const handleRealtimeToggle = useCallback(() => {
+    setRealtimePanelOpen(true);
+
     if (realtime.isActive) {
       realtime.stop();
       return;
@@ -253,7 +322,9 @@ export function QuickActionsBar({
       onTouchStart={handleTouchStart}
       className={cn(
         "flex items-center gap-0.5",
-        isMobile
+        alwaysVisible
+          ? "opacity-100"
+          : isMobile
           ? touched ? "opacity-100" : "opacity-55 transition-opacity"
           : "opacity-0 transition-opacity group-hover:opacity-100",
         className,
@@ -280,11 +351,13 @@ export function QuickActionsBar({
       </ActionButton>
       <ActionButton
         onClick={handleRealtimeToggle}
-        title={realtime.isActive ? "Parar Realtime mini" : "Testar Realtime mini"}
+        title={realtime.isActive ? "Parar Realtime mini" : "Tocar Realtime mini"}
         disabled={!tts.canPlay}
       >
         {realtime.status === "connecting" || realtime.status === "ready" ? (
           <LoaderCircle className="size-3.5 animate-spin" />
+        ) : realtime.isActive ? (
+          <Square className="size-3.5" />
         ) : (
           <Radio className="size-3.5" />
         )}
@@ -298,6 +371,17 @@ export function QuickActionsBar({
       <ActionButton onClick={handleNote} title="Adicionar à nota">
         <StickyNote className="size-3.5" />
       </ActionButton>
+      <ActionButton
+        onClick={() => void handleCalendarDraft()}
+        title="Rascunhar agenda"
+        disabled={isDraftingCalendar || content.trim().length === 0}
+      >
+        {isDraftingCalendar ? (
+          <LoaderCircle className="size-3.5 animate-spin" />
+        ) : (
+          <CalendarPlus className="size-3.5" />
+        )}
+      </ActionButton>
       <ActionButton onClick={handleQuote} title="Citar no composer">
         <MessageSquareQuote className="size-3.5" />
       </ActionButton>
@@ -310,6 +394,7 @@ export function QuickActionsBar({
       <TtsPlayer
         tts={tts}
         realtime={realtime}
+        realtimePanelOpen={realtimePanelOpen}
         onRealtimeToggle={handleRealtimeToggle}
       />
     </div>

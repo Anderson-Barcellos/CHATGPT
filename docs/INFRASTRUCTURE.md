@@ -1,6 +1,6 @@
 # Infraestrutura
 
-**Última atualização:** 2026-05-25  
+**Última atualização:** 2026-06-06
 **Produção:** `https://ultrassom.ai/chat`  
 **Porta local:** `3040`
 
@@ -22,10 +22,13 @@ Internet
 | Vhost Apache ativo | `/etc/apache2/sites-enabled/ultrassom.ai-optimized.conf` |
 | Fonte versionada do service | `systemd/chatgpt.service` |
 | Unit instalada | `/etc/systemd/system/chatgpt.service` |
+| Exemplo versionado de proxy | `apache-config/chat.conf` |
 | Env de produção | `.env.production` |
 | Logs do app | `/var/log/chatgpt/app.log`, `/var/log/chatgpt/error.log` |
 
 Não transcreva segredos de `.env.production` ou `.env.local` em docs, issues ou commits.
+O nome público do app é `Gaucho Chat`; a descrição `Celer - Cliente IA Multi-Modal` na unit systemd é apenas um rótulo histórico interno.
+O repositório nao usa mais stack de deploy por Docker/Nginx; o runtime valido aqui e Apache + `chatgpt.service`.
 
 ## Apache
 
@@ -107,6 +110,25 @@ Obrigatórias em produção:
 | `NODE_ENV` | `production` |
 | `JWT_SECRET` | Segredo para assinar sessão |
 
+Integração Google Calendar:
+
+| Variável | Propósito |
+|---|---|
+| `GOOGLE_CLIENT_ID` | OAuth client ID do Google |
+| `GOOGLE_CLIENT_SECRET` | OAuth client secret do Google, server-side |
+| `GOOGLE_OAUTH_REDIRECT_URI` | Callback público, normalmente `https://ultrassom.ai/chat/api/integrations/google/auth/callback` |
+| `GOOGLE_CALENDAR_DEFAULT_ID` | Calendário padrão, normalmente `primary` |
+| `GOOGLE_CALENDAR_DEFAULT_TIME_ZONE` | Timezone padrão, normalmente `America/Sao_Paulo` |
+| `GOOGLE_TOKEN_ENCRYPTION_KEY` | Chave para criptografar tokens locais do Google |
+
+Arquivos runtime privados novos:
+
+| Arquivo | Propósito |
+|---|---|
+| `data/google-calendar-token.json` | Token Google criptografado, permissão `0600` quando escrito pelo app |
+| `data/calendar-event-drafts.json` | Rascunhos locais de criação/alteração/cancelamento |
+| `data/workspace-notes.json` | Notas locais globais/capturas |
+
 Auth do app:
 
 | Variável | Propósito |
@@ -120,8 +142,6 @@ Rate limit:
 | Variável | Propósito |
 |---|---|
 | `RATE_LIMIT_ENABLED` | Liga/desliga rate limit |
-| `RATE_LIMIT_REQUESTS` | Janela geral legada |
-| `RATE_LIMIT_WINDOW` | Janela geral legada |
 | `RATE_LIMIT_CHAT_RPM` | Limite específico de chat |
 | `RATE_LIMIT_TRANSCRIBE_RPM` | Limite específico de transcrição |
 | `RATE_LIMIT_LOGIN_RPM` | Limite específico de login |

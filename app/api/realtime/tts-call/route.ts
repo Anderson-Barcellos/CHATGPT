@@ -6,6 +6,7 @@ export const runtime = "nodejs";
 
 const REALTIME_CALLS_URL = "https://api.openai.com/v1/realtime/calls";
 const REALTIME_TTS_MODEL = "gpt-realtime-mini";
+const MAX_UPSTREAM_ERROR_LOG_CHARS = 2500;
 const REALTIME_TTS_STYLE_INSTRUCTIONS = [
   "You are a text-to-speech renderer for Codex in Gaucho Chat.",
   "When asked to read text aloud, speak only the provided text, without summaries, preambles, or commentary.",
@@ -18,11 +19,34 @@ function jsonError(error: string, status: number) {
   return Response.json({ error }, { status });
 }
 
+function normalizeUpstreamErrorMessage(raw: string): string {
+  try {
+    const parsed = JSON.parse(raw) as { error?: { message?: string } };
+    if (parsed?.error?.message?.trim()) {
+      return parsed.error.message.trim();
+    }
+  } catch {
+    // noop: keep raw fallback
+  }
+
+  return raw.trim() || "Falha ao iniciar sessão Realtime.";
+}
+
+function clipForLog(value: string, max = MAX_UPSTREAM_ERROR_LOG_CHARS) {
+  if (value.length <= max) return value;
+  return `${value.slice(0, max)}…`;
+}
+
 export function buildRealtimeTtsSessionConfig(voice: unknown) {
   return {
+    type: "realtime",
     model: REALTIME_TTS_MODEL,
-    voice: normalizeRealtimeTtsVoice(voice),
-    modalities: ["audio"],
+    output_modalities: ["audio"],
+    audio: {
+      output: {
+        voice: normalizeRealtimeTtsVoice(voice),
+      },
+    },
     instructions: REALTIME_TTS_STYLE_INSTRUCTIONS,
   };
 }
@@ -52,6 +76,8 @@ export function buildRealtimeCallMultipartBody(sdp: string, voice: unknown) {
 }
 
 export async function POST(request: NextRequest) {
+  const diagnosticId = crypto.randomUUID();
+
   try {
     if (isAuthEnabled() && !(await isAuthenticatedRequest(request))) {
       return Response.json(
@@ -83,8 +109,24 @@ export async function POST(request: NextRequest) {
 
     const answerSdp = await upstream.text();
     if (!upstream.ok) {
+      const openaiRequestId = upstream.headers.get("x-request-id");
+      const message = normalizeUpstreamErrorMessage(answerSdp);
+
+      console.error("Realtime TTS upstream error", {
+        diagnosticId,
+        status: upstream.status,
+        openaiRequestId,
+        message,
+        body: clipForLog(answerSdp),
+      });
+
       return Response.json(
-        { error: answerSdp || "Falha ao iniciar sessão Realtime." },
+        {
+          error: message,
+          diagnosticId,
+          upstreamStatus: upstream.status,
+          openaiRequestId,
+        },
         { status: upstream.status }
       );
     }
@@ -97,14 +139,17 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Realtime TTS call error:", error);
+    console.error("Realtime TTS call error", { diagnosticId, error });
 
     if (error instanceof DOMException && error.name === "AbortError") {
-      return Response.json({ error: "Sessão Realtime interrompida." }, { status: 499 });
+      return Response.json(
+        { error: "Sessão Realtime interrompida.", diagnosticId },
+        { status: 499 }
+      );
     }
 
     return Response.json(
-      { error: "Falha interna ao iniciar Realtime TTS." },
+      { error: "Falha interna ao iniciar Realtime TTS.", diagnosticId },
       { status: 500 }
     );
   }

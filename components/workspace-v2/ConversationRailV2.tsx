@@ -55,11 +55,11 @@ const SECTION_ORDER: ConversationSection[] = [
 ];
 
 const RAIL_CONTROL_BUTTON_CLASS =
-  "rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground";
+  "gc-clinical-input-surface rounded-xl border border-[color:var(--gc-border)] text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground";
 const RAIL_SURFACE_CARD_CLASS =
-  "rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)]";
+  "gc-clinical-card rounded-xl border border-[color:var(--gc-border)]";
 const RAIL_FILTER_BUTTON_CLASS =
-  "h-6 rounded-md text-nano font-medium text-muted-foreground transition-colors hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground data-[active=true]:bg-primary/10 data-[active=true]:text-primary";
+  "h-7 rounded-lg text-nano font-semibold text-muted-foreground transition-colors hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-[0_6px_14px_rgba(15,118,110,0.16)]";
 
 function getConversationDate(value: Date | string): Date {
   const parsed = value instanceof Date ? value : new Date(value);
@@ -134,7 +134,7 @@ function ConversationRowV2({
         data-active={isActive}
         onClick={onSelect}
         className={cn(
-          "flex w-full min-w-0 items-start gap-2 rounded-lg border border-transparent px-2.5 py-2 pr-9 text-left text-muted-foreground transition-colors hover:border-[color:var(--gc-border-soft)] hover:bg-[var(--gc-surface-control)] hover:text-foreground data-[active=true]:border-primary/25 data-[active=true]:bg-primary/10 data-[active=true]:text-foreground",
+            "flex w-full min-w-0 items-start gap-2 rounded-xl border border-transparent px-2.5 py-2 pr-9 text-left text-muted-foreground transition-colors hover:border-[color:var(--gc-border)] hover:bg-[var(--gc-surface-control)] hover:text-foreground data-[active=true]:border-primary/35 data-[active=true]:bg-[var(--gc-clinical-active-bg)] data-[active=true]:text-foreground data-[active=true]:shadow-[var(--gc-clinical-active-shadow)]",
           disabled && "cursor-not-allowed opacity-70"
         )}
       >
@@ -433,9 +433,9 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-[color:var(--gc-border-soft)] px-3 py-3">
+      <div className="gc-clinical-section-header shrink-0 border-b border-[color:var(--gc-border)] px-[var(--gc-mobile-context-header-x)] py-[var(--gc-mobile-context-header-y)]">
         <div className="mb-3 flex items-center gap-2">
-          <div className="flex size-9 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
+          <div className="flex size-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/12 shadow-[0_10px_24px_rgba(15,118,110,0.14)]">
             <GPTLogo size={25} />
           </div>
           <div className="min-w-0 flex-1">
@@ -449,7 +449,7 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
             size="icon"
             disabled={isStreaming}
             onClick={handleCreateConversation}
-            className={cn("size-8", RAIL_CONTROL_BUTTON_CLASS)}
+            className="size-9 rounded-xl border border-primary/20 bg-primary text-primary-foreground shadow-[0_10px_24px_rgba(15,118,110,0.22)] hover:bg-primary/90 hover:text-primary-foreground"
           >
             <Plus className="size-4" />
           </Button>
@@ -461,7 +461,7 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Buscar"
-            className="h-8 rounded-lg border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] pl-8 text-xs focus-visible:border-primary/35 focus-visible:ring-primary/15"
+            className="gc-clinical-input-surface h-9 rounded-xl border-[color:var(--gc-border)] pl-8 text-xs focus-visible:border-primary/45 focus-visible:ring-primary/15"
           />
         </div>
 
@@ -492,7 +492,7 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
       </div>
 
       <ScrollArea className="h-full min-h-0 flex-1 overflow-hidden">
-        <div className="flex flex-col gap-2 px-2 py-3 pb-5">
+        <div className="flex flex-col gap-[var(--gc-mobile-panel-content-gap)] px-[var(--gc-mobile-panel-content-pad)] py-[var(--gc-mobile-panel-content-pad)] pb-5">
           {isLoading && (
             <div className="flex flex-col gap-2">
               {Array.from({ length: 6 }).map((_, index) => (
@@ -549,7 +549,7 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
         </div>
       </ScrollArea>
 
-      <div className="shrink-0 border-t border-[color:var(--gc-border-soft)] p-2">
+      <div className="shrink-0 border-t border-[color:var(--gc-border-soft)] p-[var(--gc-mobile-panel-content-pad)]">
         <Button
           variant="ghost"
           onClick={onOpenSettings}

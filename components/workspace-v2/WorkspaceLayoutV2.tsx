@@ -149,7 +149,7 @@ function IconButton({
           aria-label={label}
           onClick={onClick}
           className={cn(
-            "size-8 max-md:size-11 rounded-xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] text-muted-foreground shadow-[0_2px_8px_rgba(15,23,42,0.08)] hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground",
+            "gc-clinical-input-surface size-[var(--gc-mobile-icon-button-size)] rounded-lg border border-[color:var(--gc-border-soft)] text-muted-foreground shadow-[0_1px_4px_rgba(15,23,42,0.05)] hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:size-8",
             className
           )}
         >
@@ -169,8 +169,8 @@ function ContextChip({
   value: string;
 }) {
   return (
-    <span className="inline-flex max-w-[12rem] items-center gap-1 rounded-md border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-2 py-0.5 text-nano text-muted-foreground">
-      <span className="text-foreground/65">{label}</span>
+    <span className="gc-clinical-card inline-flex max-w-[12rem] items-center gap-1.5 rounded-lg border border-[color:var(--gc-border-soft)] px-2.5 py-1 text-nano text-muted-foreground">
+      <span className="text-foreground/55">{label}</span>
       <span className="truncate font-medium text-foreground">{value}</span>
     </span>
   );
@@ -220,7 +220,7 @@ export function WorkspaceFrameV2({
   }, []);
 
   return (
-    <div className="gc-dynamic-bg relative h-dvh overflow-hidden text-foreground">
+    <div className="gc-dynamic-bg gc-mobile-density relative h-dvh overflow-hidden text-foreground">
       <div
         aria-hidden="true"
         className="gc-ambient-overlay pointer-events-none absolute inset-0"
@@ -229,11 +229,11 @@ export function WorkspaceFrameV2({
         aria-hidden="true"
         className="gc-subtle-grid pointer-events-none absolute inset-0 opacity-35"
       />
-      <div className="relative z-10 flex h-full flex-col p-1 sm:p-2 md:p-4">
-        <div className="flex min-h-0 flex-1 overflow-hidden rounded-[1.05rem] border border-[color:var(--gc-border)] bg-[var(--gc-surface-shell)]/95 shadow-[0_30px_100px_rgba(10,18,34,0.28)] backdrop-blur-xl">
+      <div className="relative z-10 flex h-full flex-col p-[var(--gc-mobile-frame-pad)] sm:p-2 md:p-3">
+        <div className="gc-clinical-shell flex min-h-0 flex-1 overflow-hidden rounded-[var(--gc-mobile-shell-radius)] border border-primary/20 backdrop-blur-xl">
           <aside
             data-workspace-region="sidebar"
-            className="hidden min-h-0 w-[18.5rem] shrink-0 overflow-hidden border-r border-[color:var(--gc-border-soft)] bg-[linear-gradient(180deg,var(--gc-surface-panel),var(--gc-surface-panel-strong))] lg:block"
+            className="gc-clinical-rail hidden min-h-0 w-[19rem] shrink-0 overflow-hidden border-r border-[color:var(--gc-border)] lg:block"
           >
             <FadeIn duration={0.24} className="h-full">
               {sidebar}
@@ -243,7 +243,7 @@ export function WorkspaceFrameV2({
           {tabletSidebar && (
             <aside
               data-workspace-region="tablet-rail"
-              className="hidden min-h-0 w-12 shrink-0 overflow-hidden border-r border-[color:var(--gc-border-soft)] bg-[linear-gradient(180deg,var(--gc-surface-panel),var(--gc-surface-panel-strong))] md:block lg:hidden"
+              className="gc-clinical-rail hidden min-h-0 w-12 shrink-0 overflow-hidden border-r border-[color:var(--gc-border)] md:block lg:hidden"
             >
               <FadeIn duration={0.24} className="h-full">
                 {tabletSidebar}
@@ -252,9 +252,9 @@ export function WorkspaceFrameV2({
           )}
 
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-            <header className="shrink-0 border-b border-[color:var(--gc-border-soft)] bg-[linear-gradient(180deg,var(--gc-surface-panel-strong),var(--gc-surface-panel))] gc-safe-top md:pt-0">
-              <div className="flex h-[3.45rem] items-center justify-between px-3 md:px-5">
-                <div className="flex min-w-0 items-center gap-2">
+            <header className="gc-clinical-header shrink-0 border-b border-[color:var(--gc-border)] gc-safe-top md:pt-0">
+              <div className="flex h-[var(--gc-mobile-header-height)] items-center justify-between px-[var(--gc-mobile-header-x)] md:h-[3.45rem] md:px-5">
+                <div className="flex min-w-0 items-center gap-1.5 md:gap-2">
                   <IconButton
                     label="Abrir conversas"
                     onClick={() => setSidebarOpen(true)}
@@ -262,23 +262,23 @@ export function WorkspaceFrameV2({
                   >
                     <Menu className="size-4" />
                   </IconButton>
-                  <div className="hidden size-8 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 shadow-[0_8px_20px_rgba(14,116,144,0.14)] md:flex">
+                  <div className="hidden size-9 items-center justify-center rounded-xl border border-primary/20 bg-primary/12 shadow-[0_8px_22px_rgba(15,118,110,0.12)] md:flex">
                     <GPTLogo size={22} />
                   </div>
                   <div className="min-w-0 leading-tight">
                     <div className="flex items-center gap-2">
-                      <h1 className="truncate text-sm font-semibold text-foreground">
+                      <h1 className="truncate text-[0.9rem] font-semibold tracking-[-0.02em] text-foreground md:text-[0.96rem]">
                         {activeConversationTitle}
                       </h1>
                     </div>
-                    <p className="truncate text-micro text-muted-foreground">
+                    <p className="truncate text-[10px] text-muted-foreground/80 md:text-micro">
                       Gaucho Chat
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  <div className="hidden items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 px-2 py-1 text-nano font-medium text-primary lg:flex">
+                <div className="flex items-center gap-1 md:gap-1.5">
+                  <div className="hidden items-center gap-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-2 py-1 text-nano font-semibold text-emerald-700 dark:text-emerald-300 lg:flex">
                     <ShieldCheck className="size-3.5" />
                     Salvo
                   </div>
@@ -286,11 +286,15 @@ export function WorkspaceFrameV2({
                   <IconButton
                     label="Buscar comandos"
                     onClick={() => openCommandPalette(true)}
-                    className="xl:hidden"
+                    className="hidden md:inline-flex xl:hidden"
                   >
                     <Search className="size-4" />
                   </IconButton>
-                  <IconButton label="Ajustar prompt" onClick={handleFocusComposer}>
+                  <IconButton
+                    label="Ajustar prompt"
+                    onClick={handleFocusComposer}
+                    className="hidden sm:inline-flex"
+                  >
                     <PencilLine className="size-4" />
                   </IconButton>
                   <IconButton label="Configurações" onClick={onOpenSettings}>
@@ -311,7 +315,7 @@ export function WorkspaceFrameV2({
                 </div>
               </div>
 
-              <div className="flex min-h-[2.35rem] items-center justify-between border-t border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-3 py-1.5 md:px-5">
+              <div className="gc-clinical-subheader flex min-h-[var(--gc-mobile-subheader-height)] items-center justify-between border-t border-[color:var(--gc-border-soft)] px-[var(--gc-mobile-subheader-x)] py-[var(--gc-mobile-subheader-y)] md:min-h-[2.35rem] md:px-5 md:py-1.5">
                 <div className="flex min-w-0 items-center gap-1.5">
                   <div className="hidden min-w-0 flex-wrap items-center gap-1.5 md:flex">
                     <ContextChip label="Workspace" value="Anders" />
@@ -324,7 +328,7 @@ export function WorkspaceFrameV2({
                       value={RESPONSE_MODE_LABELS[activeResponseMode ?? "default"]}
                     />
                   </div>
-                  <span className="inline-flex md:hidden items-center gap-1.5 truncate text-micro text-muted-foreground">
+                  <span className="inline-flex md:hidden items-center gap-1.5 truncate text-[10px] text-muted-foreground">
                     <span className="font-medium text-foreground truncate max-w-[7rem]">{currentModelName}</span>
                     <span className="text-muted-foreground/50">·</span>
                     <span>{RESPONSE_MODE_LABELS[activeResponseMode ?? "default"]}</span>
@@ -336,8 +340,8 @@ export function WorkspaceFrameV2({
                     )}
                   </span>
                 </div>
-                <span className="hidden items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-nano font-medium text-primary md:inline-flex">
-                  <span className="size-1.5 rounded-full bg-primary" />
+                <span className="hidden items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-2 py-0.5 text-nano font-medium text-emerald-700 dark:text-emerald-300 md:inline-flex">
+                  <span className="size-1.5 rounded-full bg-emerald-500" />
                   online
                 </span>
               </div>
@@ -359,7 +363,7 @@ export function WorkspaceFrameV2({
             <aside
               data-workspace-region="context"
               className={cn(
-                "hidden min-h-0 shrink-0 overflow-hidden border-l border-[color:var(--gc-border-soft)] bg-[linear-gradient(180deg,var(--gc-surface-panel),var(--gc-surface-panel-strong))] transition-[width] duration-200 xl:block",
+                "gc-clinical-panel hidden min-h-0 shrink-0 overflow-hidden border-l border-[color:var(--gc-border)] transition-[width] duration-200 xl:block",
                 contextCollapsed
                   ? "w-12"
                   : contextExpanded
@@ -379,7 +383,7 @@ export function WorkspaceFrameV2({
               </div>
             ) : (
                 <div className="flex h-full flex-col">
-                  <div className="flex h-[3.25rem] items-center justify-between border-b border-[color:var(--gc-border-soft)] px-3">
+                  <div className="gc-clinical-section-header flex h-[3.45rem] items-center justify-between border-b border-[color:var(--gc-border)] px-3">
                     <div>
                       <p className="text-xs font-semibold text-foreground">Painel operacional</p>
                       <p className="text-nano uppercase tracking-label text-muted-foreground">
@@ -417,7 +421,7 @@ export function WorkspaceFrameV2({
         <SheetContent
           side="left"
           showCloseButton={false}
-          className="w-[88vw] max-w-[20rem] gap-0 border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] p-0 gc-safe-top"
+          className="gc-clinical-rail w-[88vw] max-w-[20rem] gap-0 border-[color:var(--gc-border)] p-0 gc-safe-top"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Conversas</SheetTitle>
@@ -431,7 +435,7 @@ export function WorkspaceFrameV2({
         <SheetContent
           side="right"
           showCloseButton={false}
-          className="w-[96vw] max-w-none gap-0 border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] p-0 gc-safe-top sm:max-w-[34rem]"
+          className="gc-clinical-panel w-[96vw] max-w-none gap-0 border-[color:var(--gc-border)] p-0 gc-safe-top sm:max-w-[34rem]"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Painel contextual</SheetTitle>
@@ -487,8 +491,8 @@ export function CommandComposerV2({
   const statusMessage = error || speechError || fileErrors[0] || null;
 
   return (
-    <footer className="shrink-0 border-t border-[color:var(--gc-border-soft)] bg-[linear-gradient(180deg,var(--gc-surface-panel-strong),var(--gc-surface-panel))] px-2.5 pb-[calc(env(safe-area-inset-bottom)+0.45rem)] pt-2 md:px-4 md:pb-3">
-      <div className="mx-auto max-w-[74rem]">
+    <footer className="gc-clinical-section-header shrink-0 border-t border-[color:var(--gc-border)] px-[var(--gc-mobile-composer-footer-x)] pb-[calc(env(safe-area-inset-bottom)+var(--gc-mobile-composer-footer-bottom))] pt-[var(--gc-mobile-composer-footer-top)] md:px-4 md:pb-3 md:pt-2.5">
+      <div className="mx-auto max-w-[62rem]">
         {statusMessage && (
           <div className="mb-2 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
             {statusMessage}
@@ -497,8 +501,8 @@ export function CommandComposerV2({
 
         <div
             className={cn(
-              "relative overflow-hidden rounded-2xl border border-[color:var(--gc-border)] bg-[var(--gc-surface-composer)] shadow-[0_22px_62px_rgba(15,23,42,0.22)] transition-colors",
-              "focus-within:border-primary/35 focus-within:shadow-[0_20px_56px_rgba(14,116,144,0.16)]",
+              "gc-clinical-composer relative overflow-hidden rounded-[var(--gc-mobile-composer-radius)] border transition-colors md:rounded-2xl",
+              "focus-within:border-primary/35 focus-within:shadow-[0_16px_40px_rgba(14,116,144,0.12)]",
               isDragging && "border-primary/55 bg-primary/8"
             )}
           onDragEnter={onDragEnter}
@@ -524,7 +528,7 @@ export function CommandComposerV2({
             placeholder={placeholder}
             rows={1}
             disabled={disabled}
-            className="max-h-[180px] min-h-[42px] w-full resize-none bg-transparent px-3 pb-1.5 pt-3 text-body-sm leading-relaxed outline-none placeholder:text-muted-foreground/45 md:px-4 md:text-sm"
+            className="max-h-[var(--gc-mobile-textarea-max-height)] min-h-[var(--gc-mobile-textarea-min-height)] w-full resize-none bg-transparent px-[var(--gc-mobile-textarea-px)] pb-[var(--gc-mobile-textarea-pb)] pt-[var(--gc-mobile-textarea-pt)] text-[var(--gc-mobile-textarea-font-size)] leading-relaxed outline-none placeholder:text-muted-foreground/45 md:min-h-[46px] md:px-4 md:pb-2 md:pt-3.5 md:text-sm"
           />
 
           {attachments.length > 0 && (
@@ -560,8 +564,8 @@ export function CommandComposerV2({
             </div>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[color:var(--gc-border-soft)] px-2 py-2 md:px-3">
-            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center justify-between gap-1.5 border-t border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)]/70 px-1.5 py-1.5 md:gap-2 md:px-3 md:py-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-1 md:gap-1.5">
               <Button
                 type="button"
                 variant="ghost"
@@ -569,7 +573,7 @@ export function CommandComposerV2({
                 disabled={disabled || isProcessing}
                 onClick={onFileSelect}
                 aria-label="Adicionar arquivos"
-                  className={cn("size-8 rounded-lg", COMPOSER_CONTROL_BUTTON_CLASS)}
+                    className={cn("size-[var(--gc-mobile-control-height)] rounded-lg md:size-8", COMPOSER_CONTROL_BUTTON_CLASS)}
                 >
                 {isProcessing ? (
                   <LoaderCircle className="size-4 animate-spin" />
@@ -582,7 +586,7 @@ export function CommandComposerV2({
                 <button
                   type="button"
                   className={cn(
-                    "flex h-8 max-w-[6.5rem] items-center gap-1 rounded-lg px-1.5 text-nano font-medium",
+                    "flex h-[var(--gc-mobile-control-height)] max-w-[6rem] items-center gap-1 rounded-lg px-1.5 text-[var(--gc-mobile-control-font-size)] font-medium md:h-8 md:max-w-[6.5rem] md:text-nano",
                     COMPOSER_CONTROL_BUTTON_CLASS
                   )}
                 >
@@ -597,7 +601,7 @@ export function CommandComposerV2({
                     type="button"
                     aria-label="Ajustar nível de raciocínio"
                     className={cn(
-                      "flex h-8 items-center rounded-lg px-1.5",
+                      "flex h-[var(--gc-mobile-control-height)] items-center rounded-lg px-1.5 md:h-8",
                       COMPOSER_CONTROL_BUTTON_CLASS
                     )}
                   >
@@ -662,7 +666,7 @@ export function CommandComposerV2({
                   className={cn(
                     "hidden h-8 rounded-lg border px-2 text-micro md:flex",
                     responseMode === "quiz"
-                      ? "border-amber-300/25 bg-amber-300/12 text-amber-100"
+                      ? "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300"
                       : COMPOSER_CONTROL_BUTTON_CLASS
                   )}
                 >
@@ -678,7 +682,7 @@ export function CommandComposerV2({
                     size="icon"
                     disabled={disabled}
                     className={cn(
-                      "size-8 rounded-lg md:hidden",
+                      "size-[var(--gc-mobile-control-height)] rounded-lg md:hidden",
                       COMPOSER_CONTROL_BUTTON_CLASS
                     )}
                     aria-label="Mais opções"
@@ -733,10 +737,10 @@ export function CommandComposerV2({
                 style={isRecording ? {
                   boxShadow: `0 0 ${8 + audioLevel * 14}px rgba(251,113,133,${(0.3 + audioLevel * 0.6).toFixed(2)})`,
                 } : undefined}
-                className={cn(
-                  "h-8 rounded-lg border px-2 text-micro transition-shadow",
+                  className={cn(
+                    "h-[var(--gc-mobile-control-height)] rounded-lg border px-2 text-[var(--gc-mobile-control-font-size)] transition-shadow md:h-8 md:text-micro",
                   isRecording
-                    ? "border-rose-300/40 bg-rose-300/12 text-rose-100"
+                    ? "border-rose-500/35 bg-rose-500/10 text-rose-700 dark:text-rose-300"
                   : isTranscribing
                     ? "border-primary/25 bg-primary/10 text-primary"
                     : COMPOSER_CONTROL_BUTTON_CLASS
@@ -754,7 +758,7 @@ export function CommandComposerV2({
               </Button>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 md:gap-1.5">
               {costControl}
               {isLoading || isTranscribing ? (
                 <Button
@@ -763,7 +767,7 @@ export function CommandComposerV2({
                   size="sm"
                   onClick={onStop}
                   aria-label="Parar geração"
-                  className="h-8 rounded-lg px-3 text-xs"
+                  className="h-[var(--gc-mobile-control-height)] rounded-lg px-2.5 text-[var(--gc-mobile-send-font-size)] md:h-8 md:px-3 md:text-xs"
                 >
                   <Square className="mr-1.5 size-3.5" />
                   Parar
@@ -775,7 +779,7 @@ export function CommandComposerV2({
                   disabled={!hasContent || isRecording || isProcessing}
                   onClick={onSubmit}
                   aria-label="Enviar mensagem"
-                  className="h-8 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-30"
+                  className="h-[var(--gc-mobile-control-height)] rounded-lg bg-primary px-2.5 text-[var(--gc-mobile-send-font-size)] font-semibold text-primary-foreground shadow-[0_8px_18px_rgba(15,118,110,0.18)] hover:bg-primary/90 disabled:opacity-30 md:h-8 md:px-3 md:text-xs"
                 >
                   <Send className="size-3.5" />
                 </Button>

@@ -24,11 +24,11 @@
 ## Defaults
 
 - Modelo padrão do chat: `gpt-5.4-mini`.
-- `gpt-5.2` inicia com reasoning `medium` + summary `concise`.
-- Modelos mini iniciam com reasoning `none` + summary `off`.
+- `gpt-5.2` inicia com reasoning `medium` + summary `detailed`.
+- Modelos mini iniciam com reasoning `none` + summary `detailed`; como o effort começa em `none`, esse summary não é enviado ao backend até o usuário ativar reasoning.
 - Modelo de imagem usado pela tool: `gpt-image-2`.
 - Quiz força `gpt-5.4` com reasoning `high`.
-- Deepsearch Medium/High força `gpt-5.4-mini` com reasoning `medium/high`.
+- No shell atual, Deepsearch Medium/High envia `gpt-5.4-mini` com reasoning `medium/high`.
 - TTS usa `gpt-4o-mini-tts` em `lib/tts/speechText.ts`.
 - Realtime TTS lab usa `gpt-realtime-mini`.
 - Transcrição usa `gpt-4o-transcribe`.
@@ -42,6 +42,19 @@
 - só envia `temperature` e `top_p` quando `modelSupportsTemperature()` permite;
 - só envia `verbosity` quando `modelSupportsVerbosity()` permite;
 - só adiciona `code_interpreter` quando o usuário habilita e o modelo suporta.
+- faz enforcement rígido apenas para `responseMode="quiz"`; presets `document` e `deepsearch_*` são montados no app por `hooks/useChat.ts`.
+
+`lib/chat/reasoningConfig.ts`:
+
+- não envia reasoning quando o modelo não tem capacidade `reasoning`;
+- não envia reasoning quando o effort é `none`;
+- repassa `low`, `medium`, `high` e `xhigh` como `reasoning.effort`;
+- repassa `auto`, `concise` e `detailed` como `reasoning.summary`;
+- converte a preferência local `summary=off` em omissão do campo, evitando valor inválido na Responses API.
+
+Observação de UI: reasoning pode ser aplicado sem summary textual no stream. Quando
+`response.completed` traz `reasoning_tokens`, o balão mantém um estado visível de
+"raciocínio aplicado" mesmo se não houver eventos `reasoning_summary_*`.
 
 Tools padrão em modos não-quiz:
 

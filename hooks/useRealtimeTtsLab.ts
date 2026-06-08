@@ -24,6 +24,44 @@ type RealtimeTtsStatus =
   | "completed"
   | "error";
 
+type ClientRealtimeLogLevel = "info" | "warn" | "error";
+
+function serializeErrorForLog(error: unknown) {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack?.split("\n").slice(0, 6).join("\n"),
+    };
+  }
+
+  return { value: String(error) };
+}
+
+async function reportRealtimeClientLog(
+  level: ClientRealtimeLogLevel,
+  event: string,
+  message: string,
+  details?: unknown
+) {
+  try {
+    await fetch(apiUrl("/api/realtime/tts-call/log"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      keepalive: true,
+      body: JSON.stringify({
+        level,
+        event,
+        message,
+        details,
+      }),
+    });
+  } catch {
+    // noop: logging não pode quebrar playback
+  }
+}
+
 function buildRealtimeReadInstructions(text: string, voiceInstructions: string): string {
   const cleaned = sanitizeSpeechText(text);
   const style = voiceInstructions.trim()
@@ -102,9 +140,47 @@ export function useRealtimeTtsLab(content: string) {
     startedAtRef.current = performance.now();
 
     try {
+      void reportRealtimeClientLog(
+        "info",
+        "settings.applied",
+        "Preferências TTS carregadas para Realtime mini.",
+        {
+          voice: preferences.voice,
+          realtimeVoice: normalizeRealtimeTtsVoice(preferences.voice),
+          model: preferences.model,
+          speed: preferences.speed,
+          mode: preferences.mode,
+          hasInstructions: Boolean(preferences.instructions.trim()),
+          instructionsLength: preferences.instructions.trim().length,
+          appliedToRealtime: {
+            voice: true,
+            instructions: true,
+            speed: false,
+            mode: false,
+            model: false,
+          },
+        }
+      );
+
       const peer = new RTCPeerConnection();
       peerRef.current = peer;
       peer.addTransceiver("audio", { direction: "recvonly" });
+
+      peer.onicecandidateerror = (event) => {
+        console.warn("Realtime ICE candidate error", event);
+        void reportRealtimeClientLog(
+          "warn",
+          "peer.icecandidateerror",
+          "Erro no ICE candidate do Realtime mini.",
+          {
+            errorCode: event.errorCode,
+            errorText: event.errorText,
+            address: event.address,
+            port: event.port,
+            url: event.url,
+          }
+        );
+      };
 
       const audio = document.createElement("audio");
       audio.autoplay = true;
@@ -119,8 +195,12 @@ export function useRealtimeTtsLab(content: string) {
 
         if (!firstAudioSeenRef.current && startedAtRef.current !== null) {
           firstAudioSeenRef.current = true;
-          setFirstAudioMs(
-            Math.round(performance.now() - startedAtRef.current)
+          const latencyMs = Math.round(performance.now() - startedAtRef.current);
+          setFirstAudioMs(latencyMs);
+          void reportRealtimeClientLog(
+            "info",
+            "audio.started",
+            `Primeiro áudio Realtime recebido em ${latencyMs}ms.`
           );
         }
       };
@@ -144,11 +224,44 @@ export function useRealtimeTtsLab(content: string) {
             setStatus("error");
             setError(message);
             toast.error(message);
+            void reportRealtimeClientLog(
+              "error",
+              "audio.playback_failed",
+              message,
+              serializeErrorForLog(playError)
+            );
           });
       };
 
       peer.ontrack = (event) => {
         const stream = event.streams[0];
+        const track = stream.getAudioTracks()[0];
+
+        if (track) {
+          track.onended = () => {
+            void reportRealtimeClientLog(
+              "warn",
+              "track.ended",
+              "Faixa de áudio remota encerrada no Realtime mini."
+            );
+          };
+
+          track.onmute = () => {
+            void reportRealtimeClientLog(
+              "info",
+              "track.muted",
+              "Faixa de áudio remota mutada no Realtime mini."
+            );
+          };
+
+          track.onunmute = () => {
+            void reportRealtimeClientLog(
+              "info",
+              "track.unmuted",
+              "Faixa de áudio remota desmutada no Realtime mini."
+            );
+          };
+        }
 
         void resumeBrowserAudio()
           .then((context) => {
@@ -158,6 +271,14 @@ export function useRealtimeTtsLab(content: string) {
               playRemoteStreamWithElement(stream);
               return;
             }
+
+            // Chromium silencia uma MediaStreamAudioSourceNode vinda de stream
+            // WebRTC remoto se o stream não estiver também atado a um elemento de
+            // mídia. Atamos um <audio> mudo só para destravar o pipeline; o som
+            // sai pelo destination do Web Audio. (Sem isso: sem áudio no desktop.)
+            audio.srcObject = stream;
+            audio.muted = true;
+            void audio.play().catch(() => {});
 
             streamAudioSourceRef.current?.disconnect();
             const source = context.createMediaStreamSource(stream);
@@ -172,24 +293,51 @@ export function useRealtimeTtsLab(content: string) {
       };
 
       peer.onconnectionstatechange = () => {
+        void reportRealtimeClientLog(
+          "info",
+          "peer.connection_state",
+          `Connection state: ${peer.connectionState}`
+        );
+
         if (peer.connectionState === "failed") {
           setStatus("error");
           setError("A conexão WebRTC do Realtime falhou.");
+          void reportRealtimeClientLog(
+            "error",
+            "peer.connection_failed",
+            "A conexão WebRTC do Realtime falhou."
+          );
         }
       };
 
       const channel = peer.createDataChannel("oai-events");
       channelRef.current = channel;
 
+      channel.addEventListener("error", () => {
+        void reportRealtimeClientLog(
+          "error",
+          "channel.error",
+          "Erro no data channel do Realtime mini."
+        );
+      });
+
+      channel.addEventListener("close", () => {
+        void reportRealtimeClientLog(
+          "warn",
+          "channel.close",
+          "Data channel do Realtime mini foi fechado."
+        );
+      });
+
       channel.addEventListener("open", () => {
-        setStatus("ready");
+        setStatus((current) => (current === "speaking" ? current : "ready"));
         channel.send(
           JSON.stringify({
             type: "response.create",
             response: {
               conversation: "none",
               metadata: { source: "gaucho-realtime-tts-lab" },
-              modalities: ["audio"],
+              output_modalities: ["audio"],
               instructions: buildRealtimeReadInstructions(
                 text,
                 preferences.instructions
@@ -200,10 +348,29 @@ export function useRealtimeTtsLab(content: string) {
       });
 
       channel.addEventListener("message", (event) => {
-        const serverEvent = JSON.parse(event.data as string) as {
+        let serverEvent: {
           type?: string;
           error?: { message?: string };
         };
+
+        try {
+          serverEvent = JSON.parse(event.data as string) as {
+            type?: string;
+            error?: { message?: string };
+          };
+        } catch (parseError) {
+          console.error("Realtime event parse error", parseError);
+          void reportRealtimeClientLog(
+            "error",
+            "channel.parse_error",
+            "Falha ao parsear evento do data channel.",
+            {
+              raw: String(event.data).slice(0, 1000),
+              parseError: serializeErrorForLog(parseError),
+            }
+          );
+          return;
+        }
 
         if (serverEvent.type === "response.done") {
           setStatus("completed");
@@ -215,6 +382,9 @@ export function useRealtimeTtsLab(content: string) {
           setStatus("error");
           setError(message);
           toast.error(message);
+          void reportRealtimeClientLog("error", "channel.server_error", message, {
+            serverEvent,
+          });
         }
       });
 
@@ -241,8 +411,22 @@ export function useRealtimeTtsLab(content: string) {
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as {
           error?: string;
+          diagnosticId?: string;
+          openaiRequestId?: string;
+          upstreamStatus?: number;
         } | null;
-        throw new Error(payload?.error || "Falha ao iniciar Realtime TTS.");
+
+        const details = [
+          payload?.error,
+          payload?.diagnosticId ? `diag: ${payload.diagnosticId}` : null,
+          payload?.openaiRequestId ? `openai: ${payload.openaiRequestId}` : null,
+        ]
+          .filter(Boolean)
+          .join(" | ");
+
+        const message = details || "Falha ao iniciar Realtime TTS.";
+        void reportRealtimeClientLog("error", "route.non_ok", message, payload);
+        throw new Error(message);
       }
 
       await peer.setRemoteDescription({
@@ -256,11 +440,20 @@ export function useRealtimeTtsLab(content: string) {
       setStatus("error");
       setError(message);
       toast.error(message);
+      void reportRealtimeClientLog(
+        "error",
+        "start.catch",
+        message,
+        serializeErrorForLog(err)
+      );
     }
   }, [
     cleanup,
     content,
     preferences.instructions,
+    preferences.model,
+    preferences.mode,
+    preferences.speed,
     preferences.voice,
   ]);
 

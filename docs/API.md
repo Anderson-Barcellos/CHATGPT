@@ -1,6 +1,6 @@
 # API
 
-**Última atualização:** 2026-05-31  
+**Última atualização:** 2026-06-04
 **Base URL pública:** `https://ultrassom.ai/chat`  
 **Base path interno:** `NEXT_PUBLIC_BASE_PATH=/chat`
 
@@ -45,7 +45,7 @@ Proxy server-side para a OpenAI `Responses API`, com suporte a SSE streaming.
 | `topP` | number | nenhum | Só enviado se o modelo suportar temperatura |
 | `verbosity` | string | nenhum | Só enviado se o modelo suportar verbosity |
 | `codeInterpreterEnabled` | boolean | `false` | Adiciona `code_interpreter` quando o modelo suporta |
-| `responseMode` | `default`, `document`, `deepsearch_medium`, `deepsearch_high`, `quiz` | `default` | `quiz` usa fluxo forçado sem streaming; `deepsearch_*` usa documento com perfil de pesquisa |
+| `responseMode` | `default`, `document`, `deepsearch_medium`, `deepsearch_high`, `quiz` | `default` | `quiz` usa fluxo forçado sem streaming; `document` e `deepsearch_*` são presets orquestrados pelo app, enquanto a rota só faz enforcement rígido para `quiz` |
 | `stream` | boolean | `true` | Ignorado em `quiz`, que é sempre não-streaming |
 | `reasoning` | object | nenhum | Só usado por modelos de reasoning |
 | `imageQuality` | `low`, `medium`, `high`, `auto` | `high` | Repassado para `image_generation` |
@@ -68,9 +68,9 @@ Em `responseMode="quiz"`, as tools são removidas e o backend força:
 
 Em `responseMode="deepsearch_medium"` e `responseMode="deepsearch_high"`:
 
-- artifact final segue o mesmo fluxo de documento/canvas;
-- modelo é forçado para `gpt-5.4-mini`;
-- reasoning é forçado para `medium` (`deepsearch_medium`) ou `high` (`deepsearch_high`).
+- no shell atual, `hooks/useChat.ts` envia o mesmo fluxo de documento/canvas;
+- no shell atual, `hooks/useChat.ts` envia `model: "gpt-5.4-mini"`;
+- no shell atual, `hooks/useChat.ts` envia reasoning `medium` (`deepsearch_medium`) ou `high` (`deepsearch_high`).
 
 ### Streaming
 
@@ -79,8 +79,16 @@ Resposta streaming usa `Content-Type: text/event-stream`.
 ```text
 data: {"type":"response.output_text.delta","delta":"..."}
 data: {"type":"response.reasoning_summary_text.delta","delta":"..."}
+data: {"type":"response.reasoning_summary_text.done","text":"..."}
 data: [DONE]
 ```
+
+O cliente tambem tolera eventos `response.reasoning_summary_part.added`,
+`response.reasoning_summary_part.done` e `response.reasoning_text.done` para nao
+perder summaries que cheguem apenas como evento final.
+Quando a API retorna `reasoning_tokens` em `response.completed`, mas nao emite
+summary textual, a UI preserva um estado visivel de reasoning aplicado sem
+inventar resumo.
 
 Desconexão do cliente é propagada para a OpenAI via `request.signal`; abortos retornam HTTP `499`.
 
@@ -169,6 +177,48 @@ Atualiza:
 | `POST` | `/api/tts` | Gera áudio `audio/mpeg` com `gpt-4o-mini-tts` |
 | `POST` | `/api/realtime/tts-call` | Cria sessão SDP experimental com `gpt-realtime-mini` |
 | `POST` | `/api/transcribe` | Transcreve áudio com `gpt-4o-transcribe` |
+
+## Google Calendar e Notas Locais
+
+Todas as rotas abaixo são privadas quando `AUTH_ENABLED=true`. O browser nunca recebe `client_secret`, `refresh_token`, `access_token` ou token bruto do Google.
+
+### Integração Google
+
+| Método | Rota | Função |
+|---|---|---|
+| `GET` | `/api/integrations/google/status` | Retorna estado operacional da conexão, sem expor tokens |
+| `GET` | `/api/integrations/google/auth/start` | Inicia OAuth Google com `access_type=offline`, scope `calendar.events` e cookie `state` HttpOnly |
+| `GET` | `/api/integrations/google/auth/callback` | Valida `state`, troca `code` por tokens e persiste token criptografado server-side |
+| `POST` | `/api/integrations/google/disconnect` | Remove o token local da integração |
+
+### Agenda
+
+| Método | Rota | Função |
+|---|---|---|
+| `GET` | `/api/calendar/events` | Lista eventos do Google Calendar conectado |
+| `POST` | `/api/calendar/events/draft` | Cria rascunho local de `create`, `update` ou `cancel`; não chama o Google |
+| `POST` | `/api/calendar/events/draft-from-text` | Transforma linguagem natural em rascunho local `pending`; não chama o Google |
+| `GET` | `/api/calendar/events/drafts` | Lista rascunhos locais, com filtro opcional `status` |
+| `PATCH` | `/api/calendar/events/drafts/[id]` | Edita rascunho local `pending`; não chama o Google |
+| `POST` | `/api/calendar/events/drafts/[id]/discard` | Marca rascunho local `pending` como `discarded`; não chama o Google |
+| `POST` | `/api/calendar/events/confirm` | Confirma rascunho `pending` e só então cria/altera/cancela evento no Google |
+
+`/api/calendar/events/draft-from-text` aceita texto vindo do chat ou STT (`source: "chat" | "stt"`), usa extração server-side com saída JSON e retorna `422` quando faltam campos como título, data ou horário.
+
+`PATCH /api/calendar/events/drafts/[id]` aceita edição de `summary`, `start`, `end`, `durationMinutes`, `location` e `description`. A edição é recusada se o rascunho já foi confirmado, descartado ou falhou.
+
+`/api/calendar/events/confirm` aceita `{ "draftId": "...", "sendUpdates": "none" }`; `sendUpdates` pode ser `none`, `externalOnly` ou `all`.
+
+### Notas Locais
+
+| Método | Rota | Função |
+|---|---|---|
+| `GET` | `/api/workspace-notes` | Lista capturas locais com filtros opcionais `source`, `conversationId`, `calendarEventId` |
+| `POST` | `/api/workspace-notes` | Cria nota local (`manual`, `chat`, `stt` ou `calendar`) |
+| `PUT` | `/api/workspace-notes/[id]` | Atualiza nota local |
+| `DELETE` | `/api/workspace-notes/[id]` | Remove nota local |
+
+Arquivos runtime privados ignorados pelo Git: `data/google-calendar-token.json`, `data/calendar-event-drafts.json` e `data/workspace-notes.json`.
 
 ## Health
 

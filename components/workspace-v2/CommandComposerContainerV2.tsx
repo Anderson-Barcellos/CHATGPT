@@ -112,6 +112,10 @@ export function CommandComposerContainerV2({
   const isDeepsearchMode =
     responseMode === "deepsearch_medium" || responseMode === "deepsearch_high";
   const currentModel = MODELS[parameters.model];
+  const deepsearchModelId =
+    responseMode === "deepsearch_high" ? "gpt-5.4" : "gpt-5.4-mini";
+  const displayModel = isDeepsearchMode ? MODELS[deepsearchModelId] : currentModel;
+  const deepsearchModelLabel = MODELS[deepsearchModelId]?.name ?? deepsearchModelId;
   const currentReasoning = REASONING_OPTIONS.find(
     (option) => option.value === parameters.reasoningEffort
   );
@@ -310,10 +314,10 @@ export function CommandComposerContainerV2({
             size="sm"
             disabled={isLoading || isTranscribing || isDeepsearchMode}
             aria-label="Selecionar modelo"
-            title={isDeepsearchMode ? "Deepsearch usa modelo fixo (GPT-5.4 mini)." : undefined}
+            title={isDeepsearchMode ? `Deepsearch usa modelo fixo (${deepsearchModelLabel}).` : undefined}
             className="h-8 max-w-[7rem] gap-1.5 rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-1.5 text-nano font-medium text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground"
           >
-            <span className="truncate">{currentModel?.name || parameters.model}</span>
+            <span className="truncate">{displayModel?.name || parameters.model}</span>
             <ChevronDown className="size-3.5 shrink-0" />
           </Button>
         </DropdownMenuTrigger>
@@ -346,7 +350,7 @@ export function CommandComposerContainerV2({
       </DropdownMenu>
       {isDeepsearchMode && (
         <TooltipContent>
-          Deepsearch usa modelo fixo (GPT-5.4 mini).
+          Deepsearch usa modelo fixo ({deepsearchModelLabel}).
         </TooltipContent>
       )}
     </Tooltip>

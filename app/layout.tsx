@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { ThemeColorMeta } from "@/components/ui/theme-color-meta";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -21,6 +22,10 @@ export const viewport: Viewport = {
   maximumScale: 5,
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#eef1f4" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0e14" },
+  ],
 };
 
 export const metadata: Metadata = {
@@ -66,6 +71,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
+            <ThemeColorMeta />
             {children}
             <Toaster richColors position="top-right" />
           </ThemeProvider>

@@ -5,9 +5,9 @@
   "customSystemInstructions": "",
   "ttsPreferences": {
     "model": "gpt-4o-mini-tts",
-    "voice": "verse",
-    "speed": 1.2,
-    "instructions": "Falar com sotaque brasileiro gaúcho, de forma fluente, e com fluente entonação ",
+    "voice": "cedar",
+    "speed": 1.15,
+    "instructions": "Fala articulada, com boa cadencia e dicção. Sotaque portugues brasileiro do rio grande do sul.",
     "mode": "balanced"
   }
 }

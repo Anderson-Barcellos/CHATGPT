@@ -3,7 +3,14 @@ import { addRateLimitHeaders, checkRateLimit } from "@/lib/security/rateLimit";
 import { isAuthEnabled, isAuthenticatedRequest } from "@/lib/server/auth";
 
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
-const RATE_LIMITED_PATHS = ["/api/chat", "/api/transcribe", "/api/auth/login"];
+const RATE_LIMITED_PATHS = [
+  "/api/chat",
+  "/api/transcribe",
+  "/api/auth/login",
+  "/api/integrations/google/auth/start",
+  "/api/calendar/events",
+  "/api/workspace-notes",
+];
 const PUBLIC_PATHS = [
   "/login",
   "/api/auth/login",

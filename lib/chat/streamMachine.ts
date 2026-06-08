@@ -34,6 +34,26 @@ export type AssistantStreamEvent =
           output_tokens_details?: { reasoning_tokens?: number };
         };
       };
+    }
+  | {
+      type: "response.reasoning_summary_part.added";
+      part?: { text?: string; type?: string };
+      summary_index?: number;
+    }
+  | {
+      type: "response.reasoning_summary_part.done";
+      part?: { text?: string; type?: string };
+      summary_index?: number;
+    }
+  | {
+      type: "response.reasoning_summary_text.done";
+      text?: string;
+      summary_index?: number;
+    }
+  | {
+      type: "response.reasoning_text.done";
+      text?: string;
+      content_index?: number;
     };
 
 export interface AssistantStreamState {
@@ -79,6 +99,15 @@ function appendCitation(
   }
 
   return [...citations, nextCitation];
+}
+
+function mergeCompletedText(current: string, completed: string | undefined): string {
+  const next = completed?.trim();
+  if (!next) return current;
+  if (!current) return next;
+  if (next.startsWith(current) || current === next) return next;
+  if (current.includes(next)) return current;
+  return `${current}\n\n${next}`;
 }
 
 export function reduceAssistantStreamEvent(
@@ -148,6 +177,31 @@ export function reduceAssistantStreamEvent(
       return {
         ...state,
         reasoningSummary: `${state.reasoningSummary}${event.delta || ""}`,
+        reasoningStatus: "thinking",
+      };
+    case "response.reasoning_summary_text.done":
+      return {
+        ...state,
+        reasoningSummary: mergeCompletedText(state.reasoningSummary, event.text),
+        reasoningStatus: "thinking",
+      };
+    case "response.reasoning_summary_part.added":
+      if (event.part?.type !== "summary_text") return state;
+      return {
+        ...state,
+        reasoningStatus: "thinking",
+      };
+    case "response.reasoning_summary_part.done":
+      if (event.part?.type !== "summary_text") return state;
+      return {
+        ...state,
+        reasoningSummary: mergeCompletedText(state.reasoningSummary, event.part.text),
+        reasoningStatus: "thinking",
+      };
+    case "response.reasoning_text.done":
+      return {
+        ...state,
+        reasoningText: mergeCompletedText(state.reasoningText, event.text),
         reasoningStatus: "thinking",
       };
     case "response.completed":

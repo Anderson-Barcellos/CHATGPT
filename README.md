@@ -1,17 +1,19 @@
-# Celer Chat
+# Gaucho Chat
 
 Chat multimodal pessoal construído com `Next.js 16`, `React 19`, `TypeScript`, `Zustand`, `TanStack Query` e a OpenAI `Responses API`.
 
 O app roda em produção em `https://ultrassom.ai/chat`, atrás do Apache, com `next start` gerenciado pelo `chatgpt.service`.
+Alguns artefatos internos antigos ainda usam o rótulo histórico `Celer`, mas o nome visível do app e do shell atual é `Gaucho Chat`.
 
 ## O que o projeto faz
 
-- Chat com streaming, reasoning, web search, geração de imagens e code interpreter opcional.
+- Chat com streaming, reasoning visível por summary/tokens, web search, geração de imagens e code interpreter opcional.
 - Histórico de conversas com persistência incremental durante streaming e recuperação de respostas interrompidas.
 - Memórias, persona, instruções customizadas e preferências de TTS persistidas server-side.
 - Player TTS nas respostas do assistente com modo turbo e laboratório separado de Realtime mini.
 - Artefatos de documento/quiz com preview, download, impressão e PDF A4 server-side.
 - Auth simples do app por usuário/senha, sessão JWT e cookie `auth-token`.
+- Shell `workspace-v2` com direção clínica clara e densidade mobile compacta por tokens, sem `zoom` ou escala global.
 
 ## Stack
 
@@ -34,7 +36,7 @@ components/
 hooks/
   useChat.ts            Orquestra streaming, persistência e anexos
 lib/
-  chat/                 Reducer de stream e helpers de estado
+  chat/                 Reducer de stream, reasoning e helpers de estado
   models/               Catálogo de modelos
   server/               Auth, limites de body e helpers server-side
   storage/              Persistência JSON e beacon
