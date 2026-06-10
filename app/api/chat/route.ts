@@ -52,7 +52,21 @@ function createOpenAIClient(): OpenAI | null {
   return new OpenAI({ apiKey });
 }
 
+const DEFAULT_CHAT_MODEL = "gpt-5.4-mini";
 const DEFAULT_IMAGE_GENERATION_MODEL = "gpt-image-2";
+const LEGACY_MODEL_FALLBACKS: Record<string, string> = {
+  "gpt-5.1-chat-latest": DEFAULT_CHAT_MODEL,
+  "gpt-5.3-chat-latest": DEFAULT_CHAT_MODEL,
+  "gpt-5.1": DEFAULT_CHAT_MODEL,
+  "gpt-4.1": DEFAULT_CHAT_MODEL,
+  o3: DEFAULT_CHAT_MODEL,
+};
+
+function resolveRequestedModel(model: string | undefined): string {
+  if (!model) return DEFAULT_CHAT_MODEL;
+  if (ALLOWED_MODELS.has(model)) return model;
+  return LEGACY_MODEL_FALLBACKS[model] ?? model;
+}
 
 function buildTools(
   model: string,
@@ -95,7 +109,7 @@ function buildTools(
 function buildRequestParams(body: ChatRequestBody) {
   const {
     input,
-    model = "gpt-5.1-chat-latest",
+    model = DEFAULT_CHAT_MODEL,
     instructions,
     maxOutputTokens,
     temperature,
@@ -108,7 +122,8 @@ function buildRequestParams(body: ChatRequestBody) {
     imageSize,
   } = body;
 
-  const effectiveModel = responseMode === "quiz" ? QUIZ_FORCED_MODEL : model;
+  const effectiveModel =
+    responseMode === "quiz" ? QUIZ_FORCED_MODEL : resolveRequestedModel(model);
   const modelMaxOutput = MODELS[effectiveModel]?.maxOutput;
   const effectiveMaxTokens = maxOutputTokens ?? modelMaxOutput ?? 4096;
   const clampedMaxTokens = modelMaxOutput
@@ -196,11 +211,12 @@ export async function POST(request: NextRequest) {
     const body = parsedBody.value;
     const {
       input,
-      model = "gpt-5.1-chat-latest",
+      model = DEFAULT_CHAT_MODEL,
       stream = true,
       responseMode = "default",
     } = body;
-    const effectiveModel = responseMode === "quiz" ? QUIZ_FORCED_MODEL : model;
+    const effectiveModel =
+      responseMode === "quiz" ? QUIZ_FORCED_MODEL : resolveRequestedModel(model);
 
     if (!input) {
       return jsonError(400, "Input is required", {

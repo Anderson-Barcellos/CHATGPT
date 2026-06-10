@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Script para testar o ChatGPT Clone localmente na porta 3040
+# Script para testar o Gaucho Chat localmente na porta 3040
 
-echo "🧪 Testando ChatGPT Clone na porta 3040 com basePath /chat..."
+echo "🧪 Testando Gaucho Chat na porta 3040 com basePath /chat..."
 echo "=============================================="
 
 # Diretório da aplicação

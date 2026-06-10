@@ -3,7 +3,14 @@ import { addRateLimitHeaders, checkRateLimit } from "@/lib/security/rateLimit";
 import { isAuthEnabled, isAuthenticatedRequest } from "@/lib/server/auth";
 
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
-const RATE_LIMITED_PATHS = ["/api/chat", "/api/transcribe", "/api/auth/login"];
+const RATE_LIMITED_PATHS = [
+  "/api/chat",
+  "/api/transcribe",
+  "/api/auth/login",
+  "/api/integrations/google/auth/start",
+  "/api/calendar/events",
+  "/api/workspace-notes",
+];
 const PUBLIC_PATHS = [
   "/login",
   "/api/auth/login",
@@ -50,12 +57,12 @@ async function applyRateLimit(request: NextRequest, pathname: string) {
     );
 
     addRateLimitHeaders(response.headers, rateLimitResult, pathname);
-    return addSecurityHeaders(response);
+    return finalizeResponse(response);
   }
 
   const response = NextResponse.next();
   addRateLimitHeaders(response.headers, rateLimitResult, pathname);
-  return addSecurityHeaders(response);
+  return finalizeResponse(response);
 }
 
 function buildLoginUrl(request: NextRequest): URL {
@@ -69,8 +76,9 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
     "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https: blob:",
+    "media-src 'self' blob: data:",
     "font-src 'self' data:",
-    "connect-src 'self' https://api.openai.com https://vercel.live",
+    "connect-src 'self' https://api.openai.com https://vercel.live wss:",
     "frame-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
@@ -96,22 +104,19 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
   return response;
 }
 
+function finalizeResponse(response: NextResponse): NextResponse {
+  return addSecurityHeaders(response);
+}
+
 export async function proxy(request: NextRequest) {
   const pathname = stripBasePath(request.nextUrl.pathname);
-
-  if (pathname === "/login" && isAuthEnabled()) {
-    const authenticated = await isAuthenticatedRequest(request);
-    if (authenticated) {
-      return NextResponse.redirect(new URL(`${BASE_PATH}/`, request.url));
-    }
-  }
 
   if (pathname === "/api/auth/login" && shouldRateLimitPath(pathname)) {
     return applyRateLimit(request, pathname);
   }
 
   if (isPublicPath(pathname)) {
-    return addSecurityHeaders(NextResponse.next());
+    return finalizeResponse(NextResponse.next());
   }
 
   if (isAuthEnabled()) {
@@ -119,7 +124,7 @@ export async function proxy(request: NextRequest) {
 
     if (!authenticated) {
       if (pathname.startsWith("/api/")) {
-        return addSecurityHeaders(
+        return finalizeResponse(
           NextResponse.json(
             { error: "Unauthorized", message: "Faça login para continuar." },
             { status: 401 }
@@ -127,7 +132,7 @@ export async function proxy(request: NextRequest) {
         );
       }
 
-      return addSecurityHeaders(NextResponse.redirect(buildLoginUrl(request)));
+      return finalizeResponse(NextResponse.redirect(buildLoginUrl(request)));
     }
   }
 
@@ -135,7 +140,7 @@ export async function proxy(request: NextRequest) {
     return applyRateLimit(request, pathname);
   }
 
-  return addSecurityHeaders(NextResponse.next());
+  return finalizeResponse(NextResponse.next());
 }
 
 export const config = {

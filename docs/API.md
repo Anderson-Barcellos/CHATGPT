@@ -1,32 +1,33 @@
-# API Reference
+# API
 
-**Last updated:** 2026-05-08  
-**Base URL:** `https://ultrassom.ai/chat` (respects `NEXT_PUBLIC_BASE_PATH`)
+**Última atualização:** 2026-06-04
+**Base URL pública:** `https://ultrassom.ai/chat`
+**Base path interno:** `NEXT_PUBLIC_BASE_PATH=/chat`
 
-All endpoints are implemented as Next.js route handlers under `app/api/`.
+Todas as rotas abaixo são implementadas como Route Handlers do Next em `app/api/*`. Quando `AUTH_ENABLED=true`, o `proxy.ts` protege as rotas privadas com cookie JWT `auth-token`.
 
----
+## Chat
 
-## POST /api/chat
+### `POST /api/chat`
 
-Chat completion endpoint with SSE streaming support.
+Proxy server-side para a OpenAI `Responses API`, com suporte a SSE streaming.
 
-**File:** `app/api/chat/route.ts`
-
-### Request (example)
+**Arquivo:** `app/api/chat/route.ts`
 
 ```json
 {
   "input": [
     { "role": "user", "content": "Explique neurite vestibular em tópicos." }
   ],
-  "model": "chat-latest",
+  "model": "gpt-5.4-mini",
   "instructions": "You are a helpful assistant.",
   "maxOutputTokens": 4096,
   "verbosity": "medium",
   "codeInterpreterEnabled": false,
   "responseMode": "default",
   "stream": true,
+  "imageQuality": "high",
+  "imageSize": "auto",
   "reasoning": {
     "effort": "medium",
     "summary": "concise"
@@ -34,148 +35,203 @@ Chat completion endpoint with SSE streaming support.
 }
 ```
 
-### Request fields
+| Campo | Tipo | Padrão | Observação |
+|---|---|---|---|
+| `input` | array | obrigatório | Payload compatível com Responses API |
+| `model` | string | `gpt-5.4-mini` | Precisa existir em `lib/models/modelConfig.ts` com capacidade `chat` ou `reasoning`; modelos removidos conhecidos caem para esse default |
+| `instructions` | string | nenhum | Instruções de sistema |
+| `maxOutputTokens` | number | máximo do modelo | Sempre limitado ao `maxOutput` do modelo |
+| `temperature` | number | nenhum | Só enviado se o modelo suportar temperatura |
+| `topP` | number | nenhum | Só enviado se o modelo suportar temperatura |
+| `verbosity` | string | nenhum | Só enviado se o modelo suportar verbosity |
+| `codeInterpreterEnabled` | boolean | `false` | Adiciona `code_interpreter` quando o modelo suporta |
+| `responseMode` | `default`, `document`, `deepsearch_medium`, `deepsearch_high`, `quiz` | `default` | `quiz` usa fluxo forçado sem streaming; `document` e `deepsearch_*` são presets orquestrados pelo app, enquanto a rota só faz enforcement rígido para `quiz` |
+| `stream` | boolean | `true` | Ignorado em `quiz`, que é sempre não-streaming |
+| `reasoning` | object | nenhum | Só usado por modelos de reasoning |
+| `imageQuality` | `low`, `medium`, `high`, `auto` | `high` | Repassado para `image_generation` |
+| `imageSize` | `1024x1024`, `1024x1536`, `1536x1024`, `auto` | `auto` | Repassado para `image_generation` |
 
-| Field | Type | Default | Notes |
-|-------|------|---------|-------|
-| `input` | array | **required** | OpenAI Responses API input payload |
-| `model` | string | `chat-latest` | Must be an allowed chat/reasoning model from `lib/models/modelConfig.ts` |
-| `instructions` | string | — | System instructions |
-| `maxOutputTokens` | number | model max output | Clamped to selected model max |
-| `temperature` | number | — | Sent only if model supports temperature |
-| `topP` | number | — | Sent only if model supports temperature |
-| `verbosity` | string | — | Sent as `text.verbosity` only for models that support verbosity |
-| `codeInterpreterEnabled` | boolean | `false` | Adds `code_interpreter` tool only when model supports it |
-| `responseMode` | `default \| document \| quiz` | `default` | `quiz` uses forced model/schema path |
-| `stream` | boolean | `true` | Enables SSE stream for non-quiz mode |
-| `reasoning` | object | — | Only sent for reasoning models |
+### Ferramentas injetadas
 
-### Streaming response
+Em modos não-quiz, o backend adiciona por padrão:
 
-`Content-Type: text/event-stream`
+- `image_generation` com `gpt-image-2`, `partial_images: 2`, `output_format: png`.
+- `web_search_preview` com localização aproximada `BR` e contexto `medium`.
+- `code_interpreter` apenas quando `codeInterpreterEnabled=true` e o modelo suporta.
+
+Em `responseMode="quiz"`, as tools são removidas e o backend força:
+
+- modelo `gpt-5.4`;
+- reasoning `high`;
+- schema JSON estrito de quiz;
+- `stream=false`.
+
+Em `responseMode="deepsearch_medium"` e `responseMode="deepsearch_high"`:
+
+- no shell atual, `hooks/useChat.ts` envia o mesmo fluxo de documento/canvas;
+- no shell atual, `hooks/useChat.ts` envia `model: "gpt-5.4-mini"`;
+- no shell atual, `hooks/useChat.ts` envia reasoning `medium` (`deepsearch_medium`) ou `high` (`deepsearch_high`).
+
+### Streaming
+
+Resposta streaming usa `Content-Type: text/event-stream`.
 
 ```text
 data: {"type":"response.output_text.delta","delta":"..."}
 data: {"type":"response.reasoning_summary_text.delta","delta":"..."}
+data: {"type":"response.reasoning_summary_text.done","text":"..."}
 data: [DONE]
 ```
 
-### Non-streaming response
+O cliente tambem tolera eventos `response.reasoning_summary_part.added`,
+`response.reasoning_summary_part.done` e `response.reasoning_text.done` para nao
+perder summaries que cheguem apenas como evento final.
+Quando a API retorna `reasoning_tokens` em `response.completed`, mas nao emite
+summary textual, a UI preserva um estado visivel de reasoning aplicado sem
+inventar resumo.
 
-Returns raw OpenAI response JSON.
+Desconexão do cliente é propagada para a OpenAI via `request.signal`; abortos retornam HTTP `499`.
 
-### Runtime notes
+## Auth
 
-- Request body size is limited to ~10MB (`readJsonWithLimit`).
-- Client disconnects propagate to OpenAI via `signal: request.signal`.
-- Aborted streams return HTTP `499`.
-- `quiz` mode forces:
-  - model: `gpt-5.5`
-  - reasoning effort: `high`
-  - strict JSON schema (`quizResponseSchema`)
+### `GET /api/auth/check`
 
-### Errors
+Retorna se a auth está ligada e se o request atual está autenticado.
 
-| Status | Meaning |
-|--------|---------|
-| 400 | Invalid input/model/payload |
-| 401 | Unauthorized (when auth enabled) |
-| 429 | Rate limited |
-| 499 | Client disconnected (stream aborted) |
-| 500 | Internal/OpenAI error |
+```json
+{
+  "authEnabled": true,
+  "authenticated": false
+}
+```
 
----
+### `POST /api/auth/login`
 
-## Conversations
+Valida credenciais e emite cookie JWT `auth-token`.
 
-### GET /api/conversations
+```json
+{
+  "username": "seu-usuario",
+  "password": "sua-senha"
+}
+```
 
-List conversations.
+O login usa `AUTH_USERNAME`, `AUTH_PASSWORD` e `JWT_SECRET`. O cookie é `HttpOnly`, `SameSite=Lax`, expira em 7 dias e precisa sair com `Path=/chat` em produção.
 
-### POST /api/conversations
+### `POST /api/auth/logout`
 
-Create a conversation (`{ title?: string }`).
+Limpa o cookie de autenticação.
 
-### GET /api/conversations/[id]
+**Arquivos:** `app/api/auth/*`, `lib/server/auth.ts`, `proxy.ts`
 
-Read a single conversation.
+## Conversas
 
-### PUT /api/conversations/[id]
+| Método | Rota | Função |
+|---|---|---|
+| `GET` | `/api/conversations` | Lista conversas |
+| `POST` | `/api/conversations` | Cria conversa |
+| `GET` | `/api/conversations/[id]` | Lê conversa |
+| `PUT` | `/api/conversations/[id]` | Atualiza conversa |
+| `POST` | `/api/conversations/[id]` | Alias de update para `navigator.sendBeacon` |
+| `DELETE` | `/api/conversations/[id]` | Remove conversa |
 
-Update conversation data (`title`, `messages`, and/or `workspace`).
+**Arquivos:** `app/api/conversations/*`, `lib/storage/conversations.ts`
 
-### POST /api/conversations/[id]
+## Memórias
 
-Alias of `PUT` for beacon compatibility (`navigator.sendBeacon` only sends `POST`).
+| Método | Rota | Função |
+|---|---|---|
+| `GET` | `/api/memories` | Lista memórias |
+| `POST` | `/api/memories` | Cria memória |
+| `PUT` | `/api/memories/[id]` | Atualiza memória |
+| `DELETE` | `/api/memories/[id]` | Remove memória |
 
-### DELETE /api/conversations/[id]
-
-Delete conversation.
-
-**Files:** `app/api/conversations/route.ts`, `app/api/conversations/[id]/route.ts`
-
----
-
-## Memories
-
-### GET /api/memories
-
-List memories.
-
-### POST /api/memories
-
-Create memory.
-
-### PUT /api/memories/[id]
-
-Update memory.
-
-### DELETE /api/memories/[id]
-
-Delete memory.
-
-**Files:** `app/api/memories/route.ts`, `app/api/memories/[id]/route.ts`
-
----
+**Arquivos:** `app/api/memories/*`, `lib/storage/memories.ts`
 
 ## Persona
 
-### GET /api/persona
+### `GET /api/persona`
 
-Read persisted custom instructions.
+Lê persona persistida.
 
-### PUT /api/persona
+### `PUT /api/persona` / `POST /api/persona`
 
-Update `contextAboutUser` and `responsePreferences`.
+Atualiza:
 
-**File:** `app/api/persona/route.ts`
+- `contextAboutUser`
+- `responsePreferences`
+- `customSystemInstructions`
+- `ttsPreferences`
 
----
+`POST` é aceito como alias para autosave forte/flush de saída do navegador
+(`sendBeacon`/`keepalive`). `ttsPreferences` persiste `mode`, `voice`,
+`speed` e `instructions` em `data/persona.json`.
 
-## Authentication
+**Arquivo:** `app/api/persona/route.ts`
 
-- `POST /api/auth/login`
-- `POST /api/auth/logout`
-- `GET /api/auth/check`
+## Artefatos, Voz e Transcrição
 
-**Files:** `app/api/auth/*`
+| Método | Rota | Função |
+|---|---|---|
+| `POST` | `/api/artifacts/pdf` | Renderiza artifact de documento como PDF A4 server-side |
+| `POST` | `/api/tts` | Gera áudio `audio/mpeg` com `gpt-4o-mini-tts` |
+| `POST` | `/api/realtime/tts-call` | Cria sessão SDP experimental com `gpt-realtime-mini` |
+| `POST` | `/api/transcribe` | Transcreve áudio com `gpt-4o-transcribe` |
 
----
+## Google Calendar e Notas Locais
 
-## Transcription
+Todas as rotas abaixo são privadas quando `AUTH_ENABLED=true`. O browser nunca recebe `client_secret`, `refresh_token`, `access_token` ou token bruto do Google.
 
-### POST /api/transcribe
+### Integração Google
 
-Audio transcription via `gpt-4o-transcribe`.
+| Método | Rota | Função |
+|---|---|---|
+| `GET` | `/api/integrations/google/status` | Retorna estado operacional da conexão, sem expor tokens |
+| `GET` | `/api/integrations/google/auth/start` | Inicia OAuth Google com `access_type=offline`, scope `calendar.events` e cookie `state` HttpOnly |
+| `GET` | `/api/integrations/google/auth/callback` | Valida `state`, troca `code` por tokens e persiste token criptografado server-side |
+| `POST` | `/api/integrations/google/disconnect` | Remove o token local da integração |
 
-**File:** `app/api/transcribe/route.ts`
+### Agenda
 
----
+| Método | Rota | Função |
+|---|---|---|
+| `GET` | `/api/calendar/events` | Lista eventos do Google Calendar conectado |
+| `POST` | `/api/calendar/events/draft` | Cria rascunho local de `create`, `update` ou `cancel`; não chama o Google |
+| `POST` | `/api/calendar/events/draft-from-text` | Transforma linguagem natural em rascunho local `pending`; não chama o Google |
+| `GET` | `/api/calendar/events/drafts` | Lista rascunhos locais, com filtro opcional `status` |
+| `PATCH` | `/api/calendar/events/drafts/[id]` | Edita rascunho local `pending`; não chama o Google |
+| `POST` | `/api/calendar/events/drafts/[id]/discard` | Marca rascunho local `pending` como `discarded`; não chama o Google |
+| `POST` | `/api/calendar/events/confirm` | Confirma rascunho `pending` e só então cria/altera/cancela evento no Google |
+
+`/api/calendar/events/draft-from-text` aceita texto vindo do chat ou STT (`source: "chat" | "stt"`), usa extração server-side com saída JSON e retorna `422` quando faltam campos como título, data ou horário.
+
+`PATCH /api/calendar/events/drafts/[id]` aceita edição de `summary`, `start`, `end`, `durationMinutes`, `location` e `description`. A edição é recusada se o rascunho já foi confirmado, descartado ou falhou.
+
+`/api/calendar/events/confirm` aceita `{ "draftId": "...", "sendUpdates": "none" }`; `sendUpdates` pode ser `none`, `externalOnly` ou `all`.
+
+### Notas Locais
+
+| Método | Rota | Função |
+|---|---|---|
+| `GET` | `/api/workspace-notes` | Lista capturas locais com filtros opcionais `source`, `conversationId`, `calendarEventId` |
+| `POST` | `/api/workspace-notes` | Cria nota local (`manual`, `chat`, `stt` ou `calendar`) |
+| `PUT` | `/api/workspace-notes/[id]` | Atualiza nota local |
+| `DELETE` | `/api/workspace-notes/[id]` | Remove nota local |
+
+Arquivos runtime privados ignorados pelo Git: `data/google-calendar-token.json`, `data/calendar-event-drafts.json` e `data/workspace-notes.json`.
 
 ## Health
 
-### GET /api/health
+### `GET /api/health`
 
-Operational health check.
+Checa storage local, presença de chave OpenAI e uso de memória. Retorna status `healthy`, `degraded` ou `unhealthy`.
 
-**File:** `app/api/health/route.ts`
+## Erros comuns
+
+| Status | Significado |
+|---|---|
+| `400` | Payload inválido, input ausente ou modelo não permitido |
+| `401` | Auth ligada e request não autenticado |
+| `429` | Rate limit |
+| `499` | Cliente desconectou durante stream |
+| `500` | Erro interno ou erro vindo da OpenAI |

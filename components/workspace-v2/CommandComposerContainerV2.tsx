@@ -109,7 +109,13 @@ export function CommandComposerContainerV2({
 
   const modelList = useMemo(() => getChatModels(), []);
   const hasReasoning = useMemo(() => checkReasoning(parameters.model), [parameters.model]);
+  const isDeepsearchMode =
+    responseMode === "deepsearch_medium" || responseMode === "deepsearch_high";
   const currentModel = MODELS[parameters.model];
+  const deepsearchModelId =
+    responseMode === "deepsearch_high" ? "gpt-5.4" : "gpt-5.4-mini";
+  const displayModel = isDeepsearchMode ? MODELS[deepsearchModelId] : currentModel;
+  const deepsearchModelLabel = MODELS[deepsearchModelId]?.name ?? deepsearchModelId;
   const currentReasoning = REASONING_OPTIONS.find(
     (option) => option.value === parameters.reasoningEffort
   );
@@ -127,6 +133,10 @@ export function CommandComposerContainerV2({
     ? "Gravando teu audio..."
     : responseMode === "document"
     ? "Descreva o documento que tu quer elaborar..."
+    : responseMode === "deepsearch_medium"
+    ? "Descreva o tema da pesquisa (Deepsearch Medium)..."
+    : responseMode === "deepsearch_high"
+    ? "Descreva o tema da pesquisa (Deepsearch High)..."
     : responseMode === "quiz"
     ? `Descreva o assunto do quiz. O modo quiz entrega no minimo ${QUIZ_MIN_QUESTION_COUNT} questoes...`
     : attachments.length > 0
@@ -296,46 +306,54 @@ export function CommandComposerContainerV2({
   }, [isMobile]);
 
   const modelControl = (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={isLoading || isTranscribing}
-          aria-label="Selecionar modelo"
-          className="h-8 max-w-[7rem] gap-1.5 rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-1.5 text-nano font-medium text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground"
-        >
-          <span className="truncate">{currentModel?.name || parameters.model}</span>
-          <ChevronDown className="size-3.5 shrink-0" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64">
-        <DropdownMenuLabel>Modelo</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {modelList.map((model) => (
-          <DropdownMenuItem
-            key={model.id}
-            onClick={() => updateParameters({ model: model.id })}
-            className={cn(
-              "flex flex-col items-start gap-0.5 py-2",
-              parameters.model === model.id && "bg-primary/10 text-foreground"
-            )}
+    <Tooltip>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={isLoading || isTranscribing || isDeepsearchMode}
+            aria-label="Selecionar modelo"
+            title={isDeepsearchMode ? `Deepsearch usa modelo fixo (${deepsearchModelLabel}).` : undefined}
+            className="h-8 max-w-[7rem] gap-1.5 rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-1.5 text-nano font-medium text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground"
           >
-            <div className="flex w-full items-center justify-between gap-2">
-              <span className="text-xs font-medium">{model.name}</span>
-              {model.badge && (
-                <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-nano font-semibold text-primary">
-                  {model.badge}
-                </span>
+            <span className="truncate">{displayModel?.name || parameters.model}</span>
+            <ChevronDown className="size-3.5 shrink-0" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-64">
+          <DropdownMenuLabel>Modelo</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {modelList.map((model) => (
+            <DropdownMenuItem
+              key={model.id}
+              onClick={() => updateParameters({ model: model.id })}
+              className={cn(
+                "flex flex-col items-start gap-0.5 py-2",
+                parameters.model === model.id && "bg-primary/10 text-foreground"
               )}
-            </div>
-            <span className="line-clamp-1 text-nano text-muted-foreground">
-              {model.description}
-            </span>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+            >
+              <div className="flex w-full items-center justify-between gap-2">
+                <span className="text-xs font-medium">{model.name}</span>
+                {model.badge && (
+                  <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-nano font-semibold text-primary">
+                    {model.badge}
+                  </span>
+                )}
+              </div>
+              <span className="line-clamp-1 text-nano text-muted-foreground">
+                {model.description}
+              </span>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {isDeepsearchMode && (
+        <TooltipContent>
+          Deepsearch usa modelo fixo ({deepsearchModelLabel}).
+        </TooltipContent>
+      )}
+    </Tooltip>
   );
 
   const reasoningOpacity = useMemo(() => {
@@ -439,8 +457,8 @@ export function CommandComposerContainerV2({
         onMicrophoneClick={() => {
           void handleMicrophoneClick();
         }}
-        onToggleDocument={() =>
-          setResponseMode(responseMode === "document" ? "default" : "document")
+        onSelectDocumentMode={(mode) =>
+          setResponseMode(responseMode === mode ? "default" : mode)
         }
         onToggleQuiz={() =>
           setResponseMode(responseMode === "quiz" ? "default" : "quiz")
@@ -452,9 +470,16 @@ export function CommandComposerContainerV2({
         onRemoveAttachment={removeFile}
         isDragging={isDragging}
       />
-      {responseMode === "document" && (
+      {(responseMode === "document" ||
+        responseMode === "deepsearch_medium" ||
+        responseMode === "deepsearch_high") && (
         <div className="sr-only">
-          Documento usa o modelo ativo e gera conteúdo pronto para leitura e exportação.
+          Documento e Deepsearch geram conteúdo em formato de documento e retornam no Canvas.
+        </div>
+      )}
+      {isDeepsearchMode && (
+        <div className="sr-only">
+          Em Deepsearch, o seletor de modelo fica bloqueado para preservar o perfil da pesquisa.
         </div>
       )}
       {responseMode === "quiz" && (

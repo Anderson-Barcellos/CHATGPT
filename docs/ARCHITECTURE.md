@@ -1,1 +1,150 @@
-# SEE /docs/architecture
+# Arquitetura
+
+**Última atualização:** 2026-06-04
+
+## Visão Geral
+
+Gaucho Chat é um app Next.js com App Router que roda como BFF local para a OpenAI `Responses API`. O cliente React conversa apenas com rotas do próprio app; essas rotas cuidam de auth, rate limit, persistência local e chamadas server-side para OpenAI.
+
+```text
+Browser/PWA
+  -> Next.js UI em /chat
+  -> proxy.ts: auth, rate limit e headers
+  -> app/api/*: BFF server-side
+  -> OpenAI APIs e JSON store local
+```
+
+## Entrada e Shell
+
+- `app/page.tsx` é a entrada autenticada e renderiza `GauchoChatShellV2`.
+- `components/workspace-v2/*` contém o shell ativo: rail de conversas, canvas central, composer, painel de atividade/notas e preview de artifacts.
+- `components/chat/*` concentra rendering de mensagens, markdown, reasoning, quick actions, TTS e export.
+- `components/settings/*` concentra persona, memórias, tuning e preferências de voz.
+
+O shell legado foi removido. Novas mudanças de UI devem seguir `workspace-v2`, tokens `--gc-*` em `app/globals.css` e os padrões atuais de componentes Radix/lucide.
+
+### Densidade visual mobile
+
+A compactação mobile atual foi implementada como uma passada paralela ao fluxo Codex de refinamentos. Abaixo de `md`, o app usa tokens `--gc-mobile-*` em `app/globals.css` para reduzir em torno de 15% o sistema espacial do shell: frame, header, subheader, composer, área do chat, empty state, painel contextual, rail e settings. A regra é compactar espaçamento, altura, raio e agrupamento; não usar `zoom`, viewport artificial ou `transform: scale()` global, e não escalar tipografia de leitura por viewport.
+
+## Fluxo de Chat
+
+1. O composer chama `useChat`.
+2. `useChat` monta payload com mensagens, anexos, persona, modelo e opções.
+3. `POST /api/chat` valida auth, body e modelo.
+4. A rota chama `openai.responses.create()` com streaming quando aplicável.
+5. Eventos SSE passam pelo reducer em `lib/chat/streamMachine.ts`.
+6. A mensagem do assistente é atualizada incrementalmente e persistida durante o stream.
+
+Detalhes importantes:
+
+- O body do chat é limitado a aproximadamente 10 MB.
+- Desconexões do cliente abortam também a chamada upstream.
+- Respostas interrompidas são preservadas e voltam como `streamStatus="interrupted"`.
+- Anexos persistidos mantêm conteúdo real para reload/edit/resend.
+
+## Reasoning
+
+O reasoning é montado em `lib/chat/reasoningConfig.ts` e usado por `hooks/useChat.ts`.
+Modelos sem capacidade de reasoning, ou effort `none`, não enviam `reasoning` no payload.
+Para efforts ativos (`low`, `medium`, `high`, `xhigh`), o payload preserva a preferência
+`reasoningSummary`; o valor local `off` vira omissão do campo `summary`, pois a API aceita
+apenas `auto`, `concise` e `detailed`.
+
+Na UI, `ReasoningPanel` aparece quando há summary/texto de reasoning ou quando
+`response.completed.usage.output_tokens_details.reasoning_tokens` confirma que houve
+raciocínio sem summary textual. Isso evita esconder reasoning usado e cobrado quando a API
+não emite eventos `reasoning_summary_*`.
+
+Eventos de stream reconhecidos para reasoning:
+
+- `response.reasoning_summary_text.delta`
+- `response.reasoning_summary_text.done`
+- `response.reasoning_summary_part.done`
+- `response.reasoning_text.done`
+
+## Auth e Proxy
+
+`proxy.ts` é o middleware do Next 16. Ele:
+
+- remove o `basePath` antes de comparar rotas;
+- deixa públicos `/login`, `/api/auth/*`, `/api/health`, `_next` e assets;
+- aplica rate limit em `/api/chat`, `/api/transcribe`, `/api/auth/login`, início de OAuth Google, agenda e notas locais;
+- retorna `401` JSON para APIs privadas sem sessão;
+- redireciona páginas privadas para `/login`.
+
+`app/page.tsx` faz uma segunda checagem server-side antes de renderizar o shell.
+
+Auth é controlada por:
+
+- `AUTH_ENABLED`
+- `AUTH_USERNAME`
+- `AUTH_PASSWORD`
+- `JWT_SECRET`
+
+O cookie de sessão é `auth-token`, assinado com JWT HS256, `HttpOnly`, `SameSite=Lax`, TTL de 7 dias e path derivado de `NEXT_PUBLIC_BASE_PATH`.
+
+## Persistência
+
+Persistência server-side simples:
+
+- `data/conversations.json`
+- `data/memories.json`
+- `data/persona.json`
+- `data/calendar-event-drafts.json` (runtime privado, ignorado pelo Git)
+- `data/workspace-notes.json` (runtime privado, ignorado pelo Git)
+- `data/google-calendar-token.json` (runtime privado, criptografado e ignorado pelo Git)
+
+Camadas principais:
+
+- `lib/storage/conversations.ts`: CRUD e beacon para conversas.
+- `lib/storage/memories.ts`: CRUD de memórias.
+- `app/api/persona/route.ts`: persona, instruções customizadas e `ttsPreferences`.
+- `lib/storage/conversationPersistence.ts`: retry/normalização de writes.
+
+O cliente também usa stores Zustand e cache local, mas o estado canônico compartilhável fica no servidor JSON.
+
+## Agenda Google e Notas Locais
+
+A V1 de agenda usa Google Calendar API diretamente no backend Next, sem connector externo e sem expor tokens ao browser.
+
+- OAuth começa em `/api/integrations/google/auth/start` e volta por `/api/integrations/google/auth/callback`.
+- O callback valida cookie `google-oauth-state` HttpOnly antes de trocar `code` por tokens.
+- `lib/google/tokenStore.ts` salva tokens criptografados com AES-256-GCM e exige `GOOGLE_TOKEN_ENCRYPTION_KEY`.
+- `GET /api/calendar/events` lista eventos usando o token conectado.
+- `POST /api/calendar/events/draft` cria apenas rascunho local.
+- `POST /api/calendar/events/draft-from-text` extrai um rascunho local a partir de linguagem natural do chat ou STT.
+- `PATCH /api/calendar/events/drafts/[id]` e `POST /api/calendar/events/drafts/[id]/discard` revisam ou descartam rascunhos locais pendentes sem tocar no Google.
+- `POST /api/calendar/events/confirm` é o único caminho que escreve no Google Calendar.
+
+Notas locais globais ficam em `/api/workspace-notes` e não substituem `workspace.notes` por conversa. A camada local serve para capturas manuais, trechos do chat, STT via `/api/transcribe` e vínculos opcionais com evento/conversa.
+
+## Artifacts e Export
+
+Artifacts são gerados a partir das respostas e exibidos pelo `ArtifactPreviewSheet`.
+
+Fluxos relevantes:
+
+- Documentos e quizzes têm preview e download de fonte.
+- PDF de documento usa `/api/artifacts/pdf` com Playwright/Chrome server-side.
+- Preview HTML no cliente permanece aceito para uso pessoal do app.
+
+## Voz
+
+O TTS padrão usa `/api/tts` com `gpt-4o-mini-tts`.
+
+- Texto é sanitizado e dividido em chunks em `lib/tts/speechText.ts`.
+- `hooks/useAssistantTts.ts` faz cache em memória, fila turbo e controle de playback.
+- `/api/realtime/tts-call` é laboratório separado com `gpt-realtime-mini` via SDP/WebRTC.
+
+## Modelos
+
+O catálogo vive em `lib/models/modelConfig.ts`. O default atual é `gpt-5.4-mini`; modelos removidos conhecidos caem para esse default. `gpt-5.2` inicia com reasoning `medium`, modelos `mini` iniciam com reasoning `none`, `responseMode="quiz"` força `gpt-5.4` com reasoning `high` e schema JSON, e os presets `deepsearch_medium|deepsearch_high` são aplicados hoje pelo `hooks/useChat.ts`, que envia `gpt-5.4-mini` com reasoning `medium|high` mantendo saída em artifact de documento/canvas. A rota server-side não faz enforcement específico de deepsearch. A montagem efetiva do objeto `reasoning` fica em `lib/chat/reasoningConfig.ts`, não no catálogo.
+
+## Regras Quebráveis
+
+- Não trocar `Responses API` por `chat.completions`.
+- Não adicionar rewrite com barra final para `/chat`.
+- Não mudar `NEXT_PUBLIC_BASE_PATH=/chat` sem atualizar Apache, systemd e helpers.
+- Não colocar `artifact.id` na key dos balões; a key estável é `message.id`.
+- Não documentar valores reais de `.env.production` ou `.env.local`.

@@ -25,7 +25,7 @@ import {
 import { withConversationPersistenceRetry } from "@/lib/storage/conversationPersistence";
 import {
   Message,
-  ReasoningSummary,
+  ReasoningEffort,
   ResponseMode,
   SendMessageOptions,
 } from "@/types";
@@ -36,9 +36,9 @@ import { apiUrl } from "@/lib/utils";
 import { buildEditResendOptions } from "@/lib/chat/resendOptions";
 import { buildQuizCompletionPatch } from "@/lib/chat/quizCompletion";
 import { buildAbortedAssistantMessagePatch } from "@/lib/chat/abortCompletion";
+import { buildReasoningConfig } from "@/lib/chat/reasoningConfig";
 import { createThrottle } from "@/lib/performance/throttle";
 import {
-  isReasoningModel,
   modelSupportsCodeInterpreter,
   modelSupportsTemperature,
   modelSupportsVerbosity,
@@ -53,6 +53,8 @@ import {
 } from "@/lib/artifacts/quizArtifacts";
 
 const STREAM_AUTO_SAVE_INTERVAL_MS = 2000;
+const DEEPSEARCH_MEDIUM_MODEL = "gpt-5.4-mini";
+const DEEPSEARCH_HIGH_MODEL = "gpt-5.4";
 
 function normalizeStreamingMessages(messages: Message[]): Message[] {
   return messages.map((message) => {
@@ -73,26 +75,6 @@ function normalizeStreamingMessages(messages: Message[]): Message[] {
       ...reasoningCleanup,
     };
   });
-}
-
-function buildReasoningConfig(
-  model: string,
-  effort: string,
-  summary: ReasoningSummary
-) {
-  if (!isReasoningModel(model)) return undefined;
-
-  const reasoning: Record<string, string> = {};
-
-  if (effort && effort !== "none") {
-    reasoning.effort = effort;
-  }
-
-  if (summary && summary !== "off") {
-    reasoning.summary = summary;
-  }
-
-  return Object.keys(reasoning).length ? reasoning : undefined;
 }
 
 function isClinicalReportRequest(content: string): boolean {
@@ -159,6 +141,24 @@ function appendDocumentModeInstructions(
   }`;
 }
 
+function isDocumentLikeMode(responseMode: ResponseMode): boolean {
+  return (
+    responseMode === "document" ||
+    responseMode === "deepsearch_medium" ||
+    responseMode === "deepsearch_high"
+  );
+}
+
+function resolveDeepsearchReasoningEffort(responseMode: ResponseMode): ReasoningEffort {
+  if (responseMode === "deepsearch_high") return "high";
+  return "medium";
+}
+
+function resolveDeepsearchModel(responseMode: ResponseMode): string {
+  if (responseMode === "deepsearch_high") return DEEPSEARCH_HIGH_MODEL;
+  return DEEPSEARCH_MEDIUM_MODEL;
+}
+
 function appendQuizModeInstructions(systemMessage: string): string {
   const quizInstructions = `## Quiz Mode
 - The user wants a multiple-choice quiz rendered in an interactive canvas.
@@ -175,26 +175,18 @@ function appendQuizModeInstructions(systemMessage: string): string {
 }
 
 function getPreferredDisplayMode(responseMode: ResponseMode) {
-  if (responseMode === "document") return "document" as const;
+  if (isDocumentLikeMode(responseMode)) return "document" as const;
   if (responseMode === "quiz") return "quiz" as const;
   return undefined;
 }
 
-function sanitizeMessagesForStorage(messages: Message[]): Message[] {
-  return messages.map((message) => {
-    if (!message.attachments?.length) return message;
-
-    return {
-      ...message,
-      attachments: message.attachments.map((attachment) => ({
-        ...attachment,
-        dataUrl: undefined,
-        extractedText: attachment.extractedText
-          ? `[${attachment.extractedText.length} chars]`
-          : undefined,
-      })),
-    };
-  });
+function cloneMessagesForStorage(messages: Message[]): Message[] {
+  return messages.map((message) => ({
+    ...message,
+    attachments: message.attachments?.map((attachment) => ({
+      ...attachment,
+    })),
+  }));
 }
 
 async function persistConversationSnapshot(
@@ -202,7 +194,7 @@ async function persistConversationSnapshot(
   queryClient: ReturnType<typeof useQueryClient>
 ) {
   const finalMessages = useChatStore.getState().messages;
-  const messagesForStorage = sanitizeMessagesForStorage(finalMessages);
+  const messagesForStorage = cloneMessagesForStorage(finalMessages);
   const userMessages = finalMessages.filter((message) => message.role === "user");
 
   if (userMessages.length === 1) {
@@ -221,6 +213,19 @@ async function persistConversationSnapshot(
   await queryClient.invalidateQueries({
     queryKey: conversationKeys.detail(conversationId),
   });
+}
+
+async function persistConversationSnapshotSafely(
+  conversationId: string,
+  queryClient: ReturnType<typeof useQueryClient>,
+  errorMessage: string
+) {
+  try {
+    await persistConversationSnapshot(conversationId, queryClient);
+  } catch (saveErr) {
+    console.error("[useChat] Falha ao salvar conversa:", saveErr);
+    toast.error(errorMessage);
+  }
 }
 
 export function useChat() {
@@ -310,7 +315,7 @@ export function useChat() {
             void withConversationPersistenceRetry(() =>
               saveConversationMessages(
                 activeConversationId,
-                sanitizeMessagesForStorage(normalized)
+                cloneMessagesForStorage(normalized)
               )
             ).catch((err) => {
               console.warn(
@@ -352,7 +357,7 @@ export function useChat() {
       const normalized = normalizeStreamingMessages(state.messages);
       saveConversationMessagesViaBeacon(
         state.activeConversationId,
-        sanitizeMessagesForStorage(normalized)
+        cloneMessagesForStorage(normalized)
       );
     };
 
@@ -394,12 +399,21 @@ export function useChat() {
       const input = buildInputFromMessages(useChatStore.getState().messages);
 
       const assistantMessageId = crypto.randomUUID();
-      const requestModel =
-        responseMode === "quiz" ? QUIZ_FORCED_MODEL : parameters.model;
+      const requestModel = responseMode === "quiz"
+        ? QUIZ_FORCED_MODEL
+        : responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
+        ? resolveDeepsearchModel(responseMode)
+        : parameters.model;
       const requestReasoningEffort =
         responseMode === "quiz"
           ? QUIZ_FORCED_REASONING_EFFORT
+          : responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
+          ? resolveDeepsearchReasoningEffort(responseMode)
           : parameters.reasoningEffort;
+      const requestVerbosity =
+        responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
+          ? "high"
+          : parameters.verbosity;
       const reasoning = buildReasoningConfig(
         requestModel,
         requestReasoningEffort,
@@ -421,7 +435,7 @@ export function useChat() {
       let streamState = createInitialAssistantStreamState(usesReasoning);
 
       const throttledAutoSave = createThrottle(() => {
-        const snapshot = sanitizeMessagesForStorage(
+        const snapshot = cloneMessagesForStorage(
           useChatStore.getState().messages
         );
         void saveConversationMessages(activeConversationId, snapshot).catch(
@@ -438,7 +452,7 @@ export function useChat() {
           await withConversationPersistenceRetry(() =>
             saveConversationMessages(
               activeConversationId,
-              sanitizeMessagesForStorage(useChatStore.getState().messages)
+              cloneMessagesForStorage(useChatStore.getState().messages)
             )
           );
         } catch (err) {
@@ -453,7 +467,7 @@ export function useChat() {
           memories
         );
         const systemMessage =
-          responseMode === "document"
+          isDocumentLikeMode(responseMode)
             ? appendDocumentModeInstructions(baseSystemMessage, content)
             : responseMode === "quiz"
             ? appendQuizModeInstructions(baseSystemMessage)
@@ -472,7 +486,7 @@ export function useChat() {
               topP: parameters.topP,
             }),
             ...(modelSupportsVerbosity(requestModel) && {
-              verbosity: parameters.verbosity,
+              verbosity: requestVerbosity,
             }),
             ...(modelSupportsCodeInterpreter(requestModel) && {
               codeInterpreterEnabled: parameters.codeInterpreterEnabled,
@@ -546,7 +560,7 @@ export function useChat() {
             updateMessage(assistantMessageId, patch);
           } else {
             const artifact =
-              responseMode === "document"
+              isDocumentLikeMode(responseMode)
                 ? createMessageArtifact(accumulated, {
                     force: true,
                     displayMode: "document",
@@ -568,12 +582,11 @@ export function useChat() {
           });
         }
 
-        try {
-          await persistConversationSnapshot(activeConversationId, queryClient);
-        } catch (saveErr) {
-          console.error("[useChat] Falha ao salvar conversa:", saveErr);
-          toast.error("Mensagem enviada, mas não foi salva. Tente recarregar.");
-        }
+        await persistConversationSnapshotSafely(
+          activeConversationId,
+          queryClient,
+          "Mensagem enviada, mas não foi salva. Tente recarregar."
+        );
 
         sent = true;
       } catch (err) {
@@ -581,6 +594,12 @@ export function useChat() {
           updateMessage(assistantMessageId, {
             ...buildAbortedAssistantMessagePatch(streamState, usesReasoning),
           });
+
+          await persistConversationSnapshotSafely(
+            activeConversationId,
+            queryClient,
+            "A geração foi interrompida, mas não consegui salvar esse estado."
+          );
 
           sent = true;
         } else {
@@ -599,6 +618,12 @@ export function useChat() {
           updateMessage(assistantMessageId, {
             content: `❌ ${message}`,
           });
+
+          await persistConversationSnapshotSafely(
+            activeConversationId,
+            queryClient,
+            "A mensagem falhou e eu também não consegui persistir esse estado."
+          );
 
           sent = false;
         }
@@ -653,7 +678,7 @@ export function useChat() {
     async (messageId: string) => {
       deleteMessagePair(messageId);
       if (activeConversationId) {
-        const finalMessages = sanitizeMessagesForStorage(useChatStore.getState().messages);
+        const finalMessages = cloneMessagesForStorage(useChatStore.getState().messages);
         try {
           await withConversationPersistenceRetry(() =>
             saveConversationMessages(activeConversationId, finalMessages)

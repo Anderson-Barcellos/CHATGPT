@@ -16,7 +16,9 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AgendaPanelV2 } from "@/components/workspace-v2/AgendaPanelV2";
 import { useNotesContext } from "@/components/workspace-v2/NotesProvider";
+import { WorkspaceCapturesPanelV2 } from "@/components/workspace-v2/WorkspaceCapturesPanelV2";
 import { useConversations } from "@/hooks/useConversations";
 import { conversationKeys } from "@/hooks/queries/useConversationQuery";
 import { withConversationPersistenceRetry } from "@/lib/storage/conversationPersistence";
@@ -209,7 +211,7 @@ function ActivityTimeline({
   const visibleEvents = compact ? events.slice(0, 5) : events;
 
   return (
-    <section className="rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-3">
+    <section className="gc-clinical-card rounded-2xl border border-[color:var(--gc-border)] p-3 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-xs font-semibold text-foreground">{title}</h3>
         <span className="text-nano text-primary">
@@ -243,7 +245,7 @@ function ActivityTimeline({
             return (
               <div
                 key={event.id}
-                className="flex items-start justify-between gap-2 rounded-md border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-2.5 py-2"
+                className="gc-clinical-row flex items-start justify-between gap-2 rounded-xl border border-[color:var(--gc-border-soft)] px-2.5 py-2"
               >
                 <div className="flex min-w-0 items-start gap-2">
                   <span
@@ -268,7 +270,7 @@ function ActivityTimeline({
           })}
         </div>
       ) : (
-        <div className="rounded-md border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-3 py-4 text-micro text-muted-foreground">
+        <div className="rounded-xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-3 py-4 text-micro text-muted-foreground">
           Sem eventos ainda nesta conversa.
         </div>
       )}
@@ -390,7 +392,7 @@ export function ContextPanelV2() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-[color:var(--gc-border-soft)] px-3 py-3 xl:hidden">
+      <div className="gc-clinical-section-header flex items-center justify-between border-b border-[color:var(--gc-border)] px-[var(--gc-mobile-context-header-x)] py-[var(--gc-mobile-context-header-y)] xl:hidden">
         <div className="min-w-0">
           <h2 className="truncate text-sm font-semibold">Painel operacional</h2>
           <p className="text-nano uppercase tracking-label text-muted-foreground">
@@ -414,7 +416,7 @@ export function ContextPanelV2() {
         onValueChange={(v) => setActivePanelTab(v as ActivePanelTab)}
         className="flex min-h-0 flex-1 flex-col"
       >
-        <div className="border-b border-[color:var(--gc-border-soft)] px-3 py-2">
+        <div className="gc-clinical-section-header border-b border-[color:var(--gc-border)] px-[var(--gc-mobile-context-header-x)] py-[var(--gc-mobile-context-header-y)]">
           <div className="mb-2 flex items-center justify-between gap-2">
             <div className="min-w-0">
               <h2 className="truncate text-sm font-semibold">Workspace</h2>
@@ -423,21 +425,24 @@ export function ContextPanelV2() {
               </p>
             </div>
           </div>
-          <TabsList className="w-full rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-1">
-            <TabsTrigger value="activity" className="h-7 rounded-md text-xs">
+          <TabsList className="w-full rounded-xl border border-[color:var(--gc-border)] bg-[var(--gc-surface-panel-strong)] p-1">
+            <TabsTrigger value="activity" className="h-8 rounded-lg text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               Atividade
             </TabsTrigger>
-            <TabsTrigger value="notes" className="h-7 rounded-md text-xs">
+            <TabsTrigger value="notes" className="h-8 rounded-lg text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               Notas
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="h-8 rounded-lg text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              Agenda
             </TabsTrigger>
           </TabsList>
         </div>
 
         <TabsContent value="activity" className="mt-0 min-h-0 flex-1 overflow-hidden">
           <ScrollArea className="h-full">
-            <div className="space-y-3 p-3">
+            <div className="space-y-[var(--gc-mobile-panel-content-gap)] p-[var(--gc-mobile-panel-content-pad)]">
               <ActivityTimeline title="Linha do tempo da conversa" events={activityEvents} />
-              <section className="rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-3">
+              <section className="gc-clinical-card rounded-2xl border border-[color:var(--gc-border)] p-3 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
                 <h3 className="mb-2 text-xs font-semibold text-foreground">
                   Resumo da execução
                 </h3>
@@ -459,8 +464,8 @@ export function ContextPanelV2() {
 
         <TabsContent value="notes" className="mt-0 min-h-0 flex-1 overflow-hidden">
           <ScrollArea className="h-full">
-            <div className="space-y-3 p-3">
-              <section className="rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-3">
+            <div className="space-y-[var(--gc-mobile-panel-content-gap)] p-[var(--gc-mobile-panel-content-pad)]">
+              <section className="gc-clinical-card rounded-2xl border border-[color:var(--gc-border)] p-3 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
                 <div className="mb-2 flex items-center justify-between">
                   <h3 className="text-xs font-semibold text-foreground">Notas da rodada</h3>
                   <span className="text-nano text-muted-foreground">
@@ -538,11 +543,20 @@ export function ContextPanelV2() {
                 </div>
               </section>
 
-              <section className="rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-3 text-micro text-muted-foreground">
+              <section className="rounded-2xl border border-[color:var(--gc-border)] bg-[var(--gc-surface-panel-strong)] p-3 text-micro text-muted-foreground shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
                 Essas notas ficam vinculadas ao <span className="text-foreground">ID da conversa</span> e são carregadas automaticamente quando tu reabre o mesmo thread.
               </section>
+
+              <WorkspaceCapturesPanelV2
+                context="notes"
+                conversationId={activeConversationId}
+              />
             </div>
           </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="calendar" className="mt-0 min-h-0 flex-1 overflow-hidden">
+          <AgendaPanelV2 />
         </TabsContent>
       </Tabs>
     </div>

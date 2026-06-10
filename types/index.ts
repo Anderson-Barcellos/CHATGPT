@@ -1,6 +1,11 @@
 export type MessageRole = "user" | "assistant";
 export type AppMode = "chat" | "image";
-export type ResponseMode = "default" | "document" | "quiz";
+export type ResponseMode =
+  | "default"
+  | "document"
+  | "deepsearch_medium"
+  | "deepsearch_high"
+  | "quiz";
 export type MessageStreamStatus =
   | "streaming"
   | "completed"
@@ -152,7 +157,7 @@ export interface SerializedConversation {
   updatedAt: string;
 }
 
-export type ActivePanelTab = "activity" | "notes";
+export type ActivePanelTab = "activity" | "notes" | "calendar";
 
 export interface CanvasOverlayState {
   x: number;
@@ -192,7 +197,18 @@ export interface CustomInstructions {
   contextAboutUser: string;
   responsePreferences: string;
   customSystemInstructions?: string;
+  ttsPreferences?: TtsPreferences;
 }
+
+export interface TtsPreferences {
+  model: "gpt-4o-mini-tts";
+  voice: string;
+  speed: number;
+  instructions: string;
+  mode: TtsMode;
+}
+
+export type TtsMode = "balanced" | "turbo";
 
 export type MemoryCategory =
   | "personal"
@@ -235,8 +251,6 @@ export type ModelCapability =
   | "image-generation";
 
 export type ModelFamily =
-  | "gpt-4.1"
-  | "o-series"
   | "gpt-4o"
   | "gpt-5"
   | "dall-e"

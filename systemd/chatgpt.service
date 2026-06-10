@@ -14,7 +14,7 @@ Environment="NEXT_PUBLIC_APP_URL=https://ultrassom.ai/chat"
 EnvironmentFile=/root/CHATGPT/.env.production
 ExecStartPre=/bin/bash -c '/usr/bin/fuser -k 3040/tcp 2>/dev/null; sleep 1; exit 0'
 ExecStart=/usr/bin/npm start
-Restart=on-failure
+Restart=always
 RestartSec=15
 StartLimitInterval=120
 StartLimitBurst=5

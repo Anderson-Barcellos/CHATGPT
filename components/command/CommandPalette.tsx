@@ -6,6 +6,7 @@ import {
   Activity,
   Bot,
   Brain,
+  CalendarDays,
   Check,
   FilePen,
   HelpCircle,
@@ -32,7 +33,8 @@ const REASONING_LEVELS: { label: string; value: ReasoningEffort; hint: string }[
 
 const RESPONSE_MODES = [
   { label: "Modo Chat", value: "default", icon: MessageSquare },
-  { label: "Modo Documento", value: "document", icon: FilePen },
+  { label: "Deepsearch Medium", value: "deepsearch_medium", icon: FilePen },
+  { label: "Deepsearch High", value: "deepsearch_high", icon: FilePen },
   { label: "Modo Quiz", value: "quiz", icon: HelpCircle },
 ] as const;
 
@@ -163,6 +165,14 @@ export function CommandPalette() {
               >
                 <StickyNote className="size-4 shrink-0 text-muted-foreground" />
                 <span className="flex-1">Ver Notas</span>
+              </Command.Item>
+              <Command.Item
+                value="painel agenda calendario google eventos rascunhos"
+                onSelect={() => run(() => setActivePanelTab("calendar"))}
+                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm aria-selected:bg-accent"
+              >
+                <CalendarDays className="size-4 shrink-0 text-muted-foreground" />
+                <span className="flex-1">Ver Agenda</span>
               </Command.Item>
             </Command.Group>
 

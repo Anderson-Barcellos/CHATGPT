@@ -28,6 +28,10 @@ interface ReasoningThinkingContentInput {
   full: string;
 }
 
+interface ReasoningCompletedContentInput extends ReasoningThinkingContentInput {
+  reasoningTokens?: number;
+}
+
 export function getNextReasoningPanelOpenState({
   currentOpen,
   isThinking,
@@ -44,6 +48,19 @@ export function getReasoningThinkingContent({
 }: ReasoningThinkingContentInput): string {
   if (full.length > 0) return full;
   return summary;
+}
+
+export function getReasoningCompletedContent({
+  summary,
+  full,
+  reasoningTokens,
+}: ReasoningCompletedContentInput): string {
+  if (summary.length > 0) return summary;
+  if (full.length > 0) return full;
+  if (reasoningTokens && reasoningTokens > 0) {
+    return `Raciocínio aplicado (${reasoningTokens.toLocaleString("pt-BR")} tokens), mas a API não emitiu um resumo textual nesta resposta.`;
+  }
+  return "";
 }
 
 function getStatusLabel(status?: ReasoningStatus) {
@@ -64,10 +81,14 @@ export function ReasoningPanel({ message }: ReasoningPanelProps) {
   const hasSummary = summary.length > 0;
   const hasFull = full.length > 0;
   const isThinking = message.reasoningStatus === "thinking";
-  const hasReasoning = hasSummary || hasFull || isThinking;
   const statusLabel = getStatusLabel(message.reasoningStatus);
   const thinkingContent = getReasoningThinkingContent({ summary, full });
-  const completedContent = hasSummary ? summary : full;
+  const completedContent = getReasoningCompletedContent({
+    summary,
+    full,
+    reasoningTokens: message.reasoningTokens,
+  });
+  const hasReasoning = hasSummary || hasFull || completedContent.length > 0 || isThinking;
   const [isOpen, setIsOpen] = useState(isThinking);
   const previousThinkingRef = useRef(isThinking);
 

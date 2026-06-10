@@ -2,7 +2,7 @@
 
 ################################################################################
 # Pre-Deployment Checks Script
-# 
+#
 # Runs various checks before deploying to production:
 # - Environment validation
 # - Type checking
@@ -126,10 +126,10 @@ print_header "Environment Validation"
 # Check if .env.local exists (for local testing)
 if [ -f ".env.local" ]; then
   print_success ".env.local found"
-  
+
   # Check for required environment variables
   REQUIRED_VARS=("OPENAI_API_KEY")
-  
+
   for var in "${REQUIRED_VARS[@]}"; do
     if grep -q "^${var}=" .env.local; then
       value=$(grep "^${var}=" .env.local | cut -d= -f2)
@@ -161,7 +161,7 @@ print_header "TypeScript Type Checking"
 
 if [ -f "tsconfig.json" ]; then
   print_info "Running TypeScript compiler..."
-  
+
   if npx tsc --noEmit; then
     print_success "No type errors found"
   else
@@ -179,7 +179,7 @@ print_header "ESLint Checks"
 
 if [ -f "package.json" ] && grep -q "\"lint\"" package.json; then
   print_info "Running ESLint..."
-  
+
   if npm run lint; then
     print_success "No linting errors"
   else
@@ -190,29 +190,47 @@ else
 fi
 
 ################################################################################
+# Test Suite
+################################################################################
+
+print_header "Test Suite"
+
+if [ -f "package.json" ] && grep -q "\"test\"" package.json; then
+  print_info "Running tests..."
+
+  if npm test; then
+    print_success "Tests passed"
+  else
+    print_error "Test suite failed"
+  fi
+else
+  print_warning "Test script not found in package.json"
+fi
+
+################################################################################
 # Build Verification
 ################################################################################
 
 if [ "$SKIP_BUILD" = false ]; then
   print_header "Build Verification"
-  
+
   print_info "Running production build..."
-  
+
   # Clean previous build
   if [ -d ".next" ]; then
     print_info "Cleaning previous build..."
     rm -rf .next
   fi
-  
+
   # Run build
   if npm run build; then
     print_success "Build completed successfully"
-    
+
     # Check build output
     if [ -d ".next" ]; then
       BUILD_SIZE=$(du -sh .next | cut -f1)
       print_info "Build size: $BUILD_SIZE"
-      
+
       # Check for build warnings
       if [ -f ".next/build-manifest.json" ]; then
         print_success "Build manifest generated"
@@ -237,10 +255,10 @@ if [ -f ".next/build-manifest.json" ] || [ "$SKIP_BUILD" = true ]; then
   if [ "$SKIP_BUILD" = false ]; then
     # Check for large chunks
     print_info "Analyzing bundle size..."
-    
+
     # Find large JavaScript files (> 500KB)
     LARGE_FILES=$(find .next/static -name "*.js" -size +500k 2>/dev/null || true)
-    
+
     if [ -z "$LARGE_FILES" ]; then
       print_success "No excessively large bundles found"
     else
@@ -250,7 +268,7 @@ if [ -f ".next/build-manifest.json" ] || [ "$SKIP_BUILD" = true ]; then
         echo "  - $file ($size)"
       done
     fi
-    
+
     # Total static file size
     if [ -d ".next/static" ]; then
       TOTAL_STATIC_SIZE=$(du -sh .next/static | cut -f1)
@@ -319,11 +337,11 @@ if [ -d ".git" ]; then
   else
     print_success "Working directory is clean"
   fi
-  
+
   # Show current branch
   CURRENT_BRANCH=$(git branch --show-current)
   print_info "Current branch: $CURRENT_BRANCH"
-  
+
   # Warn if deploying from non-main branch
   if [ "$CURRENT_BRANCH" != "main" ] && [ "$CURRENT_BRANCH" != "master" ]; then
     print_warning "You are not on the main/master branch"

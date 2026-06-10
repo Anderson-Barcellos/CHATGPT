@@ -22,6 +22,16 @@ export function isAuthEnabled(): boolean {
   return process.env.AUTH_ENABLED === "true";
 }
 
+export function getAuthUsername(): string {
+  const username = process.env.AUTH_USERNAME?.trim();
+
+  if (!username) {
+    throw new Error("AUTH_USERNAME must be configured when AUTH_ENABLED=true.");
+  }
+
+  return username;
+}
+
 export function getAuthPassword(): string {
   const password = process.env.AUTH_PASSWORD?.trim();
 

@@ -40,7 +40,7 @@ Este `CLAUDE.md` complementa — não substitui — outros docs vivos do repo:
 - **`AGENTS.md`** — estado atual do produto, últimas rodadas e pontos de atenção. Sempre conferir antes de mudar UX/markdown/streaming.
 - **`README.md`** — highlights de produto, endpoints e estrutura de pastas.
 - **`docs/INFRASTRUCTURE.md`** — Apache reverse proxy, systemd, deploy, env vars.
-- **`docs/MODELS.md`**, **`docs/API.md`**, **`docs/COMPONENTS.md`** — referências específicas.
+- **`docs/API.md`**, **`docs/ARCHITECTURE.md`**, **`docs/MODELS.md`** — referências específicas.
 
 Se você for tocar em UX/UI ou markdown rendering, leia também a seção *"Lembrete explicito"* em `AGENTS.md`.
 
@@ -68,8 +68,8 @@ Tests rodam no environment `node` (ver `vitest.config.ts`); o alias `@/*` aponta
 ### Service em produção
 
 ```bash
-sudo systemctl restart chatgpt        # NUNCA usar `nohup npx next start`
-sudo journalctl -u chatgpt -f         # tail de logs
+sudo systemctl restart chatgpt.service  # NUNCA usar `nohup npx next start`
+sudo journalctl -u chatgpt.service -f   # tail de logs
 sudo fuser -k -9 3040/tcp             # se porta travar
 ```
 
@@ -85,17 +85,24 @@ Logs em `/var/log/chatgpt/{app,error}.log`. Service unit canônico em `systemd/c
 
 Next 16 renomeou `middleware.ts` → `proxy.ts`. **Não há `middleware.ts` no repo.** O arquivo `proxy.ts` na raiz exporta `proxy()` + `config.matcher` e roda em todas as rotas não-estáticas, encadeando três responsabilidades num pipeline único:
 
-1. **Auth gate** (se `AUTH_ENABLED=true`): valida cookie JWT `auth-token` via `lib/server/auth.ts`. Rotas em `PUBLIC_PATHS` passam direto. Rotas `/api/*` retornam 401 JSON; demais redirecionam para `/login`.
-2. **Rate limit**: paths em `RATE_LIMITED_PATHS` (`/api/chat`, `/api/transcribe`, `/api/auth/login`) passam por `lib/security/rateLimit.ts`. Login é rate-limited mesmo sendo público.
+1. **Auth gate** (se `AUTH_ENABLED=true`): valida cookie JWT `auth-token` via `lib/server/auth.ts`. Login usa `AUTH_USERNAME` + `AUTH_PASSWORD`. Rotas em `PUBLIC_PATHS` passam direto. Rotas `/api/*` retornam 401 JSON; demais redirecionam para `/login`.
+2. **Rate limit**: paths em `RATE_LIMITED_PATHS` (`/api/chat`, `/api/transcribe`, `/api/auth/login`, `/api/integrations/google/auth/start`, `/api/calendar/events`, `/api/workspace-notes`) passam por `lib/security/rateLimit.ts`. Login e o início do OAuth Google são rate-limited mesmo sendo públicos.
 3. **Security headers**: CSP, HSTS, X-Frame-Options DENY etc. — aplicados em todas as respostas.
 
-Auth tem **dupla checagem**: além do proxy, `app/page.tsx` faz server-side guard via `verifyAuthToken` antes de renderizar. Mexer em auth exige atualizar os dois pontos.
+Auth tem **dupla checagem**: além do proxy, `app/page.tsx` faz server-side guard via `verifyAuthToken` antes de renderizar. Mexer em auth exige atualizar os dois pontos. Em produção, o cookie precisa sair com `Path=/chat`, sem barra final; `Path=/chat/` reabre o loop mobile entre `/chat` e `/chat/login`.
 
 ### 2. OpenAI Responses API (não completions)
 
 `app/api/chat/route.ts` usa `openai.responses.create()` — não `chat.completions`. Eventos SSE são serializados manualmente como `data: ${JSON.stringify(event)}\n\n`, terminando com `data: [DONE]\n\n`. O cliente consome via `extractSsePayloads` + reducer em `lib/chat/streamMachine.ts`.
 
 Não trocar para completions — o painel de reasoning, citações de web search e o fluxo de artefatos dependem dos eventos tipados da Responses API.
+
+Reasoning tem contrato próprio: `lib/chat/reasoningConfig.ts` decide se envia `reasoning`
+e protege `summary=off` omitindo o campo. `streamMachine` deve continuar aceitando
+`response.reasoning_summary_text.delta`, `response.reasoning_summary_text.done`,
+`response.reasoning_summary_part.done` e `response.reasoning_text.done`. Se a API não
+emitir summary textual, `ReasoningPanel` ainda usa `reasoning_tokens` em
+`response.completed` para mostrar que o raciocínio foi aplicado.
 
 ### 3. Quiz é caso especial — preservar branches
 
@@ -112,7 +119,12 @@ Qualquer refactor em `buildRequestParams` ou `buildTools` precisa manter esses o
 
 `lib/models/modelConfig.ts` define `MODELS` + helpers (`isReasoningModel`, `modelSupportsTemperature`, `modelSupportsVerbosity`, `modelSupportsCodeInterpreter`). O gate `ALLOWED_MODELS` na rota é derivado daí (apenas modelos com capability `chat` ou `reasoning`).
 
-Adicionar modelo novo → editar `MODELS`, conferir que o `ChatComposer`/`ModelSelector` o exibe e que helpers retornam o flag correto. Modelo padrão atual: `gpt-5.3-chat-latest`.
+Adicionar modelo novo → editar `MODELS`, conferir que o `ChatComposer`/`ModelSelector` o exibe e que helpers retornam o flag correto. Modelo padrão atual: `gpt-5.4-mini`.
+
+Os modos `deepsearch_medium` e `deepsearch_high` reaproveitam o pipeline de documento/canvas, com modelo forçado para `gpt-5.4-mini` e reasoning `medium`/`high`, respectivamente.
+
+Não remontar reasoning manualmente em componentes: o caminho suportado é
+`settingsStore` → `buildReasoningConfig` → `/api/chat` → `streamMachine` → `ReasoningPanel`.
 
 ### 5. `useChat.ts` é o orquestrador-mãe
 
@@ -122,7 +134,7 @@ Hook único que conecta:
 - TanStack Query (`hooks/queries/`) — cache de conversations
 - `streamMachine` — reducer de eventos SSE
 - `lib/openai/buildInput` + `contextBuilder` — montagem do payload (custom instructions + memories + persona)
-- `lib/storage/conversations` (server) + Dexie (client) com retry em `conversationPersistence.ts`
+- `lib/storage/conversations` (server) com retry em `conversationPersistence.ts`
 
 Mudanças em fluxo de envio/persistência devem ser pensadas em `useChat.ts` antes de mexer em componentes.
 
@@ -133,10 +145,11 @@ Mudanças em fluxo de envio/persistência devem ser pensadas em `useChat.ts` ant
 
 O shell legado (`components/layout/*`, `components/sidebar/*`, `components/chat/InputArea.tsx`, `components/artifacts/ArtifactPanel.tsx`, `hooks/useSwipeGesture.ts`, `lib/layout/panels.ts`) foi removido na Sprint 0. Tag de retorno `pre-redesign-s0` em `9d36822` se precisar voltar.
 
-### 7. Storage dual: server JSON + client Dexie
+### 7. Storage server-side em JSON
 
 - **Server**: `data/conversations.json`, `data/memories.json`, `data/persona.json` — JSON files lidos/escritos por `lib/storage/conversations.ts` e `lib/storage/memories.ts`. Endpoints `/api/conversations`, `/api/memories`, `/api/persona` operam sobre eles.
-- **Client**: Dexie IndexedDB em `lib/storage/db.ts` (database `GauchoChatDB`, version 2). `useConversations`/`useMemories` hooks consomem tanto o servidor quanto o cache local.
+- **Agenda/Notas locais**: `data/google-calendar-token.json`, `data/calendar-event-drafts.json` e `data/workspace-notes.json` são runtime privado e ignorados pelo Git. O token Google é criptografado em `lib/google/tokenStore.ts` e exige `GOOGLE_TOKEN_ENCRYPTION_KEY`.
+- **Client**: `useConversations` usa TanStack Query (`hooks/queries/useConversationQuery.ts`) para cache/invalidacao das conversas; `useMemories` faz bootstrap em store Zustand a partir da API/storage server-side.
 - **Persistência com retry**: `lib/storage/conversationPersistence.ts` envolve writes server-side com `withConversationPersistenceRetry`.
 - **Persistência incremental durante streaming**: `useChat.ts` faz flush síncrono antes do fetch, auto-save throttled a cada 2 s, e beacon no unload via `saveConversationMessagesViaBeacon` (`lib/storage/conversations.ts`). Na carga, mensagens com `streamStatus === "streaming"` são normalizadas para `"interrupted"`. `/api/conversations/[id]` aceita POST além de PUT (necessário para `navigator.sendBeacon`).
 
@@ -146,9 +159,21 @@ O shell legado (`components/layout/*`, `components/sidebar/*`, `components/chat/
 
 Apache vhost canônico: `/etc/apache2/sites-enabled/ultrassom.ai-optimized.conf`. Config local: `apache-config/chat.conf`.
 
+Para `/chat`, a regra crítica de cookie no Apache é `ProxyPassReverseCookiePath / /chat`. Não trocar para `/chat/`.
+
 ### 9. Tools default-on (exceto quiz)
 
 `buildTools` em `/api/chat/route.ts` adiciona por padrão `image_generation` + `web_search_preview` (country `BR`, `search_context_size: medium`). `code_interpreter` é opt-in via `codeInterpreterEnabled` + capability do modelo.
+
+### 9b. Agenda Google e notas locais
+
+Rotas server-side novas:
+
+- `/api/integrations/google/status|auth/start|auth/callback|disconnect`
+- `/api/calendar/events`, `/api/calendar/events/draft`, `/api/calendar/events/draft-from-text`, `/api/calendar/events/drafts`, `/api/calendar/events/confirm`
+- `/api/workspace-notes`, `/api/workspace-notes/[id]`
+
+Regra central: `draft` e `draft-from-text` nunca escrevem no Google. Somente `confirm` chama Calendar API e apenas para draft `pending`. Google Keep segue fora da V1.
 
 ### 10. Streaming buffer estável por `message.id`
 
@@ -160,12 +185,13 @@ Se o usuário recarregar a página durante o stream, a mensagem parcial é prese
 
 - **Tokens `--gc-*`** em `app/globals.css` — substitui `--v2-*`/`--app-*`/`--glass-*`. Breakpoints: `md=768`, `lg=1024 (sidebar)`, `xl=1280 (painel contextual)`.
 - **`components/motion/`** — `FadeIn`, `SlideIn`, `Pop`, `Drawer` encapsulam framer-motion com tokens `--gc-duration-*`.
-- **`CanvasOverlayV2`** — overlay flutuante draggable/resizable em `components/workspace-v2/canvas/`. Mobile = Sheet full-screen.
+- **`ArtifactPreviewSheet`** — preview principal de artefatos acionado pelo chat canvas, com print/PDF/download para documentos e quizzes.
 - **`CommandPalette` + `CommandPaletteProvider`** — cmd+k via `cmdk`. Z-index 300 (acima do canvas 150).
 - **`NotesProvider`** — Context em `components/workspace-v2/NotesProvider.tsx`. `appendToNotes` lança toast se painel não montado.
 - **`SelectionToolbar`** + `useTextSelection` — toolbar Notion-like ao selecionar texto em balões.
 - **`ExportDropdown`** — consome `useExport` internamente; slot `exportControl` em `WorkspaceFrameV2`.
 - **`getReasoningLabel`** em `lib/models/modelConfig.ts` — chips do header conectados ao estado real.
+- **Densidade mobile `--gc-mobile-*`** em `app/globals.css` — implementação paralela ao fluxo Codex que compacta o shell mobile em cerca de 15% por tokens de espaçamento/altura/radius. Não usar `zoom`, viewport fake ou `transform: scale()` global; ajustar primeiro os tokens.
 
 ## Convenções específicas do repo
 
@@ -179,6 +205,7 @@ Se o usuário recarregar a página durante o stream, a mensagem parcial é prese
 ## Anti-patterns conhecidos
 
 - Tentar adicionar trailing-slash rewrite a `/chat` no Apache → loop de redirect com basePath do Next.
+- Trocar o cookie path para `/chat/` → login funciona em `/chat/login`, mas `/chat` fica sem cookie e entra em loop no mobile.
 - Usar `chat.completions` em vez de `responses.create` → quebra reasoning/citations/artifacts.
 - Subir o app com `nohup npx next start` em vez de systemd → `ExecStartPre` do unit faz `fuser -k 3040/tcp` antes de subir, então duas instâncias se atropelam.
 - Esquecer do `AUTH_ENABLED` ao testar local: com flag `false` o proxy passa direto e `app/page.tsx` não redireciona.

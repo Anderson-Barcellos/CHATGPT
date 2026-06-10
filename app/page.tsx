@@ -17,7 +17,7 @@ export default async function Home() {
     const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
 
     if (!token || !(await verifyAuthToken(token))) {
-      redirect(`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/login`);
+      redirect("/login");
     }
   }
 

@@ -33,10 +33,15 @@ jobs:
       - name: ESLint
         run: npm run lint
 
+      - name: Run tests
+        run: npm test
+
       - name: Build check
         run: npm run build
         env:
           OPENAI_API_KEY: dummy-key-for-build
+          NEXT_PUBLIC_BASE_PATH: /chat
+          NEXT_PUBLIC_APP_URL: https://ultrassom.ai/chat
 
       - name: Check for secrets
         run: |
@@ -91,6 +96,7 @@ jobs:
               
               - ✅ TypeScript check passed
               - ✅ ESLint passed
+              - ✅ Tests passed
               - ✅ Build successful
               - ✅ No hardcoded secrets
               

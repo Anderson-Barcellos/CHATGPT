@@ -4,9 +4,21 @@ import { useState, useEffect } from "react";
 import { GPTLogo } from "@/components/ui/gpt-logo";
 import { FadeIn } from "@/components/motion";
 import { cn } from "@/lib/utils";
+import { SPLASH_THEME_COLOR } from "@/components/ui/theme-color-meta";
 
 export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState<"logo" | "brand" | "shrink" | "done">("logo");
+
+  useEffect(() => {
+    const meta = document.querySelector<HTMLMetaElement>(
+      'meta[name="theme-color"][data-dynamic="true"]',
+    );
+    const previous = meta?.getAttribute("content") ?? null;
+    meta?.setAttribute("content", SPLASH_THEME_COLOR);
+    return () => {
+      if (meta && previous !== null) meta.setAttribute("content", previous);
+    };
+  }, []);
 
   useEffect(() => {
     const t1 = setTimeout(() => setPhase("brand"), 800);

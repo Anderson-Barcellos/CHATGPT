@@ -22,7 +22,7 @@ export function ChatCanvasV2({
   const { artifactOpen, activeArtifact, closeArtifact } = useUIStore();
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0)_32%)]">
+    <div className="gc-clinical-canvas relative flex h-full min-h-0 flex-col">
       <ChatContainer
         messages={messages}
         isLoading={isLoading}

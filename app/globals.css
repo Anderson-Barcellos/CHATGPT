@@ -83,9 +83,51 @@ body {
 }
 
 :root {
-  --radius: 0.85rem;
+  --radius: 0.72rem;
   --font-geist-sans: "Space Grotesk", "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-geist-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* ── Responsive mobile density contract ────────────── */
+  --gc-mobile-frame-pad: 0.25rem;
+  --gc-mobile-shell-radius: 1.25rem;
+  --gc-mobile-header-height: 3rem;
+  --gc-mobile-header-x: 0.625rem;
+  --gc-mobile-subheader-height: 2rem;
+  --gc-mobile-subheader-x: 0.625rem;
+  --gc-mobile-subheader-y: 0.25rem;
+  --gc-mobile-composer-footer-x: 0.5rem;
+  --gc-mobile-composer-footer-top: 0.5rem;
+  --gc-mobile-composer-footer-bottom: 0.35rem;
+  --gc-mobile-composer-radius: 0.9rem;
+  --gc-mobile-textarea-min-height: 42px;
+  --gc-mobile-textarea-max-height: 180px;
+  --gc-mobile-textarea-px: 0.625rem;
+  --gc-mobile-textarea-pt: 0.75rem;
+  --gc-mobile-textarea-pb: 0.375rem;
+  --gc-mobile-textarea-font-size: 13px;
+  --gc-mobile-control-height: 1.85rem;
+  --gc-mobile-control-font-size: 10px;
+  --gc-mobile-send-font-size: 11px;
+  --gc-mobile-icon-button-size: 2.25rem;
+  --gc-mobile-chat-content-gap: 1rem;
+  --gc-mobile-chat-content-x: 0.75rem;
+  --gc-mobile-chat-content-y: 1rem;
+  --gc-mobile-welcome-outer-x: 0.5rem;
+  --gc-mobile-welcome-outer-y: 0.75rem;
+  --gc-mobile-welcome-panel-radius: 1.45rem;
+  --gc-mobile-welcome-panel-x: 0.75rem;
+  --gc-mobile-welcome-panel-y: 0.875rem;
+  --gc-mobile-welcome-grid-gap: 1rem;
+  --gc-mobile-welcome-title-size: 1.95rem;
+  --gc-mobile-welcome-suggestion-min-height: 7.4rem;
+  --gc-mobile-welcome-suggestion-gap: 0.5rem;
+  --gc-mobile-welcome-suggestion-pad: 0.75rem;
+  --gc-mobile-context-header-x: 0.75rem;
+  --gc-mobile-context-header-y: 0.75rem;
+  --gc-mobile-panel-content-pad: 0.75rem;
+  --gc-mobile-panel-content-gap: 0.75rem;
+  --gc-mobile-settings-card-pad: 1rem;
+  --gc-mobile-settings-section-gap: 1.25rem;
 
   /* ── Typography ─────────────────────────────────────── */
   --gc-text-nano: 0.625rem;
@@ -123,24 +165,24 @@ body {
     radial-gradient(ellipse at 50% 38%, oklch(0.42 0.08 212) 0%, oklch(0.28 0.05 224) 52%, oklch(0.15 0.03 232) 100%);
 
   /* ── Shadcn tokens ──────────────────────────────────── */
-  --background: oklch(0.972 0.007 222);
-  --foreground: oklch(0.165 0.030 232);
-  --card: oklch(0.991 0.004 222);
+  --background: oklch(0.988 0.004 218);
+  --foreground: oklch(0.150 0.026 232);
+  --card: oklch(0.997 0.002 218);
   --card-foreground: oklch(0.165 0.030 232);
   --popover: oklch(0.993 0.004 222);
   --popover-foreground: oklch(0.165 0.030 232);
-  --primary: oklch(0.48 0.120 218);
+  --primary: oklch(0.48 0.105 190);
   --primary-foreground: oklch(0.988 0.004 222);
   --secondary: oklch(0.922 0.010 218);
   --secondary-foreground: oklch(0.235 0.032 232);
-  --muted: oklch(0.925 0.009 220);
-  --muted-foreground: oklch(0.405 0.030 228);
-  --accent: oklch(0.655 0.096 194);
+  --muted: oklch(0.940 0.006 218);
+  --muted-foreground: oklch(0.430 0.025 226);
+  --accent: oklch(0.630 0.090 184);
   --accent-foreground: oklch(0.115 0.026 232);
   --destructive: oklch(0.60 0.20 25);
-  --border: oklch(0.805 0.018 220);
-  --input: oklch(0.870 0.014 220);
-  --ring: oklch(0.56 0.112 210);
+  --border: oklch(0.840 0.014 218);
+  --input: oklch(0.895 0.010 218);
+  --ring: oklch(0.55 0.095 190);
   --chart-1: oklch(0.54 0.12 214);
   --chart-2: oklch(0.61 0.10 190);
   --chart-3: oklch(0.47 0.10 235);
@@ -157,16 +199,15 @@ body {
 
   /* ── Page background ────────────────────────────────── */
   --gc-bg-page:
-    radial-gradient(circle at 17% 14%, oklch(0.80 0.055 205 / 0.42), transparent 34%),
-    radial-gradient(circle at 84% 18%, oklch(0.88 0.035 188 / 0.34), transparent 32%),
-    radial-gradient(circle at 38% 88%, oklch(0.78 0.042 230 / 0.28), transparent 30%),
-    linear-gradient(145deg, oklch(0.982 0.005 220) 0%, oklch(0.940 0.011 214) 46%, oklch(0.962 0.007 226) 100%);
+    radial-gradient(circle at 13% 8%, oklch(0.86 0.040 190 / 0.48), transparent 33%),
+    radial-gradient(circle at 89% 14%, oklch(0.90 0.030 210 / 0.42), transparent 34%),
+    linear-gradient(145deg, oklch(0.984 0.010 210) 0%, oklch(0.935 0.015 212) 56%, oklch(0.973 0.010 220) 100%);
 
   /* ── Brand ──────────────────────────────────────────── */
-  --gc-brand-cyan: oklch(0.66 0.096 198);
-  --gc-brand-blue: oklch(0.50 0.120 218);
-  --gc-brand-indigo: oklch(0.42 0.080 234);
-  --gc-brand-sky: oklch(0.78 0.056 202);
+  --gc-brand-cyan: oklch(0.62 0.090 188);
+  --gc-brand-blue: oklch(0.50 0.092 202);
+  --gc-brand-indigo: oklch(0.36 0.058 226);
+  --gc-brand-sky: oklch(0.82 0.036 198);
   --gc-brand-success: oklch(0.58 0.105 168);
   --gc-brand-warning: oklch(0.70 0.125 78);
   --gc-brand-danger: oklch(0.60 0.190 25);
@@ -174,46 +215,109 @@ body {
   --gc-brand-focus: var(--ring);
 
   /* ── Surface ────────────────────────────────────────── */
-  --gc-bg: oklch(0.944 0.013 220);
-  --gc-surface-shell: oklch(0.990 0.004 222 / 0.93);
-  --gc-surface-panel: oklch(0.974 0.006 220 / 0.95);
-  --gc-surface-panel-strong: oklch(0.996 0.003 222 / 0.98);
-  --gc-surface-composer: oklch(0.993 0.004 222 / 0.985);
-  --gc-surface-control: oklch(0.955 0.009 220 / 0.82);
-  --gc-surface-control-hover: oklch(0.910 0.020 210 / 0.92);
-  --gc-surface-canvas: oklch(0.994 0.004 222 / 0.94);
-  --gc-surface-canvas-soft: oklch(0.957 0.010 220 / 0.76);
+  --gc-bg: oklch(0.947 0.014 212);
+  --gc-surface-shell: oklch(0.995 0.004 214 / 0.97);
+  --gc-surface-panel: oklch(0.968 0.010 212 / 0.96);
+  --gc-surface-panel-strong: oklch(0.999 0.002 214 / 0.99);
+  --gc-surface-composer: oklch(0.999 0.002 218 / 0.992);
+  --gc-surface-control: oklch(0.942 0.014 210 / 0.90);
+  --gc-surface-control-hover: oklch(0.902 0.030 194 / 0.96);
+  --gc-surface-canvas: oklch(0.999 0.002 218 / 0.96);
+  --gc-surface-canvas-soft: oklch(0.940 0.012 212 / 0.86);
   --gc-overlay-gradient:
-    radial-gradient(ellipse at 18% 0%, oklch(0.72 0.090 205 / 0.22), transparent 35%),
-    radial-gradient(ellipse at 82% 12%, oklch(0.78 0.050 185 / 0.18), transparent 36%),
-    linear-gradient(135deg, oklch(0.980 0.005 222 / 0.94), oklch(0.934 0.013 214) 52%, oklch(0.958 0.008 228));
+    linear-gradient(90deg, oklch(0.42 0.095 190 / 0.18), transparent 16%, transparent 84%, oklch(0.56 0.060 205 / 0.12)),
+    radial-gradient(ellipse at 18% 0%, oklch(0.74 0.065 190 / 0.18), transparent 36%),
+    radial-gradient(ellipse at 82% 12%, oklch(0.83 0.042 178 / 0.16), transparent 36%),
+    linear-gradient(135deg, oklch(0.998 0.002 218 / 0.94), oklch(0.946 0.012 214) 62%, oklch(0.982 0.006 224));
   --gc-ambient-aura:
-    radial-gradient(ellipse 42% 34% at 12% 8%, oklch(0.66 0.095 205 / 0.18), transparent 68%),
-    radial-gradient(ellipse 38% 30% at 86% 18%, oklch(0.73 0.065 180 / 0.14), transparent 70%),
-    radial-gradient(ellipse 44% 32% at 44% 92%, oklch(0.55 0.075 226 / 0.12), transparent 72%);
+    radial-gradient(ellipse 42% 34% at 12% 8%, oklch(0.62 0.080 192 / 0.16), transparent 68%),
+    radial-gradient(ellipse 38% 30% at 86% 18%, oklch(0.78 0.050 180 / 0.13), transparent 70%);
   --gc-ambient-mesh:
-    linear-gradient(120deg, oklch(1 0 0 / 0.30), transparent 36%, oklch(0.82 0.035 210 / 0.16)),
-    radial-gradient(circle at 50% 50%, transparent 0 42%, oklch(0.35 0.035 228 / 0.055) 100%);
+    linear-gradient(120deg, oklch(1 0 0 / 0.38), transparent 44%, oklch(0.78 0.035 202 / 0.16)),
+    repeating-linear-gradient(90deg, oklch(0.38 0.040 210 / 0.030) 0 1px, transparent 1px 34px),
+    repeating-linear-gradient(0deg, oklch(0.38 0.040 210 / 0.026) 0 1px, transparent 1px 34px),
+    radial-gradient(circle at 50% 50%, transparent 0 50%, oklch(0.30 0.030 228 / 0.045) 100%);
 
   /* ── Border ─────────────────────────────────────────── */
-  --gc-border: oklch(0.59 0.034 220 / 0.28);
-  --gc-border-soft: oklch(0.59 0.034 220 / 0.18);
+  --gc-border: oklch(0.52 0.030 214 / 0.30);
+  --gc-border-soft: oklch(0.54 0.030 214 / 0.18);
 
   /* ── Bubbles ─────────────────────────────────────────── */
   --gc-bubble-user:
-    linear-gradient(138deg, oklch(0.55 0.115 204), oklch(0.45 0.125 220) 58%, oklch(0.53 0.090 188));
+    linear-gradient(138deg, oklch(0.52 0.098 190), oklch(0.43 0.092 204) 64%, oklch(0.50 0.075 176));
   --gc-bubble-user-fg: oklch(0.988 0.004 222);
   --gc-bubble-user-border: oklch(0.58 0.10 205 / 0.30);
-  --gc-bubble-user-shadow: 0 18px 46px oklch(0.40 0.10 214 / 0.18);
-  --gc-bubble-assistant: oklch(0.998 0.003 222 / 0.88);
-  --gc-bubble-assistant-border: oklch(0.56 0.030 222 / 0.22);
-  --gc-bubble-assistant-shadow: 0 18px 48px oklch(0.23 0.035 222 / 0.10);
+  --gc-bubble-user-shadow: 0 14px 34px oklch(0.35 0.08 202 / 0.14);
+  --gc-bubble-assistant:
+    linear-gradient(180deg, oklch(1 0.001 218 / 0.99), oklch(0.986 0.006 214 / 0.98));
+  --gc-bubble-assistant-border: oklch(0.50 0.030 214 / 0.24);
+  --gc-bubble-assistant-shadow: 0 16px 44px oklch(0.18 0.030 222 / 0.10);
 
   /* ── Glass ──────────────────────────────────────────── */
-  --gc-glass-bg: oklch(0.974 0.007 220 / 0.76);
-  --gc-glass-bg-strong: oklch(0.990 0.005 220 / 0.88);
-  --gc-glass-border: oklch(0.52 0.035 220 / 0.24);
+  --gc-glass-bg: oklch(0.988 0.004 218 / 0.82);
+  --gc-glass-bg-strong: oklch(0.998 0.002 218 / 0.92);
+  --gc-glass-border: oklch(0.52 0.026 218 / 0.18);
   --gc-glass-highlight: oklch(1 0 0 / 0.68);
+
+  /* ── Clinical shell surfaces ───────────────────────── */
+  --gc-clinical-shell-bg:
+    linear-gradient(180deg, oklch(1 0 0 / 0.90), oklch(0.962 0.010 212 / 0.94)),
+    var(--gc-surface-shell);
+  --gc-clinical-shell-shadow:
+    0 28px 80px oklch(0.18 0.035 220 / 0.22),
+    0 0 0 1px oklch(0.54 0.050 190 / 0.10) inset;
+  --gc-clinical-panel-bg:
+    linear-gradient(180deg, oklch(1 0 0 / 0.86), oklch(0.955 0.013 212 / 0.96)),
+    var(--gc-surface-panel);
+  --gc-clinical-header-bg:
+    linear-gradient(180deg, oklch(1 0 0 / 0.96), oklch(0.968 0.009 212 / 0.96)),
+    var(--gc-surface-panel-strong);
+  --gc-clinical-header-shadow: 0 1px 0 oklch(0.47 0.090 188 / 0.12) inset;
+  --gc-clinical-canvas-bg:
+    linear-gradient(90deg, oklch(0.48 0.050 190 / 0.045) 0 1px, transparent 1px 100%),
+    linear-gradient(180deg, oklch(1 0 0 / 0.97), oklch(0.955 0.010 212 / 0.84) 72%, oklch(0.990 0.004 218 / 0.94));
+  --gc-clinical-composer-bg:
+    linear-gradient(180deg, oklch(1 0 0 / 0.99), oklch(0.982 0.010 208 / 0.98)),
+    var(--gc-surface-composer);
+  --gc-clinical-composer-border: oklch(0.48 0.080 188 / 0.36);
+  --gc-clinical-composer-shadow:
+    0 18px 52px oklch(0.20 0.035 220 / 0.16),
+    0 0 0 1px oklch(0.72 0.060 184 / 0.18) inset;
+  --gc-clinical-subheader-bg:
+    linear-gradient(90deg, rgba(15, 118, 110, 0.06), rgba(255, 255, 255, 0.72) 36%, rgba(14, 165, 233, 0.05));
+  --gc-clinical-section-header-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(240, 249, 250, 0.58));
+  --gc-clinical-card-bg: var(--gc-surface-panel-strong);
+  --gc-clinical-card-shadow: 0 1px 0 rgba(255, 255, 255, 0.72) inset;
+  --gc-clinical-row-bg:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(240, 249, 250, 0.66));
+  --gc-clinical-active-bg:
+    linear-gradient(135deg, rgba(15, 118, 110, 0.15), rgba(255, 255, 255, 0.78));
+  --gc-clinical-active-shadow: 0 10px 24px rgba(15, 118, 110, 0.10);
+  --gc-clinical-input-shadow: 0 1px 0 rgba(255, 255, 255, 0.72) inset;
+
+  /* ── Refined secondary surfaces ───────────────────── */
+  --gc-refined-panel-bg:
+    linear-gradient(180deg, oklch(1 0 0 / 0.94), oklch(0.970 0.010 212 / 0.96));
+  --gc-refined-panel-border: oklch(0.52 0.034 212 / 0.18);
+  --gc-refined-panel-shadow:
+    0 26px 72px oklch(0.16 0.028 224 / 0.14),
+    0 1px 0 oklch(1 0 0 / 0.80) inset;
+  --gc-refined-soft-bg:
+    linear-gradient(180deg, oklch(0.994 0.003 218 / 0.98), oklch(0.958 0.012 212 / 0.92));
+  --gc-refined-soft-border: oklch(0.52 0.034 212 / 0.16);
+  --gc-refined-accent-bg:
+    linear-gradient(135deg, oklch(0.92 0.040 194 / 0.92), oklch(1 0 0 / 0.94));
+  --gc-refined-accent-border: oklch(0.58 0.072 190 / 0.18);
+  --gc-refined-citation-bg:
+    linear-gradient(180deg, oklch(0.996 0.004 218 / 0.98), oklch(0.965 0.011 212 / 0.94));
+  --gc-refined-citation-border: oklch(0.48 0.040 210 / 0.16);
+  --gc-refined-action-bg:
+    linear-gradient(180deg, oklch(0.996 0.004 218 / 0.98), oklch(0.972 0.010 212 / 0.95));
+  --gc-refined-action-border: oklch(0.50 0.036 212 / 0.18);
+  --gc-refined-chip-bg: oklch(0.986 0.007 214 / 0.96);
+  --gc-refined-chip-border: oklch(0.52 0.032 214 / 0.14);
+  --gc-refined-chip-text: oklch(0.36 0.030 220);
 }
 
 .dark {
@@ -300,6 +404,67 @@ body {
   --gc-glass-bg-strong: oklch(0.195 0.025 232 / 0.86);
   --gc-glass-border: oklch(0.82 0.020 220 / 0.14);
   --gc-glass-highlight: oklch(0.78 0.075 198 / 0.10);
+
+  /* ── Clinical shell surfaces ───────────────────────── */
+  --gc-clinical-shell-bg:
+    linear-gradient(180deg, oklch(0.180 0.024 232 / 0.94), oklch(0.132 0.020 232 / 0.96)),
+    var(--gc-surface-shell);
+  --gc-clinical-shell-shadow:
+    0 24px 72px oklch(0.020 0.014 236 / 0.42),
+    0 0 0 1px oklch(0.74 0.105 200 / 0.08) inset;
+  --gc-clinical-panel-bg:
+    linear-gradient(180deg, oklch(0.196 0.024 232 / 0.96), oklch(0.150 0.021 232 / 0.98)),
+    var(--gc-surface-panel);
+  --gc-clinical-header-bg:
+    linear-gradient(180deg, oklch(0.188 0.024 232 / 0.97), oklch(0.142 0.020 232 / 0.98)),
+    var(--gc-surface-panel-strong);
+  --gc-clinical-header-shadow: 0 1px 0 oklch(0.74 0.105 200 / 0.10) inset;
+  --gc-clinical-canvas-bg:
+    linear-gradient(90deg, oklch(0.74 0.105 200 / 0.08) 0 1px, transparent 1px 100%),
+    linear-gradient(180deg, oklch(0.176 0.024 232 / 0.96), oklch(0.128 0.020 232 / 0.94) 72%, oklch(0.108 0.018 236 / 0.98));
+  --gc-clinical-composer-bg:
+    linear-gradient(180deg, oklch(0.196 0.024 232 / 0.98), oklch(0.160 0.021 232 / 0.99)),
+    var(--gc-surface-composer);
+  --gc-clinical-composer-border: oklch(0.74 0.105 200 / 0.20);
+  --gc-clinical-composer-shadow:
+    0 18px 52px oklch(0.020 0.014 236 / 0.34),
+    0 0 0 1px oklch(0.74 0.105 200 / 0.10) inset;
+  --gc-clinical-subheader-bg:
+    linear-gradient(90deg, oklch(0.74 0.105 200 / 0.14), oklch(0.156 0.021 232 / 0.88) 36%, oklch(0.68 0.090 188 / 0.10));
+  --gc-clinical-section-header-bg:
+    linear-gradient(180deg, oklch(0.188 0.024 232 / 0.97), oklch(0.146 0.020 232 / 0.98));
+  --gc-clinical-card-bg:
+    linear-gradient(180deg, oklch(0.205 0.024 232 / 0.96), oklch(0.156 0.021 232 / 0.98));
+  --gc-clinical-card-shadow: 0 1px 0 oklch(0.74 0.105 200 / 0.06) inset;
+  --gc-clinical-row-bg:
+    linear-gradient(135deg, oklch(0.214 0.025 232 / 0.94), oklch(0.164 0.021 232 / 0.96));
+  --gc-clinical-active-bg:
+    linear-gradient(135deg, oklch(0.74 0.105 200 / 0.18), oklch(0.188 0.024 232 / 0.94));
+  --gc-clinical-active-shadow: 0 10px 24px oklch(0.74 0.105 200 / 0.12);
+  --gc-clinical-input-shadow: 0 1px 0 oklch(0.74 0.105 200 / 0.06) inset;
+
+  /* ── Refined secondary surfaces ───────────────────── */
+  --gc-refined-panel-bg:
+    linear-gradient(180deg, oklch(0.196 0.024 232 / 0.96), oklch(0.150 0.021 232 / 0.98));
+  --gc-refined-panel-border: oklch(0.84 0.020 220 / 0.12);
+  --gc-refined-panel-shadow:
+    0 24px 68px oklch(0.020 0.014 236 / 0.38),
+    0 1px 0 oklch(0.74 0.105 200 / 0.06) inset;
+  --gc-refined-soft-bg:
+    linear-gradient(180deg, oklch(0.186 0.023 232 / 0.96), oklch(0.150 0.021 232 / 0.94));
+  --gc-refined-soft-border: oklch(0.84 0.020 220 / 0.11);
+  --gc-refined-accent-bg:
+    linear-gradient(135deg, oklch(0.28 0.046 206 / 0.94), oklch(0.176 0.022 232 / 0.98));
+  --gc-refined-accent-border: oklch(0.74 0.105 200 / 0.16);
+  --gc-refined-citation-bg:
+    linear-gradient(180deg, oklch(0.186 0.023 232 / 0.98), oklch(0.156 0.021 232 / 0.96));
+  --gc-refined-citation-border: oklch(0.80 0.020 220 / 0.12);
+  --gc-refined-action-bg:
+    linear-gradient(180deg, oklch(0.188 0.023 232 / 0.98), oklch(0.160 0.021 232 / 0.96));
+  --gc-refined-action-border: oklch(0.80 0.020 220 / 0.13);
+  --gc-refined-chip-bg: oklch(0.218 0.024 232 / 0.92);
+  --gc-refined-chip-border: oklch(0.78 0.020 220 / 0.11);
+  --gc-refined-chip-text: oklch(0.88 0.012 220);
 }
 
 @layer base {
@@ -327,16 +492,177 @@ body {
 }
 
 .gc-assistant-bubble {
+  position: relative;
   background: var(--gc-bubble-assistant);
   border-color: var(--gc-bubble-assistant-border);
   box-shadow: var(--gc-bubble-assistant-shadow);
   backdrop-filter: blur(18px);
 }
 
+.gc-assistant-bubble::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--primary), oklch(0.72 0.085 176));
+  opacity: 0.72;
+}
+
 .gc-canvas-surface {
   background: var(--gc-surface-canvas);
   border-color: var(--gc-border-soft);
-  box-shadow: 0 22px 70px oklch(0.08 0.02 232 / 0.16);
+  box-shadow: 0 18px 56px oklch(0.08 0.02 232 / 0.10);
+}
+
+.gc-clinical-shell {
+  background: var(--gc-clinical-shell-bg);
+  box-shadow: var(--gc-clinical-shell-shadow);
+}
+
+.gc-clinical-rail,
+.gc-clinical-panel {
+  background: var(--gc-clinical-panel-bg);
+}
+
+.gc-clinical-rail:not([data-slot="sheet-content"]),
+.gc-clinical-panel:not([data-slot="sheet-content"]) {
+  position: relative;
+}
+
+.gc-clinical-rail::before,
+.gc-clinical-panel::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 3px;
+  background: linear-gradient(180deg, oklch(0.47 0.110 188), oklch(0.78 0.055 178));
+  opacity: 0.90;
+}
+
+.gc-clinical-panel::before {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+  opacity: 0.62;
+}
+
+.gc-clinical-header {
+  position: relative;
+  background: var(--gc-clinical-header-bg);
+  box-shadow: var(--gc-clinical-header-shadow);
+}
+
+.gc-clinical-canvas {
+  background: var(--gc-clinical-canvas-bg);
+  background-size: 100% 100%, 100% 100%;
+}
+
+.gc-clinical-composer {
+  background: var(--gc-clinical-composer-bg);
+  border-color: var(--gc-clinical-composer-border);
+  box-shadow: var(--gc-clinical-composer-shadow);
+}
+
+.gc-clinical-subheader {
+  background: var(--gc-clinical-subheader-bg);
+}
+
+.gc-clinical-section-header {
+  background: var(--gc-clinical-section-header-bg);
+}
+
+.gc-clinical-card {
+  background: var(--gc-clinical-card-bg);
+  box-shadow: var(--gc-clinical-card-shadow);
+}
+
+.gc-clinical-row {
+  background: var(--gc-clinical-row-bg);
+}
+
+.gc-clinical-input-surface {
+  background: var(--gc-surface-panel-strong);
+  box-shadow: var(--gc-clinical-input-shadow);
+}
+
+.gc-refined-panel {
+  background: var(--gc-refined-panel-bg);
+  border-color: var(--gc-refined-panel-border);
+  box-shadow: var(--gc-refined-panel-shadow);
+}
+
+.gc-refined-soft-surface {
+  background: var(--gc-refined-soft-bg);
+  border-color: var(--gc-refined-soft-border);
+}
+
+.gc-refined-accent-surface {
+  background: var(--gc-refined-accent-bg);
+  border-color: var(--gc-refined-accent-border);
+}
+
+.gc-refined-citation-surface {
+  background: var(--gc-refined-citation-bg);
+  border-color: var(--gc-refined-citation-border);
+  box-shadow: 0 1px 0 oklch(1 0 0 / 0.42) inset;
+}
+
+.gc-refined-action-surface {
+  background: var(--gc-refined-action-bg);
+  border-color: var(--gc-refined-action-border);
+  box-shadow: 0 1px 0 oklch(1 0 0 / 0.34) inset;
+}
+
+.gc-refined-chip {
+  background: var(--gc-refined-chip-bg);
+  border-color: var(--gc-refined-chip-border);
+  color: var(--gc-refined-chip-text);
+}
+
+.gc-login-panel {
+  position: relative;
+  overflow: hidden;
+  background: var(--gc-refined-panel-bg);
+  border-color: var(--gc-refined-panel-border);
+  box-shadow: var(--gc-refined-panel-shadow);
+}
+
+.gc-login-panel::before {
+  content: "";
+  position: absolute;
+  inset: -18% auto auto 52%;
+  width: 20rem;
+  height: 20rem;
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle, oklch(0.78 0.050 188 / 0.26) 0%, transparent 66%);
+  filter: blur(18px);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.gc-login-panel::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background:
+    radial-gradient(circle at 82% 12%, oklch(0.86 0.040 192 / 0.22), transparent 22%),
+    linear-gradient(135deg, transparent 0%, transparent 58%, oklch(0.64 0.045 194 / 0.08) 100%);
+  pointer-events: none;
+}
+
+.gc-login-field {
+  background: var(--gc-refined-soft-bg);
+  border-color: var(--gc-refined-soft-border);
+  box-shadow: 0 1px 0 oklch(1 0 0 / 0.42) inset;
+}
+
+.gc-login-field:focus-within {
+  border-color: oklch(0.58 0.085 190 / 0.42);
+  box-shadow:
+    0 0 0 3px oklch(0.72 0.060 188 / 0.16),
+    0 1px 0 oklch(1 0 0 / 0.56) inset;
 }
 
 .gc-dynamic-bg {
@@ -355,8 +681,8 @@ body {
 .gc-dynamic-bg::before {
   inset: -18%;
   background: var(--gc-ambient-aura);
-  opacity: 0.78;
-  filter: blur(10px);
+  opacity: 0.72;
+  filter: blur(18px);
   animation: gc-ambient-drift var(--gc-duration-dramatic) ease-in-out infinite alternate;
   animation-duration: 24s;
 }
@@ -373,10 +699,10 @@ body {
 
 .gc-subtle-grid {
   background-image:
-    linear-gradient(to right, color-mix(in oklch, var(--foreground) 7%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in oklch, var(--foreground) 6%, transparent) 1px, transparent 1px);
-  background-size: 72px 72px;
-  mask-image: radial-gradient(ellipse at center, black 0%, transparent 74%);
+    linear-gradient(to right, color-mix(in oklch, var(--primary) 18%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklch, var(--foreground) 9%, transparent) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(ellipse at center, black 0%, transparent 78%);
 }
 
 @layer utilities {
@@ -441,11 +767,11 @@ body {
 }
 
 @layer utilities {
-  .gpt-ring-fast { animation: gpt-vortex 5s linear infinite; transform-origin: 325px 325px; }
-  .gpt-ring-med { animation: gpt-vortex-rev 10s linear infinite; transform-origin: 325px 325px; }
-  .gpt-ring-slow { animation: gpt-vortex 25s linear infinite; transform-origin: 325px 325px; }
-  .gpt-organic { animation: gpt-pulse-deep 5s ease-in-out infinite; transform-origin: 325px 325px; }
-  .gpt-core { animation: gpt-core-beat 1.5s ease-in-out infinite; transform-origin: 325px 325px; }
+  .gpt-ring-fast { animation: gpt-vortex 5s linear infinite; transform-origin: 32px 32px; }
+  .gpt-ring-med { animation: gpt-vortex-rev 10s linear infinite; transform-origin: 32px 32px; }
+  .gpt-ring-slow { animation: gpt-vortex 25s linear infinite; transform-origin: 32px 32px; }
+  .gpt-organic { animation: gpt-pulse-deep 5s ease-in-out infinite; transform-origin: 32px 32px; }
+  .gpt-core { animation: gpt-core-beat 1.5s ease-in-out infinite; transform-origin: 32px 32px; }
 
   .gc-safe-top { padding-top: env(safe-area-inset-top); }
   .gc-safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
@@ -456,6 +782,50 @@ body {
 }
 
 @media (max-width: 767px) {
+  :root {
+    /* Compact mobile density: roughly 15% smaller spatial system. */
+    --gc-mobile-frame-pad: 0.2125rem;
+    --gc-mobile-shell-radius: 1.0625rem;
+    --gc-mobile-header-height: 2.55rem;
+    --gc-mobile-header-x: 0.53125rem;
+    --gc-mobile-subheader-height: 1.7rem;
+    --gc-mobile-subheader-x: 0.53125rem;
+    --gc-mobile-subheader-y: 0.2125rem;
+    --gc-mobile-composer-footer-x: 0.425rem;
+    --gc-mobile-composer-footer-top: 0.425rem;
+    --gc-mobile-composer-footer-bottom: 0.2975rem;
+    --gc-mobile-composer-radius: 0.765rem;
+    --gc-mobile-textarea-min-height: 36px;
+    --gc-mobile-textarea-max-height: 153px;
+    --gc-mobile-textarea-px: 0.53125rem;
+    --gc-mobile-textarea-pt: 0.6375rem;
+    --gc-mobile-textarea-pb: 0.31875rem;
+    --gc-mobile-textarea-font-size: 12px;
+    --gc-mobile-control-height: 1.5725rem;
+    --gc-mobile-control-font-size: 9px;
+    --gc-mobile-send-font-size: 10px;
+    --gc-mobile-icon-button-size: 1.9125rem;
+    --gc-mobile-chat-content-gap: 0.85rem;
+    --gc-mobile-chat-content-x: 0.6375rem;
+    --gc-mobile-chat-content-y: 0.85rem;
+    --gc-mobile-welcome-outer-x: 0.425rem;
+    --gc-mobile-welcome-outer-y: 0.6375rem;
+    --gc-mobile-welcome-panel-radius: 1.2325rem;
+    --gc-mobile-welcome-panel-x: 0.6375rem;
+    --gc-mobile-welcome-panel-y: 0.74375rem;
+    --gc-mobile-welcome-grid-gap: 0.85rem;
+    --gc-mobile-welcome-title-size: 1.6575rem;
+    --gc-mobile-welcome-suggestion-min-height: 6.29rem;
+    --gc-mobile-welcome-suggestion-gap: 0.425rem;
+    --gc-mobile-welcome-suggestion-pad: 0.6375rem;
+    --gc-mobile-context-header-x: 0.6375rem;
+    --gc-mobile-context-header-y: 0.6375rem;
+    --gc-mobile-panel-content-pad: 0.6375rem;
+    --gc-mobile-panel-content-gap: 0.6375rem;
+    --gc-mobile-settings-card-pad: 0.85rem;
+    --gc-mobile-settings-section-gap: 1.0625rem;
+  }
+
   input, select {
     font-size: 16px !important;
   }

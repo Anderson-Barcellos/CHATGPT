@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getReasoningCompletedContent,
   getNextReasoningPanelOpenState,
   getReasoningThinkingContent,
 } from "@/components/chat/ReasoningPanel";
@@ -53,5 +54,37 @@ describe("getReasoningThinkingContent", () => {
     });
 
     expect(content).toBe("Resumo em andamento");
+  });
+});
+
+describe("getReasoningCompletedContent", () => {
+  it("prefers summary when available", () => {
+    const content = getReasoningCompletedContent({
+      summary: "Resumo final",
+      full: "Raciocinio bruto",
+      reasoningTokens: 42,
+    });
+
+    expect(content).toBe("Resumo final");
+  });
+
+  it("falls back to full reasoning text", () => {
+    const content = getReasoningCompletedContent({
+      summary: "",
+      full: "Raciocinio textual",
+      reasoningTokens: 42,
+    });
+
+    expect(content).toBe("Raciocinio textual");
+  });
+
+  it("keeps the panel visible when reasoning tokens exist without text", () => {
+    const content = getReasoningCompletedContent({
+      summary: "",
+      full: "",
+      reasoningTokens: 26,
+    });
+
+    expect(content).toContain("Raciocínio aplicado (26 tokens)");
   });
 });
