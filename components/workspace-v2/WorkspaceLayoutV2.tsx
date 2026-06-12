@@ -220,7 +220,7 @@ export function WorkspaceFrameV2({
   }, []);
 
   return (
-    <div className="gc-dynamic-bg gc-mobile-density relative h-dvh overflow-hidden text-foreground">
+    <div className="gc-dynamic-bg gc-device-frame gc-mobile-density relative overflow-hidden text-foreground">
       <div
         aria-hidden="true"
         className="gc-ambient-overlay pointer-events-none absolute inset-0"
@@ -229,8 +229,8 @@ export function WorkspaceFrameV2({
         aria-hidden="true"
         className="gc-subtle-grid pointer-events-none absolute inset-0 opacity-35"
       />
-      <div className="relative z-10 flex h-full flex-col p-[var(--gc-mobile-frame-pad)] sm:p-2 md:p-3">
-        <div className="gc-clinical-shell flex min-h-0 flex-1 overflow-hidden rounded-[var(--gc-mobile-shell-radius)] border border-primary/20 backdrop-blur-xl">
+      <div className="relative z-10 flex h-full flex-col">
+        <div className="gc-clinical-shell flex min-h-0 flex-1 overflow-hidden backdrop-blur-xl">
           <aside
             data-workspace-region="sidebar"
             className="gc-clinical-rail hidden min-h-0 w-[19rem] shrink-0 overflow-hidden border-r border-[color:var(--gc-border)] lg:block"
@@ -252,9 +252,9 @@ export function WorkspaceFrameV2({
           )}
 
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-            <header className="gc-clinical-header shrink-0 border-b border-[color:var(--gc-border)] gc-safe-top md:pt-0">
+            <header className="gc-clinical-header shrink-0 border-b border-[color:var(--gc-border-soft)] gc-safe-top md:border-[color:var(--gc-border)] md:pt-0">
               <div className="flex h-[var(--gc-mobile-header-height)] items-center justify-between px-[var(--gc-mobile-header-x)] md:h-[3.45rem] md:px-5">
-                <div className="flex min-w-0 items-center gap-1.5 md:gap-2">
+                <div className="flex min-w-0 items-center gap-1 md:gap-2">
                   <IconButton
                     label="Abrir conversas"
                     onClick={() => setSidebarOpen(true)}
@@ -267,17 +267,17 @@ export function WorkspaceFrameV2({
                   </div>
                   <div className="min-w-0 leading-tight">
                     <div className="flex items-center gap-2">
-                      <h1 className="truncate text-[0.9rem] font-semibold tracking-[-0.02em] text-foreground md:text-[0.96rem]">
+                      <h1 className="truncate text-[0.84rem] font-semibold tracking-[-0.02em] text-foreground md:text-[0.96rem]">
                         {activeConversationTitle}
                       </h1>
                     </div>
-                    <p className="truncate text-[10px] text-muted-foreground/80 md:text-micro">
+                    <p className="truncate text-[9px] text-muted-foreground/72 md:text-micro">
                       Gaucho Chat
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 md:gap-1.5">
+                <div className="flex items-center gap-0.5 md:gap-1.5">
                   <div className="hidden items-center gap-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-2 py-1 text-nano font-semibold text-emerald-700 dark:text-emerald-300 lg:flex">
                     <ShieldCheck className="size-3.5" />
                     Salvo
@@ -328,14 +328,14 @@ export function WorkspaceFrameV2({
                       value={RESPONSE_MODE_LABELS[activeResponseMode ?? "default"]}
                     />
                   </div>
-                  <span className="inline-flex md:hidden items-center gap-1.5 truncate text-[10px] text-muted-foreground">
-                    <span className="font-medium text-foreground truncate max-w-[7rem]">{currentModelName}</span>
+                  <span className="inline-flex md:hidden items-center gap-1 truncate text-[9px] text-muted-foreground/88">
+                    <span className="font-medium text-foreground truncate max-w-[6.25rem]">{currentModelName}</span>
                     <span className="text-muted-foreground/50">·</span>
                     <span>{RESPONSE_MODE_LABELS[activeResponseMode ?? "default"]}</span>
                     {reasoningLabel && reasoningLabel !== "—" && (
                       <>
                         <span className="text-muted-foreground/50">·</span>
-                        <span className="truncate max-w-[4rem]">{reasoningLabel}</span>
+                        <span className="truncate max-w-[3.25rem]">{reasoningLabel}</span>
                       </>
                     )}
                   </span>
@@ -421,7 +421,7 @@ export function WorkspaceFrameV2({
         <SheetContent
           side="left"
           showCloseButton={false}
-          className="gc-clinical-rail w-[88vw] max-w-[20rem] gap-0 border-[color:var(--gc-border)] p-0 gc-safe-top"
+          className="gc-clinical-rail w-[92vw] max-w-[20rem] gap-0 border-[color:var(--gc-border)] p-0 gc-safe-top"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Conversas</SheetTitle>
@@ -435,7 +435,7 @@ export function WorkspaceFrameV2({
         <SheetContent
           side="right"
           showCloseButton={false}
-          className="gc-clinical-panel w-[96vw] max-w-none gap-0 border-[color:var(--gc-border)] p-0 gc-safe-top sm:max-w-[34rem]"
+          className="gc-clinical-panel w-[100vw] max-w-none gap-0 border-0 p-0 gc-safe-top sm:w-[96vw] sm:border sm:border-[color:var(--gc-border)] sm:max-w-[34rem]"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Painel contextual</SheetTitle>
