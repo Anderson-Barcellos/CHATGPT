@@ -832,3 +832,47 @@ Foram alinhados `docs/README.md`, `docs/INFRASTRUCTURE.md`, `CLAUDE.md`, `.env.e
 
 Notes:
 Validacao desta rodada: `git diff --check`, `npx tsc --noEmit`, `npm test` e `npm run build` passaram. O repo nao deve voltar a anunciar deploy por Vercel/Docker/Nginx enquanto o runtime oficial continuar sendo Apache + systemd; se algum dia isso mudar, atualizar primeiro `docs/INFRASTRUCTURE.md`, `.env.example` e os workflows juntos para evitar drift de novo.
+
+### 2026-06-10 10:50 - Background para respostas longas
+
+Context:
+Anders pediu que pesquisas/perguntas demoradas continuassem processando quando ele troca de aba, recarrega ou volta depois. O fluxo antigo abortava junto com a conexao do navegador por `request.signal`, preservando parcial como `interrupted`.
+
+Details:
+`document`, `deepsearch_medium` e `deepsearch_high` agora usam Responses API com `background: true` em `app/api/chat/background`, persistindo `response_id` no `Message.backgroundJob` e sincronizando por `/api/chat/background/sync`; `/api/chat/background/cancel` cancela via `openai.responses.cancel`. `hooks/useChat.ts` mantem o chat normal em SSE, mas para modos longos cria job server-side, faz polling leve e sincroniza em `visibilitychange`. `lib/chat/responseToMessagePatch.ts` converte Response final em patch de mensagem com texto, citacoes, imagem e tokens; `incomplete` vira `failed` para evitar spinner infinito. `/etc/apache2/APACHE.md` e `docs/API.md` documentam `/chat/api/chat/background*`.
+
+Notes:
+Nao ha fila externa/Redis/worker nesta v1: a OpenAI guarda a Response em background e o app sincroniza quando a aba volta ou durante polling. Validacao desta rodada: teste focado do conversor, `npm test`, `npx tsc --noEmit`, `npm run build` e `git diff --check` passaram; depois do deploy, validar health local/publico de `/chat/api/health`.
+
+### 2026-06-10 11:30 - Deepsearch descreve imagens clinicas sem gerar imagem
+
+Context:
+Anders observou que prompts de relatorio ultrassonografico/ecodoppler podem usar a palavra "imagem" como material clinico a descrever, nao como pedido de criacao de imagem.
+
+Details:
+`lib/server/chatRequest.ts` passou a expor `image_generation` apenas no `responseMode="default"`; `document`, `deepsearch_medium` e `deepsearch_high` seguem com `web_search_preview` e ferramentas textuais, mas sem ferramenta de geracao de imagem. `hooks/useChat.ts` adicionou instrucao clinica para descrever/interpretar "imagem", "ecodoppler", "onda" e "tracado", permitindo esquemas ASCII em blocos de codigo quando ajudarem a esclarecer morfologia ou timing. `lib/server/chatRequest.test.ts` cobre a ausencia de `image_generation` nos modos longos.
+
+Notes:
+Para relatorios e Deepsearch, "imagem" deve ser interpretada como dado fonte/achado visual salvo pedido explicito de criacao em chat normal. Se no futuro reativar imagem em modo documento, adicionar um flag explicito de intencao em vez de depender de deteccao por palavra.
+
+### 2026-06-11 00:36 - Guarda contra tela só com papel de parede
+
+Context:
+Anders relatou que o site abria e logo ficava apenas com o fundo/papel de parede durante a fase de retomada dos refinamentos de front. O smoke limpo em Chrome desktop e mobile renderizou o workspace normalmente, entao a causa mais provavel era falha de hidratacao/chunk/cache deixando o SSR escondido pelo wrapper `invisible`.
+
+Details:
+`components/workspace-v2/GauchoChatShellV2.tsx` deixou de aplicar `className="invisible"` antes da hidratacao. Assim, se um bundle antigo ou erro antes da hidratacao impedir o React de assumir a tela, o shell SSR permanece visivel em vez de sobrar apenas o fundo. Nao houve mudanca de API, storage, streaming, auth, modelos ou layout estrutural.
+
+Notes:
+Validacao desta rodada: `npm test`, `npx tsc --noEmit`, `npm run build`, `git diff --check`, `systemctl restart chatgpt.service`, health local/publico em `/chat/api/health` e Playwright/Chrome system desktop+mobile contra `https://ultrassom.ai/chat`. O `npx tsc --noEmit` falhou uma vez quando rodou em paralelo com `next build` por corrida em `.next/types/routes.js`; rerodado isolado passou.
+
+### 2026-06-12 19:04 - Shell edge-to-edge e label curto no welcome screen
+
+Context:
+Anders queria o layout do chat preenchendo a tela inteira (edge-to-edge), como no projeto STT (`/root/STT/`). O STT usa `min-h-screen w-full` sem moldura; o Gaucho Chat tinha padding, border-radius e border criando um efeito de card flutuante. Separadamente, o label "Preencher" / "Preencher no composer" nos cards de sugestao da tela inicial distorcia os botoes em dimensoes intermediarias.
+
+Details:
+`components/workspace-v2/WorkspaceLayoutV2.tsx` teve o wrapper interno e o shell clinico simplificados: removidos `p-[var(--gc-mobile-frame-pad)] sm:p-2 md:p-3`, `rounded-[var(--gc-mobile-shell-radius)]`, `border-0 sm:border sm:border-primary/20` — o conteudo agora ocupa 100% do viewport sem moldura. `components/chat/ChatContainer.tsx` teve o label do botao de sugestao encurtado de `Preencher<span class="hidden 2xl:inline"> no composer</span>` para `Usar`.
+
+Notes:
+Validacao desta rodada: `npx tsc --noEmit`, `npm run build` e Playwright/Chrome confirmando `padding: 0px`, `borderWidth: 0px`, `borderRadius: 0px` no shell e label `Usar` nos cards. Commits: `a2ee903` (layout) e `c2bb8c0` (label).
