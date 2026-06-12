@@ -123,7 +123,7 @@ function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
                       <span className="block text-[11px] leading-snug text-muted-foreground/85 md:text-xs md:leading-relaxed">{desc}</span>
                     </div>
                     <span className="mt-auto inline-flex items-center rounded-full border border-[color:var(--gc-border-soft)] px-2 py-0.5 text-[10px] font-medium text-muted-foreground/75 md:px-2.5 md:py-1 md:text-[11px]">
-                      Preencher<span className="hidden 2xl:inline"> no composer</span>
+                      Usar
                     </span>
                   </button>
                 ))}
