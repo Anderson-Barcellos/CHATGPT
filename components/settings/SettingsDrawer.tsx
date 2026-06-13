@@ -305,25 +305,25 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
       <SheetContent
         side="right"
         showCloseButton={false}
-          className="gc-clinical-panel w-[96vw] max-w-[25rem] gap-0 border-[color:var(--gc-border)] p-0 pt-[env(safe-area-inset-top)] pb-[max(var(--gc-mobile-panel-content-pad),env(safe-area-inset-bottom))] shadow-[0_28px_80px_rgba(15,23,42,0.24)] sm:max-w-[25rem]"
+        className="gc-clinical-panel !w-screen !max-w-none gap-0 !border-l-0 border-[color:var(--gc-border)] p-0 pt-[env(safe-area-inset-top)] pb-[max(var(--gc-mobile-panel-content-pad),env(safe-area-inset-bottom))] shadow-none sm:!w-[25rem] sm:!max-w-[25rem] sm:!border-l sm:shadow-[0_28px_80px_rgba(15,23,42,0.24)]"
       >
         <SheetHeader className="sr-only">
           <SheetTitle>Configurações</SheetTitle>
           <SheetDescription>Ajustes, memórias e contexto do Gaucho Chat.</SheetDescription>
         </SheetHeader>
         <div className="flex h-full flex-col overflow-hidden">
-          <div className="gc-clinical-section-header border-b border-[color:var(--gc-border)] px-[var(--gc-mobile-context-header-x)] pb-[var(--gc-mobile-context-header-y)]">
-            <div className="flex items-start justify-between gap-2 px-1 pt-[var(--gc-mobile-context-header-y)]">
+          <div className="gc-clinical-section-header border-b border-[color:var(--gc-border-soft)] px-[var(--gc-mobile-context-header-x)] pb-[var(--gc-mobile-context-header-y)] sm:border-[color:var(--gc-border)]">
+            <div className="flex items-start justify-between gap-2 px-0 pt-[var(--gc-mobile-context-header-y)] sm:px-1">
               <div className="min-w-0">
-                <h2 className="text-lg font-semibold tracking-[-0.03em] text-foreground">
+                <h2 className="text-[1rem] font-semibold tracking-[-0.02em] text-foreground sm:text-lg sm:tracking-[-0.03em]">
                   Configurações
                 </h2>
-                <p className="mt-1 text-micro uppercase tracking-eyebrow text-muted-foreground/70">
+                <p className="mt-0.5 text-[9px] uppercase tracking-eyebrow text-muted-foreground/70 sm:mt-1 sm:text-micro">
                   Ajustes, memórias e contexto
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <SaveStatusBadge
                   status={panelStatus}
                   idleLabel={
@@ -338,21 +338,21 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                   variant="ghost"
                   size="icon"
                   onClick={onClose}
-                  className="gc-clinical-input-surface h-8 w-8 rounded-xl border border-[color:var(--gc-border)] hover:bg-[var(--gc-surface-control-hover)]"
+                  className="gc-clinical-input-surface h-8 w-8 rounded-xl border border-[color:var(--gc-border-soft)] hover:bg-[var(--gc-surface-control-hover)] sm:border-[color:var(--gc-border)]"
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            <div className="mt-[var(--gc-mobile-context-header-y)] grid grid-cols-3 gap-1 rounded-2xl border border-[color:var(--gc-border)] bg-[var(--gc-surface-panel-strong)] p-1">
+            <div className="mt-[var(--gc-mobile-context-header-y)] grid grid-cols-3 gap-1 rounded-xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel-strong)] p-1 sm:rounded-2xl sm:border-[color:var(--gc-border)]">
               {SETTINGS_TABS.map(({ key, label, icon: Icon }) => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => setActiveTab(key)}
                   className={cn(
-                    "flex min-w-0 items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-[11px] font-semibold transition-all xs:text-micro",
+                    "flex min-w-0 items-center justify-center gap-1 rounded-lg px-1.5 py-1.5 text-[11px] font-semibold transition-all xs:text-micro sm:rounded-xl sm:py-2",
                     activeTab === key
                       ? "bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(15,118,110,0.18)]"
                       : "text-muted-foreground hover:text-foreground"

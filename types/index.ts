@@ -13,6 +13,13 @@ export type MessageStreamStatus =
   | "failed"
   | "interrupted";
 
+export type BackgroundJobStatus =
+  | "queued"
+  | "in_progress"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
 export interface UrlCitation {
   title: string;
   url: string;
@@ -113,6 +120,13 @@ export interface Message {
   outputTokens?: number;
   cachedTokens?: number;
   reasoningTokens?: number;
+  backgroundJob?: {
+    responseId?: string;
+    status: BackgroundJobStatus;
+    startedAt: string;
+    updatedAt: string;
+    error?: string;
+  };
 }
 
 export interface SerializedMessage extends Omit<Message, "timestamp"> {

@@ -144,7 +144,7 @@ export function GauchoChatShellV2() {
         onOpenSettings={() => setSettingsOpen(true)}
       >
       <NotesProvider>
-      <div className={!isHydrated ? "invisible" : undefined}>
+      <div>
         <WorkspaceFrameV2
           activeConversationTitle={activeConversation?.title || "Workspace"}
           currentModelName={currentModel?.name || parameters.model}

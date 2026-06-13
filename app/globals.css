@@ -70,7 +70,8 @@
 html {
   min-height: 100%;
   overflow: hidden;
-  background: var(--gc-bg-page);
+  background: var(--gc-bg);
+  overscroll-behavior: none;
 }
 
 body {
@@ -79,7 +80,8 @@ body {
   min-height: 100dvh;
   overflow: hidden;
   font-family: var(--font-sans);
-  background: var(--gc-bg-page);
+  background: var(--gc-bg);
+  overscroll-behavior: none;
 }
 
 :root {
@@ -88,18 +90,18 @@ body {
   --font-geist-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   /* ── Responsive mobile density contract ────────────── */
-  --gc-mobile-frame-pad: 0.25rem;
-  --gc-mobile-shell-radius: 1.25rem;
-  --gc-mobile-header-height: 3rem;
-  --gc-mobile-header-x: 0.625rem;
-  --gc-mobile-subheader-height: 2rem;
-  --gc-mobile-subheader-x: 0.625rem;
-  --gc-mobile-subheader-y: 0.25rem;
-  --gc-mobile-composer-footer-x: 0.5rem;
-  --gc-mobile-composer-footer-top: 0.5rem;
-  --gc-mobile-composer-footer-bottom: 0.35rem;
-  --gc-mobile-composer-radius: 0.9rem;
-  --gc-mobile-textarea-min-height: 42px;
+  --gc-mobile-frame-pad: 0.125rem;
+  --gc-mobile-shell-radius: 0.95rem;
+  --gc-mobile-header-height: 2.7rem;
+  --gc-mobile-header-x: 0.5rem;
+  --gc-mobile-subheader-height: 1.72rem;
+  --gc-mobile-subheader-x: 0.5rem;
+  --gc-mobile-subheader-y: 0.1875rem;
+  --gc-mobile-composer-footer-x: 0.375rem;
+  --gc-mobile-composer-footer-top: 0.3125rem;
+  --gc-mobile-composer-footer-bottom: 0.25rem;
+  --gc-mobile-composer-radius: 0.8rem;
+  --gc-mobile-textarea-min-height: 40px;
   --gc-mobile-textarea-max-height: 180px;
   --gc-mobile-textarea-px: 0.625rem;
   --gc-mobile-textarea-pt: 0.75rem;
@@ -670,6 +672,15 @@ body {
   background: var(--gc-bg);
 }
 
+.gc-device-frame {
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
+}
+
 .gc-dynamic-bg::before,
 .gc-dynamic-bg::after {
   content: "";
@@ -784,18 +795,18 @@ body {
 @media (max-width: 767px) {
   :root {
     /* Compact mobile density: roughly 15% smaller spatial system. */
-    --gc-mobile-frame-pad: 0.2125rem;
-    --gc-mobile-shell-radius: 1.0625rem;
-    --gc-mobile-header-height: 2.55rem;
-    --gc-mobile-header-x: 0.53125rem;
-    --gc-mobile-subheader-height: 1.7rem;
-    --gc-mobile-subheader-x: 0.53125rem;
-    --gc-mobile-subheader-y: 0.2125rem;
-    --gc-mobile-composer-footer-x: 0.425rem;
-    --gc-mobile-composer-footer-top: 0.425rem;
-    --gc-mobile-composer-footer-bottom: 0.2975rem;
-    --gc-mobile-composer-radius: 0.765rem;
-    --gc-mobile-textarea-min-height: 36px;
+    --gc-mobile-frame-pad: 0;
+    --gc-mobile-shell-radius: 0;
+    --gc-mobile-header-height: 2.45rem;
+    --gc-mobile-header-x: 0.4375rem;
+    --gc-mobile-subheader-height: 1.55rem;
+    --gc-mobile-subheader-x: 0.4375rem;
+    --gc-mobile-subheader-y: 0.15625rem;
+    --gc-mobile-composer-footer-x: 0.3125rem;
+    --gc-mobile-composer-footer-top: 0.3125rem;
+    --gc-mobile-composer-footer-bottom: 0.25rem;
+    --gc-mobile-composer-radius: 0.625rem;
+    --gc-mobile-textarea-min-height: 34px;
     --gc-mobile-textarea-max-height: 153px;
     --gc-mobile-textarea-px: 0.53125rem;
     --gc-mobile-textarea-pt: 0.6375rem;

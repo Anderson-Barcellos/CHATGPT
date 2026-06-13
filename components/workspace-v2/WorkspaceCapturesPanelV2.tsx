@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CalendarPlus,
+  ChevronDown,
+  ChevronUp,
   LoaderCircle,
   Mic,
   RefreshCw,
@@ -79,13 +81,16 @@ export function WorkspaceCapturesPanelV2({
   const [draftingNoteId, setDraftingNoteId] = useState<string | null>(null);
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const isRecording = speechStatus === "recording";
   const isTranscribing = speechStatus === "transcribing";
+  const collapsedLimit = compact ? 3 : 5;
   const visibleNotes = useMemo(
-    () => notes.slice(0, compact ? 3 : 5),
-    [compact, notes]
+    () => (isExpanded ? notes : notes.slice(0, collapsedLimit)),
+    [collapsedLimit, isExpanded, notes]
   );
+  const hiddenCount = Math.max(0, notes.length - collapsedLimit);
   const contextLabel = context === "calendar" ? "Agenda" : "Notas";
   const contextTag = context === "calendar" ? "agenda" : "notas";
 
@@ -324,6 +329,28 @@ export function WorkspaceCapturesPanelV2({
               )}
             </article>
           ))}
+
+          {(hiddenCount > 0 || isExpanded) && (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => setIsExpanded((current) => !current)}
+              className="h-7 w-full rounded-md text-nano text-muted-foreground"
+            >
+              {isExpanded ? (
+                <>
+                  <ChevronUp className="size-3" />
+                  Ver menos
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="size-3" />
+                  Ver todas ({notes.length})
+                </>
+              )}
+            </Button>
+          )}
         </div>
       ) : (
         <p className="rounded-xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-3 py-4 text-micro text-muted-foreground">

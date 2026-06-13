@@ -30,6 +30,7 @@ describe("WorkspaceFrameV2", () => {
     expect(markup).toContain("Conversas recentes");
     expect(markup).toContain("Preview do documento");
     expect(markup).toContain("Canvas · artefato · atividade");
+    expect(markup).toContain("gc-device-frame");
     expect(markup).not.toContain('class="dark ');
   });
 });

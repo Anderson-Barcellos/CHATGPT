@@ -1,6 +1,6 @@
 # API
 
-**Última atualização:** 2026-06-04
+**Última atualização:** 2026-06-10
 **Base URL pública:** `https://ultrassom.ai/chat`
 **Base path interno:** `NEXT_PUBLIC_BASE_PATH=/chat`
 
@@ -91,6 +91,24 @@ summary textual, a UI preserva um estado visivel de reasoning aplicado sem
 inventar resumo.
 
 Desconexão do cliente é propagada para a OpenAI via `request.signal`; abortos retornam HTTP `499`.
+Esse comportamento vale para o fluxo streaming normal.
+
+### Background para respostas longas
+
+Os modos `document`, `deepsearch_medium` e `deepsearch_high` usam rotas curtas
+de background para sobreviver a troca de aba, reload ou suspensão do navegador.
+O app cria a resposta com `background: true`, persiste o `response_id` na
+mensagem do assistente e sincroniza quando a aba volta ou durante polling leve.
+
+| Método | Rota | Função |
+|---|---|---|
+| `POST` | `/api/chat/background` | Inicia uma Response em background e vincula `response_id` à mensagem |
+| `POST` | `/api/chat/background/sync` | Recupera a Response por `response_id` e persiste resultado final |
+| `POST` | `/api/chat/background/cancel` | Cancela a Response em background e marca a mensagem como abortada |
+
+Essas rotas exigem `conversationId`, `assistantMessageId` e, exceto na criação,
+`responseId`. O fluxo não introduz fila externa: a OpenAI mantém a Response e o
+servidor local sincroniza o estado em `data/conversations.json`.
 
 ## Auth
 

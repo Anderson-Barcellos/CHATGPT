@@ -46,6 +46,7 @@ import {
 import { conversationKeys } from "@/hooks/queries/useConversationQuery";
 import { toast } from "sonner";
 import { createMessageArtifact } from "@/lib/artifacts/messageArtifacts";
+import { deserializeMessage } from "@/lib/storage/serializers";
 import {
   QUIZ_FORCED_MODEL,
   QUIZ_FORCED_REASONING_EFFORT,
@@ -53,12 +54,26 @@ import {
 } from "@/lib/artifacts/quizArtifacts";
 
 const STREAM_AUTO_SAVE_INTERVAL_MS = 2000;
+const BACKGROUND_POLL_INTERVAL_MS = 5000;
 const DEEPSEARCH_MEDIUM_MODEL = "gpt-5.4-mini";
 const DEEPSEARCH_HIGH_MODEL = "gpt-5.4";
+
+function isPendingBackgroundMessage(message: Message): boolean {
+  return (
+    message.role === "assistant" &&
+    !!message.backgroundJob?.responseId &&
+    (message.backgroundJob.status === "queued" ||
+      message.backgroundJob.status === "in_progress")
+  );
+}
 
 function normalizeStreamingMessages(messages: Message[]): Message[] {
   return messages.map((message) => {
     if (message.role !== "assistant" || message.streamStatus !== "streaming") {
+      return message;
+    }
+
+    if (isPendingBackgroundMessage(message)) {
       return message;
     }
 
@@ -133,6 +148,8 @@ function appendDocumentModeInstructions(
 - Use a professional medical tone, objective phrasing, and concise technical language.
 - Favor a clear exam title followed by sections such as "Descrição Técnica", "Achados", "Achados Sonográficos", "Conclusão" or "Impressão Diagnóstica" when appropriate to the case.
 - Keep paragraphs and itemization clinically organized, with emphasis on findings, technique, and diagnostic impression.
+- When words such as "imagem", "ultrassonografia", "ecodoppler", "onda" or "traçado" refer to clinical source material, describe or interpret the finding in text; do not attempt to create a new image.
+- For Doppler waveforms or simple visual patterns, ASCII sketches inside fenced code blocks are allowed when they clarify morphology, direction, phasicity or timing.
 - Avoid decorative prose, motivational phrasing, or generic explanatory filler.
 - If the user is rewriting or adapting an existing report, preserve the original medical structure and terminology as much as possible while improving readability and consistency.`;
 
@@ -251,6 +268,12 @@ export function useChat() {
   const [isRecovering, setIsRecovering] = useState(true);
   const [conversationLoadNonce, setConversationLoadNonce] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const activeBackgroundMessageRef = useRef<{
+    conversationId: string;
+    assistantMessageId: string;
+    responseId: string;
+  } | null>(null);
+  const backgroundSyncInFlightRef = useRef<Set<string>>(new Set());
   const hasLoadedRef = useRef(false);
   const hasBeaconFiredRef = useRef(false);
 
@@ -285,6 +308,83 @@ export function useChat() {
       setIsRecovering(false);
     }
   }, [queryClient, setActiveConversationId, setMessages]);
+
+  const applyServerMessagePatch = useCallback(
+    (message: Message) => {
+      const normalized = deserializeMessage(message);
+      updateMessage(normalized.id, {
+        content: normalized.content,
+        streamStatus: normalized.streamStatus,
+        responseMode: normalized.responseMode,
+        preferredDisplayMode: normalized.preferredDisplayMode,
+        reasoningSummary: normalized.reasoningSummary,
+        reasoningText: normalized.reasoningText,
+        reasoningStatus: normalized.reasoningStatus,
+        imageBase64: normalized.imageBase64,
+        imageMimeType: normalized.imageMimeType,
+        isGeneratingImage: normalized.isGeneratingImage,
+        isSearching: normalized.isSearching,
+        citations: normalized.citations,
+        artifact: normalized.artifact,
+        inputTokens: normalized.inputTokens,
+        outputTokens: normalized.outputTokens,
+        cachedTokens: normalized.cachedTokens,
+        reasoningTokens: normalized.reasoningTokens,
+        backgroundJob: normalized.backgroundJob,
+      });
+    },
+    [updateMessage]
+  );
+
+  const syncBackgroundMessage = useCallback(
+    async (message: Message) => {
+      if (!activeConversationId || !message.backgroundJob?.responseId) return;
+
+      const key = `${activeConversationId}:${message.id}`;
+      if (backgroundSyncInFlightRef.current.has(key)) return;
+      backgroundSyncInFlightRef.current.add(key);
+
+      try {
+        const response = await fetch(apiUrl("/api/chat/background/sync"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            conversationId: activeConversationId,
+            assistantMessageId: message.id,
+            responseId: message.backgroundJob.responseId,
+          }),
+        });
+        if (!response.ok) throw await parseApiErrorResponse(response);
+
+        const payload = (await response.json()) as { message?: Message };
+        if (payload.message) {
+          applyServerMessagePatch(payload.message);
+          const synced = deserializeMessage(payload.message);
+          if (!isPendingBackgroundMessage(synced)) {
+            activeBackgroundMessageRef.current = null;
+            setIsLoading(false);
+            setIsStreaming(false);
+            await queryClient.invalidateQueries({
+              queryKey: conversationKeys.lists(),
+            });
+            await queryClient.invalidateQueries({
+              queryKey: conversationKeys.detail(activeConversationId),
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("[useChat] Falha ao sincronizar background job:", err);
+      } finally {
+        backgroundSyncInFlightRef.current.delete(key);
+      }
+    },
+    [
+      activeConversationId,
+      applyServerMessagePatch,
+      queryClient,
+      setIsStreaming,
+    ]
+  );
 
   useEffect(() => {
     if (hasLoadedRef.current) return;
@@ -352,9 +452,14 @@ export function useChat() {
       const state = useChatStore.getState();
       if (!state.isStreaming || !state.activeConversationId) return;
 
-      abortControllerRef.current?.abort();
+      const hasPendingBackground = state.messages.some(isPendingBackgroundMessage);
+      if (!hasPendingBackground) {
+        abortControllerRef.current?.abort();
+      }
 
-      const normalized = normalizeStreamingMessages(state.messages);
+      const normalized = hasPendingBackground
+        ? state.messages
+        : normalizeStreamingMessages(state.messages);
       saveConversationMessagesViaBeacon(
         state.activeConversationId,
         cloneMessagesForStorage(normalized)
@@ -367,6 +472,42 @@ export function useChat() {
       hasBeaconFiredRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!activeConversationId) return;
+
+    const pending = messages.filter(isPendingBackgroundMessage);
+    if (pending.length === 0) return;
+
+    activeBackgroundMessageRef.current = {
+      conversationId: activeConversationId,
+      assistantMessageId: pending[0].id,
+      responseId: pending[0].backgroundJob!.responseId!,
+    };
+    setIsLoading(true);
+    setIsStreaming(true);
+
+    const syncAll = () => {
+      for (const message of pending) {
+        void syncBackgroundMessage(message);
+      }
+    };
+
+    syncAll();
+    const interval = window.setInterval(syncAll, BACKGROUND_POLL_INTERVAL_MS);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        syncAll();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [activeConversationId, messages, setIsStreaming, syncBackgroundMessage]);
 
   const sendMessage = useCallback(
     async (content: string, options: SendMessageOptions = {}) => {
@@ -473,30 +614,91 @@ export function useChat() {
             ? appendQuizModeInstructions(baseSystemMessage)
             : baseSystemMessage;
 
+        const requestPayload = {
+          input,
+          model: requestModel,
+          instructions: systemMessage,
+          maxOutputTokens: parameters.maxOutputTokens,
+          ...(modelSupportsTemperature(requestModel) && {
+            temperature: parameters.temperature,
+            topP: parameters.topP,
+          }),
+          ...(modelSupportsVerbosity(requestModel) && {
+            verbosity: requestVerbosity,
+          }),
+          ...(modelSupportsCodeInterpreter(requestModel) && {
+            codeInterpreterEnabled: parameters.codeInterpreterEnabled,
+          }),
+          imageQuality,
+          imageSize,
+          stream: responseMode !== "quiz",
+          reasoning,
+          responseMode,
+        };
+
+        if (isDocumentLikeMode(responseMode)) {
+          updateMessage(assistantMessageId, {
+            content: "Processando no servidor. Pode trocar de aba que eu sincronizo quando voltares.",
+            isSearching: true,
+            backgroundJob: {
+              status: "queued",
+              startedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          });
+
+          await withConversationPersistenceRetry(() =>
+            saveConversationMessages(
+              activeConversationId,
+              cloneMessagesForStorage(useChatStore.getState().messages)
+            )
+          );
+
+          const response = await fetch(apiUrl("/api/chat/background"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...requestPayload,
+              conversationId: activeConversationId,
+              assistantMessageId,
+            }),
+            signal: abortControllerRef.current.signal,
+          });
+
+          if (!response.ok) {
+            throw await parseApiErrorResponse(response);
+          }
+
+          const payload = (await response.json()) as {
+            responseId?: string;
+            message?: Message;
+          };
+          if (payload.message) {
+            applyServerMessagePatch(payload.message);
+          }
+
+          const serverMessage = payload.message
+            ? deserializeMessage(payload.message)
+            : undefined;
+          const responseId =
+            serverMessage?.backgroundJob?.responseId ?? payload.responseId;
+
+          if (responseId) {
+            activeBackgroundMessageRef.current = {
+              conversationId: activeConversationId,
+              assistantMessageId,
+              responseId,
+            };
+          }
+
+          sent = true;
+          return sent;
+        }
+
         const response = await fetch(apiUrl("/api/chat"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            input,
-            model: requestModel,
-            instructions: systemMessage,
-            maxOutputTokens: parameters.maxOutputTokens,
-            ...(modelSupportsTemperature(requestModel) && {
-              temperature: parameters.temperature,
-              topP: parameters.topP,
-            }),
-            ...(modelSupportsVerbosity(requestModel) && {
-              verbosity: requestVerbosity,
-            }),
-            ...(modelSupportsCodeInterpreter(requestModel) && {
-              codeInterpreterEnabled: parameters.codeInterpreterEnabled,
-            }),
-            imageQuality,
-            imageSize,
-            stream: responseMode !== "quiz",
-            reasoning,
-            responseMode,
-          }),
+          body: JSON.stringify(requestPayload),
           signal: abortControllerRef.current.signal,
         });
 
@@ -629,8 +831,11 @@ export function useChat() {
         }
       } finally {
         throttledAutoSave.cancel();
-        setIsLoading(false);
-        setIsStreaming(false);
+        const hasPendingBackground = useChatStore
+          .getState()
+          .messages.some(isPendingBackgroundMessage);
+        setIsLoading(hasPendingBackground);
+        setIsStreaming(hasPendingBackground);
         abortControllerRef.current = null;
       }
 
@@ -639,6 +844,7 @@ export function useChat() {
     [
       activeConversationId,
       addMessage,
+      applyServerMessagePatch,
       contextAboutUser,
       customSystemInstructions,
       isLoading,
@@ -698,8 +904,47 @@ export function useChat() {
       abortControllerRef.current.abort();
       setIsLoading(false);
       setIsStreaming(false);
+      return;
     }
-  }, [setIsStreaming]);
+
+    const background = activeBackgroundMessageRef.current;
+    if (!background) return;
+
+    void fetch(apiUrl("/api/chat/background/cancel"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(background),
+    })
+      .then(async (response) => {
+        if (!response.ok) throw await parseApiErrorResponse(response);
+        return response.json() as Promise<{ message?: Message }>;
+      })
+      .then(async (payload) => {
+        if (payload.message) {
+          applyServerMessagePatch(payload.message);
+        }
+        activeBackgroundMessageRef.current = null;
+        setIsLoading(false);
+        setIsStreaming(false);
+        if (activeConversationId) {
+          await queryClient.invalidateQueries({
+            queryKey: conversationKeys.lists(),
+          });
+          await queryClient.invalidateQueries({
+            queryKey: conversationKeys.detail(activeConversationId),
+          });
+        }
+      })
+      .catch((err) => {
+        console.warn("[useChat] Falha ao cancelar background job:", err);
+        toast.error("Nao consegui cancelar a tarefa em segundo plano agora.");
+      });
+  }, [
+    activeConversationId,
+    applyServerMessagePatch,
+    queryClient,
+    setIsStreaming,
+  ]);
 
   return {
     messages,
