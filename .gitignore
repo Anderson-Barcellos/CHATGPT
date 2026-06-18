@@ -25,9 +25,18 @@
 *.pem
 
 # local runtime data with personal/private content
+/data/conversations.json
+/data/memories.json
+/data/persona.json
 /data/google-calendar-token.json
 /data/calendar-event-drafts.json
 /data/workspace-notes.json
+/data/memory-index/
+/data/memory-suggestions.json
+
+# debug artifacts (screenshots, browser MCP output)
+/.playwright-mcp/
+/screenshot-*.png
 
 # debug
 npm-debug.log*
