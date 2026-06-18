@@ -34,6 +34,7 @@ function patchForDocumentArtifact(message: Message, patch: Partial<Message>) {
   const artifact = createMessageArtifact(patch.content, {
     force: true,
     displayMode: "document",
+    citations: patch.citations,
   });
 
   if (!artifact) return patch;

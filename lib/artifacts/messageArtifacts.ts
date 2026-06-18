@@ -2,6 +2,7 @@ import {
   ArtifactContentType,
   DocumentMessageArtifact,
   MessageArtifactDisplayMode,
+  UrlCitation,
 } from "@/types";
 
 const FULL_HTML_ARTIFACT_RE = /<(html|body|script|style|svg|canvas|iframe)\b/i;
@@ -61,10 +62,146 @@ function isNarrativeBlock(block: string): boolean {
   return stripMarkdown(block).length >= 40;
 }
 
-export function cleanCitationMarkers(text: string): string {
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildCitationHostnameVariants(citation: UrlCitation): string[] {
+  try {
+    const hostname = new URL(citation.url).hostname.toLowerCase();
+    if (!hostname) return [];
+
+    const withoutWww = hostname.replace(/^www\./, "");
+    return Array.from(new Set([hostname, withoutWww])).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function toCitationHostKey(value: string): string {
+  return value.toLowerCase().replace(/^www\./, "");
+}
+
+function buildCitationHostIndexMap(citations: UrlCitation[]): Map<string, number[]> {
+  const map = new Map<string, number[]>();
+
+  citations.forEach((citation, index) => {
+    for (const hostname of buildCitationHostnameVariants(citation)) {
+      const key = toCitationHostKey(hostname);
+      const current = map.get(key) ?? [];
+      current.push(index + 1);
+      map.set(key, current);
+    }
+  });
+
+  return map;
+}
+
+function resolveInlineCitationIndex(
+  hostMatch: string | undefined,
+  citationsByHost: Map<string, number[]>,
+  hostUsageCount: Map<string, number>
+): number | undefined {
+  if (!hostMatch) return undefined;
+
+  const key = toCitationHostKey(hostMatch);
+  const indices = citationsByHost.get(key);
+  if (!indices || indices.length === 0) return undefined;
+
+  const used = hostUsageCount.get(key) ?? 0;
+  const nextIndex = indices[Math.min(used, indices.length - 1)];
+  hostUsageCount.set(key, used + 1);
+  return nextIndex;
+}
+
+function formatInlineCitationMarker(index: number, leadingSpace = true): string {
+  return `${leadingSpace ? " " : ""}[${index}]`;
+}
+
+function replaceInlineCitationSourcesWithIndices(
+  text: string,
+  citations: UrlCitation[]
+): string {
+  const citationsByHost = buildCitationHostIndexMap(citations);
+  const hostnames = Array.from(citationsByHost.keys()).filter(Boolean);
+
+  if (hostnames.length === 0) {
+    return text;
+  }
+
+  const hostPattern = hostnames.map(escapeRegExp).join("|");
+  const citationTarget =
+    String.raw`(?:https?:\/\/)?(?:www\.)?(${hostPattern})(?:\/[^\s)\]]*)?`;
+  const citationPayload =
+    String.raw`(?:(?:fonte|source|refer[eê]ncia)\s*:\s*)?${citationTarget}`;
+  const hostUsageCount = new Map<string, number>();
+
   return text
-    .replace(/【\d+[:\d]*†[^】]*】/g, "")
-    .replace(/\[\d+\][ \t]*/g, "");
+    .replace(
+      new RegExp(String.raw`[ \t]*\((?:${citationPayload})\)`, "gi"),
+      (_match, host: string) => {
+        const index = resolveInlineCitationIndex(
+          host,
+          citationsByHost,
+          hostUsageCount
+        );
+        return index ? formatInlineCitationMarker(index) : "";
+      }
+    )
+    .replace(
+      new RegExp(String.raw`[ \t]*\[(?:${citationPayload})\]`, "gi"),
+      (_match, host: string) => {
+        const index = resolveInlineCitationIndex(
+          host,
+          citationsByHost,
+          hostUsageCount
+        );
+        return index ? formatInlineCitationMarker(index) : "";
+      }
+    )
+    .replace(
+      new RegExp(
+        String.raw`(^|\n)[ \t]*(?:${citationPayload})[ \t]*(?=\n|$)`,
+        "gim"
+      ),
+      (match, prefix: string, host: string) => {
+        const index = resolveInlineCitationIndex(
+          host,
+          citationsByHost,
+          hostUsageCount
+        );
+        if (!index) return prefix;
+        return `${prefix}${formatInlineCitationMarker(index, prefix !== "")}`;
+      }
+    );
+}
+
+function collapseAdjacentDuplicateCitationMarkers(text: string): string {
+  return text.replace(/(\[\d+\])(?:[ \t]*\1)+/g, "$1");
+}
+
+export function cleanCitationMarkers(
+  text: string,
+  citations: UrlCitation[] = []
+): string {
+  const cleaned = text
+    .replace(/【(\d+)(?::\d+)?†[^】]*】/g, "[$1]")
+    .replace(/[ \t]*\(\s*(\[\d+\])\s*\)(?=\s|[.,;:!?]|\n|$)/g, " $1")
+    .replace(/[ \t]*\[\s*(\[\d+\])\s*\](?=\s|[.,;:!?]|\n|$)/g, " $1")
+    .replace(/[ \t]*\(\s*(?:\[\s*\])?\s*\)(?=\s|[.,;:!?]|\n|$)/g, "")
+    .replace(/[ \t]*\(\s*\)(?=\s|[.,;:!?]|\n|$)/g, "")
+    .replace(/[ \t]*\[\s*\](?=\s|[.,;:!?]|\n|$)/g, "");
+
+  const indexed = collapseAdjacentDuplicateCitationMarkers(
+    replaceInlineCitationSourcesWithIndices(cleaned, citations)
+  );
+
+  return collapseAdjacentDuplicateCitationMarkers(
+    indexed.replace(/\n[ \t]*(\[\d+\])(?=\n|$)/g, " $1")
+  )
+    .replace(/[ \t]+([,.;:!?])/g, "$1")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/(?:\n\s*)+$/g, "");
 }
 
 export function detectArtifactContentType(content: string): ArtifactContentType {
@@ -178,6 +315,7 @@ function inferArtifactSummary(content: string): string {
 interface CreateMessageArtifactOptions {
   force?: boolean;
   displayMode?: MessageArtifactDisplayMode;
+  citations?: UrlCitation[];
 }
 
 export function createMessageArtifact(
@@ -188,7 +326,10 @@ export function createMessageArtifact(
     return undefined;
   }
 
-  const cleanedContent = cleanCitationMarkers(content).trim();
+  const cleanedContent = cleanCitationMarkers(
+    content,
+    options.citations
+  ).trim();
   if (!cleanedContent) return undefined;
 
   return {

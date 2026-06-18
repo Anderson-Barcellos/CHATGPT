@@ -47,7 +47,7 @@ describe("responseToMessagePatch", () => {
             content: [
               {
                 type: "output_text",
-                text: "Resposta final",
+                text: "Resposta final (example.com)",
                 annotations: [
                   {
                     type: "url_citation",
@@ -72,7 +72,7 @@ describe("responseToMessagePatch", () => {
     );
 
     expect(patch).toMatchObject({
-      content: "Resposta final",
+      content: "Resposta final [1]",
       streamStatus: "completed",
       citations: [{ title: "Fonte", url: "https://example.com" }],
       inputTokens: 10,

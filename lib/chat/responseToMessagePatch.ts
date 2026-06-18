@@ -1,5 +1,6 @@
 import type OpenAI from "openai";
 import type { Message, UrlCitation } from "@/types";
+import { cleanCitationMarkers } from "@/lib/artifacts/messageArtifacts";
 
 type ResponseLike = OpenAI.Responses.Response & {
   output_text?: string;
@@ -65,7 +66,10 @@ function extractOutput(response: ResponseLike) {
   }
 
   return {
-    content: Array.from(new Set(textParts)).join("\n\n").trim(),
+    content: cleanCitationMarkers(
+      Array.from(new Set(textParts)).join("\n\n").trim(),
+      dedupeCitations(citations)
+    ),
     citations: dedupeCitations(citations),
     imageBase64,
     imageMimeType,

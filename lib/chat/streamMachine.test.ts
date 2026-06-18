@@ -13,7 +13,7 @@ describe("stream machine", () => {
 
     state = reduceAssistantStreamEvent(state, {
       type: "response.output_text.delta",
-      delta: "Ola",
+      delta: "Ola (example.com)",
     });
     state = reduceAssistantStreamEvent(state, {
       type: "response.output_text.annotation.added",
@@ -68,7 +68,7 @@ describe("stream machine", () => {
       partial_image_b64: "base64-preview",
     });
 
-    expect(state.content).toBe("Ola");
+    expect(state.content).toBe("Ola (example.com)");
     expect(state.reasoningText).toBe("Pensando final");
     expect(state.reasoningSummary).toBe("Resumo final");
     expect(state.reasoningStatus).toBe("thinking");
@@ -93,7 +93,7 @@ describe("stream machine", () => {
     expect(state.isGeneratingImage).toBe(false);
     expect(state.reasoningStatus).toBe("complete");
     expect(assistantStreamStateToMessagePatch(state)).toMatchObject({
-      content: "Ola",
+      content: "Ola [1]",
       imageBase64: "final-image",
       imageMimeType: "image/png",
       reasoningText: "Pensando final",

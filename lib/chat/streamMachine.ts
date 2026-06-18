@@ -4,6 +4,7 @@ import {
   ReasoningStatus,
   UrlCitation,
 } from "@/types";
+import { cleanCitationMarkers } from "@/lib/artifacts/messageArtifacts";
 
 export type AssistantStreamTerminalStatus = MessageStreamStatus;
 
@@ -236,7 +237,7 @@ export function assistantStreamStateToMessagePatch(
   state: AssistantStreamState
 ): Partial<Message> {
   return {
-    content: state.content,
+    content: cleanCitationMarkers(state.content, state.citations),
     ...(state.reasoningText ? { reasoningText: state.reasoningText } : {}),
     ...(state.reasoningSummary ? { reasoningSummary: state.reasoningSummary } : {}),
     ...(state.reasoningStatus ? { reasoningStatus: state.reasoningStatus } : {}),
