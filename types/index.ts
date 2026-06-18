@@ -247,6 +247,36 @@ export interface SerializedMemory extends Omit<Memory, "createdAt" | "updatedAt"
   updatedAt: string;
 }
 
+export interface RetrievedMemoryContext {
+  text: string;
+  score: number;
+  conversationId: string;
+  conversationTitle: string;
+  messageIds: string[];
+  timestamp: string;
+  reason?: string;
+}
+
+export type MemorySuggestionStatus = "pending" | "accepted" | "rejected";
+
+export interface MemorySuggestion {
+  id: string;
+  content: string;
+  category: MemoryCategory;
+  confidence: number;
+  sourceConversationId: string;
+  sourceMessageIds: string[];
+  status: MemorySuggestionStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SerializedMemorySuggestion
+  extends Omit<MemorySuggestion, "createdAt" | "updatedAt"> {
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const MEMORY_CATEGORIES: Record<MemoryCategory, string> = {
   personal: "Pessoal",
   professional: "Profissional",

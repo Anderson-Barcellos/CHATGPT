@@ -23,6 +23,7 @@ export const BASE_SYSTEM_PROMPT = `You are an advanced AI assistant with the fol
 - Use tables, lists, and headings to structure information clearly
 - Add emphasis (bold/italic) where appropriate for clarity
 - Include emojis only when contextually appropriate or requested
+- When web citations are available separately, do not append raw source domains or URLs inline just to cite them; keep the prose clean and let the citation metadata carry the references
 
 ### Special Rendering
 When creating documents or complex content:
@@ -50,4 +51,3 @@ export function buildSystemPrompt(customInstructions?: string): string {
   
   return parts.join('\n\n');
 }
-

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildResponseCreateParams } from "./chatRequest";
+import { MEMORY_TOOL_NAMES, buildResponseCreateParams } from "./chatRequest";
 
 function toolTypesFor(responseMode: "default" | "document" | "deepsearch_medium" | "deepsearch_high" | "quiz") {
   const params = buildResponseCreateParams({
@@ -15,6 +15,22 @@ describe("buildResponseCreateParams", () => {
     expect(toolTypesFor("default")).toContain("image_generation");
   });
 
+  it("exposes memory function tools only in default chat mode", () => {
+    const params = buildResponseCreateParams({
+      input: [{ role: "user", content: "Lembra disso pra mim." }],
+      responseMode: "default",
+    });
+
+    const functionToolNames = (params.tools ?? [])
+      .filter((tool) => tool.type === "function")
+      .map((tool) => tool.name);
+
+    expect(functionToolNames).toEqual([
+      MEMORY_TOOL_NAMES.remember,
+      MEMORY_TOOL_NAMES.search,
+    ]);
+  });
+
   it.each(["document", "deepsearch_medium", "deepsearch_high"] as const)(
     "does not expose image generation in %s mode",
     (responseMode) => {
@@ -22,6 +38,7 @@ describe("buildResponseCreateParams", () => {
 
       expect(toolTypes).not.toContain("image_generation");
       expect(toolTypes).toContain("web_search_preview");
+      expect(toolTypes).not.toContain("function");
     }
   );
 

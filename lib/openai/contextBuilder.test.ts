@@ -29,4 +29,61 @@ describe("buildSystemPrompt", () => {
     expect(result.systemMessage).toContain("Gosta de respostas diretas.");
     expect(result.injectedMemories).toHaveLength(1);
   });
+
+  it("keeps retrieved conversation context separate from active memories", () => {
+    const result = buildSystemPrompt(
+      "",
+      {
+        id: "default",
+        contextAboutUser: "",
+        responsePreferences: "",
+      },
+      [],
+      [
+        {
+          text: "Anders decidiu revisar memorias antes de ativar.",
+          score: 0.82,
+          conversationId: "conversation-123456",
+          conversationTitle: "Arquitetura de memoria",
+          messageIds: ["msg-1"],
+          timestamp: "2026-06-17T10:00:00.000Z",
+        },
+      ]
+    );
+
+    expect(result.systemMessage).toContain("## Retrieved Conversation Context");
+    expect(result.systemMessage).toContain("historical evidence");
+    expect(result.systemMessage).toContain("Arquitetura de memoria");
+    expect(result.systemMessage).toContain("revisar memorias");
+    expect(result.injectedMemories).toHaveLength(0);
+    expect(result.retrievedContext).toHaveLength(1);
+  });
+
+  it("adds dynamic memory tool policy only when enabled", () => {
+    const disabled = buildSystemPrompt(
+      "",
+      {
+        id: "default",
+        contextAboutUser: "",
+        responsePreferences: "",
+      },
+      []
+    );
+    const enabled = buildSystemPrompt(
+      "",
+      {
+        id: "default",
+        contextAboutUser: "",
+        responsePreferences: "",
+      },
+      [],
+      [],
+      true
+    );
+
+    expect(disabled.systemMessage).not.toContain("## Dynamic Memory Tools");
+    expect(enabled.systemMessage).toContain("## Dynamic Memory Tools");
+    expect(enabled.systemMessage).toContain("Use remember_memory only");
+    expect(enabled.systemMessage).toContain("Use search_memory when");
+  });
 });

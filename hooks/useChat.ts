@@ -32,6 +32,11 @@ import {
 import { useCustomInstructions } from "@/hooks/useCustomInstructions";
 import { useMemories } from "@/hooks/useMemories";
 import { buildSystemPrompt } from "@/lib/openai/contextBuilder";
+import {
+  createMemorySuggestions,
+  indexConversationMemory,
+  searchMemoryContext,
+} from "@/lib/storage/memoryRag";
 import { apiUrl } from "@/lib/utils";
 import { buildEditResendOptions } from "@/lib/chat/resendOptions";
 import { buildQuizCompletionPatch } from "@/lib/chat/quizCompletion";
@@ -230,6 +235,15 @@ async function persistConversationSnapshot(
   await queryClient.invalidateQueries({
     queryKey: conversationKeys.detail(conversationId),
   });
+}
+
+async function refreshMemoryLayerForConversation(conversationId: string) {
+  try {
+    await indexConversationMemory(conversationId);
+    await createMemorySuggestions(conversationId);
+  } catch (error) {
+    console.warn("[useChat] Falha ao atualizar camada de memoria:", error);
+  }
 }
 
 async function persistConversationSnapshotSafely(
@@ -602,10 +616,21 @@ export function useChat() {
             err
           );
         }
+        const retrievedContext = await searchMemoryContext({
+          query: content,
+          excludeConversationId: activeConversationId,
+          topK: 4,
+        }).catch((error) => {
+          console.warn("[useChat] Falha ao recuperar contexto de memoria:", error);
+          return [];
+        });
+
         const { systemMessage: baseSystemMessage } = buildSystemPrompt(
           parameters.systemPrompt,
           { id: "default", contextAboutUser, responsePreferences, customSystemInstructions },
-          memories
+          memories,
+          retrievedContext,
+          responseMode === "default"
         );
         const systemMessage =
           isDocumentLikeMode(responseMode)
@@ -766,6 +791,7 @@ export function useChat() {
                 ? createMessageArtifact(accumulated, {
                     force: true,
                     displayMode: "document",
+                    citations: streamState.citations,
                   })
                 : undefined;
             if (artifact) {
@@ -789,6 +815,8 @@ export function useChat() {
           queryClient,
           "Mensagem enviada, mas não foi salva. Tente recarregar."
         );
+
+        void refreshMemoryLayerForConversation(activeConversationId);
 
         sent = true;
       } catch (err) {

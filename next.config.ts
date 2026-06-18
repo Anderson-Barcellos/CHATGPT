@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
 
   compress: true,
 
+  serverExternalPackages: ["@lancedb/lancedb"],
+
   turbopack: {
     root: __dirname,
   },

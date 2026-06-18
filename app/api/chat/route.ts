@@ -11,6 +11,10 @@ import {
   createOpenAIClient,
   resolveRequestedModel,
 } from "@/lib/server/chatRequest";
+import {
+  createMemoryToolEventStream,
+  createResponseWithMemoryTools,
+} from "@/lib/server/chatToolOrchestrator";
 import { QUIZ_FORCED_MODEL } from "@/lib/artifacts/quizArtifacts";
 
 const CHAT_REQUEST_BODY_LIMIT_BYTES = 10 * 1024 * 1024;
@@ -75,47 +79,11 @@ export async function POST(request: NextRequest) {
     const requestParams = buildResponseCreateParams(body);
 
     if (stream && responseMode !== "quiz") {
-      const streamResponse = await openai.responses.create(
-        { ...requestParams, stream: true },
-        { signal: request.signal }
+      const readableStream = createMemoryToolEventStream(
+        openai,
+        requestParams,
+        request.signal
       );
-
-      const encoder = new TextEncoder();
-      const readableStream = new ReadableStream({
-        async start(controller) {
-          try {
-            for await (const event of streamResponse) {
-              if (request.signal.aborted) {
-                break;
-              }
-              const data = JSON.stringify(event);
-              controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-            }
-
-            if (!request.signal.aborted) {
-              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-            }
-            controller.close();
-          } catch (error) {
-            if (
-              error instanceof Error &&
-              (error.name === "AbortError" || request.signal.aborted)
-            ) {
-              console.info("[chat] Stream abortado pelo cliente — fechando upstream.");
-              try {
-                controller.close();
-              } catch {
-                // controller já pode estar fechado
-              }
-              return;
-            }
-            controller.error(error);
-          }
-        },
-        cancel() {
-          console.info("[chat] ReadableStream.cancel — cliente desconectou.");
-        },
-      });
 
       return new Response(readableStream, {
         headers: {
@@ -126,9 +94,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const response = await openai.responses.create(requestParams, {
-      signal: request.signal,
-    });
+    const response = await createResponseWithMemoryTools(
+      openai,
+      requestParams,
+      request.signal
+    );
 
     return Response.json(response);
   } catch (error) {

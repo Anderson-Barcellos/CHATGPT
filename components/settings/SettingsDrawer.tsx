@@ -4,22 +4,26 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Brain,
+  Check,
   CheckCircle2,
   Image as ImageIcon,
   LoaderCircle,
   Plus,
+  RefreshCw,
   Sliders,
   Sparkles,
   Trash2,
   User,
   Volume2,
   X,
+  XCircle,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { toast } from "sonner";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useMemories } from "@/hooks/useMemories";
+import { useMemorySuggestions } from "@/hooks/useMemorySuggestions";
 import { useCustomInstructions } from "@/hooks/useCustomInstructions";
 import {
   MODELS,
@@ -41,7 +45,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TTS_VOICES } from "@/lib/tts/speechText";
-import type { Memory } from "@/types";
+import { indexRecentConversationMemories } from "@/lib/storage/memoryRag";
+import { BASE_SYSTEM_PROMPT } from "@/lib/prompts/systemPrompt";
+import { FIXED_PERSONA_PROMPT } from "@/lib/prompts/personaPrompt";
+import { MEMORY_CATEGORIES } from "@/types";
+import type { Memory, MemorySuggestion } from "@/types";
 
 const IMAGE_SIZES = [
   { id: "1024x1024", label: "Quadrada 1024" },
@@ -85,6 +93,13 @@ interface MemoryCardProps {
   memory: Memory;
   onDelete: (id: string) => Promise<void>;
   onUpdate: (id: string, updates: Partial<Memory>) => Promise<void>;
+}
+
+interface MemorySuggestionCardProps {
+  suggestion: MemorySuggestion;
+  isUpdating: boolean;
+  onAccept: (id: string, content: string) => Promise<void>;
+  onReject: (id: string) => Promise<void>;
 }
 
 function SaveStatusBadge({
@@ -237,6 +252,61 @@ function MemoryCard({ memory, onDelete, onUpdate }: MemoryCardProps) {
   );
 }
 
+function MemorySuggestionCard({
+  suggestion,
+  isUpdating,
+  onAccept,
+  onReject,
+}: MemorySuggestionCardProps) {
+  const [draft, setDraft] = useState(suggestion.content);
+
+  return (
+    <div className="gc-refined-panel rounded-2xl border border-primary/20 bg-primary/5 p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-micro font-semibold uppercase tracking-eyebrow text-primary">
+            Sugestão de memória
+          </p>
+          <p className="mt-0.5 text-nano text-muted-foreground">
+            {MEMORY_CATEGORIES[suggestion.category]} · confiança{" "}
+            {Math.round(suggestion.confidence * 100)}%
+          </p>
+        </div>
+        {isUpdating && <LoaderCircle className="h-3.5 w-3.5 animate-spin text-primary" />}
+      </div>
+
+      <textarea
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        rows={3}
+        className="gc-refined-soft-surface min-h-[84px] w-full resize-none rounded-xl border px-3 py-2.5 text-sm leading-relaxed outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
+      />
+
+      <div className="mt-2 flex items-center justify-end gap-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => void onReject(suggestion.id)}
+          disabled={isUpdating}
+          className="h-8 rounded-xl px-2 text-muted-foreground hover:text-destructive"
+        >
+          <XCircle className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => void onAccept(suggestion.id, draft.trim())}
+          disabled={isUpdating || !draft.trim()}
+          className="h-8 rounded-xl px-2"
+        >
+          <Check className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   const { parameters, updateParameters } = useSettingsStore();
   const {
@@ -248,11 +318,21 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   } = useUIStore();
   const { memories = [], addMemory, updateMemory, deleteMemory } = useMemories();
   const {
+    suggestions,
+    isLoading: isLoadingSuggestions,
+    isUpdating: updatingSuggestionId,
+    refresh: refreshSuggestions,
+    acceptSuggestion,
+    rejectSuggestion,
+  } = useMemorySuggestions();
+  const {
     contextAboutUser,
     responsePreferences,
+    customSystemInstructions,
     ttsPreferences,
     updateContextAboutUser,
     updateResponsePreferences,
+    updateCustomSystemInstructions,
     updateTtsPreferences,
     isSaving,
     isLoaded,
@@ -261,6 +341,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>("tuning");
   const [newMemory, setNewMemory] = useState("");
   const [isCreatingMemory, setIsCreatingMemory] = useState(false);
+  const [isIndexingMemory, setIsIndexingMemory] = useState(false);
 
   const currentModel = MODELS[parameters.model];
   const showTemperature = modelSupportsTemperature(parameters.model);
@@ -268,12 +349,30 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   const showCodeInterpreter = modelSupportsCodeInterpreter(parameters.model);
   const maxTokensLimit = currentModel?.maxOutput ?? parameters.maxOutputTokens;
   const minTokensLimit = Math.min(256, maxTokensLimit);
+  const mainPromptPreview = useMemo(
+    () => `${BASE_SYSTEM_PROMPT}\n\n---\n\n${FIXED_PERSONA_PROMPT}`,
+    []
+  );
 
   const panelStatus = useMemo<SaveStatus>(() => {
     if (activeTab === "persona" || activeTab === "tuning") return saveStatus;
-    if (isCreatingMemory) return "saving";
+    if (
+      isCreatingMemory ||
+      isIndexingMemory ||
+      isLoadingSuggestions ||
+      updatingSuggestionId
+    ) {
+      return "saving";
+    }
     return "idle";
-  }, [activeTab, isCreatingMemory, saveStatus]);
+  }, [
+    activeTab,
+    isCreatingMemory,
+    isIndexingMemory,
+    isLoadingSuggestions,
+    saveStatus,
+    updatingSuggestionId,
+  ]);
 
   const handleAddMemory = async () => {
     const content = newMemory.trim();
@@ -292,6 +391,18 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
       toast.error("Não consegui salvar essa memória agora.");
     } finally {
       setIsCreatingMemory(false);
+    }
+  };
+
+  const handleIndexRecentMemory = async () => {
+    setIsIndexingMemory(true);
+    try {
+      await indexRecentConversationMemories(75);
+      toast.success("Histórico recente indexado para RAG.");
+    } catch {
+      toast.error("Não consegui indexar o histórico agora.");
+    } finally {
+      setIsIndexingMemory(false);
     }
   };
 
@@ -612,9 +723,78 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
               <div className="space-y-4">
                 <div className="gc-refined-accent-surface rounded-2xl border p-3">
                   <p className="text-xs leading-relaxed text-muted-foreground">
-                    Memórias ficam no servidor e entram no prompt automaticamente quando estão ativas.
-                    Dá pra editar o texto inline sem sair da lista.
+                    Memórias ativas entram no prompt. Sugestões vindas das conversas ficam
+                    pendentes até tu aceitar, editar ou rejeitar.
                   </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void handleIndexRecentMemory()}
+                    disabled={isIndexingMemory}
+                    className="mt-3 h-8 rounded-xl"
+                  >
+                    {isIndexingMemory ? (
+                      <LoaderCircle className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                    )}
+                    Indexar histórico
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-micro font-semibold uppercase tracking-eyebrow text-muted-foreground">
+                      Sugestões pendentes
+                    </h3>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => void refreshSuggestions()}
+                      disabled={isLoadingSuggestions}
+                      className="h-8 rounded-xl px-2"
+                    >
+                      <RefreshCw
+                        className={cn(
+                          "h-3.5 w-3.5",
+                          isLoadingSuggestions && "animate-spin"
+                        )}
+                      />
+                    </Button>
+                  </div>
+
+                  {suggestions.length > 0 ? (
+                    suggestions.map((suggestion) => (
+                      <MemorySuggestionCard
+                        key={suggestion.id}
+                        suggestion={suggestion}
+                        isUpdating={updatingSuggestionId === suggestion.id}
+                        onAccept={async (id, content) => {
+                          try {
+                            await acceptSuggestion(id, content);
+                            toast.success("Memória ativada.");
+                          } catch {
+                            toast.error("Não consegui aceitar essa sugestão.");
+                          }
+                        }}
+                        onReject={async (id) => {
+                          try {
+                            await rejectSuggestion(id);
+                          } catch {
+                            toast.error("Não consegui rejeitar essa sugestão.");
+                          }
+                        }}
+                      />
+                    ))
+                  ) : (
+                    <div className="gc-refined-panel rounded-2xl border-2 border-dashed px-4 py-5 text-center">
+                      <p className="text-xs text-muted-foreground">
+                        Nenhuma sugestão pendente.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-2">
@@ -672,8 +852,25 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
               <div className="space-y-4">
                 <div className="gc-refined-accent-surface rounded-2xl border p-3">
                   <p className="text-xs leading-relaxed text-muted-foreground">
-                    Persona e regras base seguem fixas no servidor. Aqui tu ajusta o contexto
-                    extra sobre ti e o jeito que prefere receber as respostas.
+                    Persona e regras base seguem fixas no servidor. Abaixo tu enxerga o
+                    prompt principal e ajusta o contexto extra que entra junto nas respostas.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Prompt principal
+                  </label>
+                  <textarea
+                    value={mainPromptPreview}
+                    readOnly
+                    rows={8}
+                    className="gc-refined-soft-surface w-full resize-none rounded-2xl border p-3 font-mono text-[10px] leading-relaxed text-muted-foreground outline-none"
+                  />
+                  <p className="text-micro leading-relaxed text-muted-foreground/80">
+                    Prévia somente leitura do prompt base e da persona fixa que entram antes
+                    dos ajustes abaixo.
                   </p>
                 </div>
 
@@ -693,6 +890,20 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                     onChange={(e) => updateContextAboutUser(e.target.value)}
                     placeholder="Contexto adicional sobre você..."
                     rows={7}
+                    className="gc-refined-soft-surface w-full resize-none rounded-2xl border p-3 text-xs outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Sliders className="h-3.5 w-3.5" />
+                    Regras customizadas
+                  </label>
+                  <textarea
+                    value={customSystemInstructions}
+                    onChange={(e) => updateCustomSystemInstructions(e.target.value)}
+                    placeholder="Regras adicionais que entram no prompt do sistema..."
+                    rows={5}
                     className="gc-refined-soft-surface w-full resize-none rounded-2xl border p-3 text-xs outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
                   />
                 </div>

@@ -38,6 +38,13 @@ export const ALLOWED_CHAT_MODELS = new Set(
 
 export const DEFAULT_CHAT_MODEL = "gpt-5.4-mini";
 const DEFAULT_IMAGE_GENERATION_MODEL = "gpt-image-2";
+export const MEMORY_TOOL_NAMES = {
+  remember: "remember_memory",
+  search: "search_memory",
+} as const;
+
+export type MemoryToolName = (typeof MEMORY_TOOL_NAMES)[keyof typeof MEMORY_TOOL_NAMES];
+
 const LEGACY_MODEL_FALLBACKS: Record<string, string> = {
   "gpt-5.1-chat-latest": DEFAULT_CHAT_MODEL,
   "gpt-5.3-chat-latest": DEFAULT_CHAT_MODEL,
@@ -62,6 +69,75 @@ function supportsImageGenerationTool(responseMode: ResponseMode): boolean {
   return responseMode === "default";
 }
 
+function supportsMemoryTools(responseMode: ResponseMode): boolean {
+  return responseMode === "default";
+}
+
+function buildMemoryTools(): OpenAI.Responses.FunctionTool[] {
+  return [
+    {
+      type: "function",
+      name: MEMORY_TOOL_NAMES.remember,
+      description:
+        "Save a durable active memory only when the user explicitly asks you to remember, memorize, or keep a specific fact for future chats.",
+      strict: true,
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          content: {
+            type: "string",
+            description:
+              "A concise, standalone memory in Portuguese or the user's language. Include only the fact the user asked to remember.",
+          },
+          category: {
+            type: "string",
+            enum: [
+              "personal",
+              "professional",
+              "preferences",
+              "projects",
+              "technical",
+              "other",
+            ],
+          },
+          priority: {
+            type: "number",
+            description:
+              "Importance from 0 to 20. Use higher values only for stable identity, preferences, projects, or recurring work context.",
+          },
+        },
+        required: ["content", "category", "priority"],
+      },
+    },
+    {
+      type: "function",
+      name: MEMORY_TOOL_NAMES.search,
+      description:
+        "Search prior conversation chunks when the user explicitly asks to recover more detail, history, evidence, or context from previous chats.",
+      strict: true,
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          query: {
+            type: "string",
+            description:
+              "The focused semantic search query for prior conversation memory.",
+          },
+          topK: {
+            type: "integer",
+            minimum: 1,
+            maximum: 8,
+            description: "Maximum number of chunks to retrieve.",
+          },
+        },
+        required: ["query", "topK"],
+      },
+    },
+  ];
+}
+
 function buildTools(
   model: string,
   codeInterpreterEnabled: boolean,
@@ -83,6 +159,10 @@ function buildTools(
       partial_images: 2,
       output_format: "png",
     });
+  }
+
+  if (supportsMemoryTools(responseMode)) {
+    tools.push(...buildMemoryTools());
   }
 
   tools.push({
