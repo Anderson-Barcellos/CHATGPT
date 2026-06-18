@@ -7,9 +7,9 @@ Alguns artefatos internos antigos ainda usam o rótulo histórico `Celer`, mas o
 
 ## O que o projeto faz
 
-- Chat com streaming, reasoning visível por summary/tokens, web search, geração de imagens e code interpreter opcional.
+- Chat com streaming, reasoning visível por summary/tokens, web search, geração de imagens, memory tools e code interpreter opcional.
 - Histórico de conversas com persistência incremental durante streaming e recuperação de respostas interrompidas.
-- Memórias, persona, instruções customizadas e preferências de TTS persistidas server-side.
+- Memórias, RAG local de conversas, persona, prompt principal visível, instruções customizadas e preferências de TTS persistidas server-side.
 - Player TTS nas respostas do assistente com modo turbo e laboratório separado de Realtime mini.
 - Artefatos de documento/quiz com preview, download, impressão e PDF A4 server-side.
 - Auth simples do app por usuário/senha, sessão JWT e cookie `auth-token`.
@@ -27,7 +27,7 @@ Alguns artefatos internos antigos ainda usam o rótulo histórico `Celer`, mas o
 
 ```text
 app/
-  api/                  Rotas BFF: chat, auth, persona, memoria, PDF, TTS
+  api/                  Rotas BFF: chat, auth, persona, memoria/RAG, PDF, TTS
   login/                Tela de login do app
 components/
   chat/                 Balões, markdown, reasoning, ações rápidas e TTS
@@ -45,6 +45,7 @@ data/
   conversations.json    Conversas locais
   memories.json         Memórias locais
   persona.json          Persona e preferências
+  workspace-notes.json  Capturas/notas locais (runtime privado)
 ```
 
 ## Documentação

@@ -1,6 +1,6 @@
 # Modelos
 
-**Última atualização:** 2026-05-31
+**Última atualização:** 2026-06-18
 **Fonte:** `lib/models/modelConfig.ts`
 
 ## Catálogo Atual
@@ -56,10 +56,11 @@ Observação de UI: reasoning pode ser aplicado sem summary textual no stream. Q
 `response.completed` traz `reasoning_tokens`, o balão mantém um estado visível de
 "raciocínio aplicado" mesmo se não houver eventos `reasoning_summary_*`.
 
-Tools padrão em modos não-quiz:
+Tools padrão por modo:
 
-- `image_generation`
-- `web_search_preview`
+- `image_generation` apenas em `responseMode="default"`
+- `remember_memory` e `search_memory` apenas em `responseMode="default"`
+- `web_search_preview` em modos não-quiz
 - `code_interpreter` opcional
 
 ## Helpers Exportados

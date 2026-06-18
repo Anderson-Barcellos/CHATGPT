@@ -1,6 +1,6 @@
 # API
 
-**Última atualização:** 2026-06-10
+**Última atualização:** 2026-06-18
 **Base URL pública:** `https://ultrassom.ai/chat`
 **Base path interno:** `NEXT_PUBLIC_BASE_PATH=/chat`
 
@@ -53,10 +53,11 @@ Proxy server-side para a OpenAI `Responses API`, com suporte a SSE streaming.
 
 ### Ferramentas injetadas
 
-Em modos não-quiz, o backend adiciona por padrão:
+Ferramentas injetadas pelo backend:
 
-- `image_generation` com `gpt-image-2`, `partial_images: 2`, `output_format: png`.
-- `web_search_preview` com localização aproximada `BR` e contexto `medium`.
+- `image_generation` com `gpt-image-2`, `partial_images: 2`, `output_format: png`, apenas em `responseMode="default"`.
+- `web_search_preview` com localização aproximada `BR` e contexto `medium`, em modos não-quiz.
+- `remember_memory` e `search_memory` apenas em `responseMode="default"`, com até duas rodadas de function-call/output para salvar memórias explícitas ou recuperar contexto histórico quando o usuário pedir.
 - `code_interpreter` apenas quando `codeInterpreterEnabled=true` e o modelo suporta.
 
 Em `responseMode="quiz"`, as tools são removidas e o backend força:
@@ -157,20 +158,29 @@ Limpa o cookie de autenticação.
 
 ## Memórias
 
+Memórias explícitas continuam em `/api/memories/*`. O índice semântico/RAG e sugestões de memória ficam em `/api/memory/*`.
+
 | Método | Rota | Função |
 |---|---|---|
 | `GET` | `/api/memories` | Lista memórias |
 | `POST` | `/api/memories` | Cria memória |
 | `PUT` | `/api/memories/[id]` | Atualiza memória |
 | `DELETE` | `/api/memories/[id]` | Remove memória |
+| `POST` | `/api/memory/index` | Indexa conversas no store vetorial local para busca semântica |
+| `POST` | `/api/memory/search` | Busca chunks históricos por query, com `topK` opcional |
+| `GET` | `/api/memory/suggestions` | Lista sugestões de memória, opcionalmente por `status` |
+| `POST` | `/api/memory/suggestions` | Gera sugestões para uma conversa específica |
+| `PATCH` | `/api/memory/suggestions/[id]` | Aceita/rejeita sugestão; aceitar cria memória ativa |
 
-**Arquivos:** `app/api/memories/*`, `lib/storage/memories.ts`
+**Arquivos:** `app/api/memories/*`, `app/api/memory/*`, `lib/storage/memories.ts`, `lib/server/memory/*`
 
 ## Persona
 
 ### `GET /api/persona`
 
 Lê persona persistida.
+
+O painel de Persona também exibe uma prévia somente leitura do prompt principal (`BASE_SYSTEM_PROMPT` + `FIXED_PERSONA_PROMPT`) antes dos campos editáveis.
 
 ### `PUT /api/persona` / `POST /api/persona`
 

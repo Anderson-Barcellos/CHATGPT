@@ -1,5 +1,35 @@
 # Gaucho Chat — Project Memory
 
+### 2026-06-13 14:18 - Fundo dos arredores mobile voltou para wallpaper da página
+
+Context:
+- Anders apontou que o problema no mobile/full-screen não era a área útil do app, e sim os arredores expostos pelas barras do navegador acima/abaixo do shell.
+- Comparação com `/root/STT` mostrou que o STT deixa o root praticamente cru (`html, body, #root { min-height: 100%; }`), enquanto o Gaucho Chat tinha passado a pintar `html/body` com `--gc-bg` chapado.
+
+Details:
+- `app/globals.css` voltou a usar `background: var(--gc-bg-page)` em `html` e `body`.
+- O shell interno continua com `gc-dynamic-bg` e a área útil do app permanece inalterada; a correção atua só no pano de fundo que aparece nos arredores/safe areas do navegador mobile.
+- Validação executada: `npx tsc --noEmit` e `npm run build` passaram.
+
+Notes:
+- O ponto sutil aqui é diferenciar “viewport útil do app” de “fundo do documento/root”. Se o sintoma for barras móveis mostrando faixas chapadas, olhar primeiro `html/body`, não o layout do workspace.
+
+### 2026-06-13 14:00 - Respostas em segundo plano + ajustes mobile
+
+Context:
+- Consolidamos a extração do builder de requests do chat para `lib/server/chatRequest.ts` e adicionamos rotas de background para respostas longas.
+- `useChat` ganhou suporte a jobs em segundo plano (queue/sync/cancel) com polling leve e sincronização em `visibilitychange`.
+- Ajustes visuais mobile: shell/overscroll, settings full-screen no mobile, capturas com toggle “ver todas”, frame `gc-device-frame` para manter layout firme e remover `invisible` do shell.
+
+Details:
+- Novas rotas: `/api/chat/background`, `/api/chat/background/sync`, `/api/chat/background/cancel` (persistem `response_id` e aplicam patch com artifact de documento quando completo).
+- Novos helpers: `lib/server/chatBackgroundJob.ts`, `lib/chat/responseToMessagePatch.ts`, testes correspondentes; `chatRequest` extraído do handler principal com testes.
+- `docs/API.md` documenta o fluxo de background; `types/index.ts` inclui `backgroundJob`; `app/globals.css` ajusta overscroll e densidade mobile; SettingsDrawer full-screen no mobile; CapturesPanel com expansão de lista.
+- Commit: `eb0d15c feat: respostas em segundo plano e ajustes mobile` (não inclui dados runtime `data/*.json`).
+
+Notes:
+- Validações já rodadas antes do commit: `npm test`, `npx tsc --noEmit`, `npm run build`; serviço estava healthy. Working tree restante: `data/conversations.json`, `data/persona.json` (runtime), `.playwright-mcp/`, `screenshot-after-fullscreen-fix.png` não versionados.
+
 ### 2026-06-04 20:29 - Densidade mobile compacta por tokens
 
 Context:

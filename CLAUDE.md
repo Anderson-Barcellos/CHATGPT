@@ -147,7 +147,8 @@ O shell legado (`components/layout/*`, `components/sidebar/*`, `components/chat/
 
 ### 7. Storage server-side em JSON
 
-- **Server**: `data/conversations.json`, `data/memories.json`, `data/persona.json` — JSON files lidos/escritos por `lib/storage/conversations.ts` e `lib/storage/memories.ts`. Endpoints `/api/conversations`, `/api/memories`, `/api/persona` operam sobre eles.
+- **Server**: `data/conversations.json`, `data/memories.json`, `data/persona.json` — JSON files lidos/escritos por `lib/storage/conversations.ts`, `lib/storage/memories.ts` e `/api/persona`. Endpoints `/api/conversations`, `/api/memories`, `/api/persona` operam sobre eles.
+- **Memória semântica/RAG**: `/api/memory/index`, `/api/memory/search` e `/api/memory/suggestions*` vivem em `app/api/memory/*`; implementação em `lib/server/memory/*` e `lib/storage/memoryRag.ts`.
 - **Agenda/Notas locais**: `data/google-calendar-token.json`, `data/calendar-event-drafts.json` e `data/workspace-notes.json` são runtime privado e ignorados pelo Git. O token Google é criptografado em `lib/google/tokenStore.ts` e exige `GOOGLE_TOKEN_ENCRYPTION_KEY`.
 - **Client**: `useConversations` usa TanStack Query (`hooks/queries/useConversationQuery.ts`) para cache/invalidacao das conversas; `useMemories` faz bootstrap em store Zustand a partir da API/storage server-side.
 - **Persistência com retry**: `lib/storage/conversationPersistence.ts` envolve writes server-side com `withConversationPersistenceRetry`.
@@ -163,7 +164,13 @@ Para `/chat`, a regra crítica de cookie no Apache é `ProxyPassReverseCookiePat
 
 ### 9. Tools default-on (exceto quiz)
 
-`buildTools` em `/api/chat/route.ts` adiciona por padrão `image_generation` + `web_search_preview` (country `BR`, `search_context_size: medium`). `code_interpreter` é opt-in via `codeInterpreterEnabled` + capability do modelo.
+`buildTools` em `lib/server/chatRequest.ts` adiciona tools conforme o modo:
+
+- `responseMode="default"`: `image_generation`, `web_search_preview` (country `BR`, `search_context_size: medium`), `remember_memory`, `search_memory` e `code_interpreter` opcional.
+- `document` e `deepsearch_*`: `web_search_preview` e `code_interpreter` opcional; sem imagem nem memory tools.
+- `quiz`: `tools = []`.
+
+As memory tools são executadas por `lib/server/chatToolOrchestrator.ts`, com até duas rodadas de function-call/output antes da resposta final. `remember_memory` cria memória ativa só quando o modelo chama a tool; `search_memory` consulta o RAG local. `code_interpreter` continua opt-in via `codeInterpreterEnabled` + capability do modelo.
 
 ### 9b. Agenda Google e notas locais
 

@@ -11,12 +11,15 @@ Principais areas:
 - `hooks/useChat.ts`: streaming, reasoning, citacoes, persistencia e fluxo de envio
 - `lib/chat/useStreamingTextBuffer.ts`: buffer STT-style do texto do assistente
 - `lib/models/modelConfig.ts`: catalogo de modelos e metadados usados no seletor
+- `lib/openai/contextBuilder.ts`: montagem do prompt final com prompt base, persona fixa, ajustes, memórias e RAG
+- `lib/server/chatRequest.ts`: montagem do request OpenAI, tools e defaults server-side
 - `app/api/chat/route.ts`: proxy server-side para OpenAI
-- `data/*.json`: persistencia local simples para conversas e persona
+- `app/api/memory/*` e `lib/server/memory/*`: índice semântico, sugestões e memory tools
+- `data/*.json`: persistencia local simples para conversas, memórias, persona, rascunhos e notas
 
 ## Estado Atual Do Projeto
 
-- Modelo padrao atual: `gpt-5.3-chat-latest` (GPT-5.3 Instant)
+- Modelo padrao atual: `gpt-5.4-mini`
 - Shell ativo: `GauchoChatShellV2` / `WorkspaceFrameV2` — redesign completo (S0-S12)
 - Tokens `--gc-*` unificados em `app/globals.css`; light/dark completos
 - Preview de artefatos via `ArtifactPreviewSheet`; painel lateral focado em atividade e notas
@@ -28,9 +31,14 @@ Principais areas:
 - Primitivos de animação framer-motion em `components/motion/`
 - `MessageBubble` usa `motion.div` com `layout` (streaming suave); `AnimatePresence` no loop
 - Chips do header conectados ao estado real (model, reasoning, responseMode)
+- Aba Persona mostra prévia somente-leitura do prompt principal (`BASE_SYSTEM_PROMPT` + `FIXED_PERSONA_PROMPT`) e edita `contextAboutUser`, `customSystemInstructions` e `responsePreferences`
+- Memory tools (`remember_memory`, `search_memory`) ativas apenas em `responseMode="default"`; document/deepsearch/quiz seguem sem essas tools
+- `image_generation` ativa apenas no modo default; `web_search_preview` entra em modos não-quiz; `code_interpreter` é opt-in
 - Breakpoints: `md=768`, `lg=1024 (sidebar)`, `xl=1280 (painel contextual)`
 - Balões de assistente devem manter key estável por `message.id`; não incluir `artifact.id`
 - `MessageStreamStatus`: `"streaming" | "completed" | "aborted" | "failed" | "interrupted"` — `aborted` = usuário cancelou, `interrupted` = conexão caiu/reload mid-stream, `failed` = erro de API
+
+Nota de leitura: se houver conflito entre rodadas históricas antigas abaixo e este bloco de Estado Atual, trate este bloco como fonte mais recente antes de consultar os apêndices append-only.
 
 ## Ultimas Alteracoes Relevantes
 
@@ -876,3 +884,47 @@ Details:
 
 Notes:
 Validacao desta rodada: `npx tsc --noEmit`, `npm run build` e Playwright/Chrome confirmando `padding: 0px`, `borderWidth: 0px`, `borderRadius: 0px` no shell e label `Usar` nos cards. Commits: `a2ee903` (layout) e `c2bb8c0` (label).
+
+### 2026-06-14 00:41 - Remocao de fontes inline redundantes quando ja ha citations
+
+Context:
+Anders reportou respostas em que o texto vinha com dominios por extenso no corpo, enquanto o `MessageBubble` ja mostrava a bandeja de `Referencias` com os mesmos links logo abaixo.
+
+Details:
+`lib/artifacts/messageArtifacts.ts` passou a limpar mencoes inline redundantes de hostnames/URLs quando elas correspondem a `message.citations` (incluindo formatos como `(example.com)`, `[Fonte: example.com]` e linhas isoladas so com o dominio). `components/chat/MessageContent.tsx` aplica essa limpeza no render do texto e dos documentos inline. `lib/chat/streamMachine.ts` e `lib/chat/responseToMessagePatch.ts` passaram a persistir o conteudo ja saneado quando as citations estruturadas chegam. `hooks/useChat.ts` e `lib/server/chatBackgroundJob.ts` repassam citations ao gerar artifacts/documentos. `lib/prompts/systemPrompt.ts` ganhou instrucao curta para o modelo nao repetir dominio cru no corpo quando as citacoes estruturadas ja existirem. Testes novos/cobertos: `lib/artifacts/messageArtifacts.test.ts`, `lib/chat/streamMachine.test.ts`, `lib/chat/responseToMessagePatch.test.ts`.
+
+Notes:
+Validacao desta rodada: `npm test -- lib/artifacts/messageArtifacts.test.ts lib/chat/streamMachine.test.ts lib/chat/responseToMessagePatch.test.ts lib/formatting/chatMarkdown.test.ts`, `npx tsc --noEmit` e `npm run build`. Se aparecer outra variante de redundancia de fonte, revisar primeiro o helper `cleanCitationMarkers(...)` antes de esconder a bandeja de referencias ou mexer no markdown renderer.
+
+### 2026-06-14 00:51 - Indices inline [n] alinhados com a bandeja de referencias
+
+Context:
+Depois da limpeza inicial, Anders pediu um acabamento melhor: manter referencia inline, mas como indice numerico `[1]`, `[2]`, em vez de dominio por extenso ou parenteses vazios ao final dos paragrafos.
+
+Details:
+`lib/artifacts/messageArtifacts.ts` agora converte `【1†...】` em `[1]`, troca fontes inline redundantes por indices numericos de acordo com a ordem das `message.citations` e avanca referencias do mesmo hostname seguindo a ordem das URLs recebidas. Tambem cola referencias isoladas de volta ao fim do paragrafo e remove cascas vazias como `()`, `([])` e `([1])` quando necessario. `components/chat/MessageBubble.tsx` passou a renderizar o mesmo indice `[n]` em cada chip da bandeja `Referencias`, para o corpo da resposta apontar claramente para a lista abaixo. Testes focados atualizados em `lib/artifacts/messageArtifacts.test.ts`, `lib/chat/streamMachine.test.ts` e `lib/chat/responseToMessagePatch.test.ts`.
+
+Notes:
+Validacao desta rodada: `npm test -- lib/artifacts/messageArtifacts.test.ts lib/chat/streamMachine.test.ts lib/chat/responseToMessagePatch.test.ts lib/formatting/chatMarkdown.test.ts`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service` e health local/publico `healthy`. O restart continua tendo uma janela curta em que o `curl` pode falhar antes do `next-server` reassumir a porta `3040`; confirmar `systemctl is-active chatgpt.service` e rebater o health depois disso.
+
+### 2026-06-17 17:12 - Memory tools visiveis ao modelo
+
+Context:
+Adicionadas duas function tools para o modelo operar a memoria dinamica do Gaucho Chat sob controle do backend: `remember_memory` para salvar memorias explicitas e `search_memory` para recuperar chunks historicos do RAG quando o usuario pedir mais contexto.
+
+Details:
+`lib/server/chatRequest.ts` expoe as function tools apenas em `responseMode="default"`; quiz/document/deepsearch seguem sem essas tools. `lib/openai/contextBuilder.ts` injeta a policy de uso so quando as tools estao habilitadas. `lib/server/memory/toolExecutor.ts` executa as chamadas com validacao leve, usando `searchMemoryContext` e `createMemory`. `lib/server/chatToolOrchestrator.ts` envolve a Responses API em streaming e nao-streaming com ate duas rodadas de function-call/output antes de finalizar a resposta. `/etc/apache2/APACHE.md` documenta `/chat/api/memory/*`.
+
+Notes:
+Validacao desta rodada: `npm test -- lib/server/chatRequest.test.ts lib/openai/contextBuilder.test.ts lib/server/memory/toolExecutor.test.ts`, `npx tsc --noEmit`, `npm test`, `npm run build`, ESLint focado, `git diff --check`, `systemctl restart chatgpt.service` e health local/publico `healthy`. O lint amplo continua conhecido por ter falha pre-existente em `components/workspace-v2/AgendaPanelV2.tsx`; nesta rodada foi usado lint focado nos arquivos tocados.
+
+### 2026-06-18 01:15 - Drifts de documentacao reduzidos
+
+Context:
+Rodada curta de documentacao para alinhar os handoffs ao estado real apos Persona com prompt principal e memory tools/RAG.
+
+Details:
+`README.md`, `docs/API.md`, `docs/ARCHITECTURE.md`, `docs/MODELS.md`, `docs/README.md`, `CLAUDE.md` e o topo deste `AGENTS.md` foram atualizados para refletir: default `gpt-5.4-mini`, preview somente-leitura do prompt principal na aba Persona, `/api/memory/*`, LanceDB em `data/memory-index`, embeddings `text-embedding-3-small`, memory tools apenas no modo default, `image_generation` apenas no modo default, `web_search_preview` nos modos nao-quiz e `code_interpreter` opt-in. O bloco "Estado Atual Do Projeto" agora deve prevalecer sobre rodadas historicas antigas em caso de conflito.
+
+Notes:
+Validacao desta rodada: buscas focadas de termos propensos a drift e `git diff --check` nos markdown tocados. Sem mudanca de codigo ou infra.

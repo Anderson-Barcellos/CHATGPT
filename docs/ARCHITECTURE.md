@@ -1,6 +1,6 @@
 # Arquitetura
 
-**Última atualização:** 2026-06-04
+**Última atualização:** 2026-06-18
 
 ## Visão Geral
 
@@ -19,7 +19,7 @@ Browser/PWA
 - `app/page.tsx` é a entrada autenticada e renderiza `GauchoChatShellV2`.
 - `components/workspace-v2/*` contém o shell ativo: rail de conversas, canvas central, composer, painel de atividade/notas e preview de artifacts.
 - `components/chat/*` concentra rendering de mensagens, markdown, reasoning, quick actions, TTS e export.
-- `components/settings/*` concentra persona, memórias, tuning e preferências de voz.
+- `components/settings/*` concentra persona, prompt principal visível, memórias, sugestões/RAG, tuning e preferências de voz.
 
 O shell legado foi removido. Novas mudanças de UI devem seguir `workspace-v2`, tokens `--gc-*` em `app/globals.css` e os padrões atuais de componentes Radix/lucide.
 
@@ -91,6 +91,7 @@ Persistência server-side simples:
 - `data/conversations.json`
 - `data/memories.json`
 - `data/persona.json`
+- `data/memory-index` como índice vetorial local LanceDB para memória/RAG
 - `data/calendar-event-drafts.json` (runtime privado, ignorado pelo Git)
 - `data/workspace-notes.json` (runtime privado, ignorado pelo Git)
 - `data/google-calendar-token.json` (runtime privado, criptografado e ignorado pelo Git)
@@ -100,9 +101,25 @@ Camadas principais:
 - `lib/storage/conversations.ts`: CRUD e beacon para conversas.
 - `lib/storage/memories.ts`: CRUD de memórias.
 - `app/api/persona/route.ts`: persona, instruções customizadas e `ttsPreferences`.
+- `app/api/memory/*` e `lib/server/memory/*`: indexação semântica com `text-embedding-3-small`, busca RAG, sugestões e execução das memory tools.
 - `lib/storage/conversationPersistence.ts`: retry/normalização de writes.
 
 O cliente também usa stores Zustand e cache local, mas o estado canônico compartilhável fica no servidor JSON.
+
+## Prompt, Persona e Memória
+
+O prompt efetivo é montado em `lib/openai/contextBuilder.ts`:
+
+- `BASE_SYSTEM_PROMPT`, vindo de `lib/prompts/systemPrompt.ts`;
+- `FIXED_PERSONA_PROMPT`, vindo de `lib/prompts/personaPrompt.ts`;
+- prompt extra do seletor (`parameters.systemPrompt`), quando houver;
+- `contextAboutUser`, `responsePreferences` e `customSystemInstructions` de `/api/persona`;
+- memórias ativas de `data/memories.json`;
+- contexto recuperado do RAG local quando `useChat.ts` chama `searchMemoryContext`.
+
+Na aba Persona, `SettingsDrawer` mostra `BASE_SYSTEM_PROMPT + FIXED_PERSONA_PROMPT` como prévia somente leitura e deixa editáveis os campos persistidos em `/api/persona`.
+
+Em `responseMode="default"`, `lib/server/chatRequest.ts` também expõe `remember_memory` e `search_memory` como function tools. `lib/server/chatToolOrchestrator.ts` executa até duas rodadas de function-call/output para salvar memória explícita ou buscar histórico quando o modelo usar essas tools sob a policy injetada pelo `contextBuilder`.
 
 ## Agenda Google e Notas Locais
 
@@ -140,6 +157,12 @@ O TTS padrão usa `/api/tts` com `gpt-4o-mini-tts`.
 ## Modelos
 
 O catálogo vive em `lib/models/modelConfig.ts`. O default atual é `gpt-5.4-mini`; modelos removidos conhecidos caem para esse default. `gpt-5.2` inicia com reasoning `medium`, modelos `mini` iniciam com reasoning `none`, `responseMode="quiz"` força `gpt-5.4` com reasoning `high` e schema JSON, e os presets `deepsearch_medium|deepsearch_high` são aplicados hoje pelo `hooks/useChat.ts`, que envia `gpt-5.4-mini` com reasoning `medium|high` mantendo saída em artifact de documento/canvas. A rota server-side não faz enforcement específico de deepsearch. A montagem efetiva do objeto `reasoning` fica em `lib/chat/reasoningConfig.ts`, não no catálogo.
+
+Tools padrão:
+
+- `responseMode="default"`: `image_generation`, `web_search_preview`, `remember_memory`, `search_memory` e `code_interpreter` opcional.
+- `document` e `deepsearch_*`: `web_search_preview` e `code_interpreter` opcional; o fluxo principal usa background sync.
+- `quiz`: sem tools, com schema JSON estrito.
 
 ## Regras Quebráveis
 

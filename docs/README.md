@@ -6,8 +6,8 @@ Esta pasta contém a documentação canônica do Gaucho Chat. Docs antigos de Ve
 
 | Documento | Uso |
 |---|---|
-| [API](./API.md) | Contrato das rotas `app/api/*` |
-| [Arquitetura](./ARCHITECTURE.md) | Como UI, proxy, streaming, storage, auth, artifacts e TTS se conectam |
+| [API](./API.md) | Contrato das rotas `app/api/*`, incluindo memória/RAG, persona, agenda e voz |
+| [Arquitetura](./ARCHITECTURE.md) | Como UI, proxy, streaming, storage, auth, memória/RAG, artifacts e TTS se conectam |
 | [Infraestrutura](./INFRASTRUCTURE.md) | Apache, systemd, variáveis, deploy e troubleshooting |
 | [Modelos](./MODELS.md) | Catálogo local de modelos e regras de runtime |
 
