@@ -78,9 +78,12 @@ export function MessageContent({ message, className }: MessageContentProps) {
   const isCanvasPresentation = isDocumentPresentation || isQuizPresentation;
   const [inlineArtifactState, setInlineArtifactState] =
     useState<InlineArtifactViewState | null>(null);
-  const content = cleanCitationMarkers(message.content);
+  const content = cleanCitationMarkers(message.content, message.citations);
   const richContent = detectRichContent(content);
-  const artifactContent = artifact?.kind === "document" ? artifact.content : content;
+  const artifactContent =
+    artifact?.kind === "document"
+      ? cleanCitationMarkers(artifact.content, message.citations)
+      : content;
   const canRenderStreamingText =
     message.role === "assistant" &&
     !artifact &&

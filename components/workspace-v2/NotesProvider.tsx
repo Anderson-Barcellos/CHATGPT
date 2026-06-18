@@ -22,7 +22,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     implRef.current(text, sourceMessageId);
-    useUIStore.getState().setActivePanelTab("notes");
+    useUIStore.getState().setActivePanelTab("activity");
   }, []);
 
   const _register = useCallback((fn: AppendFn) => {

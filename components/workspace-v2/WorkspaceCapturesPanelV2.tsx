@@ -82,6 +82,9 @@ export function WorkspaceCapturesPanelV2({
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [expandedNoteIds, setExpandedNoteIds] = useState<Set<string>>(
+    () => new Set()
+  );
 
   const isRecording = speechStatus === "recording";
   const isTranscribing = speechStatus === "transcribing";
@@ -196,6 +199,18 @@ export function WorkspaceCapturesPanelV2({
     }
   }, []);
 
+  const toggleNoteExpansion = useCallback((noteId: string) => {
+    setExpandedNoteIds((current) => {
+      const next = new Set(current);
+      if (next.has(noteId)) {
+        next.delete(noteId);
+      } else {
+        next.add(noteId);
+      }
+      return next;
+    });
+  }, []);
+
   return (
     <section className="gc-clinical-card rounded-2xl border border-[color:var(--gc-border)] p-3 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
       <div className="mb-3 flex items-start justify-between gap-2">
@@ -271,64 +286,94 @@ export function WorkspaceCapturesPanelV2({
 
       {visibleNotes.length > 0 ? (
         <div className="space-y-2">
-          {visibleNotes.map((note) => (
-            <article
-              key={note.id}
-              className="gc-clinical-row rounded-xl border border-[color:var(--gc-border-soft)] px-2.5 py-2"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="truncate text-micro font-medium text-foreground/90">
-                    {note.title}
-                  </p>
-                  <p className="mt-1 line-clamp-2 text-nano text-muted-foreground/85">
-                    {note.body}
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  size="icon-xs"
-                  variant="ghost"
-                  onClick={() => void handleDelete(note.id)}
-                  disabled={deletingNoteId === note.id}
-                  className="shrink-0 rounded-md"
-                  aria-label="Remover captura"
-                >
-                  {deletingNoteId === note.id ? (
-                    <LoaderCircle className="size-3 animate-spin" />
-                  ) : (
-                    <Trash2 className="size-3" />
-                  )}
-                </Button>
-              </div>
-              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-nano text-muted-foreground">
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">
-                  {noteSourceLabel(note)}
-                </span>
-                <span>{formatNoteTime(note.createdAt)}</span>
-                {note.conversationId && <span>conversa vinculada</span>}
-              </div>
-              {context === "calendar" && (
-                <div className="mt-2 flex justify-end">
+          {visibleNotes.map((note) => {
+            const isDictatedNote = note.source === "stt";
+            const canExpandNote =
+              isDictatedNote &&
+              (note.body.length > 140 || note.body.includes("\n"));
+            const isNoteExpanded = expandedNoteIds.has(note.id);
+
+            return (
+              <article
+                key={note.id}
+                className="gc-clinical-row rounded-xl border border-[color:var(--gc-border-soft)] px-2.5 py-2"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-micro font-medium text-foreground/90">
+                      {note.title}
+                    </p>
+                    <p
+                      className={`mt-1 whitespace-pre-wrap text-nano text-muted-foreground/85 ${
+                        isNoteExpanded ? "" : "line-clamp-2"
+                      }`}
+                    >
+                      {note.body}
+                    </p>
+                  </div>
                   <Button
                     type="button"
-                    size="xs"
-                    variant="outline"
-                    onClick={() => void handleDraftNote(note)}
-                    disabled={draftingNoteId === note.id}
-                    className="h-7 rounded-md px-2 text-nano"
+                    size="icon-xs"
+                    variant="ghost"
+                    onClick={() => void handleDelete(note.id)}
+                    disabled={deletingNoteId === note.id}
+                    className="shrink-0 rounded-md"
+                    aria-label="Remover captura"
                   >
-                    {draftingNoteId === note.id ? (
+                    {deletingNoteId === note.id ? (
                       <LoaderCircle className="size-3 animate-spin" />
                     ) : (
-                      <CalendarPlus className="size-3" />
+                      <Trash2 className="size-3" />
                     )}
-                    Rascunhar
                   </Button>
                 </div>
-              )}
-            </article>
-          ))}
+                <div className="mt-2 flex flex-wrap items-center gap-1.5 text-nano text-muted-foreground">
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">
+                    {noteSourceLabel(note)}
+                  </span>
+                  <span>{formatNoteTime(note.createdAt)}</span>
+                  {note.conversationId && <span>conversa vinculada</span>}
+                </div>
+                {(canExpandNote || context === "calendar") && (
+                  <div className="mt-2 flex flex-wrap justify-end gap-1.5">
+                    {canExpandNote && (
+                      <Button
+                        type="button"
+                        size="xs"
+                        variant="ghost"
+                        onClick={() => toggleNoteExpansion(note.id)}
+                        className="h-7 rounded-md px-2 text-nano text-muted-foreground"
+                      >
+                        {isNoteExpanded ? (
+                          <ChevronUp className="size-3" />
+                        ) : (
+                          <ChevronDown className="size-3" />
+                        )}
+                        {isNoteExpanded ? "Recolher" : "Ler completa"}
+                      </Button>
+                    )}
+                    {context === "calendar" && (
+                      <Button
+                        type="button"
+                        size="xs"
+                        variant="outline"
+                        onClick={() => void handleDraftNote(note)}
+                        disabled={draftingNoteId === note.id}
+                        className="h-7 rounded-md px-2 text-nano"
+                      >
+                        {draftingNoteId === note.id ? (
+                          <LoaderCircle className="size-3 animate-spin" />
+                        ) : (
+                          <CalendarPlus className="size-3" />
+                        )}
+                        Rascunhar
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </article>
+            );
+          })}
 
           {(hiddenCount > 0 || isExpanded) && (
             <Button

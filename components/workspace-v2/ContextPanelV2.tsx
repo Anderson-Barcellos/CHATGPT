@@ -4,11 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  AlertTriangle,
-  Check,
   LoaderCircle,
   PanelRightClose,
-  PlayCircle,
   Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,18 +26,7 @@ import type {
   ActivePanelTab,
   ConversationWorkspace,
   ConversationWorkspaceNotes,
-  Message,
 } from "@/types";
-
-type ActivityStatus = "done" | "running" | "warning" | "failed";
-
-interface ActivityEvent {
-  id: string;
-  label: string;
-  detail?: string;
-  status: ActivityStatus;
-  timestamp: Date;
-}
 
 interface NotesDraft {
   objective: string;
@@ -54,15 +40,6 @@ const EMPTY_NOTES_DRAFT: NotesDraft = {
   nextStepsText: "",
 };
 
-function formatClock(date: Date): string {
-  return date.toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
-}
-
 function toDate(value: Date | string | undefined): Date {
   if (value instanceof Date) return value;
   if (typeof value === "string") {
@@ -70,12 +47,6 @@ function toDate(value: Date | string | undefined): Date {
     if (!Number.isNaN(parsed.getTime())) return parsed;
   }
   return new Date();
-}
-
-function truncateText(value: string, max = 96): string {
-  const normalized = value.replace(/\s+/g, " ").trim();
-  if (normalized.length <= max) return normalized;
-  return `${normalized.slice(0, max)}...`;
 }
 
 function parseNextStepsText(value: string): string[] {
@@ -95,189 +66,6 @@ function notesToDraft(notes: ConversationWorkspaceNotes | undefined): NotesDraft
   };
 }
 
-function buildActivityEvents(messages: Message[]): ActivityEvent[] {
-  const events: ActivityEvent[] = [];
-
-  for (const message of messages) {
-    const messageTime = toDate(message.timestamp);
-
-    if (message.role === "user") {
-      events.push({
-        id: `${message.id}:user-prompt`,
-        label: "Prompt do usuário enviado",
-        detail: truncateText(message.content),
-        status: "done",
-        timestamp: messageTime,
-      });
-
-      if (message.attachments?.length) {
-        events.push({
-          id: `${message.id}:user-attachments`,
-          label: `${message.attachments.length} anexo(s) enviados`,
-          detail: message.attachments.map((attachment) => attachment.name).join(", "),
-          status: "done",
-          timestamp: messageTime,
-        });
-      }
-
-      continue;
-    }
-
-    const streamStatus = message.streamStatus ?? "completed";
-    const assistantStatus: ActivityStatus =
-      streamStatus === "failed"
-        ? "failed"
-        : streamStatus === "aborted" || streamStatus === "interrupted"
-          ? "warning"
-          : streamStatus === "streaming"
-            ? "running"
-            : "done";
-
-    const assistantLabel =
-      streamStatus === "failed"
-        ? "Resposta do assistente falhou"
-        : streamStatus === "aborted"
-          ? "Geração cancelada pelo usuário"
-          : streamStatus === "interrupted"
-            ? "Resposta interrompida no streaming"
-            : streamStatus === "streaming"
-              ? "Resposta em geração"
-              : "Resposta concluída";
-
-    events.push({
-      id: `${message.id}:assistant-status`,
-      label: assistantLabel,
-      detail: truncateText(message.content),
-      status: assistantStatus,
-      timestamp: messageTime,
-    });
-
-    if (message.reasoningStatus === "thinking") {
-      events.push({
-        id: `${message.id}:reasoning-thinking`,
-        label: "Raciocínio em andamento",
-        status: "running",
-        timestamp: messageTime,
-      });
-    }
-
-    if (
-      message.reasoningStatus === "complete" ||
-      message.reasoningText ||
-      message.reasoningSummary
-    ) {
-      events.push({
-        id: `${message.id}:reasoning-complete`,
-        label: "Raciocínio consolidado",
-        status: "done",
-        timestamp: messageTime,
-      });
-    }
-
-    if (message.citations?.length) {
-      events.push({
-        id: `${message.id}:citations`,
-        label: `${message.citations.length} citação(ões) associadas`,
-        status: "done",
-        timestamp: messageTime,
-      });
-    }
-
-    if (message.artifact) {
-      events.push({
-        id: `${message.id}:artifact`,
-        label: `Artefato gerado: ${message.artifact.title}`,
-        detail: message.artifact.summary,
-        status: "done",
-        timestamp: messageTime,
-      });
-    }
-  }
-
-  return [...events].sort(
-    (left, right) => right.timestamp.getTime() - left.timestamp.getTime()
-  );
-}
-
-function ActivityTimeline({
-  title,
-  events,
-  compact = false,
-}: {
-  title: string;
-  events: ActivityEvent[];
-  compact?: boolean;
-}) {
-  const visibleEvents = compact ? events.slice(0, 5) : events;
-
-  return (
-    <section className="gc-clinical-card rounded-2xl border border-[color:var(--gc-border)] p-3 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-xs font-semibold text-foreground">{title}</h3>
-        <span className="text-nano text-primary">
-          {events.length} evento(s)
-        </span>
-      </div>
-
-      {visibleEvents.length > 0 ? (
-        <div className="space-y-2">
-          {visibleEvents.map((event) => {
-            const icon =
-              event.status === "failed" ? (
-                <AlertTriangle className="size-3 text-rose-200" />
-              ) : event.status === "warning" ? (
-                <AlertTriangle className="size-3 text-amber-200" />
-              ) : event.status === "running" ? (
-                <PlayCircle className="size-3 text-primary" />
-              ) : (
-                <Check className="size-3 text-emerald-700 dark:text-emerald-300" />
-              );
-
-            const badgeClass =
-              event.status === "failed"
-                ? "bg-rose-300/20 text-rose-100"
-                : event.status === "warning"
-                  ? "bg-amber-300/20 text-amber-100"
-                  : event.status === "running"
-                    ? "bg-primary/10 text-primary"
-                    : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
-
-            return (
-              <div
-                key={event.id}
-                className="gc-clinical-row flex items-start justify-between gap-2 rounded-xl border border-[color:var(--gc-border-soft)] px-2.5 py-2"
-              >
-                <div className="flex min-w-0 items-start gap-2">
-                  <span
-                    className={`mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full ${badgeClass}`}
-                  >
-                    {icon}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-micro text-foreground/90">{event.label}</p>
-                    {event.detail && (
-                      <p className="truncate text-nano text-muted-foreground/75">
-                        {event.detail}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <span className="tabular-nums text-nano text-muted-foreground">
-                  {formatClock(event.timestamp)}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="rounded-xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-3 py-4 text-micro text-muted-foreground">
-          Sem eventos ainda nesta conversa.
-        </div>
-      )}
-    </section>
-  );
-}
-
 export function ContextPanelV2() {
   const queryClient = useQueryClient();
   const {
@@ -285,7 +73,7 @@ export function ContextPanelV2() {
     setActivePanelTab,
   } = useUIStore();
   const { _register } = useNotesContext();
-  const { activeConversationId, messages } = useChatStore();
+  const { activeConversationId } = useChatStore();
   const { conversations = [] } = useConversations();
 
   const [isSavingNotes, setIsSavingNotes] = useState(false);
@@ -324,18 +112,6 @@ export function ContextPanelV2() {
       setNotesDraft(notesToDraft(persistedNotes));
     }
   }, [activeConversationId, notesDirty, notesUpdatedAtKey, persistedNotes]);
-
-  const activityEvents = useMemo(() => buildActivityEvents(messages), [messages]);
-  const latestEvent = activityEvents[0];
-  const promptsCount = activityEvents.filter((event) =>
-    event.id.includes(":user-prompt")
-  ).length;
-  const artifactsCount = activityEvents.filter((event) =>
-    event.id.includes(":artifact")
-  ).length;
-  const citationEventsCount = activityEvents.filter((event) =>
-    event.id.includes(":citations")
-  ).length;
 
   const handleSaveNotes = useCallback(async () => {
     if (!activeConversationId) {
@@ -441,30 +217,6 @@ export function ContextPanelV2() {
         <TabsContent value="activity" className="mt-0 min-h-0 flex-1 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="space-y-[var(--gc-mobile-panel-content-gap)] p-[var(--gc-mobile-panel-content-pad)]">
-              <ActivityTimeline title="Linha do tempo da conversa" events={activityEvents} />
-              <section className="gc-clinical-card rounded-2xl border border-[color:var(--gc-border)] p-3 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
-                <h3 className="mb-2 text-xs font-semibold text-foreground">
-                  Resumo da execução
-                </h3>
-                <div className="space-y-2 text-micro text-muted-foreground">
-                  <p>
-                    Último evento:{" "}
-                    {latestEvent
-                      ? `${latestEvent.label} às ${formatClock(latestEvent.timestamp)}`
-                      : "sem atividade registrada"}.
-                  </p>
-                  <p>Prompts enviados: {promptsCount}.</p>
-                  <p>Artefatos gerados: {artifactsCount}.</p>
-                  <p>Eventos de citação: {citationEventsCount}.</p>
-                </div>
-              </section>
-            </div>
-          </ScrollArea>
-        </TabsContent>
-
-        <TabsContent value="notes" className="mt-0 min-h-0 flex-1 overflow-hidden">
-          <ScrollArea className="h-full">
-            <div className="space-y-[var(--gc-mobile-panel-content-gap)] p-[var(--gc-mobile-panel-content-pad)]">
               <section className="gc-clinical-card rounded-2xl border border-[color:var(--gc-border)] p-3 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
                 <div className="mb-2 flex items-center justify-between">
                   <h3 className="text-xs font-semibold text-foreground">Notas da rodada</h3>
@@ -542,11 +294,13 @@ export function ContextPanelV2() {
                   </Button>
                 </div>
               </section>
+            </div>
+          </ScrollArea>
+        </TabsContent>
 
-              <section className="rounded-2xl border border-[color:var(--gc-border)] bg-[var(--gc-surface-panel-strong)] p-3 text-micro text-muted-foreground shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
-                Essas notas ficam vinculadas ao <span className="text-foreground">ID da conversa</span> e são carregadas automaticamente quando tu reabre o mesmo thread.
-              </section>
-
+        <TabsContent value="notes" className="mt-0 min-h-0 flex-1 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="p-[var(--gc-mobile-panel-content-pad)]">
               <WorkspaceCapturesPanelV2
                 context="notes"
                 conversationId={activeConversationId}

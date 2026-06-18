@@ -151,20 +151,20 @@ export function CommandPalette() {
             {/* Painel */}
             <Command.Group heading="Painel">
               <Command.Item
-                value="painel atividade timeline"
+                value="painel atividade notas da rodada"
                 onSelect={() => run(() => setActivePanelTab("activity"))}
                 className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm aria-selected:bg-accent"
               >
                 <Activity className="size-4 shrink-0 text-muted-foreground" />
-                <span className="flex-1">Ver Atividade</span>
+                <span className="flex-1">Ver Notas da rodada</span>
               </Command.Item>
               <Command.Item
-                value="painel notas workspace"
+                value="painel notas capturas locais workspace"
                 onSelect={() => run(() => setActivePanelTab("notes"))}
                 className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm aria-selected:bg-accent"
               >
                 <StickyNote className="size-4 shrink-0 text-muted-foreground" />
-                <span className="flex-1">Ver Notas</span>
+                <span className="flex-1">Ver Capturas locais</span>
               </Command.Item>
               <Command.Item
                 value="painel agenda calendario google eventos rascunhos"

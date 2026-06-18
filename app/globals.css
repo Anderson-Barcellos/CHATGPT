@@ -70,7 +70,7 @@
 html {
   min-height: 100%;
   overflow: hidden;
-  background: var(--gc-bg);
+  background: var(--gc-bg-page);
   overscroll-behavior: none;
 }
 
@@ -80,7 +80,7 @@ body {
   min-height: 100dvh;
   overflow: hidden;
   font-family: var(--font-sans);
-  background: var(--gc-bg);
+  background: var(--gc-bg-page);
   overscroll-behavior: none;
 }
 

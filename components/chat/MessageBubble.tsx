@@ -276,6 +276,9 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
                     )}
                     title={cite.url}
                   >
+                    <span className="shrink-0 text-[10px] font-semibold text-primary/80">
+                      [{i + 1}]
+                    </span>
                     <ExternalLink className="h-1.5 w-1.5 shrink-0" />
                     {cite.title || new URL(cite.url).hostname}
                   </a>

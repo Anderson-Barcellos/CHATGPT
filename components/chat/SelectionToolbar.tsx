@@ -30,7 +30,7 @@ export function SelectionToolbar({ selection }: SelectionToolbarProps) {
   const handleNote = useCallback(() => {
     if (!selection) return;
     appendToNotes(selection.text, selection.messageId);
-    setActivePanelTab("notes");
+    setActivePanelTab("activity");
   }, [selection, appendToNotes, setActivePanelTab]);
 
   const handleCopy = useCallback(async () => {

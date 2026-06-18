@@ -197,6 +197,18 @@ export function useCustomInstructions() {
     }));
   }, [setCustomInstructions]);
 
+  const updateCustomSystemInstructions = useCallback((value: string) => {
+    const current = useSettingsStore.getState().getCustomInstructions();
+    setCustomInstructions(hydratePersona({
+      ...(current ?? {}),
+      id: current?.id || "default",
+      contextAboutUser: current?.contextAboutUser || "",
+      responsePreferences: current?.responsePreferences || "",
+      customSystemInstructions: value,
+      ttsPreferences: normalizeTtsPreferences(current?.ttsPreferences),
+    }));
+  }, [setCustomInstructions]);
+
   const updateTtsPreferences = useCallback((updates: Partial<TtsPreferences>) => {
     const current = useSettingsStore.getState().getCustomInstructions();
     const nextInstructions = hydratePersona({
@@ -299,6 +311,7 @@ export function useCustomInstructions() {
     ttsPreferences: normalizeTtsPreferences(instructions.ttsPreferences),
     updateContextAboutUser,
     updateResponsePreferences,
+    updateCustomSystemInstructions,
     updateTtsPreferences,
     saveContextAboutUser,
     isSaving,

@@ -258,7 +258,7 @@ export function QuickActionsBar({
 
   const handleNote = useCallback(() => {
     appendToNotes(content, messageId);
-    setActivePanelTab("notes");
+    setActivePanelTab("activity");
   }, [content, messageId, appendToNotes, setActivePanelTab]);
 
   const handleCalendarDraft = useCallback(async () => {
