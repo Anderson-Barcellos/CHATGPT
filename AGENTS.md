@@ -942,3 +942,14 @@ Details:
 
 Notes:
 Validacao desta rodada: `npm test -- lib/tts/speechText.test.ts lib/persona/persona.test.ts`, `npm test`, `npx tsc --noEmit` e `npm run build`. Se houver queixa de compatibilidade ou qualidade, testar A/B com a mesma frase entre `flac`, `wav` e `mp3` antes de mexer em modelo ou instrucoes de voz.
+
+### 2026-06-21 15:20 - Lembrete de push remoto pendente
+
+Context:
+Anders pediu registrar que a proxima rodada deve enviar os commits locais ao remoto.
+
+Details:
+O commit `b7cbb1a Add Pulse workflows and FLAC TTS` foi criado localmente depois das validacoes finais e do restart healthy do `chatgpt.service`, mas nao houve `git push`.
+
+Notes:
+Na proxima sessao, verificar `git status --short --branch`; se `main` continuar apenas a frente de `origin/main` e sem worktree suja, executar `git push origin main`.

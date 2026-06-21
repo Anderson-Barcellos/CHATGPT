@@ -153,3 +153,14 @@ Details:
 
 Notes:
 Validacao executada: testes focados de TTS/persona, `npm test`, `npx tsc --noEmit` e `npm run build` passaram. Proximo refinamento natural e fazer smoke auditivo A/B no navegador real; se `flac` nao melhorar ou der incompatibilidade em algum browser, testar `wav` no mesmo seletor.
+
+### 2026-06-21 15:20 - Lembrete de push remoto pendente
+
+Context:
+Depois de limpar a worktree e comitar Pulse + TTS FLAC, Anders pediu deixar um lembrete para enviar ao remoto na proxima rodada.
+
+Details:
+Commit local criado: `b7cbb1a Add Pulse workflows and FLAC TTS`. `main` ficou a frente de `origin/main` e ainda nao foi enviado para GitHub.
+
+Notes:
+Proxima sessao deve comecar conferindo `git status --short --branch` e, se nada novo bloquear, rodar `git push origin main`.
