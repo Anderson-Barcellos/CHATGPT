@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useRef } from "react";
 import { toast } from "sonner";
+import { createWorkspaceNote } from "@/lib/storage/workspaceNotesApi";
 import { useUIStore } from "@/stores/uiStore";
 
 type AppendFn = (text: string, sourceMessageId: string) => void;
@@ -17,12 +18,27 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   const implRef = useRef<AppendFn | null>(null);
 
   const appendToNotes = useCallback((text: string, sourceMessageId: string) => {
-    if (!implRef.current) {
-      toast.error("Painel de notas não está disponível.");
+    if (implRef.current) {
+      implRef.current(text, sourceMessageId);
+      useUIStore.getState().setActivePanelTab("notes");
       return;
     }
-    implRef.current(text, sourceMessageId);
-    useUIStore.getState().setActivePanelTab("activity");
+
+    void createWorkspaceNote({
+      title: `Captura do chat #${sourceMessageId.slice(0, 8)}`,
+      body: text,
+      source: "chat",
+      sourceMessageId,
+      tags: ["chat", "notas"],
+    })
+      .then(() => {
+        window.dispatchEvent(new CustomEvent("gaucho:workspace-note-created"));
+        useUIStore.getState().setActivePanelTab("notes");
+        toast.success("Trecho salvo nas notas locais.");
+      })
+      .catch(() => {
+        toast.error("Nao consegui salvar nas notas locais.");
+      });
   }, []);
 
   const _register = useCallback((fn: AppendFn) => {

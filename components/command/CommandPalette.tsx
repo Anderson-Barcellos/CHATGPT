@@ -6,13 +6,13 @@ import {
   Activity,
   Bot,
   Brain,
-  CalendarDays,
   Check,
   FilePen,
   HelpCircle,
   MessageSquare,
   Plus,
   Settings,
+  Sparkles,
   StickyNote,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -151,12 +151,12 @@ export function CommandPalette() {
             {/* Painel */}
             <Command.Group heading="Painel">
               <Command.Item
-                value="painel atividade notas da rodada"
+                value="painel pulse atividade geracoes ultimas"
                 onSelect={() => run(() => setActivePanelTab("activity"))}
                 className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm aria-selected:bg-accent"
               >
                 <Activity className="size-4 shrink-0 text-muted-foreground" />
-                <span className="flex-1">Ver Notas da rodada</span>
+                <span className="flex-1">Ver Pulse</span>
               </Command.Item>
               <Command.Item
                 value="painel notas capturas locais workspace"
@@ -167,12 +167,12 @@ export function CommandPalette() {
                 <span className="flex-1">Ver Capturas locais</span>
               </Command.Item>
               <Command.Item
-                value="painel agenda calendario google eventos rascunhos"
-                onSelect={() => run(() => setActivePanelTab("calendar"))}
+                value="painel pulse rotinas agendamentos recorrentes"
+                onSelect={() => run(() => setActivePanelTab("pulse"))}
                 className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm aria-selected:bg-accent"
               >
-                <CalendarDays className="size-4 shrink-0 text-muted-foreground" />
-                <span className="flex-1">Ver Agenda</span>
+                <Sparkles className="size-4 shrink-0 text-muted-foreground" />
+                <span className="flex-1">Ver Rotinas</span>
               </Command.Item>
             </Command.Group>
 

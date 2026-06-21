@@ -219,6 +219,9 @@ Rodar, quando fizer sentido:
 - O repo remoto atual e `origin -> https://github.com/Anderson-Barcellos/CHATGPT.git`
 - O branch principal rastreado e `main`
 - Evitar sobrescrever mudancas locais nao relacionadas sem confirmar antes
+- O painel operacional usa a aba principal `Pulse` para o feed de geracoes e a aba `Rotinas` para criar/pausar/executar/excluir recorrencias. Google Calendar pode permanecer no codigo como legado, mas novos fluxos recorrentes devem usar `/api/pulse/*`, `data/pulse-tasks.json`, `data/pulse-runs.json` e `chatgpt-pulse.timer`.
+- Resultados do Pulse usam o TTS estavel `/api/tts` via `useAssistantTts` (`gpt-4o-mini-tts`). Nao trocar para Realtime mini sem comparacao explicita; `/api/realtime/tts-call` continua laboratorio separado.
+- Execucoes do Pulse devem usar contexto pessoal: `buildSystemPrompt`, `persona.json`, memorias ativas e `searchMemoryContext` com a rotina como query. Default atual: `gpt-5.4`, reasoning `medium`, verbosity `high`; `PULSE_RUN_MODEL` e apenas override operacional.
 
 ## Preferencia De Comunicacao
 
@@ -928,3 +931,14 @@ Details:
 
 Notes:
 Validacao desta rodada: buscas focadas de termos propensos a drift e `git diff --check` nos markdown tocados. Sem mudanca de codigo ou infra.
+
+### 2026-06-21 15:09 - TTS em FLAC como padrao experimental
+
+Context:
+Anders suspeitou que a qualidade percebida do TTS podia estar sendo limitada pelo codec MP3. A decisao foi priorizar qualidade de playback e deixar download completo como recurso secundario.
+
+Details:
+`ttsPreferences` agora inclui `format`, normalizado em `lib/tts/speechText.ts`, com default `flac` e alternativas `mp3`/`wav`. A rota `app/api/tts/route.ts` repassa `response_format` para a OpenAI e responde com `audio/flac`, `audio/mpeg` ou `audio/wav`. `SettingsDrawer` mostra seletor de formato, e `useAssistantTts` inclui formato na cache key e no request. Download completo segue habilitado apenas em `mp3`, porque concatenacao simples de chunks `wav`/`flac` nao garante arquivo unico valido.
+
+Notes:
+Validacao desta rodada: `npm test -- lib/tts/speechText.test.ts lib/persona/persona.test.ts`, `npm test`, `npx tsc --noEmit` e `npm run build`. Se houver queixa de compatibilidade ou qualidade, testar A/B com a mesma frase entre `flac`, `wav` e `mp3` antes de mexer em modelo ou instrucoes de voz.

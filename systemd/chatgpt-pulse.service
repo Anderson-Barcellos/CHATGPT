@@ -1,0 +1,15 @@
+[Unit]
+Description=Gaucho Chat Pulse runner
+Documentation=https://ultrassom.ai/chat
+After=chatgpt.service
+Requires=chatgpt.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/CHATGPT
+EnvironmentFile=/root/CHATGPT/.env.production
+ExecStart=/bin/bash /root/CHATGPT/scripts/run-pulse-due.sh
+StandardOutput=append:/var/log/chatgpt/pulse.log
+StandardError=append:/var/log/chatgpt/pulse-error.log
+TimeoutStartSec=900

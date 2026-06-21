@@ -1,5 +1,27 @@
 # BACKLOG
 
+### 2026-06-20 17:50 - Pulse nativo substitui Agenda visivel
+
+Context:
+Anders decidiu abandonar a frente visivel de integracao Google Agenda/Gmail e criar um Pulse proprio do Gaucho Chat: rotinas recorrentes criadas por prompt, executadas automaticamente pelo servidor e exibidas em painel proprio.
+
+Details:
+Criados backend/API/storage do Pulse (`/api/pulse/*`, `data/pulse-tasks.json`, `data/pulse-runs.json`), interpretacao de prompt por Responses API com schema JSON, runner de tarefas vencidas e painel `PulsePanelV2` no lugar da aba Agenda. O runner versionado usa `systemd/chatgpt-pulse.service` + `systemd/chatgpt-pulse.timer` chamando `scripts/run-pulse-due.sh`; `/etc/apache2/APACHE.md`, `docs/API.md`, `docs/ARCHITECTURE.md` e `docs/INFRASTRUCTURE.md` foram atualizados.
+
+Notes:
+Google Calendar permanece no codigo como legado operacional, mas nao deve ser tratado como caminho ativo da experiencia. O Pulse visivel nao cria mensagens automaticas na conversa principal; resultados ficam em `Ultimas geracoes` no painel e reutilizam o TTS estavel `/api/tts` com `gpt-4o-mini-tts`. Realtime mini segue laboratorio separado e nao e o player padrao do Pulse.
+
+### 2026-06-20 18:25 - Pulse usa modelo forte e contexto pessoal
+
+Context:
+Anders apontou que as execucoes Pulse precisam receber historico/preferencias como base para escrita e recomendacoes, e preferiu usar um modelo mais forte aproveitando o limite diario de tokens.
+
+Details:
+`lib/pulse/runner.ts` passou de `gpt-5.4-mini` para `gpt-5.4` como default, com reasoning `medium` e verbosity `high`. `lib/pulse/context.ts` monta o prompt de execucao com `buildSystemPrompt`, lendo `persona.json`, memorias ativas e trechos historicos via `searchMemoryContext` usando titulo/prompt da rotina.
+
+Notes:
+Manter `PULSE_RUN_MODEL` como override operacional, mas o default esperado para qualidade do Pulse e `gpt-5.4`. Nao remover o contexto pessoal do Pulse sem avisar Anders, porque ele impacta diretamente a curadoria e o tom das rotinas.
+
 ### 2026-06-14 00:41 - Citacoes inline redundantes limpas do texto
 
 Context:
@@ -76,3 +98,58 @@ Details:
 
 Notes:
 Validacao executada: buscas focadas de termos propensos a drift e `git diff --check` nos docs tocados. Nao houve mudanca de codigo nem de infra; `npm test`/build nao foram rerodados nesta rodada de documentacao, pois ja tinham passado na rodada imediatamente anterior e os arquivos tocados foram apenas markdown.
+
+### 2026-06-20 22:31 - Cards Pulse expansíveis e exclusão rápida
+
+Context:
+Anders pediu para as rotinas criadas no Pulse ficarem em formato de card expansivel ao toque, com opcao clara de apagar cards.
+
+Details:
+`components/workspace-v2/PulsePanelV2.tsx` passou a renderizar cada rotina como card compacto clicavel/teclavel (`Enter`/espaco), com detalhe expandido contendo prompt e acoes de pausar/ativar e rodar agora. A exclusao ficou como icone no topo do card, com confirmacao nativa antes de chamar o delete existente da API.
+
+Notes:
+Validacao executada: `npx eslint components/workspace-v2/PulsePanelV2.tsx`, `npx tsc --noEmit`, `npm run build`, `git diff --check`, `systemctl restart chatgpt.service`, health local `healthy` e health publico HTTP 200. Nao houve mudanca de rota/API; `/etc/apache2/APACHE.md` foi apenas consultado para confirmar `/chat` em `3040`.
+
+### 2026-06-20 22:38 - Pulse separado entre Atividade e Rotinas
+
+Context:
+Anders percebeu que os cards expansíveis tinham sido aplicados apenas às rotinas, mas as últimas gerações ainda ficavam misturadas na mesma aba Pulse.
+
+Details:
+`components/workspace-v2/PulsePanelV2.tsx` agora exporta também `PulseActivityPanelV2`, com feed de últimas gerações Pulse em cards expansíveis/recolhidos. `components/workspace-v2/ContextPanelV2.tsx` coloca esse feed no topo da aba Atividade e renomeia a aba Pulse para Rotinas, deixando a aba Rotinas focada em criação, pausa, execução manual e exclusão de rotinas. `components/command/CommandPalette.tsx` foi alinhado para "Ver Atividade" e "Ver Rotinas".
+
+Notes:
+Validacao executada: `npx eslint components/workspace-v2/PulsePanelV2.tsx components/workspace-v2/ContextPanelV2.tsx components/command/CommandPalette.tsx`, `npx tsc --noEmit`, `npm run build`, `git diff --check`, `systemctl restart chatgpt.service`, health local `healthy` e health publico HTTP 200. Nao houve mudanca de endpoint; `/etc/apache2/APACHE.md` foi consultado e ja documenta `/chat` na porta `3040` e `/chat/api/pulse/*`.
+
+### 2026-06-21 14:37 - Exclusão de gerações Pulse
+
+Context:
+Anders apontou que, depois de mover as últimas gerações Pulse para a aba Atividade, faltava também um botão para apagar cada geração.
+
+Details:
+`lib/pulse/store.ts` ganhou `deletePulseRun`, `app/api/pulse/runs/[id]/route.ts` expõe `DELETE` autenticado para remover uma geração específica de `data/pulse-runs.json`, e `lib/pulse/pulseApi.ts` ganhou o client correspondente. `components/workspace-v2/PulsePanelV2.tsx` agora mostra lixeira nos cards de geração da aba Atividade, com confirmação antes de apagar. `docs/API.md` documenta a rota nova e `docs/ARCHITECTURE.md` foi alinhado ao split Atividade/Rotinas.
+
+Notes:
+Validacao executada: ESLint focado nos arquivos tocados, `npx tsc --noEmit`, `npm run build`, `git diff --check`, `systemctl restart chatgpt.service`, health local `healthy` e health publico HTTP 200. Smoke sem apagar dado real: UI da aba Atividade renderizou; como nao havia gerações reais no feed, a rota nova foi testada com ID inexistente autenticado e retornou `404 pulse_run_not_found`.
+
+### 2026-06-21 14:47 - Pulse vira aba principal e Notas da rodada removida
+
+Context:
+Anders pediu para remover a secao antiga "Notas da rodada", ja substituida pela aba Notas com STT/capturas locais, e para renomear a aba principal Atividade para Pulse.
+
+Details:
+`components/workspace-v2/ContextPanelV2.tsx` removeu o editor "Notas da rodada" e deixou a aba principal mostrando apenas `PulseActivityPanelV2`. `stores/uiStore.ts` agora inicia o painel em `activity`, que visualmente aparece como `Pulse`. `components/workspace-v2/NotesProvider.tsx` passou a salvar textos enviados para notas diretamente em `/api/workspace-notes` quando o editor antigo nao existe, e `WorkspaceCapturesPanelV2` recarrega ao receber `gaucho:workspace-note-created`. Quick actions, toolbar de selecao e command palette agora mandam notas para a aba `Notas`.
+
+Notes:
+Validacao executada: busca focada por sobras visiveis de "Notas da rodada"/"Atividade", ESLint focado, `npx tsc --noEmit`, `npm run build`, `git diff --check`, `systemctl restart chatgpt.service`, health local `healthy` e health publico HTTP 200. Smoke Playwright confirmou `Pulse` selecionada por padrao, `Notas` e `Rotinas` presentes, `Notas da rodada` ausente e feed `Ultimas geracoes Pulse` renderizado.
+
+### 2026-06-21 15:09 - TTS em FLAC como padrao experimental
+
+Context:
+Anders suspeitou que parte da aspereza do TTS vinha do codec MP3, nao do modelo, e preferiu priorizar qualidade de playback mesmo que o download completo ficasse secundario.
+
+Details:
+`lib/tts/speechText.ts` passou a normalizar `format` em `ttsPreferences`, com formatos permitidos `flac`, `mp3` e `wav`, e default `flac`. `app/api/tts/route.ts` agora repassa `response_format` conforme a preferencia e devolve o `Content-Type` correto. `hooks/useAssistantTts.ts` inclui o formato na cache key, envia `format` para `/api/tts` e permite download completo apenas em `mp3`, evitando concatenar chunks `wav`/`flac` como se fossem um unico arquivo valido. `components/settings/SettingsDrawer.tsx` ganhou seletor de formato na secao Voz.
+
+Notes:
+Validacao executada: testes focados de TTS/persona, `npm test`, `npx tsc --noEmit` e `npm run build` passaram. Proximo refinamento natural e fazer smoke auditivo A/B no navegador real; se `flac` nao melhorar ou der incompatibilidade em algum browser, testar `wav` no mesmo seletor.

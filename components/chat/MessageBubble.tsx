@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
-import { Pencil, X, Send, Globe, ExternalLink, Trash2, MoreHorizontal, FileIcon, FileText, CalendarPlus, LoaderCircle } from "lucide-react";
+import { Pencil, X, Send, Globe, ExternalLink, Trash2, MoreHorizontal, FileIcon, FileText, Sparkles } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,9 +20,7 @@ import { OpenAIIcon } from "@/components/ui/icons";
 import { QuickActionsBar } from "@/components/chat/QuickActionsBar";
 import { useNotes } from "@/hooks/useNotes";
 import { StickyNote } from "lucide-react";
-import { createCalendarDraftFromText } from "@/lib/calendar/calendarApi";
 import { useUIStore } from "@/stores/uiStore";
-import { toast } from "sonner";
 
 interface MessageBubbleProps {
   message: Message;
@@ -53,7 +51,6 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
   const [editContent, setEditContent] = useState(message.content);
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [isDraftingCalendar, setIsDraftingCalendar] = useState(false);
   const editRef = useRef<HTMLTextAreaElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deleteTitle = isUser ? "Excluir este turno?" : "Excluir esta resposta?";
@@ -98,27 +95,14 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
     setIsEditing(false);
   }, [message.content]);
 
-  const handleCalendarDraft = useCallback(async () => {
-    setIsDraftingCalendar(true);
-    try {
-      await createCalendarDraftFromText({
-        text: message.content,
-        source: "chat",
-        sourceMessageId: message.id,
-      });
-      setActivePanelTab("calendar");
-      window.dispatchEvent(new CustomEvent("gaucho:calendar-draft-created"));
-      toast.success("Rascunho de agenda criado para revisar.");
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Nao consegui rascunhar agenda com esse texto.";
-      toast.error(errorMessage);
-    } finally {
-      setIsDraftingCalendar(false);
-    }
-  }, [message.content, message.id, setActivePanelTab]);
+  const handlePulseDraft = useCallback(() => {
+    setActivePanelTab("pulse");
+    window.dispatchEvent(
+      new CustomEvent("gaucho:pulse-draft-from-text", {
+        detail: { text: message.content },
+      })
+    );
+  }, [message.content, setActivePanelTab]);
 
   return (
     <motion.div
@@ -347,17 +331,12 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
                   <DropdownMenuItem
                     onClick={() => {
                       setMenuOpen(false);
-                      void handleCalendarDraft();
+                      handlePulseDraft();
                     }}
-                    disabled={isDraftingCalendar}
                     className="gap-2 text-xs"
                   >
-                    {isDraftingCalendar ? (
-                      <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <CalendarPlus className="h-3.5 w-3.5" />
-                    )}
-                    Rascunhar agenda
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Criar Pulse
                   </DropdownMenuItem>
                 )}
                 {onDelete && (

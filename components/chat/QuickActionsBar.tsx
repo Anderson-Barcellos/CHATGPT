@@ -3,7 +3,6 @@
 import { useCallback, useRef, useState } from "react";
 import {
   ArrowDown,
-  CalendarPlus,
   Check,
   Copy,
   Download,
@@ -16,6 +15,7 @@ import {
   RefreshCw,
   RotateCcw,
   RotateCw,
+  Sparkles,
   Square,
   StickyNote,
   Volume2,
@@ -27,7 +27,6 @@ import { useRealtimeTtsLab } from "@/hooks/useRealtimeTtsLab";
 import { useNotes } from "@/hooks/useNotes";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useUIStore } from "@/stores/uiStore";
-import { createCalendarDraftFromText } from "@/lib/calendar/calendarApi";
 import { cn } from "@/lib/utils";
 import type { MessageStreamStatus } from "@/types";
 
@@ -173,7 +172,7 @@ function TtsPlayer({
             title={
               tts.canDownload
                 ? "Baixar áudio completo"
-                : "Baixar áudio quando terminar de gerar"
+                : "Download completo disponível apenas em MP3"
             }
           >
             <Download className="size-3.5" />
@@ -231,7 +230,6 @@ export function QuickActionsBar({
   const isMobile = useIsMobile();
   const [copied, setCopied] = useState(false);
   const [touched, setTouched] = useState(false);
-  const [isDraftingCalendar, setIsDraftingCalendar] = useState(false);
   const [realtimePanelOpen, setRealtimePanelOpen] = useState(false);
   const touchTimer = useRef<number | undefined>(undefined);
   const tts = useAssistantTts(content, messageId);
@@ -258,30 +256,15 @@ export function QuickActionsBar({
 
   const handleNote = useCallback(() => {
     appendToNotes(content, messageId);
-    setActivePanelTab("activity");
+    setActivePanelTab("notes");
   }, [content, messageId, appendToNotes, setActivePanelTab]);
 
-  const handleCalendarDraft = useCallback(async () => {
-    setIsDraftingCalendar(true);
-    try {
-      await createCalendarDraftFromText({
-        text: content,
-        source: "chat",
-        sourceMessageId: messageId,
-      });
-      setActivePanelTab("calendar");
-      window.dispatchEvent(new CustomEvent("gaucho:calendar-draft-created"));
-      toast.success("Rascunho de agenda criado para revisar.");
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Nao consegui rascunhar agenda com esse texto.";
-      toast.error(message);
-    } finally {
-      setIsDraftingCalendar(false);
-    }
-  }, [content, messageId, setActivePanelTab]);
+  const handlePulseDraft = useCallback(() => {
+    setActivePanelTab("pulse");
+    window.dispatchEvent(
+      new CustomEvent("gaucho:pulse-draft-from-text", { detail: { text: content } })
+    );
+  }, [content, setActivePanelTab]);
 
   const handleQuote = useCallback(() => {
     window.dispatchEvent(
@@ -372,15 +355,11 @@ export function QuickActionsBar({
         <StickyNote className="size-3.5" />
       </ActionButton>
       <ActionButton
-        onClick={() => void handleCalendarDraft()}
-        title="Rascunhar agenda"
-        disabled={isDraftingCalendar || content.trim().length === 0}
+        onClick={handlePulseDraft}
+        title="Criar Pulse"
+        disabled={content.trim().length === 0}
       >
-        {isDraftingCalendar ? (
-          <LoaderCircle className="size-3.5 animate-spin" />
-        ) : (
-          <CalendarPlus className="size-3.5" />
-        )}
+        <Sparkles className="size-3.5" />
       </ActionButton>
       <ActionButton onClick={handleQuote} title="Citar no composer">
         <MessageSquareQuote className="size-3.5" />

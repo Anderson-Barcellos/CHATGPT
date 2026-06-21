@@ -31,6 +31,8 @@
 /data/google-calendar-token.json
 /data/calendar-event-drafts.json
 /data/workspace-notes.json
+/data/pulse-tasks.json
+/data/pulse-runs.json
 /data/memory-index/
 /data/memory-suggestions.json
 

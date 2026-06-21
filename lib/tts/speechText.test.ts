@@ -57,12 +57,14 @@ describe("speech text helpers", () => {
         voice: "not-a-voice",
         speed: 10,
         instructions: "fala".repeat(400),
+        format: "wav",
       })
     ).toEqual({
       ...DEFAULT_TTS_PREFERENCES,
       speed: 4,
       instructions: "fala".repeat(400).slice(0, 1200),
       mode: "turbo",
+      format: "wav",
     });
   });
 });

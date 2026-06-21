@@ -2,8 +2,10 @@ import OpenAI from "openai";
 import { NextRequest } from "next/server";
 import { isAuthEnabled, isAuthenticatedRequest } from "@/lib/server/auth";
 import {
+  isTtsAudioFormat,
   isTtsVoice,
   normalizeTtsPreferences,
+  TTS_CONTENT_TYPES,
   TTS_MODEL,
   TTS_SAFE_INPUT_LIMIT,
 } from "@/lib/tts/speechText";
@@ -37,12 +39,17 @@ export async function POST(request: NextRequest) {
     if (body.voice !== undefined && !isTtsVoice(body.voice)) {
       return jsonError("Voz de TTS inválida.", 400);
     }
+    if (body.format !== undefined && !isTtsAudioFormat(body.format)) {
+      return jsonError("Formato de TTS inválido.", 400);
+    }
 
     const preferences = normalizeTtsPreferences({
       voice: body.voice,
       speed: body.speed,
       instructions: body.instructions,
+      format: body.format,
     });
+    const contentType = TTS_CONTENT_TYPES[preferences.format];
 
     const speech = await openai.audio.speech.create(
       {
@@ -51,7 +58,7 @@ export async function POST(request: NextRequest) {
         input,
         speed: preferences.speed,
         instructions: preferences.instructions.trim() || undefined,
-        response_format: "mp3",
+        response_format: preferences.format,
       },
       { signal: request.signal }
     );
@@ -59,7 +66,7 @@ export async function POST(request: NextRequest) {
     if (speech.body) {
       return new Response(speech.body, {
         headers: {
-          "Content-Type": "audio/mpeg",
+          "Content-Type": contentType,
           "Cache-Control": "no-store",
         },
       });
@@ -68,7 +75,7 @@ export async function POST(request: NextRequest) {
     const buffer = await speech.arrayBuffer();
     return new Response(buffer, {
       headers: {
-        "Content-Type": "audio/mpeg",
+        "Content-Type": contentType,
         "Cache-Control": "no-store",
       },
     });

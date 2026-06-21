@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TTS_VOICES } from "@/lib/tts/speechText";
+import { isTtsAudioFormat, TTS_AUDIO_FORMATS, TTS_VOICES } from "@/lib/tts/speechText";
 import { indexRecentConversationMemories } from "@/lib/storage/memoryRag";
 import { BASE_SYSTEM_PROMPT } from "@/lib/prompts/systemPrompt";
 import { FIXED_PERSONA_PROMPT } from "@/lib/prompts/personaPrompt";
@@ -635,6 +635,27 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                             {TTS_VOICES.map((voice) => (
                               <option key={voice} value={voice}>
                                 {voice}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label className="flex flex-col gap-1 text-xs">
+                          <span className="text-muted-foreground">Formato</span>
+                          <select
+                            value={ttsPreferences.format}
+                            onChange={(e) =>
+                              updateTtsPreferences({
+                                format: isTtsAudioFormat(e.target.value)
+                                  ? e.target.value
+                                  : "flac",
+                              })
+                            }
+                            className="gc-refined-soft-surface rounded-xl border px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/20"
+                          >
+                            {TTS_AUDIO_FORMATS.map((format) => (
+                              <option key={format} value={format}>
+                                {format.toUpperCase()}
                               </option>
                             ))}
                           </select>

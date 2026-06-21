@@ -1,0 +1,13 @@
+[Unit]
+Description=Run Gaucho Chat Pulse due-task check every minute
+Documentation=https://ultrassom.ai/chat
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+AccuracySec=10s
+Unit=chatgpt-pulse.service
+Persistent=true
+
+[Install]
+WantedBy=timers.target

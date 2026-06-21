@@ -6,7 +6,9 @@ import { apiUrl } from "@/lib/utils";
 import {
   DEFAULT_TTS_PREFERENCES,
   getTtsChunkingProfile,
+  isDownloadableTtsFormat,
   normalizeTtsPreferences,
+  TTS_CONTENT_TYPES,
   splitSpeechText,
 } from "@/lib/tts/speechText";
 import {
@@ -36,7 +38,6 @@ interface CachedSpeech {
 const speechCache = new Map<string, CachedSpeech>();
 const BROWSER_AUDIO_BLOCKED_MESSAGE =
   "Áudio pronto — clique em tocar para liberar o navegador.";
-const TTS_DOWNLOAD_MIME_TYPE = "audio/mpeg";
 
 function hashText(value: string): string {
   let hash = 5381;
@@ -53,9 +54,9 @@ function formatDuration(value: number): string {
   return `${minutes}:${seconds}`;
 }
 
-function buildTtsDownloadFilename(messageId: string): string {
+function buildTtsDownloadFilename(messageId: string, extension: string): string {
   const safeId = messageId.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 24) || "resposta";
-  return `gaucho-chat-voz-${safeId}.mp3`;
+  return `gaucho-chat-voz-${safeId}.${extension}`;
 }
 
 function isCacheDownloadReady(cache: CachedSpeech | null | undefined): cache is CachedSpeech {
@@ -85,6 +86,7 @@ export function useAssistantTts(content: string, messageId: string) {
         preferences.voice,
         preferences.speed.toFixed(2),
         preferences.mode,
+        preferences.format,
         hashText(preferences.instructions),
       ].join(":"),
     [
@@ -94,6 +96,7 @@ export function useAssistantTts(content: string, messageId: string) {
       preferences.mode,
       preferences.speed,
       preferences.voice,
+      preferences.format,
     ]
   );
 
@@ -300,6 +303,7 @@ export function useAssistantTts(content: string, messageId: string) {
         voice: preferences.voice,
         speed: preferences.speed,
         instructions: preferences.instructions,
+        format: preferences.format,
       }),
       signal,
     });
@@ -319,7 +323,7 @@ export function useAssistantTts(content: string, messageId: string) {
       duration: audioBuffer?.duration ?? 0,
       audioBuffer,
     };
-  }, [preferences.instructions, preferences.speed, preferences.voice]);
+  }, [preferences.format, preferences.instructions, preferences.speed, preferences.voice]);
 
   const generateClips = useCallback(async () => {
     if (!chunks.length) {
@@ -574,6 +578,10 @@ export function useAssistantTts(content: string, messageId: string) {
 
   const downloadAudio = useCallback(() => {
     const cache = activeCacheRef.current ?? speechCache.get(cacheKey);
+    if (!isDownloadableTtsFormat(preferences.format)) {
+      toast.info("Download completo fica disponível só em MP3 por enquanto.");
+      return;
+    }
 
     if (!isCacheDownloadReady(cache)) {
       toast.info("Espera a voz terminar de gerar para baixar o áudio inteiro.");
@@ -582,18 +590,18 @@ export function useAssistantTts(content: string, messageId: string) {
 
     const mergedBlob = new Blob(
       cache.chunks.map((_, index) => cache.clips[index].blob),
-      { type: TTS_DOWNLOAD_MIME_TYPE }
+      { type: TTS_CONTENT_TYPES[preferences.format] }
     );
     const url = URL.createObjectURL(mergedBlob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = buildTtsDownloadFilename(messageId);
+    anchor.download = buildTtsDownloadFilename(messageId, preferences.format);
     anchor.rel = "noopener";
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 5000);
-  }, [cacheKey, messageId]);
+  }, [cacheKey, messageId, preferences.format]);
 
   useEffect(() => {
     const audio = document.createElement("audio");
@@ -659,7 +667,9 @@ export function useAssistantTts(content: string, messageId: string) {
     formattedCurrentTime: formatDuration(currentTime),
     formattedDuration: formatDuration(duration),
     progress: duration > 0 ? Math.min((currentTime / duration) * 100, 100) : 0,
-    canDownload: isCacheDownloadReady(activeCacheRef.current),
+    canDownload:
+      isDownloadableTtsFormat(preferences.format) &&
+      isCacheDownloadReady(activeCacheRef.current),
     openAndPlay,
     togglePlay,
     stop,

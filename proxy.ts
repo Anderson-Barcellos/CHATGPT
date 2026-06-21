@@ -17,6 +17,7 @@ const PUBLIC_PATHS = [
   "/api/auth/logout",
   "/api/auth/check",
   "/api/health",
+  "/api/pulse/run-due",
   "/_next",
   "/favicon.ico",
   "/manifest.webmanifest",

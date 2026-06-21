@@ -114,6 +114,17 @@ export function WorkspaceCapturesPanelV2({
     void loadNotes();
   }, [loadNotes]);
 
+  useEffect(() => {
+    const handleExternalNote = () => {
+      void loadNotes();
+    };
+
+    window.addEventListener("gaucho:workspace-note-created", handleExternalNote);
+    return () => {
+      window.removeEventListener("gaucho:workspace-note-created", handleExternalNote);
+    };
+  }, [loadNotes]);
+
   const saveTranscript = useCallback(
     async (text: string) => {
       setIsSaving(true);

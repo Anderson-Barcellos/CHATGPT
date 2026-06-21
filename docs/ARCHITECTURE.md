@@ -92,6 +92,7 @@ Persistência server-side simples:
 - `data/memories.json`
 - `data/persona.json`
 - `data/memory-index` como índice vetorial local LanceDB para memória/RAG
+- `data/pulse-tasks.json` e `data/pulse-runs.json` (runtime privado do Pulse)
 - `data/calendar-event-drafts.json` (runtime privado, ignorado pelo Git)
 - `data/workspace-notes.json` (runtime privado, ignorado pelo Git)
 - `data/google-calendar-token.json` (runtime privado, criptografado e ignorado pelo Git)
@@ -121,9 +122,21 @@ Na aba Persona, `SettingsDrawer` mostra `BASE_SYSTEM_PROMPT + FIXED_PERSONA_PROM
 
 Em `responseMode="default"`, `lib/server/chatRequest.ts` também expõe `remember_memory` e `search_memory` como function tools. `lib/server/chatToolOrchestrator.ts` executa até duas rodadas de function-call/output para salvar memória explícita ou buscar histórico quando o modelo usar essas tools sob a policy injetada pelo `contextBuilder`.
 
-## Agenda Google e Notas Locais
+## Pulse Nativo
 
-A V1 de agenda usa Google Calendar API diretamente no backend Next, sem connector externo e sem expor tokens ao browser.
+A aba Rotinas substitui a superfície visível de Agenda. Ela cria rotinas recorrentes próprias do Gaucho Chat, sem depender de Google Calendar/Gmail/OAuth. As gerações resultantes aparecem na aba Pulse, que é a aba principal do painel operacional.
+
+- `POST /api/pulse/tasks/propose` usa Responses API com JSON schema para transformar linguagem natural em proposta de rotina.
+- `POST /api/pulse/tasks` persiste rotinas `daily`, `weekly` ou `monthly` em `data/pulse-tasks.json`.
+- `POST /api/pulse/run-due` é chamado pelo `chatgpt-pulse.timer` e executa tarefas vencidas.
+- Cada execução chama Responses API com `gpt-5.4`, reasoning `medium`, verbosity `high`, `web_search_preview` e `image_generation`, salva texto, imagem e citações em `data/pulse-runs.json` e aparece apenas na aba Pulse.
+- O prompt de execução do Pulse reutiliza `buildSystemPrompt`: prompt base, persona fixa, `persona.json`, memórias ativas e trechos relevantes do histórico via `searchMemoryContext`.
+- Resultados de Pulse reutilizam o TTS estável do app via `useAssistantTts` e `/api/tts` (`gpt-4o-mini-tts`), mas não criam mensagens automáticas na conversa principal.
+- O Realtime mini (`/api/realtime/tts-call`) permanece laboratório separado para balões do chat e não deve substituir o TTS padrão do Pulse sem uma rodada explícita de comparação.
+
+## Agenda Google e Notas Locais Legadas
+
+A V1 de agenda Google segue no código como legado operacional, mas não é mais a experiência visível principal do painel. Ela usa Google Calendar API diretamente no backend Next, sem connector externo e sem expor tokens ao browser.
 
 - OAuth começa em `/api/integrations/google/auth/start` e volta por `/api/integrations/google/auth/callback`.
 - O callback valida cookie `google-oauth-state` HttpOnly antes de trocar `code` por tokens.
@@ -152,6 +165,7 @@ O TTS padrão usa `/api/tts` com `gpt-4o-mini-tts`.
 
 - Texto é sanitizado e dividido em chunks em `lib/tts/speechText.ts`.
 - `hooks/useAssistantTts.ts` faz cache em memória, fila turbo e controle de playback.
+- `ttsPreferences.format` controla `response_format` (`flac` por padrão, com `mp3` e `wav` disponíveis); download completo fica habilitado apenas em `mp3` porque chunks `flac`/`wav` não devem ser concatenados como um arquivo único.
 - `/api/realtime/tts-call` é laboratório separado com `gpt-realtime-mini` via SDP/WebRTC.
 
 ## Modelos

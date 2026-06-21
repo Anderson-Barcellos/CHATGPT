@@ -193,7 +193,8 @@ Atualiza:
 
 `POST` é aceito como alias para autosave forte/flush de saída do navegador
 (`sendBeacon`/`keepalive`). `ttsPreferences` persiste `mode`, `voice`,
-`speed` e `instructions` em `data/persona.json`.
+`speed`, `instructions` e `format` em `data/persona.json`; o formato
+default atual é `flac`, com alternativas `mp3` e `wav`.
 
 **Arquivo:** `app/api/persona/route.ts`
 
@@ -202,13 +203,37 @@ Atualiza:
 | Método | Rota | Função |
 |---|---|---|
 | `POST` | `/api/artifacts/pdf` | Renderiza artifact de documento como PDF A4 server-side |
-| `POST` | `/api/tts` | Gera áudio `audio/mpeg` com `gpt-4o-mini-tts` |
+| `POST` | `/api/tts` | Gera áudio com `gpt-4o-mini-tts`; aceita `format` `flac`, `mp3` ou `wav` |
 | `POST` | `/api/realtime/tts-call` | Cria sessão SDP experimental com `gpt-realtime-mini` |
 | `POST` | `/api/transcribe` | Transcreve áudio com `gpt-4o-transcribe` |
 
 ## Google Calendar e Notas Locais
 
+Nota atual: a aba visível do produto usa **Pulse nativo** para rotinas recorrentes. As rotas Google/Calendar abaixo ficam como legado operacional até limpeza futura.
+
 Todas as rotas abaixo são privadas quando `AUTH_ENABLED=true`. O browser nunca recebe `client_secret`, `refresh_token`, `access_token` ou token bruto do Google.
+
+## Pulse
+
+Todas as rotas de Pulse são privadas quando `AUTH_ENABLED=true`, exceto o runner interno `/api/pulse/run-due`, protegido por `PULSE_RUNNER_TOKEN` quando configurado e usado pelo timer local do servidor.
+
+Os resultados do Pulse reutilizam o TTS estável do app via `/api/tts` (`gpt-4o-mini-tts`). O endpoint Realtime `/api/realtime/tts-call` segue como laboratório separado e não é o player padrão do Pulse.
+
+As execuções do Pulse usam `gpt-5.4` por padrão, com raciocínio `medium` e verbosity `high`, e recebem o mesmo prompt base/persona/preferências/memórias ativas do chat, além de trechos relevantes do histórico recuperados pelo índice semântico.
+
+| Método | Rota | Função |
+|---|---|---|
+| `GET` | `/api/pulse/tasks` | Lista rotinas recorrentes |
+| `POST` | `/api/pulse/tasks/propose` | Interpreta prompt livre e devolve proposta editável de rotina |
+| `POST` | `/api/pulse/tasks` | Cria rotina recorrente diária, semanal ou mensal |
+| `PATCH` | `/api/pulse/tasks/[id]` | Ativa ou pausa rotina |
+| `DELETE` | `/api/pulse/tasks/[id]` | Remove rotina |
+| `GET` | `/api/pulse/runs` | Lista execuções e aceita filtro `taskId` |
+| `DELETE` | `/api/pulse/runs/[id]` | Remove uma geração/execução do feed Pulse |
+| `POST` | `/api/pulse/tasks/[id]/run` | Executa uma rotina manualmente |
+| `POST` | `/api/pulse/run-due` | Runner interno que executa rotinas vencidas |
+
+Arquivos runtime privados ignorados pelo Git: `data/pulse-tasks.json` e `data/pulse-runs.json`.
 
 ### Integração Google
 

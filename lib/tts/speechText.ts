@@ -1,4 +1,4 @@
-import type { TtsMode, TtsPreferences } from "@/types";
+import type { TtsAudioFormat, TtsMode, TtsPreferences } from "@/types";
 
 export const TTS_MODEL = "gpt-4o-mini-tts";
 export const TTS_SAFE_INPUT_LIMIT = 3600;
@@ -35,6 +35,14 @@ export const TTS_VOICES = [
   "cedar",
 ] as const;
 
+export const TTS_AUDIO_FORMATS = ["flac", "mp3", "wav"] as const satisfies readonly TtsAudioFormat[];
+export const TTS_DOWNLOADABLE_FORMATS = ["mp3"] as const satisfies readonly TtsAudioFormat[];
+export const TTS_CONTENT_TYPES: Record<TtsAudioFormat, string> = {
+  flac: "audio/flac",
+  mp3: "audio/mpeg",
+  wav: "audio/wav",
+};
+
 export const REALTIME_TTS_VOICES = [
   "alloy",
   "ash",
@@ -57,6 +65,7 @@ export const DEFAULT_TTS_PREFERENCES: TtsPreferences = {
   speed: 1,
   instructions: "",
   mode: "turbo",
+  format: "flac",
 };
 
 export function isTtsVoice(value: unknown): value is TtsVoice {
@@ -72,6 +81,14 @@ export function normalizeRealtimeTtsVoice(value: unknown): RealtimeTtsVoice {
 
 function isTtsMode(value: unknown): value is TtsMode {
   return value === "balanced" || value === "turbo";
+}
+
+export function isTtsAudioFormat(value: unknown): value is TtsAudioFormat {
+  return typeof value === "string" && TTS_AUDIO_FORMATS.includes(value as TtsAudioFormat);
+}
+
+export function isDownloadableTtsFormat(value: unknown): value is (typeof TTS_DOWNLOADABLE_FORMATS)[number] {
+  return value === "mp3";
 }
 
 export function normalizeTtsPreferences(
@@ -91,6 +108,9 @@ export function normalizeTtsPreferences(
         ? value.instructions.slice(0, 1200)
         : DEFAULT_TTS_PREFERENCES.instructions,
     mode: isTtsMode(value?.mode) ? value.mode : DEFAULT_TTS_PREFERENCES.mode,
+    format: isTtsAudioFormat(value?.format)
+      ? value.format
+      : DEFAULT_TTS_PREFERENCES.format,
   };
 }
 

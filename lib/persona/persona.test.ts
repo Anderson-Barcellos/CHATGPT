@@ -16,6 +16,7 @@ describe("persona helpers", () => {
         speed: 1,
         instructions: "",
         mode: "turbo",
+        format: "flac",
       },
     });
 
@@ -26,6 +27,7 @@ describe("persona helpers", () => {
         speed: 1.15,
         instructions: "Fale com tom natural e calmo.",
         mode: "balanced",
+        format: "wav",
       },
     });
 
@@ -39,6 +41,7 @@ describe("persona helpers", () => {
       speed: 1.15,
       instructions: "Fale com tom natural e calmo.",
       mode: "balanced",
+      format: "wav",
     });
   });
 

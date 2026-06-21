@@ -171,7 +171,7 @@ export interface SerializedConversation {
   updatedAt: string;
 }
 
-export type ActivePanelTab = "activity" | "notes" | "calendar";
+export type ActivePanelTab = "activity" | "notes" | "pulse";
 
 export interface CanvasOverlayState {
   x: number;
@@ -220,9 +220,11 @@ export interface TtsPreferences {
   speed: number;
   instructions: string;
   mode: TtsMode;
+  format: TtsAudioFormat;
 }
 
 export type TtsMode = "balanced" | "turbo";
+export type TtsAudioFormat = "mp3" | "flac" | "wav";
 
 export type MemoryCategory =
   | "personal"

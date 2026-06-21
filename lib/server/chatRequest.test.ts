@@ -15,6 +15,29 @@ describe("buildResponseCreateParams", () => {
     expect(toolTypesFor("default")).toContain("image_generation");
   });
 
+  it("only requests partial images for streaming responses", () => {
+    const streamingParams = buildResponseCreateParams({
+      input: [{ role: "user", content: "Gera uma imagem" }],
+      responseMode: "default",
+      stream: true,
+    });
+    const nonStreamingParams = buildResponseCreateParams({
+      input: [{ role: "user", content: "Gera uma imagem" }],
+      responseMode: "default",
+      stream: false,
+    });
+
+    const streamingImageTool = streamingParams.tools?.find(
+      (tool) => tool.type === "image_generation"
+    );
+    const nonStreamingImageTool = nonStreamingParams.tools?.find(
+      (tool) => tool.type === "image_generation"
+    );
+
+    expect(streamingImageTool).toMatchObject({ partial_images: 2 });
+    expect(nonStreamingImageTool).not.toHaveProperty("partial_images");
+  });
+
   it("exposes memory function tools only in default chat mode", () => {
     const params = buildResponseCreateParams({
       input: [{ role: "user", content: "Lembra disso pra mim." }],

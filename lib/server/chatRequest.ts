@@ -143,7 +143,8 @@ function buildTools(
   codeInterpreterEnabled: boolean,
   responseMode: ResponseMode,
   imageQuality: ChatRequestBody["imageQuality"],
-  imageSize: ChatRequestBody["imageSize"]
+  imageSize: ChatRequestBody["imageSize"],
+  stream: boolean
 ) {
   if (responseMode === "quiz") return [];
 
@@ -156,7 +157,7 @@ function buildTools(
       quality: imageQuality ?? "high",
       size: imageSize ?? "auto",
       background: "auto",
-      partial_images: 2,
+      ...(stream ? { partial_images: 2 } : {}),
       output_format: "png",
     });
   }
@@ -195,6 +196,7 @@ export function buildResponseCreateParams(body: ChatRequestBody) {
     responseMode = "default",
     imageQuality,
     imageSize,
+    stream = true,
   } = body;
 
   const effectiveModel =
@@ -218,7 +220,8 @@ export function buildResponseCreateParams(body: ChatRequestBody) {
       codeInterpreterEnabled,
       responseMode,
       imageQuality,
-      imageSize
+      imageSize,
+      stream
     ),
   };
 

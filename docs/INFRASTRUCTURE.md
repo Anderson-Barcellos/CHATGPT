@@ -112,6 +112,17 @@ Obrigatórias em produção:
 
 Integração Google Calendar:
 
+Nota atual: Pulse nativo é o gestor recorrente visível do Gaucho Chat. Google Calendar permanece legado até remoção/limpeza futura.
+
+Pulse:
+
+| Variável | Propósito |
+|---|---|
+| `PULSE_RUNNER_TOKEN` | Token opcional para proteger `/api/pulse/run-due`; usado por `chatgpt-pulse.service` |
+| `PULSE_RUNNER_URL` | Override opcional do endpoint local do runner |
+| `PULSE_EXTRACT_MODEL` | Modelo opcional para interpretar prompts de rotina |
+| `PULSE_RUN_MODEL` | Modelo opcional para executar rotinas; default `gpt-5.4` |
+
 | Variável | Propósito |
 |---|---|
 | `GOOGLE_CLIENT_ID` | OAuth client ID do Google |
@@ -128,6 +139,8 @@ Arquivos runtime privados novos:
 | `data/google-calendar-token.json` | Token Google criptografado, permissão `0600` quando escrito pelo app |
 | `data/calendar-event-drafts.json` | Rascunhos locais de criação/alteração/cancelamento |
 | `data/workspace-notes.json` | Notas locais globais/capturas |
+| `data/pulse-tasks.json` | Rotinas Pulse recorrentes |
+| `data/pulse-runs.json` | Histórico de execuções Pulse |
 
 Auth do app:
 

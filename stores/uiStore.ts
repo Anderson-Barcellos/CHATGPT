@@ -29,7 +29,7 @@ export const useUIStore = create<UIState>((set) => ({
   artifactOpen: false,
   activeArtifact: null,
   artifactMessageId: null,
-  activePanelTab: "notes",
+  activePanelTab: "activity",
   activeSelection: null,
   setActiveMode: (mode) => set({ activeMode: mode }),
   setImageSize: (size) => set({ imageSize: size }),
