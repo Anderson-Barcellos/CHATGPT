@@ -268,11 +268,6 @@ function DraftCard({
     duration > 0 &&
     duration <= 24 * 60;
 
-  useEffect(() => {
-    setForm(draftToFormState(draft));
-    setIsEditing(false);
-  }, [draft]);
-
   const updateForm = useCallback(
     (updates: Partial<DraftEditFormState>) => {
       setForm((current) => ({ ...current, ...updates }));
@@ -649,7 +644,7 @@ export function AgendaPanelV2() {
     } finally {
       setDiscardingDraftId(null);
     }
-  }, []);
+  }, [loadAgenda]);
 
   const status = agenda.status;
   const isLoading = loadState === "loading" || loadState === "idle";
@@ -790,7 +785,7 @@ export function AgendaPanelV2() {
             <div className="space-y-2">
               {visibleDrafts.map((draft) => (
                 <DraftCard
-                  key={draft.id}
+                  key={`${draft.id}:${draft.updatedAt}`}
                   draft={draft}
                   connected={Boolean(status?.connected)}
                   isConfirming={confirmingDraftId === draft.id}

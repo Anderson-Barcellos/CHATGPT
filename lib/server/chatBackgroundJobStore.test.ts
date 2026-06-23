@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 let records: unknown[] = [];
 
@@ -18,12 +18,19 @@ describe("chatBackgroundJobStore", () => {
     });
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
   it("upserts jobs by response id and lists pending jobs oldest first", async () => {
     const {
       listPendingBackgroundJobs,
       upsertBackgroundJob,
     } = await import("./chatBackgroundJobStore");
 
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-22T12:00:00.000Z"));
     await upsertBackgroundJob({
       responseId: "resp-later",
       conversationId: "conv-1",
@@ -31,6 +38,7 @@ describe("chatBackgroundJobStore", () => {
       responseMode: "deepsearch_high",
       status: "in_progress",
     });
+    vi.setSystemTime(new Date("2026-06-22T12:00:01.000Z"));
     await upsertBackgroundJob({
       responseId: "resp-earlier",
       conversationId: "conv-1",

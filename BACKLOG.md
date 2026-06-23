@@ -219,3 +219,14 @@ Details:
 
 Notes:
 Pendencia de push do commit `b7cbb1a Add Pulse workflows and FLAC TTS` e commits posteriores esta resolvida. Proxima frente deve partir de `main` sincronizado, salvo novas mudancas locais.
+
+### 2026-06-23 14:38 - Correção do lint completo pós-push
+
+Context:
+O push acusou quebra no lint completo. A validação local inicial tinha coberto testes, typecheck e build, mas o `npm run lint` completo ainda tinha um erro em componente de Agenda.
+
+Details:
+`components/workspace-v2/AgendaPanelV2.tsx` deixou de sincronizar formulário com `setState` direto dentro de `useEffect`; o card agora reinicia pelo `key` com `draft.updatedAt`. O callback de descarte também recebeu `loadAgenda` nas dependências. `lib/server/chatBackgroundJobStore.test.ts` estabilizou o relógio do teste de ordenação de jobs pendentes para evitar empate no mesmo milissegundo.
+
+Notes:
+Validação executada: `npm run lint` passou com warnings antigos, `npx vitest run lib/server/chatBackgroundJobStore.test.ts`, `npm test`, `npx tsc --noEmit` e `npm run build` passaram.
