@@ -208,3 +208,14 @@ O default do Pulse voltou para `gpt-5.4-mini`, mantendo `PULSE_RUN_MODEL` como o
 
 Notes:
 Se Anders quiser comparar qualidade, usar `PULSE_RUN_MODEL=gpt-5.4` temporariamente no ambiente e comparar tempo/conteudo com a mesma rotina; o default operacional deve favorecer `gpt-5.4-mini`.
+
+### 2026-06-23 14:17 - Push remoto pendente fechado
+
+Context:
+O backlog registrava que `main` estava a frente de `origin/main` e que a proxima rodada deveria conferir e enviar os commits ao GitHub.
+
+Details:
+`git status --short --branch` mostrou `main...origin/main [ahead 14]` com worktree limpa. O push foi executado para `origin main`, publicando ate o commit `c59bc9a Persist and reconcile background jobs`.
+
+Notes:
+Pendencia de push do commit `b7cbb1a Add Pulse workflows and FLAC TTS` e commits posteriores esta resolvida. Proxima frente deve partir de `main` sincronizado, salvo novas mudancas locais.
