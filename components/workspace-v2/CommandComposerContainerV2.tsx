@@ -315,7 +315,7 @@ export function CommandComposerContainerV2({
             disabled={isLoading || isTranscribing || isDeepsearchMode}
             aria-label="Selecionar modelo"
             title={isDeepsearchMode ? `Deepsearch usa modelo fixo (${deepsearchModelLabel}).` : undefined}
-            className="h-8 max-w-[7rem] gap-1.5 rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-1.5 text-nano font-medium text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground"
+            className="h-11 max-w-[8.8rem] gap-1.5 rounded-2xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-3 text-sm font-medium text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:h-8 md:max-w-[7rem] md:rounded-lg md:px-1.5 md:text-nano"
           >
             <span className="truncate">{displayModel?.name || parameters.model}</span>
             <ChevronDown className="size-3.5 shrink-0" />
@@ -377,7 +377,7 @@ export function CommandComposerContainerV2({
               size="sm"
               disabled={isLoading || isTranscribing}
               aria-label="Ajustar nível de raciocínio"
-              className="h-8 rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-1.5 text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground"
+              className="h-11 rounded-2xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-3 text-sm text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:h-8 md:rounded-lg md:px-1.5 md:text-nano"
             >
               <Brain className="size-3.5" style={{ opacity: reasoningOpacity }} />
             </Button>

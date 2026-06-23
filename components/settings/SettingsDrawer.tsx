@@ -230,7 +230,7 @@ function MemoryCard({ memory, onDelete, onUpdate }: MemoryCardProps) {
         }}
         rows={3}
         className={cn(
-          "gc-refined-soft-surface min-h-[84px] w-full resize-none rounded-xl border px-3 py-2.5 text-sm leading-relaxed outline-none transition-all",
+          "gc-refined-soft-surface min-h-[74px] w-full resize-none rounded-xl border px-3 py-2 text-body-sm leading-relaxed outline-none transition-all sm:min-h-[84px] sm:py-2.5 sm:text-sm",
           "focus:border-primary/40 focus:ring-2 focus:ring-primary/15",
           !memory.isActive && "text-muted-foreground/70"
         )}
@@ -279,7 +279,7 @@ function MemorySuggestionCard({
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
         rows={3}
-        className="gc-refined-soft-surface min-h-[84px] w-full resize-none rounded-xl border px-3 py-2.5 text-sm leading-relaxed outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
+        className="gc-refined-soft-surface min-h-[74px] w-full resize-none rounded-xl border px-3 py-2 text-body-sm leading-relaxed outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/15 sm:min-h-[84px] sm:py-2.5 sm:text-sm"
       />
 
       <div className="mt-2 flex items-center justify-end gap-1">
@@ -416,7 +416,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
       <SheetContent
         side="right"
         showCloseButton={false}
-        className="gc-clinical-panel !w-screen !max-w-none gap-0 !border-l-0 border-[color:var(--gc-border)] p-0 pt-[env(safe-area-inset-top)] pb-[max(var(--gc-mobile-panel-content-pad),env(safe-area-inset-bottom))] shadow-none sm:!w-[25rem] sm:!max-w-[25rem] sm:!border-l sm:shadow-[0_28px_80px_rgba(15,23,42,0.24)]"
+        className="gc-clinical-panel !w-screen !max-w-none gap-0 !border-l-0 border-[color:var(--gc-border-soft)] p-0 pt-[env(safe-area-inset-top)] pb-[max(var(--gc-mobile-panel-content-pad),env(safe-area-inset-bottom))] shadow-none sm:!w-[26.5rem] sm:!max-w-[26.5rem] sm:!border-l sm:shadow-[0_28px_80px_rgba(15,23,42,0.18)]"
       >
         <SheetHeader className="sr-only">
           <SheetTitle>Configurações</SheetTitle>
@@ -429,7 +429,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                 <h2 className="text-[1rem] font-semibold tracking-[-0.02em] text-foreground sm:text-lg sm:tracking-[-0.03em]">
                   Configurações
                 </h2>
-                <p className="mt-0.5 text-[9px] uppercase tracking-eyebrow text-muted-foreground/70 sm:mt-1 sm:text-micro">
+                <p className="mt-0.5 text-micro uppercase tracking-eyebrow text-muted-foreground/70 sm:mt-1">
                   Ajustes, memórias e contexto
                 </p>
               </div>
@@ -449,21 +449,21 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                   variant="ghost"
                   size="icon"
                   onClick={onClose}
-                  className="gc-clinical-input-surface h-8 w-8 rounded-xl border border-[color:var(--gc-border-soft)] hover:bg-[var(--gc-surface-control-hover)] sm:border-[color:var(--gc-border)]"
+                  className="gc-clinical-input-surface size-[var(--gc-mobile-icon-button-size)] rounded-xl border border-[color:var(--gc-border-soft)] hover:bg-[var(--gc-surface-control-hover)] sm:h-8 sm:w-8 sm:border-[color:var(--gc-border)]"
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            <div className="mt-[var(--gc-mobile-context-header-y)] grid grid-cols-3 gap-1 rounded-xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel-strong)] p-1 sm:rounded-2xl sm:border-[color:var(--gc-border)]">
+            <div className="mt-[var(--gc-mobile-context-header-y)] grid grid-cols-3 gap-1 rounded-xl border border-[color:var(--gc-border-soft)] bg-background/72 p-1 sm:rounded-2xl">
               {SETTINGS_TABS.map(({ key, label, icon: Icon }) => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => setActiveTab(key)}
                   className={cn(
-                    "flex min-w-0 items-center justify-center gap-1 rounded-lg px-1.5 py-1.5 text-[11px] font-semibold transition-all xs:text-micro sm:rounded-xl sm:py-2",
+                    "flex min-w-0 items-center justify-center gap-1 rounded-lg px-1.5 py-1.5 text-[var(--gc-mobile-tab-font-size)] font-semibold transition-all sm:rounded-xl sm:py-2 sm:text-micro",
                     activeTab === key
                       ? "bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(15,118,110,0.18)]"
                       : "text-muted-foreground hover:text-foreground"
@@ -479,7 +479,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
           <div className="flex-1 overflow-y-auto px-[var(--gc-mobile-panel-content-pad)] pb-[var(--gc-mobile-panel-content-pad)] pt-[var(--gc-mobile-panel-content-pad)]">
             {activeTab === "tuning" && (
               <div className="space-y-[var(--gc-mobile-settings-section-gap)]">
-                <div className="gc-refined-accent-surface rounded-[1.6rem] border p-[var(--gc-mobile-settings-card-pad)] text-sm shadow-[0_18px_36px_rgba(15,118,110,0.10)]">
+                <div className="gc-refined-accent-surface rounded-[1.6rem] border p-[var(--gc-mobile-settings-card-pad)] text-body-sm shadow-[0_18px_36px_rgba(15,118,110,0.10)] sm:text-sm">
                   <div className="flex items-center gap-2 font-semibold text-primary">
                     <Sparkles className="h-4 w-4" />
                     {currentModel?.name || parameters.model}
@@ -562,7 +562,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                               type="button"
                               onClick={() => updateParameters({ verbosity: option.id })}
                               className={cn(
-                                "gc-refined-panel rounded-xl border p-3 text-left transition-colors",
+                                "gc-refined-panel rounded-xl border p-[var(--gc-mobile-settings-card-pad)] text-left transition-colors sm:p-3",
                                 parameters.verbosity === option.id
                                   ? "border-primary/30 bg-primary/10 text-foreground"
                                   : "text-muted-foreground hover:text-foreground"
@@ -615,7 +615,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                                 mode: e.target.value === "balanced" ? "balanced" : "turbo",
                               })
                             }
-                            className="gc-refined-soft-surface rounded-xl border px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/20"
+                            className="gc-refined-soft-surface rounded-xl border px-3 py-2 text-[16px] outline-none focus:ring-2 focus:ring-primary/20 sm:text-xs"
                           >
                             {TTS_MODES.map((mode) => (
                               <option key={mode.id} value={mode.id}>
@@ -630,7 +630,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                           <select
                             value={ttsPreferences.voice}
                             onChange={(e) => updateTtsPreferences({ voice: e.target.value })}
-                            className="gc-refined-soft-surface rounded-xl border px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/20"
+                            className="gc-refined-soft-surface rounded-xl border px-3 py-2 text-[16px] outline-none focus:ring-2 focus:ring-primary/20 sm:text-xs"
                           >
                             {TTS_VOICES.map((voice) => (
                               <option key={voice} value={voice}>
@@ -651,7 +651,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                                   : "flac",
                               })
                             }
-                            className="gc-refined-soft-surface rounded-xl border px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/20"
+                            className="gc-refined-soft-surface rounded-xl border px-3 py-2 text-[16px] outline-none focus:ring-2 focus:ring-primary/20 sm:text-xs"
                           >
                             {TTS_AUDIO_FORMATS.map((format) => (
                               <option key={format} value={format}>
@@ -691,7 +691,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                             }
                             placeholder="Ex: Fale com tom calmo, natural e levemente gaúcho."
                             rows={3}
-                            className="gc-refined-soft-surface min-h-[78px] resize-none rounded-xl border px-3 py-2 text-xs outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
+                            className="gc-refined-soft-surface min-h-[68px] resize-none rounded-xl border px-3 py-2 text-xs outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/15 sm:min-h-[78px]"
                           />
                         </label>
                       </div>
@@ -711,7 +711,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                         <select
                           value={imageSize}
                           onChange={(e) => setImageSize(e.target.value)}
-                          className="gc-refined-soft-surface rounded-xl border px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/20"
+                          className="gc-refined-soft-surface rounded-xl border px-3 py-2 text-[16px] outline-none focus:ring-2 focus:ring-primary/20 sm:text-xs"
                         >
                           {IMAGE_SIZES.map((s) => (
                             <option key={s.id} value={s.id}>
@@ -725,7 +725,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                         <select
                           value={imageQuality}
                           onChange={(e) => setImageQuality(e.target.value)}
-                          className="gc-refined-soft-surface rounded-xl border px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/20"
+                          className="gc-refined-soft-surface rounded-xl border px-3 py-2 text-[16px] outline-none focus:ring-2 focus:ring-primary/20 sm:text-xs"
                         >
                           {IMAGE_QUALITIES.map((q) => (
                             <option key={q.id} value={q.id}>
@@ -887,7 +887,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                     value={mainPromptPreview}
                     readOnly
                     rows={8}
-                    className="gc-refined-soft-surface w-full resize-none rounded-2xl border p-3 font-mono text-[10px] leading-relaxed text-muted-foreground outline-none"
+                    className="gc-refined-soft-surface w-full resize-none rounded-2xl border p-3 font-mono text-nano leading-relaxed text-muted-foreground outline-none"
                   />
                   <p className="text-micro leading-relaxed text-muted-foreground/80">
                     Prévia somente leitura do prompt base e da persona fixa que entram antes

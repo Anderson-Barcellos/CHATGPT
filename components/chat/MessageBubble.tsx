@@ -201,7 +201,7 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
                   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSaveEdit(); }
                   if (e.key === "Escape") handleCancelEdit();
                 }}
-                className="w-full resize-none bg-background/50 rounded-lg p-2 text-sm text-foreground outline-none ring-1 ring-primary/30 focus:ring-primary/60 min-h-[40px]"
+                className="min-h-[var(--gc-mobile-textarea-min-height)] w-full resize-none rounded-lg bg-background/50 px-[var(--gc-mobile-textarea-px)] pb-[var(--gc-mobile-textarea-pb)] pt-[var(--gc-mobile-textarea-pt)] text-body-sm leading-relaxed text-foreground outline-none ring-1 ring-primary/30 focus:ring-primary/60 md:min-h-[40px] md:p-2 md:text-sm"
               />
               <p className="text-micro leading-relaxed text-muted-foreground/80">
                 Ao salvar, o chat refaz a conversa a partir desta mensagem.
@@ -242,7 +242,7 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
 
           {message.citations && message.citations.length > 0 && (
             <div className="gc-refined-citation-surface mt-4 rounded-2xl border px-3 py-3 md:px-4">
-              <div className="flex items-center gap-1 text-[9px] font-semibold text-muted-foreground/60 uppercase tracking-wider md:text-[10px]">
+              <div className="flex items-center gap-1 text-nano font-semibold text-muted-foreground/60 uppercase tracking-label">
                 <Globe className="h-2 w-2" />
                 Referências
               </div>
@@ -254,13 +254,13 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
                     target="_blank"
                     rel="noopener noreferrer"
                     className={cn(
-                      "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-medium leading-none transition-colors md:text-[11px]",
+                      "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-micro font-medium leading-none transition-colors",
                       "gc-refined-chip hover:border-primary/25 hover:text-primary",
                       "max-w-[180px] truncate"
                     )}
                     title={cite.url}
                   >
-                    <span className="shrink-0 text-[10px] font-semibold text-primary/80">
+                    <span className="shrink-0 text-nano font-semibold text-primary/80">
                       [{i + 1}]
                     </span>
                     <ExternalLink className="h-1.5 w-1.5 shrink-0" />
@@ -278,7 +278,7 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
         )}>
           <span
             className={cn(
-              "inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-medium",
+              "inline-flex items-center rounded-full border px-2.5 py-1 text-micro font-medium",
               isUser
                 ? "border-white/18 bg-white/10 text-white/72"
                 : "gc-refined-chip"
