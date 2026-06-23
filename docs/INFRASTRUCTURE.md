@@ -121,7 +121,7 @@ Pulse:
 | `PULSE_RUNNER_TOKEN` | Token opcional para proteger `/api/pulse/run-due`; usado por `chatgpt-pulse.service` |
 | `PULSE_RUNNER_URL` | Override opcional do endpoint local do runner |
 | `PULSE_EXTRACT_MODEL` | Modelo opcional para interpretar prompts de rotina |
-| `PULSE_RUN_MODEL` | Modelo opcional para executar rotinas; default `gpt-5.4` |
+| `PULSE_RUN_MODEL` | Modelo opcional para executar rotinas; default `gpt-5.4-mini` |
 
 | Variável | Propósito |
 |---|---|

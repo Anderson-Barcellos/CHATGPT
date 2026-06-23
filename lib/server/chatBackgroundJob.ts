@@ -1,10 +1,17 @@
 import type OpenAI from "openai";
-import type { BackgroundJobStatus, Message } from "@/types";
+import type { BackgroundJobStatus, Message, ResponseMode } from "@/types";
 import { createMessageArtifact } from "@/lib/artifacts/messageArtifacts";
 import { responseToMessagePatch } from "@/lib/chat/responseToMessagePatch";
 import { getConversation, updateConversation } from "@/app/api/conversations/data";
 
-export function isBackgroundResponseMode(responseMode: unknown): boolean {
+export type BackgroundResponseMode = Extract<
+  ResponseMode,
+  "document" | "deepsearch_medium" | "deepsearch_high"
+>;
+
+export function isBackgroundResponseMode(
+  responseMode: unknown
+): responseMode is BackgroundResponseMode {
   return (
     responseMode === "document" ||
     responseMode === "deepsearch_medium" ||

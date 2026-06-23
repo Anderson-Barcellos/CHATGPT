@@ -135,17 +135,47 @@ describe("responseToMessagePatch", () => {
     });
   });
 
-  it("turns incomplete responses into failed messages instead of pending forever", () => {
+  it("explains incomplete responses caused by output token exhaustion", () => {
     const patch = responseToMessagePatch(
       response({
         status: "incomplete",
+        incomplete_details: { reason: "max_output_tokens" },
       })
     );
 
     expect(patch).toMatchObject({
       streamStatus: "failed",
       content:
-        "❌ A geração em segundo plano terminou incompleta antes de devolver uma resposta final.",
+        "❌ A geração em segundo plano esgotou o limite de tokens antes de produzir texto final.",
+    });
+  });
+
+  it("preserves partial text from incomplete responses", () => {
+    const patch = responseToMessagePatch(
+      response({
+        status: "incomplete",
+        incomplete_details: { reason: "max_output_tokens" },
+        output: [
+          {
+            type: "message",
+            id: "msg_partial",
+            status: "incomplete",
+            role: "assistant",
+            content: [
+              {
+                type: "output_text",
+                text: "Texto parcial recuperavel.",
+                annotations: [],
+              },
+            ],
+          },
+        ],
+      })
+    );
+
+    expect(patch).toMatchObject({
+      streamStatus: "failed",
+      content: "Texto parcial recuperavel.",
     });
   });
 });

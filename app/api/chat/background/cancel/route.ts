@@ -3,7 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { jsonError } from "@/lib/api/errors";
 import { isAuthenticatedRequest, isAuthEnabled } from "@/lib/server/auth";
 import { createOpenAIClient } from "@/lib/server/chatRequest";
-import { applyBackgroundResponseToConversation } from "@/lib/server/chatBackgroundJob";
+import {
+  applyBackgroundResponseToConversation,
+  toBackgroundJobStatus,
+} from "@/lib/server/chatBackgroundJob";
+import { updateBackgroundJobByResponseId } from "@/lib/server/chatBackgroundJobStore";
 
 type BackgroundCancelBody = {
   conversationId?: string;
@@ -47,6 +51,11 @@ export async function POST(request: NextRequest) {
       conversationId,
       assistantMessageId,
       response,
+    });
+    await updateBackgroundJobByResponseId(response.id, {
+      status: message ? toBackgroundJobStatus(response.status) : "failed",
+      lastSyncedAt: new Date().toISOString(),
+      error: message ? response.error?.message : "Mensagem vinculada nao encontrada.",
     });
     if (!message) {
       return jsonError(404, "Conversation message not found", {

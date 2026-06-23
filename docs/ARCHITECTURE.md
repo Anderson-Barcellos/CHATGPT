@@ -89,6 +89,7 @@ O cookie de sessão é `auth-token`, assinado com JWT HS256, `HttpOnly`, `SameSi
 Persistência server-side simples:
 
 - `data/conversations.json`
+- `data/chat-background-jobs.json` (metadados pendentes/terminais de Documento/Deepsearch em background)
 - `data/memories.json`
 - `data/persona.json`
 - `data/memory-index` como índice vetorial local LanceDB para memória/RAG
@@ -100,6 +101,7 @@ Persistência server-side simples:
 Camadas principais:
 
 - `lib/storage/conversations.ts`: CRUD e beacon para conversas.
+- `lib/server/chatBackgroundJobStore.ts`: metadados de jobs `document`/`deepsearch_*` para reconciliação após reload ou suspensão mobile.
 - `lib/storage/memories.ts`: CRUD de memórias.
 - `app/api/persona/route.ts`: persona, instruções customizadas e `ttsPreferences`.
 - `app/api/memory/*` e `lib/server/memory/*`: indexação semântica com `text-embedding-3-small`, busca RAG, sugestões e execução das memory tools.
@@ -129,8 +131,9 @@ A aba Rotinas substitui a superfície visível de Agenda. Ela cria rotinas recor
 - `POST /api/pulse/tasks/propose` usa Responses API com JSON schema para transformar linguagem natural em proposta de rotina.
 - `POST /api/pulse/tasks` persiste rotinas `daily`, `weekly` ou `monthly` em `data/pulse-tasks.json`.
 - `POST /api/pulse/run-due` é chamado pelo `chatgpt-pulse.timer` e executa tarefas vencidas.
-- Cada execução chama Responses API com `gpt-5.4`, reasoning `medium`, verbosity `high`, `web_search_preview` e `image_generation`, salva texto, imagem e citações em `data/pulse-runs.json` e aparece apenas na aba Pulse.
-- O prompt de execução do Pulse reutiliza `buildSystemPrompt`: prompt base, persona fixa, `persona.json`, memórias ativas e trechos relevantes do histórico via `searchMemoryContext`.
+- Cada execução chama Responses API com `gpt-5.4-mini`, reasoning `low`, verbosity `high`, `web_search_preview` e `image_generation`, salva texto, imagem e citações em `data/pulse-runs.json` e aparece apenas na aba Pulse. O orçamento padrão de saída é `PULSE_MAX_OUTPUT_TOKENS=25000` para reservar espaço para raciocínio e texto final; `PULSE_REASONING_EFFORT` permite testar `low`, `medium` ou `high` com tools. Se `none` ou `minimal` forem configurados, o runner sobe para `low`, porque a API rejeita esses esforços com `web_search`/`image_generation`.
+- O prompt de execução do Pulse usa um contexto enxuto proprio: instruções da rotina, preferencias uteis de `persona.json`, ate 5 memorias ativas compactadas e 3 trechos relevantes do histórico via `searchMemoryContext`. Ele evita injetar o prompt global completo do chat para reduzir latencia e tokens.
+- Se a resposta principal não trouxer `image_generation`, o runner tenta uma segunda chamada curta para gerar a imagem conceitual de abertura do card.
 - Resultados de Pulse reutilizam o TTS estável do app via `useAssistantTts` e `/api/tts` (`gpt-4o-mini-tts`), mas não criam mensagens automáticas na conversa principal.
 - O Realtime mini (`/api/realtime/tts-call`) permanece laboratório separado para balões do chat e não deve substituir o TTS padrão do Pulse sem uma rodada explícita de comparação.
 

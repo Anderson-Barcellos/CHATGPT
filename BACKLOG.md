@@ -1,5 +1,16 @@
 # BACKLOG
 
+### 2026-06-22 16:30 - Deepsearch e Documento com reconciliacao resiliente
+
+Context:
+Anders queria reduzir perda de pesquisas longas em celular quando o navegador minimiza ou mata a aba, focando em Deepsearch/Documento e sem mexer em TTS/imagem.
+
+Details:
+Foi adicionada persistencia local de metadados de jobs em `data/chat-background-jobs.json`, com store server-side para upsert, sync, status terminal e poda. As rotas `/api/chat/background`, `/sync` e `/cancel` atualizam esse registro, e a nova `/api/chat/background/reconcile` recupera jobs pendentes por `response_id`, incluindo conversas antigas que ja tinham `backgroundJob.responseId` mas ainda nao tinham registro no store. `hooks/useChat.ts` chama a reconciliação ao abrir, ao voltar para aba visivel e ao carregar conversa com job pendente.
+
+Notes:
+Escopo deliberado: `document`, `deepsearch_medium`, `deepsearch_high`; sem timer novo, push notification ou background para chat default/imagem/TTS. O arquivo `data/chat-background-jobs.json` e runtime privado e fica ignorado pelo Git. Validar com testes focados, `npm test`, `npx tsc --noEmit`, `npm run build`, restart do `chatgpt.service` e health local/publico.
+
 ### 2026-06-20 17:50 - Pulse nativo substitui Agenda visivel
 
 Context:
@@ -164,3 +175,36 @@ Commit local criado: `b7cbb1a Add Pulse workflows and FLAC TTS`. `main` ficou a 
 
 Notes:
 Proxima sessao deve comecar conferindo `git status --short --branch` e, se nada novo bloquear, rodar `git push origin main`.
+
+### 2026-06-23 02:55 - Pulse incompleto por orçamento de tokens
+
+Context:
+Uma execução Pulse de "Resumo diário de IA e saúde" terminou como `incomplete` antes de produzir texto final.
+
+Details:
+Consulta read-only ao `response_id` salvo mostrou `incomplete_details.reason=max_output_tokens`, `output_tokens=4500`, `reasoning_tokens=4500` e `output_text_len=0`. O default do Pulse foi elevado de `4500` para `PULSE_MAX_OUTPUT_TOKENS=25000`, com clamp operacional por env, e o prompt agora pede curadoria de fontes/eixos para reduzir busca excessiva. `responseToMessagePatch` passou a preservar texto/imagem/citações parciais quando a API retorna `incomplete`, e a mensagem de erro agora diferencia esgotamento de tokens.
+
+Notes:
+Se voltar a acontecer, verificar `response.usage.output_tokens_details.reasoning_tokens` e considerar reduzir `reasoning.effort` do Pulse para `low` ou dividir rotinas muito amplas em duas rotinas menores. O runner agora imprime newline após cada JSON no log para facilitar auditoria.
+
+### 2026-06-23 03:10 - Pulse rapido com prompt enxuto e fallback de imagem
+
+Context:
+No teste real, a rotina completou com texto e citacoes, mas sem imagem. Anders tambem preferiu testar `gpt-5.4` com reasoning mais baixo e mandar apenas instrucoes realmente uteis para reduzir latencia.
+
+Details:
+`lib/pulse/context.ts` deixou de reutilizar o prompt global completo do chat e passou a montar um prompt Pulse enxuto: regras da rotina, preferencias uteis, ate 5 memorias ativas compactadas e 3 trechos historicos compactos. `lib/pulse/runner.ts` ganhou `PULSE_REASONING_EFFORT`, com default `low`, sem `summary: detailed`, e fallback de imagem: quando a resposta principal completa sem `imageBase64`, o runner faz uma segunda chamada curta com `image_generation` para criar a capa do card.
+
+Notes:
+No primeiro teste, `minimal` falhou com `400 The following tools cannot be used with reasoning.effort 'minimal': image_gen, web_search.` Por isso, `none`/`minimal` sao coeridos para `low` no Pulse com tools. Se a imagem ainda falhar, investigar `image_generation_call` da resposta fallback antes de trocar para outro endpoint de imagem.
+
+### 2026-06-23 03:32 - Pulse volta para 5.4 mini por latencia
+
+Context:
+O teste com `gpt-5.4`, prompt enxuto e reasoning `low` trouxe imagem e texto completos, mas ainda levou cerca de 186 s para a rotina diaria.
+
+Details:
+O default do Pulse voltou para `gpt-5.4-mini`, mantendo `PULSE_RUN_MODEL` como override operacional. O fluxo rapido atual permanece com reasoning `low`, prompt enxuto e fallback de imagem.
+
+Notes:
+Se Anders quiser comparar qualidade, usar `PULSE_RUN_MODEL=gpt-5.4` temporariamente no ambiente e comparar tempo/conteudo com a mesma rotina; o default operacional deve favorecer `gpt-5.4-mini`.

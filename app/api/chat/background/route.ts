@@ -13,7 +13,12 @@ import {
 import {
   applyBackgroundResponseToConversation,
   isBackgroundResponseMode,
+  toBackgroundJobStatus,
 } from "@/lib/server/chatBackgroundJob";
+import {
+  updateBackgroundJobByResponseId,
+  upsertBackgroundJob,
+} from "@/lib/server/chatBackgroundJobStore";
 
 type BackgroundCreateBody = ChatRequestBody & {
   conversationId?: string;
@@ -97,12 +102,25 @@ export async function POST(request: NextRequest) {
       stream: false,
     });
 
+    await upsertBackgroundJob({
+      responseId: response.id,
+      conversationId,
+      assistantMessageId,
+      responseMode,
+      status: toBackgroundJobStatus(response.status),
+      ...(response.error?.message ? { error: response.error.message } : {}),
+    });
+
     const message = await applyBackgroundResponseToConversation({
       conversationId,
       assistantMessageId,
       response,
     });
     if (!message) {
+      await updateBackgroundJobByResponseId(response.id, {
+        status: "failed",
+        error: "Mensagem vinculada nao encontrada.",
+      });
       return jsonError(404, "Conversation message not found", {
         message: "Nao encontrei a mensagem para vincular o job.",
         code: "background_message_not_found",

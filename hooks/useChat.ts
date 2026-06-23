@@ -288,6 +288,7 @@ export function useChat() {
     responseId: string;
   } | null>(null);
   const backgroundSyncInFlightRef = useRef<Set<string>>(new Set());
+  const backgroundReconcileInFlightRef = useRef(false);
   const hasLoadedRef = useRef(false);
   const hasBeaconFiredRef = useRef(false);
 
@@ -350,6 +351,61 @@ export function useChat() {
     [updateMessage]
   );
 
+  const reconcileBackgroundJobs = useCallback(async () => {
+    if (backgroundReconcileInFlightRef.current) return;
+    backgroundReconcileInFlightRef.current = true;
+
+    try {
+      const response = await fetch(apiUrl("/api/chat/background/reconcile"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ limit: 8 }),
+      });
+      if (!response.ok) throw await parseApiErrorResponse(response);
+
+      const payload = (await response.json()) as {
+        results?: Array<{
+          conversationId?: string;
+          message?: Message;
+        }>;
+      };
+      const touchedConversationIds = new Set<string>();
+
+      for (const result of payload.results ?? []) {
+        if (result.conversationId) {
+          touchedConversationIds.add(result.conversationId);
+        }
+        if (result.message) {
+          applyServerMessagePatch(result.message);
+        }
+      }
+
+      if (touchedConversationIds.size > 0) {
+        await queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+        for (const conversationId of touchedConversationIds) {
+          await queryClient.invalidateQueries({
+            queryKey: conversationKeys.detail(conversationId),
+          });
+        }
+      }
+
+      if ((payload.results?.length ?? 0) > 0 || activeBackgroundMessageRef.current) {
+        const hasPendingBackground = useChatStore
+          .getState()
+          .messages.some(isPendingBackgroundMessage);
+        setIsLoading(hasPendingBackground);
+        setIsStreaming(hasPendingBackground);
+        if (!hasPendingBackground) {
+          activeBackgroundMessageRef.current = null;
+        }
+      }
+    } catch (err) {
+      console.warn("[useChat] Falha ao reconciliar background jobs:", err);
+    } finally {
+      backgroundReconcileInFlightRef.current = false;
+    }
+  }, [applyServerMessagePatch, queryClient, setIsStreaming]);
+
   const syncBackgroundMessage = useCallback(
     async (message: Message) => {
       if (!activeConversationId || !message.backgroundJob?.responseId) return;
@@ -404,7 +460,23 @@ export function useChat() {
     if (hasLoadedRef.current) return;
     hasLoadedRef.current = true;
     void reloadConversations();
-  }, [reloadConversations]);
+    void reconcileBackgroundJobs();
+  }, [reconcileBackgroundJobs, reloadConversations]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void reconcileBackgroundJobs();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [reconcileBackgroundJobs]);
 
   useEffect(() => {
     if (!activeConversationId) return;
@@ -438,6 +510,9 @@ export function useChat() {
               );
             });
           }
+          if (normalized.some(isPendingBackgroundMessage)) {
+            void reconcileBackgroundJobs();
+          }
         }
         setIsRecovering(false);
       })
@@ -452,7 +527,7 @@ export function useChat() {
     return () => {
       isCurrent = false;
     };
-  }, [activeConversationId, conversationLoadNonce, setMessages]);
+  }, [activeConversationId, conversationLoadNonce, reconcileBackgroundJobs, setMessages]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

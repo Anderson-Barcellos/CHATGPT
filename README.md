@@ -43,6 +43,7 @@ lib/
   tts/                  Sanitização, chunking e áudio TTS
 data/
   conversations.json    Conversas locais
+  chat-background-jobs.json Metadados de Documento/Deepsearch em background
   memories.json         Memórias locais
   persona.json          Persona e preferências
   workspace-notes.json  Capturas/notas locais (runtime privado)

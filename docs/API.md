@@ -1,6 +1,6 @@
 # API
 
-**Última atualização:** 2026-06-18
+**Última atualização:** 2026-06-23
 **Base URL pública:** `https://ultrassom.ai/chat`
 **Base path interno:** `NEXT_PUBLIC_BASE_PATH=/chat`
 
@@ -106,10 +106,14 @@ mensagem do assistente e sincroniza quando a aba volta ou durante polling leve.
 | `POST` | `/api/chat/background` | Inicia uma Response em background e vincula `response_id` à mensagem |
 | `POST` | `/api/chat/background/sync` | Recupera a Response por `response_id` e persiste resultado final |
 | `POST` | `/api/chat/background/cancel` | Cancela a Response em background e marca a mensagem como abortada |
+| `POST` | `/api/chat/background/reconcile` | Reprocessa jobs pendentes salvos e mensagens antigas com `response_id` pendente |
 
 Essas rotas exigem `conversationId`, `assistantMessageId` e, exceto na criação,
 `responseId`. O fluxo não introduz fila externa: a OpenAI mantém a Response e o
-servidor local sincroniza o estado em `data/conversations.json`.
+servidor local sincroniza o estado em `data/conversations.json`. Para sobreviver
+melhor à suspensão agressiva de navegador mobile, o app também mantém metadados
+de jobs pendentes em `data/chat-background-jobs.json` e chama `/reconcile` ao
+abrir, ao voltar para aba visível e ao carregar conversas com job pendente.
 
 ## Auth
 
@@ -219,7 +223,7 @@ Todas as rotas de Pulse são privadas quando `AUTH_ENABLED=true`, exceto o runne
 
 Os resultados do Pulse reutilizam o TTS estável do app via `/api/tts` (`gpt-4o-mini-tts`). O endpoint Realtime `/api/realtime/tts-call` segue como laboratório separado e não é o player padrão do Pulse.
 
-As execuções do Pulse usam `gpt-5.4` por padrão, com raciocínio `medium` e verbosity `high`, e recebem o mesmo prompt base/persona/preferências/memórias ativas do chat, além de trechos relevantes do histórico recuperados pelo índice semântico.
+As execuções do Pulse usam `gpt-5.4-mini` por padrão, com raciocínio `low`, verbosity `high` e `PULSE_MAX_OUTPUT_TOKENS=25000`. O prompt de execução é enxuto e inclui apenas instruções da rotina, preferências úteis, memórias ativas compactadas e trechos relevantes do histórico recuperados pelo índice semântico. `PULSE_RUN_MODEL`, `PULSE_MAX_OUTPUT_TOKENS` e `PULSE_REASONING_EFFORT` são overrides operacionais; com `web_search`/`image_generation`, `none` e `minimal` são coeridos para `low`.
 
 | Método | Rota | Função |
 |---|---|---|

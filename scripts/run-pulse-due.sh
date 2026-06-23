@@ -9,3 +9,4 @@ if [[ -n "${PULSE_RUNNER_TOKEN:-}" ]]; then
 fi
 
 curl -fsS -X POST "${URL}" "${AUTH_HEADER[@]}"
+printf '\n'

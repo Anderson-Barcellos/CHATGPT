@@ -76,6 +76,15 @@ function extractOutput(response: ResponseLike) {
   };
 }
 
+export function extractResponseOutput(response: OpenAI.Responses.Response) {
+  return extractOutput(response as ResponseLike);
+}
+
+function incompleteReason(response: OpenAI.Responses.Response): string | null {
+  const details = response.incomplete_details as { reason?: unknown } | null;
+  return typeof details?.reason === "string" ? details.reason : null;
+}
+
 export function responseToMessagePatch(
   response: OpenAI.Responses.Response
 ): Partial<Message> {
@@ -91,13 +100,20 @@ export function responseToMessagePatch(
   }
 
   if (response.status === "failed" || response.status === "incomplete" || response.error) {
+    const reason = incompleteReason(response);
     return {
       streamStatus: "failed",
       content:
+        output.content ||
         response.error?.message ||
         (response.status === "incomplete"
-          ? "❌ A geração em segundo plano terminou incompleta antes de devolver uma resposta final."
+          ? reason === "max_output_tokens"
+            ? "❌ A geração em segundo plano esgotou o limite de tokens antes de produzir texto final."
+            : "❌ A geração em segundo plano terminou incompleta antes de devolver uma resposta final."
           : "❌ A geração em segundo plano falhou antes de devolver uma resposta."),
+      ...(output.citations.length > 0 ? { citations: output.citations } : {}),
+      ...(output.imageBase64 ? { imageBase64: output.imageBase64 } : {}),
+      ...(output.imageMimeType ? { imageMimeType: output.imageMimeType } : {}),
       isGeneratingImage: false,
       isSearching: false,
     };

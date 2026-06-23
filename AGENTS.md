@@ -33,6 +33,7 @@ Principais areas:
 - Chips do header conectados ao estado real (model, reasoning, responseMode)
 - Aba Persona mostra prévia somente-leitura do prompt principal (`BASE_SYSTEM_PROMPT` + `FIXED_PERSONA_PROMPT`) e edita `contextAboutUser`, `customSystemInstructions` e `responsePreferences`
 - Memory tools (`remember_memory`, `search_memory`) ativas apenas em `responseMode="default"`; document/deepsearch/quiz seguem sem essas tools
+- Deepsearch/Documento devem seguir o protocolo de pesquisa profunda com neuro-storytelling estruturado: plano validado quando o pedido for aberto, fontes autoritativas, citacoes inline e prosa narrativa clara, sem tom gauchesco em conteudo de pesquisa
 - `image_generation` ativa apenas no modo default; `web_search_preview` entra em modos não-quiz; `code_interpreter` é opt-in
 - Breakpoints: `md=768`, `lg=1024 (sidebar)`, `xl=1280 (painel contextual)`
 - Balões de assistente devem manter key estável por `message.id`; não incluir `artifact.id`
@@ -206,6 +207,20 @@ Ao final de trabalho multi-etapa:
 
 Implementar sempre nao significa criar efeito externo irreversivel. Quando a acao puder persistir dado real, chamar API externa, apagar dados ou mudar servico publico, implementar o caminho seguro: rascunho, mock, teste sem efeito, backup ou confirmacao explicita.
 
+### Pesquisa profunda e Deepsearch
+
+Usar o protocolo de pesquisa profunda quando Anders pedir `deep research`, `deep dive`, `pesquisa profunda`, `investigacao a fundo`, relatorio amplo, explicacao tecnico-cientifica extensa ou cobertura completa de um tema. Nao usar para fato unico, definicao curta ou conversa casual.
+
+Quando o pedido for curto ou aberto, primeiro construir um delineamento de especialista e validar com Anders antes de pesquisar: eixos tematicos, subperguntas, historico, estado da arte, debates, implicacoes praticas e pontos que um especialista nao deixaria passar. Se Anders ja trouxer um briefing detalhado, seguir direto para a pesquisa.
+
+Preferir fontes primarias e autoritativas: artigos revisados por pares, revisoes sistematicas, orgaos oficiais, standards, documentacao primaria e consensos tecnicos. Para medicina, ciencia e tecnologia, cruzar alegacoes importantes em mais de uma fonte independente e explicitar incertezas ou divergencias reais. Blogs, opinioes e sites comerciais so entram quando o proprio tema exigir percepcao de usuarios/mercado ou quando nao houver fonte melhor.
+
+Escrever como tutor narrativo: abrir com uma introducao antes dos subtitulos, usar `###` com subtitulos tematicos criativos, paragrafos curtos, voz ativa, analogias concretas logo apos conceitos dificeis e perguntas reflexivas pequenas para ajudar retencao. Usar **negrito** apenas na primeira aparicao de termos-chave. Evitar listas verticais no corpo do relatorio; usar tabelas apenas quando linhas e colunas realmente carregarem comparacao util.
+
+Citacoes devem aparecer inline, em Markdown natural, logo apos a frase sustentada pela fonte. Nao criar secao final de referencias quando a resposta ja tem citacoes inline. Em pesquisas e relatorios, nao aplicar o tom gauchesco: a persona calorosa pode permanecer na conversa com Anders, mas o texto investigativo deve ser tecnico, claro e universal.
+
+Se o relatorio passar de cerca de seis secoes tematicas ou Anders pedir formato exportavel, preferir gerar arquivo Markdown; oferecer PDF profissional quando houver caminho seguro no projeto para produzir o documento.
+
 ## Validacao Antes De Fechar Trabalho
 
 Rodar, quando fizer sentido:
@@ -221,7 +236,7 @@ Rodar, quando fizer sentido:
 - Evitar sobrescrever mudancas locais nao relacionadas sem confirmar antes
 - O painel operacional usa a aba principal `Pulse` para o feed de geracoes e a aba `Rotinas` para criar/pausar/executar/excluir recorrencias. Google Calendar pode permanecer no codigo como legado, mas novos fluxos recorrentes devem usar `/api/pulse/*`, `data/pulse-tasks.json`, `data/pulse-runs.json` e `chatgpt-pulse.timer`.
 - Resultados do Pulse usam o TTS estavel `/api/tts` via `useAssistantTts` (`gpt-4o-mini-tts`). Nao trocar para Realtime mini sem comparacao explicita; `/api/realtime/tts-call` continua laboratorio separado.
-- Execucoes do Pulse devem usar contexto pessoal: `buildSystemPrompt`, `persona.json`, memorias ativas e `searchMemoryContext` com a rotina como query. Default atual: `gpt-5.4`, reasoning `medium`, verbosity `high`; `PULSE_RUN_MODEL` e apenas override operacional.
+- Execucoes do Pulse devem usar contexto pessoal enxuto, nao o prompt global completo do chat: regras da rotina, campos uteis de `persona.json`, ate 5 memorias ativas compactadas e 3 trechos de `searchMemoryContext` com a rotina como query. Default atual: `gpt-5.4-mini`, reasoning `low`, verbosity `high`, `PULSE_MAX_OUTPUT_TOKENS=25000`; `PULSE_RUN_MODEL`, `PULSE_MAX_OUTPUT_TOKENS` e `PULSE_REASONING_EFFORT` sao overrides operacionais. Com `web_search`/`image_generation`, `none` e `minimal` devem subir para `low`, pois a API rejeita esses esforços com tools. Se a resposta principal nao trouxer imagem, o runner tenta fallback curto de imagem de abertura.
 
 ## Preferencia De Comunicacao
 
@@ -953,3 +968,14 @@ O commit `b7cbb1a Add Pulse workflows and FLAC TTS` foi criado localmente depois
 
 Notes:
 Na proxima sessao, verificar `git status --short --branch`; se `main` continuar apenas a frente de `origin/main` e sem worktree suja, executar `git push origin main`.
+
+### 2026-06-22 16:30 - Deepsearch e Documento com reconciliacao resiliente
+
+Context:
+Anders pediu robustez de conveniencia para pesquisas longas em celular, especialmente Deepsearch/Documento, quando o navegador minimiza ou e morto pelo sistema.
+
+Details:
+O fluxo existente de `background: true` foi mantido e ganhou metadados persistentes em `data/chat-background-jobs.json`. `lib/server/chatBackgroundJobStore.ts` controla upsert, update, listagem de pendentes e poda de jobs terminais. `/api/chat/background`, `/sync` e `/cancel` atualizam esse store; `/api/chat/background/reconcile` recupera jobs pendentes por `response_id` e tambem importa conversas legadas com `backgroundJob.responseId` pendente. `hooks/useChat.ts` chama reconciliação no bootstrap, no retorno de visibilidade e ao carregar conversa com job pendente.
+
+Notes:
+Escopo intencional: apenas `document`, `deepsearch_medium` e `deepsearch_high`; sem timer novo, push notification, TTS, imagem ou chat default. `data/chat-background-jobs.json` e runtime privado e fica ignorado pelo Git. Quando mexer nesse fluxo, validar pelo menos store/rota de reconcile, `npx tsc --noEmit`, `npm test` e build antes de restart.
