@@ -388,7 +388,7 @@ export function PulseActivityPanelV2() {
             onClick={() => void loadRuns()}
             disabled={isLoading}
             aria-label="Atualizar geracoes Pulse"
-            className="rounded-md"
+            className="size-[var(--gc-mobile-icon-button-size)] rounded-md md:size-6"
           >
             <RefreshCw className={`size-3 ${isLoading ? "animate-spin" : ""}`} />
           </Button>

@@ -129,6 +129,12 @@ export function GauchoChatShellV2() {
     return () => window.removeEventListener("gaucho:close-context-panel", handler);
   }, []);
 
+  useEffect(() => {
+    const handler = () => setMobileContextOpen(true);
+    window.addEventListener("gaucho:open-context-panel", handler);
+    return () => window.removeEventListener("gaucho:open-context-panel", handler);
+  }, []);
+
   const handleMobileContextOpenChange = useCallback(
     (open: boolean) => {
       setMobileContextOpen(open);

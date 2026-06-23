@@ -11,12 +11,15 @@ import {
 } from "react";
 import {
   Archive,
+  Activity,
   Brain,
+  CalendarCheck,
   ChevronDown,
   Ellipsis,
   FileText,
   Menu,
   Mic,
+  Plus,
   PanelRightClose,
   PanelRightOpen,
   PencilLine,
@@ -25,6 +28,7 @@ import {
   Send,
   Settings,
   ShieldCheck,
+  StickyNote,
   Square,
   Upload,
   X,
@@ -229,11 +233,11 @@ export function WorkspaceFrameV2({
         aria-hidden="true"
         className="gc-subtle-grid pointer-events-none absolute inset-0 opacity-35"
       />
-      <div className="relative z-10 flex h-full flex-col">
-        <div className="gc-clinical-shell flex min-h-0 flex-1 overflow-hidden backdrop-blur-xl">
+      <div className="relative z-10 flex h-full flex-col p-[var(--gc-shell-gutter)]">
+        <div className="gc-clinical-shell flex min-h-0 flex-1 overflow-hidden border border-[color:var(--gc-border-soft)] backdrop-blur-xl md:rounded-[1.65rem]">
           <aside
             data-workspace-region="sidebar"
-            className="gc-clinical-rail hidden min-h-0 w-[19rem] shrink-0 overflow-hidden border-r border-[color:var(--gc-border)] lg:block"
+            className="gc-clinical-rail hidden min-h-0 w-[var(--gc-shell-rail-width)] shrink-0 overflow-hidden border-r border-[color:var(--gc-border)] lg:block"
           >
             <FadeIn duration={0.24} className="h-full">
               {sidebar}
@@ -253,8 +257,25 @@ export function WorkspaceFrameV2({
 
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             <header className="gc-clinical-header shrink-0 border-b border-[color:var(--gc-border-soft)] gc-safe-top md:border-[color:var(--gc-border)] md:pt-0">
-              <div className="flex h-[var(--gc-mobile-header-height)] items-center justify-between px-[var(--gc-mobile-header-x)] md:h-[3.45rem] md:px-5">
-                <div className="flex min-w-0 items-center gap-1 md:gap-2">
+              <div className="relative flex h-[4.7rem] items-center justify-center px-4 md:h-[3.45rem] md:justify-between md:px-5">
+                <IconButton
+                  label="Abrir conversas"
+                  onClick={() => setSidebarOpen(true)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 border-transparent bg-transparent shadow-none lg:hidden md:hidden"
+                >
+                  <Menu className="size-5" />
+                </IconButton>
+
+                <div className="flex items-center gap-3 md:hidden">
+                  <div className="flex size-10 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 shadow-[0_10px_24px_rgba(15,118,110,0.12)]">
+                    <GPTLogo size={24} />
+                  </div>
+                  <h1 className="text-[1.35rem] font-semibold tracking-[-0.03em] text-foreground">
+                    Gaucho Chat
+                  </h1>
+                </div>
+
+                <div className="hidden min-w-0 items-center gap-1 md:flex md:gap-2">
                   <IconButton
                     label="Abrir conversas"
                     onClick={() => setSidebarOpen(true)}
@@ -262,27 +283,41 @@ export function WorkspaceFrameV2({
                   >
                     <Menu className="size-4" />
                   </IconButton>
-                  <div className="hidden size-9 items-center justify-center rounded-xl border border-primary/20 bg-primary/12 shadow-[0_8px_22px_rgba(15,118,110,0.12)] md:flex">
+                  <div className="flex size-9 items-center justify-center rounded-xl border border-primary/20 bg-primary/12 shadow-[0_8px_22px_rgba(15,118,110,0.12)]">
                     <GPTLogo size={22} />
                   </div>
                   <div className="min-w-0 leading-tight">
                     <div className="flex items-center gap-2">
-                      <h1 className="truncate text-[0.84rem] font-semibold tracking-[-0.02em] text-foreground md:text-[0.96rem]">
-                        {activeConversationTitle}
+                      <h1 className="truncate text-[var(--gc-mobile-header-title-font-size)] font-semibold tracking-[-0.02em] text-foreground md:text-[0.96rem]">
+                        <span className="hidden sm:inline">{activeConversationTitle}</span>
+                        <span className="sm:hidden">Gaucho Chat</span>
                       </h1>
                     </div>
-                    <p className="truncate text-[9px] text-muted-foreground/72 md:text-micro">
-                      Gaucho Chat
+                    <p className="truncate text-[var(--gc-mobile-header-caption-font-size)] text-muted-foreground/72 md:text-micro">
+                      <span className="hidden sm:inline">Gaucho Chat</span>
+                      <span className="sm:hidden">{activeConversationTitle}</span>
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-0.5 md:gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => openCommandPalette(true)}
+                  className="gc-clinical-input-surface mx-4 hidden h-9 min-w-[14rem] max-w-[28rem] flex-1 items-center gap-2 rounded-xl border border-[color:var(--gc-border-soft)] px-3 text-left text-xs text-muted-foreground transition-colors hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:flex"
+                >
+                  <Search className="size-3.5 shrink-0" />
+                  <span className="truncate">Buscar conversas, notas, rotinas...</span>
+                  <span className="ml-auto rounded-md border border-[color:var(--gc-border-soft)] bg-background/70 px-1.5 py-0.5 text-nano text-muted-foreground/75">
+                    Cmd K
+                  </span>
+                </button>
+
+                <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-0.5 md:static md:translate-y-0 md:gap-1.5">
                   <div className="hidden items-center gap-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-2 py-1 text-nano font-semibold text-emerald-700 dark:text-emerald-300 lg:flex">
                     <ShieldCheck className="size-3.5" />
                     Salvo
                   </div>
-                  {exportControl ?? null}
+                  <span className="hidden md:inline-flex">{exportControl ?? null}</span>
                   <IconButton
                     label="Buscar comandos"
                     onClick={() => openCommandPalette(true)}
@@ -303,7 +338,7 @@ export function WorkspaceFrameV2({
                   <IconButton
                     label="Painel contextual"
                     onClick={() => setContextOpen(!contextOpen)}
-                    className="relative xl:hidden"
+                    className="relative hidden md:inline-flex xl:hidden"
                   >
                     <PanelRightOpen className="size-4" />
                     {!!artifactCount && artifactCount > 0 && (
@@ -315,9 +350,45 @@ export function WorkspaceFrameV2({
                 </div>
               </div>
 
-              <div className="gc-clinical-subheader flex min-h-[var(--gc-mobile-subheader-height)] items-center justify-between border-t border-[color:var(--gc-border-soft)] px-[var(--gc-mobile-subheader-x)] py-[var(--gc-mobile-subheader-y)] md:min-h-[2.35rem] md:px-5 md:py-1.5">
-                <div className="flex min-w-0 items-center gap-1.5">
-                  <div className="hidden min-w-0 flex-wrap items-center gap-1.5 md:flex">
+              <div className="gc-clinical-subheader border-t border-[color:var(--gc-border-soft)] px-3 pb-4 pt-1 md:flex md:min-h-[2.35rem] md:items-center md:justify-between md:px-5 md:py-1.5">
+                <div className="grid h-[4.15rem] grid-cols-[minmax(0,1.9fr)_repeat(3,minmax(0,0.58fr))] items-center gap-1.5 rounded-3xl border border-[color:var(--gc-border-soft)] bg-background/84 p-1.5 shadow-[0_14px_34px_rgba(15,23,42,0.07)] md:hidden">
+                  <button
+                    type="button"
+                    onClick={handleFocusComposer}
+                    className="flex h-full items-center justify-center gap-2 rounded-2xl bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-[0_14px_28px_rgba(15,118,110,0.18)]"
+                  >
+                    <Plus className="size-5" />
+                    <span className="truncate">Nova conversa</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setContextOpen(true)}
+                    className="relative flex h-full flex-col items-center justify-center gap-1 rounded-2xl text-[0.72rem] font-medium text-muted-foreground"
+                  >
+                    <span className="absolute top-1.5 size-1.5 rounded-full bg-primary" />
+                    <Activity className="size-5" />
+                    Pulse
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setContextOpen(true)}
+                    className="flex h-full flex-col items-center justify-center gap-1 rounded-2xl text-[0.72rem] font-medium text-muted-foreground"
+                  >
+                    <StickyNote className="size-5" />
+                    Notas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setContextOpen(true)}
+                    className="flex h-full flex-col items-center justify-center gap-1 rounded-2xl text-[0.72rem] font-medium text-muted-foreground"
+                  >
+                    <CalendarCheck className="size-5" />
+                    Rotinas
+                  </button>
+                </div>
+
+                <div className="hidden min-w-0 items-center gap-1.5 md:flex">
+                  <div className="min-w-0 flex-wrap items-center gap-1.5 md:flex">
                     <ContextChip label="Workspace" value="Anders" />
                     <ContextChip label="Modelo" value={currentModelName} />
                     {reasoningLabel && reasoningLabel !== "—" && (
@@ -328,17 +399,6 @@ export function WorkspaceFrameV2({
                       value={RESPONSE_MODE_LABELS[activeResponseMode ?? "default"]}
                     />
                   </div>
-                  <span className="inline-flex md:hidden items-center gap-1 truncate text-[9px] text-muted-foreground/88">
-                    <span className="font-medium text-foreground truncate max-w-[6.25rem]">{currentModelName}</span>
-                    <span className="text-muted-foreground/50">·</span>
-                    <span>{RESPONSE_MODE_LABELS[activeResponseMode ?? "default"]}</span>
-                    {reasoningLabel && reasoningLabel !== "—" && (
-                      <>
-                        <span className="text-muted-foreground/50">·</span>
-                        <span className="truncate max-w-[3.25rem]">{reasoningLabel}</span>
-                      </>
-                    )}
-                  </span>
                 </div>
                 <span className="hidden items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-2 py-0.5 text-nano font-medium text-emerald-700 dark:text-emerald-300 md:inline-flex">
                   <span className="size-1.5 rounded-full bg-emerald-500" />
@@ -347,7 +407,7 @@ export function WorkspaceFrameV2({
               </div>
             </header>
 
-            <main data-workspace-region="chat" className="min-h-0 flex-1">
+            <main data-workspace-region="chat" className="gc-clinical-canvas min-h-0 flex-1">
               <FadeIn delay={0.04} duration={0.24} className="h-full">
                 {chat}
               </FadeIn>
@@ -366,9 +426,9 @@ export function WorkspaceFrameV2({
                 "gc-clinical-panel hidden min-h-0 shrink-0 overflow-hidden border-l border-[color:var(--gc-border)] transition-[width] duration-200 xl:block",
                 contextCollapsed
                   ? "w-12"
-                  : contextExpanded
-                  ? "w-[31rem] 2xl:w-[37rem]"
-                  : "w-[23rem] 2xl:w-[29rem]"
+                : contextExpanded
+                  ? "w-[var(--gc-shell-context-expanded-width)] 2xl:w-[34rem]"
+                  : "w-[var(--gc-shell-context-width)] 2xl:w-[24rem]"
               )}
             >
             {contextCollapsed ? (
@@ -491,8 +551,8 @@ export function CommandComposerV2({
   const statusMessage = error || speechError || fileErrors[0] || null;
 
   return (
-    <footer className="gc-clinical-section-header shrink-0 border-t border-[color:var(--gc-border)] px-[var(--gc-mobile-composer-footer-x)] pb-[calc(env(safe-area-inset-bottom)+var(--gc-mobile-composer-footer-bottom))] pt-[var(--gc-mobile-composer-footer-top)] md:px-4 md:pb-3 md:pt-2.5">
-      <div className="mx-auto max-w-[62rem]">
+    <footer className="shrink-0 border-t border-[color:var(--gc-border-soft)] bg-background/80 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 backdrop-blur-xl md:border-t-0 md:bg-transparent md:px-6 md:pb-5 md:pt-0">
+      <div className="mx-auto max-w-[54rem]">
         {statusMessage && (
           <div className="mb-2 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
             {statusMessage}
@@ -501,7 +561,7 @@ export function CommandComposerV2({
 
         <div
             className={cn(
-              "gc-clinical-composer relative overflow-hidden rounded-[var(--gc-mobile-composer-radius)] border transition-colors md:rounded-2xl",
+              "gc-clinical-composer relative overflow-hidden rounded-[1.45rem] border transition-colors md:rounded-[1.45rem]",
               "focus-within:border-primary/35 focus-within:shadow-[0_16px_40px_rgba(14,116,144,0.12)]",
               isDragging && "border-primary/55 bg-primary/8"
             )}
@@ -528,7 +588,7 @@ export function CommandComposerV2({
             placeholder={placeholder}
             rows={1}
             disabled={disabled}
-            className="max-h-[var(--gc-mobile-textarea-max-height)] min-h-[var(--gc-mobile-textarea-min-height)] w-full resize-none bg-transparent px-[var(--gc-mobile-textarea-px)] pb-[var(--gc-mobile-textarea-pb)] pt-[var(--gc-mobile-textarea-pt)] text-[var(--gc-mobile-textarea-font-size)] leading-relaxed outline-none placeholder:text-muted-foreground/45 md:min-h-[46px] md:px-4 md:pb-2 md:pt-3.5 md:text-sm"
+            className="max-h-[var(--gc-mobile-textarea-max-height)] min-h-12 w-full resize-none bg-transparent px-4 pb-1.5 pt-3.5 text-base leading-relaxed outline-none placeholder:text-muted-foreground/45 md:min-h-[46px] md:px-4 md:pb-2 md:pt-3.5 md:text-sm"
           />
 
           {attachments.length > 0 && (
@@ -564,8 +624,8 @@ export function CommandComposerV2({
             </div>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-1.5 border-t border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)]/70 px-1.5 py-1.5 md:gap-2 md:px-3 md:py-2">
-            <div className="flex min-w-0 flex-wrap items-center gap-1 md:gap-1.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)]/48 px-3 py-1.5 md:gap-2 md:px-3 md:py-2">
+            <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto [scrollbar-width:none] md:flex-wrap md:gap-1.5 md:overflow-visible [&::-webkit-scrollbar]:hidden">
               <Button
                 type="button"
                 variant="ghost"
@@ -573,7 +633,7 @@ export function CommandComposerV2({
                 disabled={disabled || isProcessing}
                 onClick={onFileSelect}
                 aria-label="Adicionar arquivos"
-                    className={cn("size-[var(--gc-mobile-control-height)] rounded-lg md:size-8", COMPOSER_CONTROL_BUTTON_CLASS)}
+                    className={cn("size-10 rounded-2xl md:size-8 md:rounded-lg", COMPOSER_CONTROL_BUTTON_CLASS)}
                 >
                 {isProcessing ? (
                   <LoaderCircle className="size-4 animate-spin" />
@@ -601,7 +661,7 @@ export function CommandComposerV2({
                     type="button"
                     aria-label="Ajustar nível de raciocínio"
                     className={cn(
-                      "flex h-[var(--gc-mobile-control-height)] items-center rounded-lg px-1.5 md:h-8",
+                      "flex h-10 items-center rounded-2xl px-3 md:h-8 md:rounded-lg md:px-1.5",
                       COMPOSER_CONTROL_BUTTON_CLASS
                     )}
                   >
@@ -618,7 +678,7 @@ export function CommandComposerV2({
                     size="sm"
                     disabled={disabled}
                     className={cn(
-                      "hidden h-8 rounded-lg border px-2 text-micro md:flex",
+                      "flex h-10 rounded-2xl border px-3 text-sm md:h-8 md:rounded-lg md:px-2 md:text-micro",
                       responseMode === "document" ||
                         responseMode === "deepsearch_medium" ||
                         responseMode === "deepsearch_high"
@@ -664,7 +724,7 @@ export function CommandComposerV2({
                 disabled={disabled}
                 onClick={onToggleQuiz}
                   className={cn(
-                    "hidden h-8 rounded-lg border px-2 text-micro md:flex",
+                    "hidden h-[var(--gc-mobile-control-height)] rounded-lg border px-2 text-[var(--gc-mobile-control-font-size)] md:flex md:h-8 md:text-micro",
                     responseMode === "quiz"
                       ? "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300"
                       : COMPOSER_CONTROL_BUTTON_CLASS
@@ -738,7 +798,7 @@ export function CommandComposerV2({
                   boxShadow: `0 0 ${8 + audioLevel * 14}px rgba(251,113,133,${(0.3 + audioLevel * 0.6).toFixed(2)})`,
                 } : undefined}
                   className={cn(
-                    "h-[var(--gc-mobile-control-height)] rounded-lg border px-2 text-[var(--gc-mobile-control-font-size)] transition-shadow md:h-8 md:text-micro",
+                    "h-10 rounded-2xl border px-3 text-sm transition-shadow md:h-8 md:rounded-lg md:px-2 md:text-micro",
                   isRecording
                     ? "border-rose-500/35 bg-rose-500/10 text-rose-700 dark:text-rose-300"
                   : isTranscribing
@@ -779,12 +839,31 @@ export function CommandComposerV2({
                   disabled={!hasContent || isRecording || isProcessing}
                   onClick={onSubmit}
                   aria-label="Enviar mensagem"
-                  className="h-[var(--gc-mobile-control-height)] rounded-lg bg-primary px-2.5 text-[var(--gc-mobile-send-font-size)] font-semibold text-primary-foreground shadow-[0_8px_18px_rgba(15,118,110,0.18)] hover:bg-primary/90 disabled:opacity-30 md:h-8 md:px-3 md:text-xs"
+                  className="size-11 rounded-full bg-primary p-0 text-primary-foreground shadow-[0_12px_24px_rgba(15,118,110,0.22)] hover:bg-primary/90 disabled:opacity-30 md:h-8 md:w-auto md:rounded-lg md:px-3 md:text-xs"
                 >
-                  <Send className="size-3.5" />
+                  <Send className="size-5 md:size-3.5" />
                 </Button>
               )}
             </div>
+          </div>
+
+          <div className="grid grid-cols-4 border-t border-[color:var(--gc-border-soft)] px-3 py-2 text-sm text-muted-foreground md:hidden">
+            <button type="button" onClick={onFileSelect} className="flex items-center justify-center gap-1.5">
+              <Paperclip className="size-4" />
+              Anexar
+            </button>
+            <button type="button" onClick={onFileSelect} className="flex items-center justify-center gap-1.5">
+              <FileText className="size-4" />
+              Imagem
+            </button>
+            <button type="button" onClick={onMicrophoneClick} className="flex items-center justify-center gap-1.5">
+              <Mic className="size-4" />
+              Voz
+            </button>
+            <button type="button" className="flex items-center justify-center gap-1.5">
+              <Ellipsis className="size-4" />
+              Mais
+            </button>
           </div>
         </div>
 

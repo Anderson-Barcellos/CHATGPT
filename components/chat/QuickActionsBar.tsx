@@ -146,7 +146,7 @@ function TtsPlayer({
                 style={{ width: `${tts.progress}%` }}
               />
             </div>
-            <div className="mt-1 flex items-center justify-between gap-2 text-[10px] leading-none">
+            <div className="mt-1 flex items-center justify-between gap-2 text-nano leading-none">
               <span>{tts.formattedCurrentTime}</span>
               <span className="truncate">
                 {tts.error || `Parte ${tts.clipIndex + 1}/${tts.totalClips}`}
@@ -182,7 +182,7 @@ function TtsPlayer({
 
       <div
         className={cn(
-          "flex items-center justify-between gap-2 text-[10px] leading-none",
+          "flex items-center justify-between gap-2 text-nano leading-none",
           shouldShowTtsPlayer &&
             "mt-1.5 border-t border-[color:var(--gc-border-soft)] pt-1.5",
         )}
