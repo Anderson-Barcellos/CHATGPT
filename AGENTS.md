@@ -235,7 +235,7 @@ Rodar, quando fizer sentido:
 - O branch principal rastreado e `main`
 - Evitar sobrescrever mudancas locais nao relacionadas sem confirmar antes
 - O painel operacional usa a aba principal `Pulse` para o feed de geracoes e a aba `Rotinas` para criar/pausar/executar/excluir recorrencias. Google Calendar pode permanecer no codigo como legado, mas novos fluxos recorrentes devem usar `/api/pulse/*`, `data/pulse-tasks.json`, `data/pulse-runs.json` e `chatgpt-pulse.timer`.
-- Resultados do Pulse usam o TTS estavel `/api/tts` via `useAssistantTts` (`gpt-4o-mini-tts`). Nao trocar para Realtime mini sem comparacao explicita; `/api/realtime/tts-call` continua laboratorio separado.
+- O player padrao de leitura segue em `/api/tts` via `useAssistantTts` (`gpt-4o-mini-tts`). `Realtime mini` continua como opcao paralela nos baloes do chat, visivel como botao/pill `Realtime` ao lado do alto-falante, e nao deve ser promovido ao fluxo principal do Pulse sem comparacao explicita.
 - Execucoes do Pulse devem usar contexto pessoal enxuto, nao o prompt global completo do chat: regras da rotina, campos uteis de `persona.json`, ate 5 memorias ativas compactadas e 3 trechos de `searchMemoryContext` com a rotina como query. Default atual: `gpt-5.4-mini`, reasoning `low`, verbosity `high`, `PULSE_MAX_OUTPUT_TOKENS=25000`; `PULSE_RUN_MODEL`, `PULSE_MAX_OUTPUT_TOKENS` e `PULSE_REASONING_EFFORT` sao overrides operacionais. Com `web_search`/`image_generation`, `none` e `minimal` devem subir para `low`, pois a API rejeita esses esforços com tools. Se a resposta principal nao trouxer imagem, o runner tenta fallback curto de imagem de abertura.
 
 ## Preferencia De Comunicacao
@@ -979,3 +979,36 @@ O fluxo existente de `background: true` foi mantido e ganhou metadados persisten
 
 Notes:
 Escopo intencional: apenas `document`, `deepsearch_medium` e `deepsearch_high`; sem timer novo, push notification, TTS, imagem ou chat default. `data/chat-background-jobs.json` e runtime privado e fica ignorado pelo Git. Quando mexer nesse fluxo, validar pelo menos store/rota de reconcile, `npx tsc --noEmit`, `npm test` e build antes de restart.
+
+### 2026-06-25 01:33 - Realtime mini como motor principal local de leitura
+
+Context:
+Anders decidiu promover o Realtime de experimento para motor principal de leitura do app local/pessoal, mantendo o TTS clássico como escape hatch manual para download/export completo e comparação.
+
+Details:
+`types/index.ts` e `lib/tts/speechText.ts` agora persistem `ttsPreferences.engine` (`realtime`/`speech`) e `ttsPreferences.realtimeModel` (`gpt-realtime-mini`, `gpt-realtime-1.5`, `gpt-realtime-2`), com defaults `realtime` + `gpt-realtime-mini`. `app/api/realtime/tts-call/route.ts` passou a aceitar `model` via query sem mexer no shape GA da sessão (`type: "realtime"`, `output_modalities`, `audio.output.voice`). Foi criada a camada compartilhada `hooks/useMessageTts.ts`, que escolhe a engine principal e impede playback duplicado; o novo `hooks/useRealtimeMessageTts.ts` substitui o papel de laboratório por um fluxo local de produção com chunking compartilhado, fila sequencial por WebRTC, seek aproximado por chunk, sem fallback automático para `/api/tts`. `components/chat/QuickActionsBar.tsx`, `components/chat/MessageTtsPlayer.tsx`, `components/workspace-v2/PulsePanelV2.tsx` e `components/settings/SettingsDrawer.tsx` passaram a usar o mesmo contrato de playback e a mesma preferência global de engine. Chat e Pulse agora andam juntos nessa decisão.
+
+Notes:
+Escopo conscientemente limitado: sem microfone, VAD, tool use por voz ou promoção imediata para `gpt-realtime-2`. O download consolidado continua clássico-only. Validação de código desta rodada: testes focados de TTS/persona/rota/player e `npx tsc --noEmit`; antes de chamar isso de totalmente assentado no uso diário, fazer smoke auditivo real em `/chat` com resposta curta, resposta longa e um card de Pulse para medir estabilidade do autoplay e truncamento perceptível.
+
+### 2026-06-25 08:17 - Reversão do Realtime principal para o modelo híbrido anterior
+
+Context:
+Depois de refletir melhor, Anders preferiu desfazer a promoção do Realtime a motor principal universal. O objetivo voltou a ser: TTS clássico como padrão em qualquer mensagem, `Realtime mini` como opção paralela no chat e Pulse restrito ao TTS normal para leituras maiores/mais estáveis.
+
+Details:
+`components/chat/QuickActionsBar.tsx` voltou ao arranjo anterior: botão principal `Ler em voz alta` usa `useAssistantTts`, e o `Realtime mini` reaparece como ação separada/opcional no mesmo balão via `useRealtimeTtsLab`. `components/workspace-v2/PulsePanelV2.tsx` voltou a usar apenas `useAssistantTts`, removendo Realtime do Pulse. `types/index.ts`, `lib/tts/speechText.ts`, `lib/persona/persona.test.ts`, `lib/tts/speechText.test.ts`, `app/api/realtime/tts-call/route.ts` e `route.test.ts` foram limpos das preferências extras `engine`/`realtimeModel` e da seleção de modelo por query. Os arquivos introduzidos só para o Realtime principal (`hooks/useMessageTts.ts`, `hooks/useRealtimeMessageTts.ts`, `lib/tts/messageTts.ts`, `components/chat/MessageTtsPlayer.tsx` e respectivo teste) foram removidos.
+
+Notes:
+Isto restaura o desenho que separa melhor os usos: Speech API estável para tudo, inclusive Pulse, e Realtime como trilha de comparação para respostas de chat. Se quisermos revisitar Realtime como principal no futuro, convém começar por um escopo menor e manter o Pulse fora dessa troca até existir prova clara de ganho em respostas longas.
+
+### 2026-06-25 08:39 - Botao Realtime explicito ao lado do alto-falante
+
+Context:
+Depois da reversão, Anders ainda via apenas o botão único de alto-falante no app vivo. O problema prático era mistura de bundle antigo no serviço e baixa descoberta visual do ícone Realtime.
+
+Details:
+`components/chat/QuickActionsBar.tsx` agora mantém a ação principal `Ler em voz alta` no alto-falante e mostra o Realtime como botão textual `Realtime` na mesma barra, com `flex-wrap` para não sumir em larguras menores. O player clássico continua exibindo controles de chunk/progresso/download, e o Realtime segue usando `useRealtimeTtsLab` como sessão WebRTC opcional, sem virar engine principal.
+
+Notes:
+Validação desta rodada: `git diff --check`, `npx tsc --noEmit`, `npm run build`, `npm test`, restart de `chatgpt.service` e health local/público em `/chat/api/health`. Se o botão não aparecer no navegador do Anders, primeiro forçar refresh/cache do browser antes de mexer de novo no contrato de TTS.

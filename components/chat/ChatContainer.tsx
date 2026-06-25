@@ -85,34 +85,34 @@ function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
       <div className="w-full max-w-5xl">
         <div className="space-y-5 md:hidden">
           <section>
-            <div className="mb-2.5 flex items-center justify-between px-1">
-              <h2 className="text-base font-semibold tracking-[-0.02em] text-foreground">Conversas</h2>
+            <div className="mb-2 flex items-center justify-between px-1">
+              <h2 className="text-[0.95rem] font-semibold tracking-[-0.02em] text-foreground">Conversas</h2>
               <button
                 type="button"
-                className="inline-flex items-center gap-1 text-sm font-medium text-primary"
+                className="inline-flex items-center gap-1 text-[0.82rem] font-medium text-primary"
                 onClick={() => window.dispatchEvent(new CustomEvent("gaucho:open-context-panel"))}
               >
                 Ver todas
                 <ChevronRight className="size-4" />
               </button>
             </div>
-            <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {MOBILE_CONVERSATIONS.map((conversation) => (
                 <button
                   key={conversation.title}
                   type="button"
                   className={cn(
-                    "flex min-h-[5.4rem] min-w-[9.2rem] flex-col justify-between rounded-2xl border bg-background/72 p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.06)]",
+                    "flex min-h-[4.45rem] min-w-[7.9rem] flex-col justify-between rounded-[1.05rem] border bg-background/72 p-2.25 text-left shadow-[0_10px_22px_rgba(15,23,42,0.06)]",
                     conversation.active
                       ? "border-primary/60 bg-primary/5"
                       : "border-[color:var(--gc-border-soft)]"
                   )}
                 >
-                  <span className="flex items-start gap-2">
-                    <MessageCircle className="mt-0.5 size-4 shrink-0 text-primary" />
-                    <span className="text-sm font-medium leading-snug text-foreground">{conversation.title}</span>
+                  <span className="flex items-start gap-1.5">
+                    <MessageCircle className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                    <span className="text-[0.84rem] font-medium leading-snug text-foreground">{conversation.title}</span>
                   </span>
-                  <span className="pl-6 text-xs text-muted-foreground">{conversation.time}</span>
+                  <span className="pl-5 text-[0.68rem] text-muted-foreground">{conversation.time}</span>
                 </button>
               ))}
             </div>
@@ -121,41 +121,41 @@ function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("gaucho:open-context-panel"))}
-            className="flex w-full items-center gap-3 rounded-3xl border border-[color:var(--gc-border-soft)] bg-background/78 px-4 py-3.5 text-left shadow-[0_14px_34px_rgba(15,23,42,0.06)]"
+            className="flex w-full items-center gap-2.5 rounded-[1.3rem] border border-[color:var(--gc-border-soft)] bg-background/78 px-3.25 py-2.75 text-left shadow-[0_12px_26px_rgba(15,23,42,0.06)]"
           >
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--gc-border-soft)] bg-muted/48 text-foreground">
-              <PanelRightOpen className="size-6" />
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-[1rem] border border-[color:var(--gc-border-soft)] bg-muted/48 text-foreground">
+              <PanelRightOpen className="size-5" />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-base font-semibold text-foreground">Painel contextual</span>
-              <span className="block text-sm leading-snug text-muted-foreground">Exames, imagens, protocolos e mais</span>
+              <span className="block text-[0.94rem] font-semibold text-foreground">Painel contextual</span>
+              <span className="block text-[0.78rem] leading-snug text-muted-foreground">Exames, imagens, protocolos e mais</span>
             </span>
-            <ChevronRight className="size-5 shrink-0 text-foreground" />
+            <ChevronRight className="size-4.5 shrink-0 text-foreground" />
           </button>
 
-          <section className="rounded-3xl border border-[color:var(--gc-border-soft)] bg-background/78 px-4 py-5 text-center shadow-[0_18px_42px_rgba(15,23,42,0.06)]">
-            <div className="mx-auto flex size-14 items-center justify-center rounded-3xl border border-primary/20 bg-primary/8">
-              <ShieldCheck className="size-8 text-primary" />
+          <section className="rounded-[1.35rem] border border-[color:var(--gc-border-soft)] bg-background/78 px-3.25 py-3.5 text-center shadow-[0_15px_34px_rgba(15,23,42,0.06)]">
+            <div className="mx-auto flex size-11 items-center justify-center rounded-[1rem] border border-primary/20 bg-primary/8">
+              <ShieldCheck className="size-6 text-primary" />
             </div>
-            <h2 className="mt-4 text-[1.72rem] font-semibold leading-tight tracking-[-0.04em] text-foreground">
+            <h2 className="mt-2.5 text-[1.38rem] font-semibold leading-tight tracking-[-0.04em] text-foreground">
               Olá, Anders
             </h2>
-            <p className="mt-1.5 text-base text-muted-foreground">Como posso ajudar você hoje?</p>
-            <div className="mt-5 grid grid-cols-4 gap-1.5">
+            <p className="mt-1 text-[0.9rem] text-muted-foreground">Como posso ajudar você hoje?</p>
+            <div className="mt-3.5 grid grid-cols-4 gap-1">
               {MOBILE_ACTIONS.map(({ icon: Icon, label, prompt }) => (
                 <button
                   key={label}
                   type="button"
                   onClick={() => onSuggestionClick(prompt)}
-                  className="inline-flex min-h-[3.35rem] flex-col items-center justify-center gap-1 rounded-2xl border border-[color:var(--gc-border-soft)] bg-background/80 px-1.5 text-[0.66rem] font-medium leading-tight text-foreground shadow-[0_8px_20px_rgba(15,23,42,0.04)]"
+                  className="inline-flex min-h-[2.8rem] flex-col items-center justify-center gap-0.5 rounded-[0.9rem] border border-[color:var(--gc-border-soft)] bg-background/80 px-1 text-[0.58rem] font-medium leading-tight text-foreground shadow-[0_8px_18px_rgba(15,23,42,0.04)]"
                 >
-                  <Icon className="size-4 text-primary" />
+                  <Icon className="size-3.25 text-primary" />
                   <span className="line-clamp-2">{label}</span>
                 </button>
               ))}
             </div>
-            <p className="mt-5 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <ShieldCheck className="size-4 text-primary" />
+            <p className="mt-3.5 flex items-center justify-center gap-1.5 text-[0.78rem] text-muted-foreground">
+              <ShieldCheck className="size-3.5 text-primary" />
               Confidencial e seguro.
             </p>
           </section>
@@ -166,14 +166,14 @@ function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
             <span className="h-px flex-1 bg-border/70" />
           </div>
 
-          <section className="flex items-start gap-3 pb-3">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-full border border-[color:var(--gc-border-soft)] bg-background">
-              <ShieldCheck className="size-6 text-primary" />
+          <section className="flex items-start gap-2.25 pb-2">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-[color:var(--gc-border-soft)] bg-background">
+              <ShieldCheck className="size-4.5 text-primary" />
             </div>
-            <div className="rounded-[1.4rem] bg-muted/62 px-5 py-4 text-[0.95rem] leading-relaxed text-foreground shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+            <div className="rounded-[1.05rem] bg-muted/62 px-3.5 py-2.75 text-[0.84rem] leading-relaxed text-foreground shadow-[0_10px_22px_rgba(15,23,42,0.05)]">
               <p>Pronto para te ajudar com análises, relatórios e dúvidas clínicas.</p>
-              <p className="mt-3">Qual é o tema de hoje?</p>
-              <p className="mt-4 text-xs text-muted-foreground">09:21</p>
+              <p className="mt-2">Qual é o tema de hoje?</p>
+              <p className="mt-2.5 text-[0.7rem] text-muted-foreground">09:21</p>
             </div>
           </section>
         </div>
@@ -228,7 +228,7 @@ function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
                 </div>
               </div>
 
-              <div className="grid w-full grid-cols-2 gap-[var(--gc-mobile-welcome-suggestion-gap)] md:gap-2.5 2xl:grid-cols-3">
+              <div className="grid w-full grid-cols-2 gap-[var(--gc-mobile-welcome-suggestion-gap)] md:gap-2.5">
                 {SUGGESTIONS.map(({ icon: Icon, label, desc, prompt, accent, iconColor }) => (
                   <button
                     key={label}
@@ -256,7 +256,7 @@ function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
           </div>
         </div>
 
-        <div className="mt-3 flex items-center justify-center gap-2 text-micro text-muted-foreground/70 md:mt-5 md:text-xs">
+        <div className="mt-2.5 flex items-center justify-center gap-1.5 text-micro text-muted-foreground/70 md:mt-4 md:text-xs">
           <ShieldCheck className="h-3.5 w-3.5 text-primary" />
           <span>Confidencial e seguro. Revise informacoes importantes.</span>
         </div>
@@ -535,7 +535,10 @@ export function ChatContainer({
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden">
       <ScrollArea ref={scrollAreaRef} className="h-full">
-        <div ref={contentRef} className="mx-auto flex w-full max-w-3xl flex-col gap-[var(--gc-mobile-chat-content-gap)] px-[var(--gc-mobile-chat-content-x)] py-[var(--gc-mobile-chat-content-y)] md:gap-5 md:px-5 md:py-7 lg:max-w-[50rem]">
+        <div
+          ref={contentRef}
+          className="mx-auto flex w-full max-w-3xl flex-col gap-[var(--gc-mobile-chat-content-gap)] px-[var(--gc-mobile-chat-content-x)] py-[var(--gc-mobile-chat-content-y)] md:gap-5 md:px-5 md:py-7 lg:max-w-[50rem] min-[1490px]:max-w-[60rem]"
+        >
           {messages.length === 0 ? (
             <WelcomeScreen onSuggestionClick={handleSuggestion} />
           ) : (

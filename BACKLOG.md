@@ -1,5 +1,49 @@
 # BACKLOG
 
+### 2026-06-24 12:45 - Capturas locais mostram texto completo apos gravar
+
+Context:
+Anders percebeu que as janelas/cards das capturas locais de notas ficavam truncadas depois de gravar, sem mostrar todo o conteudo salvo.
+
+Details:
+`components/workspace-v2/WorkspaceCapturesPanelV2.tsx` agora expande automaticamente a nota criada por gravacao de voz e permite expandir qualquer nota local longa, nao apenas `source: "stt"`. O corpo tambem ganhou `break-words` para evitar corte visual em textos sem espacos longos.
+
+Notes:
+Validacao executada: `git diff --check`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service`, health local e publico em `/chat/api/health`.
+
+### 2026-06-24 12:20 - Centro mais solto em desktop acima de 1490px
+
+Context:
+Anders pediu apenas uma folga extra no layout desktop largo, preservando a densidade atual até `1490px` e sem reabrir os painéis laterais.
+
+Details:
+`components/chat/ChatContainer.tsx` passou a expandir o trilho central de mensagens para `60rem` apenas em `min-[1490px]`. `components/chat/MessageBubble.tsx` abriu os baloes nesse mesmo breakpoint (`54rem` no assistente e `78%` no usuario), e `components/workspace-v2/WorkspaceLayoutV2.tsx` alinhou o composer para `58rem`. No `WelcomeScreen`, o grid de sugestoes deixou de alternar para `2xl:grid-cols-3`, mantendo o arranjo `2x3` para evitar cards estreitos no desktop largo.
+
+Notes:
+Validação desta rodada: `git diff --check`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service`, health local e publico em `/chat/api/health`. Se ainda faltar sensação de respiro, o próximo passo natural é abrir também o `WelcomeScreen` desktop no mesmo breakpoint, sem mexer no mobile.
+
+### 2026-06-24 02:22 - Cards mobile levemente menores e CTA Nova conversa focando composer
+
+Context:
+Anders aprovou a compactação geral, mas pediu uma passada ainda mais leve nos cards do mobile e deixou explícito que o botão `Nova conversa` do topo deve levar ao input da conversa atual, sem abrir outra conversa.
+
+Details:
+`components/chat/ChatContainer.tsx` reduziu discretamente os cards da faixa `Conversas`, o CTA `Painel contextual`, o hero `Olá, Anders`, os atalhos rápidos e o balão introdutório inferior. `components/workspace-v2/WorkspaceLayoutV2.tsx` manteve o `Nova conversa` no fluxo atual e endureceu o comportamento de UX: agora o handler faz `scrollIntoView` do composer antes de focar o `textarea`, reforçando o salto para o input da mesma conversa.
+
+Notes:
+Validação executada: `git diff --check`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service`, health local/público `200` e smoke Playwright mobile confirmando `focusedTag: TEXTAREA` após clique em `Nova conversa`.
+
+### 2026-06-24 02:05 - Compactacao visual do shell em zoom 100%
+
+Context:
+O layout novo estava visualmente bonito, mas com densidade grande demais em 100% de zoom, especialmente no mobile/narrow viewport e no composer inferior.
+
+Details:
+`app/globals.css` recebeu um ajuste fino dos tokens de densidade para reduzir alturas, gutters, larguras laterais e medidas do welcome/composer sem escalar a tipografia por viewport. `components/workspace-v2/WorkspaceLayoutV2.tsx` compactou header, subheader mobile, chips, busca, painel operacional e composer, incluindo textarea, botões de controle e barra inferior. `components/chat/ChatContainer.tsx` compactou os cards de conversas, o CTA do painel contextual, o hero `Olá, Anders` e os atalhos mobile para caber mais conteúdo útil na primeira dobra.
+
+Notes:
+Validacao desta rodada deve conferir desktop e viewport estreito, porque a intenção foi reduzir peso visual sem voltar a deixar touch targets desconfortáveis.
+
 ### 2026-06-22 16:30 - Deepsearch e Documento com reconciliacao resiliente
 
 Context:
@@ -230,3 +274,36 @@ Details:
 
 Notes:
 Validação executada: `npm run lint` passou com warnings antigos, `npx vitest run lib/server/chatBackgroundJobStore.test.ts`, `npm test`, `npx tsc --noEmit` e `npm run build` passaram.
+
+### 2026-06-25 01:33 - Realtime mini promovido a motor principal local de leitura
+
+Context:
+Anders decidiu promover o Realtime a engine principal de leitura no app local/pessoal, sem remover o TTS clássico. A meta era trocar o papel do Realtime de experimento para motor padrão, manter o clássico como escape hatch manual e alinhar chat + Pulse pela mesma preferência global.
+
+Details:
+`types/index.ts` e `lib/tts/speechText.ts` passaram a persistir `ttsPreferences.engine` e `ttsPreferences.realtimeModel`, com defaults `realtime` e `gpt-realtime-mini`. `app/api/realtime/tts-call/route.ts` agora aceita seleção de modelo via query e mantém o shape GA atual da sessão (`type`, `output_modalities`, `audio.output.voice`). Foi criada a camada compartilhada `hooks/useMessageTts.ts`, combinando `useAssistantTts` e o novo `hooks/useRealtimeMessageTts.ts`; este último usa WebRTC por chunk, fila sequencial, seek aproximado por chunk e sem fallback automático para `/api/tts`. `components/chat/QuickActionsBar.tsx`, `components/chat/MessageTtsPlayer.tsx`, `components/workspace-v2/PulsePanelV2.tsx` e `components/settings/SettingsDrawer.tsx` foram alinhados para usar a mesma engine principal, com botão manual "Ouvir no clássico" quando o Realtime estiver como primário.
+
+Notes:
+Escopo deliberado: local/pessoal, sem voice agent full-duplex, sem microfone/VAD e sem migração imediata para `gpt-realtime-2`. O clássico continua sendo o único caminho de download consolidado. Próxima validação ideal é smoke auditivo real em `/chat` cobrindo resposta curta, longa e Pulse, para medir truncamento perceptível e estabilidade do autoplay no navegador do Anders.
+
+### 2026-06-25 08:17 - Reversão para TTS clássico principal e Realtime opcional
+
+Context:
+Depois da tentativa de promover o Realtime a base de leitura, Anders preferiu voltar ao desenho anterior: TTS clássico como padrão, `Realtime mini` apenas como opção paralela no chat, e Pulse usando só o TTS normal.
+
+Details:
+`components/chat/QuickActionsBar.tsx` voltou para `useAssistantTts` como ação principal e `useRealtimeTtsLab` como botão opcional separado. `components/workspace-v2/PulsePanelV2.tsx` voltou a usar somente `useAssistantTts`. Foram removidas as preferências e abstrações criadas apenas para o Realtime principal (`ttsPreferences.engine`, `ttsPreferences.realtimeModel`, `useMessageTts`, `useRealtimeMessageTts`, `MessageTtsPlayer`) e a rota `/api/realtime/tts-call` voltou a fixar `gpt-realtime-mini` sem seleção de modelo por query. `docs/API.md`, `docs/ARCHITECTURE.md`, `docs/MODELS.md` e `AGENTS.md` foram alinhados ao retorno desse comportamento.
+
+Notes:
+O recuo deixa o app de volta na separação que o Anders considera mais coerente hoje: Realtime para testes curtos e comparação; Speech API para leitura estável, longa e para o Pulse. Se houver uma nova investida no futuro, tratar Pulse como escopo separado desde o início deve reduzir retrabalho.
+
+### 2026-06-25 08:39 - Realtime visivel como botao separado na barra
+
+Context:
+Após a reversão, o app ainda parecia mostrar só o botão único de alto-falante, deixando o Realtime pouco descobrível.
+
+Details:
+`components/chat/QuickActionsBar.tsx` passou a exibir o Realtime como botão/pill textual `Realtime` ao lado do alto-falante. A fileira de ações agora permite quebra de linha (`flex-wrap`) para o botão não desaparecer em superfícies estreitas. O botão principal continua usando `/api/tts`, e o Realtime segue como `useRealtimeTtsLab` opcional/experimental.
+
+Notes:
+Validação executada: `git diff --check`, `npx tsc --noEmit`, `npm run build`, `npm test`, `systemctl restart chatgpt.service`, health local e público em `/chat/api/health`.

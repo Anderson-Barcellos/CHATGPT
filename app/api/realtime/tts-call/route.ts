@@ -5,8 +5,8 @@ import { normalizeRealtimeTtsVoice } from "@/lib/tts/speechText";
 export const runtime = "nodejs";
 
 const REALTIME_CALLS_URL = "https://api.openai.com/v1/realtime/calls";
-const REALTIME_TTS_MODEL = "gpt-realtime-mini";
 const MAX_UPSTREAM_ERROR_LOG_CHARS = 2500;
+const REALTIME_TTS_MODEL = "gpt-realtime-mini";
 const REALTIME_TTS_STYLE_INSTRUCTIONS = [
   "You are a text-to-speech renderer for Codex in Gaucho Chat.",
   "When asked to read text aloud, speak only the provided text, without summaries, preambles, or commentary.",

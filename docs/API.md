@@ -196,9 +196,9 @@ Atualiza:
 - `ttsPreferences`
 
 `POST` é aceito como alias para autosave forte/flush de saída do navegador
-(`sendBeacon`/`keepalive`). `ttsPreferences` persiste `mode`, `voice`,
-`speed`, `instructions` e `format` em `data/persona.json`; o formato
-default atual é `flac`, com alternativas `mp3` e `wav`.
+(`sendBeacon`/`keepalive`). `ttsPreferences` persiste `voice`, `mode`,
+`speed`, `instructions` e `format` em `data/persona.json`; o default atual
+de formato é `flac`.
 
 **Arquivo:** `app/api/persona/route.ts`
 
@@ -207,8 +207,8 @@ default atual é `flac`, com alternativas `mp3` e `wav`.
 | Método | Rota | Função |
 |---|---|---|
 | `POST` | `/api/artifacts/pdf` | Renderiza artifact de documento como PDF A4 server-side |
-| `POST` | `/api/tts` | Gera áudio com `gpt-4o-mini-tts`; aceita `format` `flac`, `mp3` ou `wav` |
-| `POST` | `/api/realtime/tts-call` | Cria sessão SDP experimental com `gpt-realtime-mini` |
+| `POST` | `/api/tts` | Gera áudio clássico com `gpt-4o-mini-tts`; aceita `format` `flac`, `mp3` ou `wav` |
+| `POST` | `/api/realtime/tts-call` | Cria sessão SDP/WebRTC experimental com `gpt-realtime-mini` |
 | `POST` | `/api/transcribe` | Transcreve áudio com `gpt-4o-transcribe` |
 
 ## Google Calendar e Notas Locais
@@ -221,7 +221,7 @@ Todas as rotas abaixo são privadas quando `AUTH_ENABLED=true`. O browser nunca 
 
 Todas as rotas de Pulse são privadas quando `AUTH_ENABLED=true`, exceto o runner interno `/api/pulse/run-due`, protegido por `PULSE_RUNNER_TOKEN` quando configurado e usado pelo timer local do servidor.
 
-Os resultados do Pulse reutilizam o TTS estável do app via `/api/tts` (`gpt-4o-mini-tts`). O endpoint Realtime `/api/realtime/tts-call` segue como laboratório separado e não é o player padrão do Pulse.
+Os resultados do Pulse reutilizam o TTS estável do app via `/api/tts` (`gpt-4o-mini-tts`). O endpoint Realtime `/api/realtime/tts-call` segue como opção experimental separada para mensagens do chat e não é o player padrão do Pulse.
 
 As execuções do Pulse usam `gpt-5.4-mini` por padrão, com raciocínio `low`, verbosity `high` e `PULSE_MAX_OUTPUT_TOKENS=25000`. O prompt de execução é enxuto e inclui apenas instruções da rotina, preferências úteis, memórias ativas compactadas e trechos relevantes do histórico recuperados pelo índice semântico. `PULSE_RUN_MODEL`, `PULSE_MAX_OUTPUT_TOKENS` e `PULSE_REASONING_EFFORT` são overrides operacionais; com `web_search`/`image_generation`, `none` e `minimal` são coeridos para `low`.
 

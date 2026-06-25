@@ -137,6 +137,7 @@ export function WorkspaceCapturesPanelV2({
           tags: ["voz", contextTag],
         });
         setNotes((current) => [note, ...current.filter((item) => item.id !== note.id)]);
+        setExpandedNoteIds((current) => new Set(current).add(note.id));
         toast.success("Captura de voz salva nas notas locais.");
 
         if (context === "calendar") {
@@ -298,9 +299,7 @@ export function WorkspaceCapturesPanelV2({
       {visibleNotes.length > 0 ? (
         <div className="space-y-2">
           {visibleNotes.map((note) => {
-            const isDictatedNote = note.source === "stt";
             const canExpandNote =
-              isDictatedNote &&
               (note.body.length > 140 || note.body.includes("\n"));
             const isNoteExpanded = expandedNoteIds.has(note.id);
 
@@ -315,7 +314,7 @@ export function WorkspaceCapturesPanelV2({
                       {note.title}
                     </p>
                     <p
-                      className={`mt-1 whitespace-pre-wrap text-nano text-muted-foreground/85 ${
+                      className={`mt-1 whitespace-pre-wrap break-words text-nano text-muted-foreground/85 ${
                         isNoteExpanded ? "" : "line-clamp-2"
                       }`}
                     >

@@ -127,8 +127,8 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
           className={cn(
             "relative w-full min-w-0 gap-0 overflow-hidden break-words border px-3 py-2.5 text-left text-body-sm leading-relaxed md:px-5 md:py-4 md:text-body",
             isUser
-              ? "gc-user-bubble rounded-2xl rounded-br-md md:max-w-[76%]"
-              : "gc-assistant-bubble rounded-[1.6rem] rounded-bl-md text-foreground/90 md:max-w-[48rem]"
+              ? "gc-user-bubble rounded-2xl rounded-br-md md:max-w-[76%] min-[1490px]:max-w-[78%]"
+              : "gc-assistant-bubble rounded-[1.6rem] rounded-bl-md text-foreground/90 md:max-w-[48rem] min-[1490px]:max-w-[54rem]"
           )}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}

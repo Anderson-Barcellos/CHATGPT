@@ -30,7 +30,7 @@
 - Quiz força `gpt-5.4` com reasoning `high`.
 - No shell atual, Deepsearch Medium/High envia `gpt-5.4-mini` com reasoning `medium/high`.
 - TTS usa `gpt-4o-mini-tts` em `lib/tts/speechText.ts`.
-- Realtime TTS lab usa `gpt-realtime-mini`.
+- Realtime TTS opcional usa `gpt-realtime-mini`.
 - Transcrição usa `gpt-4o-transcribe`.
 
 ## Regras de Runtime
