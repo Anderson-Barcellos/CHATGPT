@@ -56,7 +56,7 @@ const A4_PDF_CSS = `
 
   @page {
     size: A4;
-    margin: 14mm 16mm 18mm;
+    margin: 17mm 19mm 20mm;
   }
 
   * {
@@ -70,8 +70,8 @@ const A4_PDF_CSS = `
     background: #ffffff;
     color: #111827;
     font-family: "Lexend", "Inter", "Segoe UI", Arial, sans-serif;
-    font-size: 11pt;
-    line-height: 1.62;
+    font-size: 10.2pt;
+    line-height: 1.66;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -82,8 +82,8 @@ const A4_PDF_CSS = `
   }
 
   .document-header {
-    margin-bottom: 16pt;
-    padding-bottom: 10pt;
+    margin-bottom: 14pt;
+    padding-bottom: 9pt;
     border-bottom: 1px solid #e2e8f0;
   }
 
@@ -94,25 +94,41 @@ const A4_PDF_CSS = `
   }
 
   .openai-title-mark {
-    width: 17pt;
-    height: 17pt;
+    width: 16pt;
+    height: 16pt;
     flex: 0 0 auto;
-    margin-top: 3pt;
+    margin-top: 4pt;
     color: #0f172a;
     fill: currentColor;
+  }
+
+  .document-title-stack {
+    min-width: 0;
+  }
+
+  .document-kicker {
+    margin: 0 0 2pt;
+    color: #64748b;
+    font-size: 7pt;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    line-height: 1;
+    text-transform: uppercase;
   }
 
   .document-title {
     margin: 0;
     color: #020617;
     font-family: "Lexend", "Inter", "Segoe UI", Arial, sans-serif;
-    font-size: 20pt;
+    font-size: 17.2pt;
     font-weight: 700;
-    line-height: 1.18;
+    line-height: 1.16;
   }
 
   .document-body {
     padding: 0 1pt;
+    text-align: justify;
+    text-justify: inter-word;
   }
 
   h1,
@@ -129,10 +145,10 @@ const A4_PDF_CSS = `
     line-height: 1.22;
   }
 
-  h1 { margin: 20pt 0 8pt; font-size: 20pt; }
-  h2 { margin: 18pt 0 7pt; font-size: 16pt; }
-  h3 { margin: 14pt 0 6pt; font-size: 13.5pt; }
-  h4, h5, h6 { margin: 12pt 0 5pt; font-size: 11.5pt; }
+  h1 { margin: 18pt 0 7pt; font-size: 17.2pt; }
+  h2 { margin: 16pt 0 6pt; font-size: 14.2pt; }
+  h3 { margin: 13pt 0 5pt; font-size: 12.4pt; }
+  h4, h5, h6 { margin: 11pt 0 5pt; font-size: 10.8pt; }
 
   p,
   ul,
@@ -163,6 +179,7 @@ const A4_PDF_CSS = `
     border-radius: 8pt;
     background: linear-gradient(90deg, rgba(241, 245, 249, 0.96), rgba(248, 250, 252, 0.72));
     color: #334155;
+    text-align: left;
   }
 
   table {
@@ -173,6 +190,7 @@ const A4_PDF_CSS = `
     font-size: 9pt;
     border: 1px solid #cbd5e1;
     border-radius: 8pt;
+    text-align: left;
   }
 
   thead {
@@ -223,6 +241,7 @@ const A4_PDF_CSS = `
     border: 1px solid #e2e8f0;
     border-radius: 6pt;
     background: #f8fafc;
+    text-align: left;
   }
 
   a {
@@ -246,6 +265,7 @@ const A4_PDF_CSS = `
     color: #475569;
     font-family: "Lexend", "Inter", "Segoe UI", Arial, sans-serif;
     font-size: 8.5pt;
+    text-align: left;
   }
 
   img {
@@ -340,7 +360,10 @@ export function buildDocumentArtifactPdfHtml(
       <header class="document-header">
         <div class="document-title-lockup">
           ${OPENAI_TITLE_MARK}
-          <h1 class="document-title">${title}</h1>
+          <div class="document-title-stack">
+            <p class="document-kicker">Documento</p>
+            <h1 class="document-title">${title}</h1>
+          </div>
         </div>
       </header>
       <main class="document-body">${bodyHtml}</main>
@@ -356,9 +379,9 @@ function buildFooterTemplate(title: string): string {
     <style>
       .pdf-footer {
         width: 100%;
-        padding: 0 16mm;
+        padding: 0 19mm;
         color: #64748b;
-        font-family: Arial, Helvetica, sans-serif;
+        font-family: "Lexend", "Inter", "Segoe UI", Arial, sans-serif;
         font-size: 7.5pt;
       }
 
@@ -371,7 +394,7 @@ function buildFooterTemplate(title: string): string {
       }
 
       .pdf-footer-title {
-        max-width: 130mm;
+        max-width: 124mm;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -429,10 +452,10 @@ export async function renderDocumentArtifactPdf(
       headerTemplate: "<div></div>",
       footerTemplate: buildFooterTemplate(artifact.title),
       margin: {
-        top: "14mm",
-        right: "16mm",
-        bottom: "18mm",
-        left: "16mm",
+        top: "17mm",
+        right: "19mm",
+        bottom: "20mm",
+        left: "19mm",
       },
     });
 

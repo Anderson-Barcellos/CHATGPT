@@ -18,7 +18,13 @@ describe("buildDocumentArtifactPdfHtml", () => {
 
     expect(html).toContain("Lexend");
     expect(html).toContain("document-title-lockup");
+    expect(html).toContain("document-title-stack");
+    expect(html).toContain("document-kicker");
     expect(html).toContain("openai-title-mark");
+    expect(html).toContain("margin: 17mm 19mm 20mm;");
+    expect(html).toContain("font-size: 10.2pt;");
+    expect(html).toContain("text-align: justify;");
+    expect(html).toContain(">Documento</p>");
     expect(html).not.toContain("Gaucho Chat");
     expect(html).not.toContain("document-brand-mark");
     expect(html).not.toContain("document-meta-grid");
