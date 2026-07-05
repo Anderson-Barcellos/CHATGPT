@@ -1,6 +1,6 @@
 # API
 
-**Última atualização:** 2026-06-23
+**Última atualização:** 2026-07-05
 **Base URL pública:** `https://ultrassom.ai/chat`
 **Base path interno:** `NEXT_PUBLIC_BASE_PATH=/chat`
 
@@ -206,10 +206,16 @@ de formato é `flac`.
 
 | Método | Rota | Função |
 |---|---|---|
-| `POST` | `/api/artifacts/pdf` | Renderiza artifact de documento como PDF A4 server-side |
+| `POST` | `/api/artifacts/pdf` | Renderiza artifact de documento como PDF A4 server-side, com fonte Lexend embutida e cabeçalho compacto OpenAI + título |
 | `POST` | `/api/tts` | Gera áudio clássico com `gpt-4o-mini-tts`; aceita `format` `flac`, `mp3` ou `wav` |
 | `POST` | `/api/realtime/tts-call` | Cria sessão SDP/WebRTC experimental com `gpt-realtime-mini` |
 | `POST` | `/api/transcribe` | Transcreve áudio com `gpt-4o-transcribe` |
+
+Notas do PDF:
+
+- A rota exige auth quando `AUTH_ENABLED=true`, aceita apenas artifacts `kind: "document"` e limita o body a 5 MB.
+- O renderer usa Playwright/Chrome em modo server-side com JavaScript desativado.
+- O painel A4 não oferece ação de imprimir; o caminho suportado é exportar PDF ou baixar o arquivo fonte.
 
 ## Google Calendar e Notas Locais
 

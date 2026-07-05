@@ -192,7 +192,7 @@ Se o usuário recarregar a página durante o stream, a mensagem parcial é prese
 
 - **Tokens `--gc-*`** em `app/globals.css` — substitui `--v2-*`/`--app-*`/`--glass-*`. Breakpoints: `md=768`, `lg=1024 (sidebar)`, `xl=1280 (painel contextual)`.
 - **`components/motion/`** — `FadeIn`, `SlideIn`, `Pop`, `Drawer` encapsulam framer-motion com tokens `--gc-duration-*`.
-- **`ArtifactPreviewSheet`** — preview principal de artefatos acionado pelo chat canvas, com print/PDF/download para documentos e quizzes.
+- **`ArtifactPreviewSheet`** — preview principal de artefatos acionado pelo chat canvas; documentos têm exportação PDF A4 server-side e download de fonte, sem ação de imprimir no painel atual.
 - **`CommandPalette` + `CommandPaletteProvider`** — cmd+k via `cmdk`. Z-index 300 (acima do canvas 150).
 - **`NotesProvider`** — Context em `components/workspace-v2/NotesProvider.tsx`. `appendToNotes` lança toast se painel não montado.
 - **`SelectionToolbar`** + `useTextSelection` — toolbar Notion-like ao selecionar texto em balões.

@@ -11,7 +11,7 @@ Alguns artefatos internos antigos ainda usam o rótulo histórico `Celer`, mas o
 - Histórico de conversas com persistência incremental durante streaming e recuperação de respostas interrompidas.
 - Memórias, RAG local de conversas, persona, prompt principal visível, instruções customizadas e preferências de TTS persistidas server-side.
 - Player TTS nas respostas do assistente com chunking, formato FLAC por padrão, modo turbo e laboratório separado de Realtime mini.
-- Artefatos de documento/quiz com preview, download, impressão e PDF A4 server-side.
+- Artefatos de documento/quiz com preview, download de fonte e PDF A4 server-side.
 - Auth simples do app por usuário/senha, sessão JWT e cookie `auth-token`.
 - Shell `workspace-v2` com direção clínica clara e densidade mobile compacta por tokens, sem `zoom` ou escala global.
 

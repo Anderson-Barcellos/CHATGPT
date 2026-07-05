@@ -160,8 +160,10 @@ Artifacts são gerados a partir das respostas e exibidos pelo `ArtifactPreviewSh
 
 Fluxos relevantes:
 
-- Documentos e quizzes têm preview e download de fonte.
+- Documentos e quizzes têm preview; documentos expõem download de fonte e exportação PDF.
+- A opção de imprimir não faz parte do painel A4 atual.
 - PDF de documento usa `/api/artifacts/pdf` com Playwright/Chrome server-side.
+- O template PDF usa fonte Lexend embutida, JavaScript desativado, links HTTP impressos no corpo e cabeçalho compacto com ícone OpenAI + título. O bloco antigo de metadados (`Gaucho Chat`, exportado em, formato PDF A4) não deve voltar sem decisão explícita.
 - Preview HTML no cliente permanece aceito para uso pessoal do app.
 
 ## Voz
