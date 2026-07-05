@@ -13,6 +13,7 @@ import {
   finalizeAssistantStreamState,
   reduceAssistantStreamEvent,
 } from "@/lib/chat/streamMachine";
+import { createStreamPatchScheduler } from "@/lib/chat/streamPatchScheduler";
 import { buildInputFromMessages } from "@/lib/openai/buildInput";
 import {
   listConversations,
@@ -663,6 +664,9 @@ export function useChat() {
       });
 
       let streamState = createInitialAssistantStreamState(usesReasoning);
+      const streamPatchScheduler = createStreamPatchScheduler({
+        updateMessage,
+      });
 
       const throttledAutoSave = createThrottle(() => {
         const snapshot = cloneMessagesForStorage(
@@ -833,7 +837,10 @@ export function useChat() {
                 const event = JSON.parse(payload);
                 streamState = reduceAssistantStreamEvent(streamState, event);
                 accumulated = streamState.content;
-                updateMessage(assistantMessageId, assistantStreamStateToMessagePatch(streamState));
+                streamPatchScheduler.schedule(
+                  assistantMessageId,
+                  assistantStreamStateToMessagePatch(streamState)
+                );
                 throttledAutoSave.call();
               } catch {
                 // Ignora chunks parciais ou eventos irrelevantes
@@ -841,6 +848,7 @@ export function useChat() {
             }
           }
 
+          streamPatchScheduler.flush();
           streamState = finalizeAssistantStreamState(
             streamState,
             "completed",
@@ -895,6 +903,7 @@ export function useChat() {
 
         sent = true;
       } catch (err) {
+        streamPatchScheduler.flush();
         if (err instanceof DOMException && err.name === "AbortError") {
           updateMessage(assistantMessageId, {
             ...buildAbortedAssistantMessagePatch(streamState, usesReasoning),
@@ -933,6 +942,7 @@ export function useChat() {
           sent = false;
         }
       } finally {
+        streamPatchScheduler.cancel();
         throttledAutoSave.cancel();
         const hasPendingBackground = useChatStore
           .getState()

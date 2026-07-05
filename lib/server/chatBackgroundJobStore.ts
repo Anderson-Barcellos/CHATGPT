@@ -1,4 +1,4 @@
-import type { BackgroundJobStatus, ResponseMode } from "@/types";
+import type { BackgroundJobStatus } from "@/types";
 import { readDataFile, withDataFileLock, writeDataFile } from "@/lib/server/jsonFileStore";
 import { isBackgroundResponseMode } from "@/lib/server/chatBackgroundJob";
 import type { BackgroundResponseMode } from "@/lib/server/chatBackgroundJob";

@@ -46,6 +46,8 @@ export const MEMORY_TOOL_NAMES = {
 export type MemoryToolName = (typeof MEMORY_TOOL_NAMES)[keyof typeof MEMORY_TOOL_NAMES];
 
 const LEGACY_MODEL_FALLBACKS: Record<string, string> = {
+  "gpt-chat-latest": "chat-latest",
+  "gpt-5-chat-latest": "chat-latest",
   "gpt-5.1-chat-latest": DEFAULT_CHAT_MODEL,
   "gpt-5.3-chat-latest": DEFAULT_CHAT_MODEL,
   "gpt-5.1": DEFAULT_CHAT_MODEL,
@@ -61,8 +63,9 @@ export function createOpenAIClient(): OpenAI | null {
 
 export function resolveRequestedModel(model: string | undefined): string {
   if (!model) return DEFAULT_CHAT_MODEL;
+  if (LEGACY_MODEL_FALLBACKS[model]) return LEGACY_MODEL_FALLBACKS[model];
   if (ALLOWED_CHAT_MODELS.has(model)) return model;
-  return LEGACY_MODEL_FALLBACKS[model] ?? model;
+  return model;
 }
 
 function supportsImageGenerationTool(responseMode: ResponseMode): boolean {

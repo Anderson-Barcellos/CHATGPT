@@ -27,6 +27,8 @@ interface SettingsState {
 const DEFAULT_MODEL = "gpt-5.4-mini";
 
 const LEGACY_MODEL_FALLBACKS: Record<string, string> = {
+  "gpt-chat-latest": "chat-latest",
+  "gpt-5-chat-latest": "chat-latest",
   "gpt-5.1-chat-latest": DEFAULT_MODEL,
   "gpt-5.3-chat-latest": DEFAULT_MODEL,
   "gpt-5.1": DEFAULT_MODEL,

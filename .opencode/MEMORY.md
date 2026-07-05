@@ -1,5 +1,104 @@
 # Gaucho Chat — Project Memory
 
+### 2026-06-28 01:45 - Hierarquia final do composer mobile
+
+Context:
+- Anders refinou a organizacao do composer mobile: remover o icone de anexo da linha superior, colocar gravacao e pesquisa ali, e deixar anexos na barra inferior. Em seguida corrigiu a semantica: `Documento` pertence ao sistema de pesquisa/Deepsearch, como nas resolucoes maiores.
+
+Details:
+- `components/workspace-v2/WorkspaceLayoutV2.tsx`:
+  - Linha superior mobile: modelo, reasoning, gravacao, dropdown `Pesquisa` e enviar; o clipe de anexo fica escondido no mobile e preservado no desktop.
+  - Dropdown `Pesquisa` mobile contem `Documento`, `Deepsearch Medium` e `Deepsearch High`, mantendo o contrato visual das resolucoes maiores.
+  - Barra inferior mobile ficou dedicada a anexos/entrada: `Arquivo` e `Imagem`, ambos usando o mesmo picker atual (`onFileSelect`) por enquanto.
+  - Desktop segue com os controles originais: clipe, Documento dropdown, Quiz e Voz na linha principal.
+- Validacao executada: `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service`, health local/publico HTTP 200.
+
+Notes:
+- `Arquivo` e `Imagem` ainda abrem o mesmo picker porque o input unico aceita todos os tipos; se Anders quiser separacao real, criar inputs/accept distintos em rodada propria.
+- Sempre reiniciar `chatgpt.service` depois de build antes de pedir reload no Safari.
+
+### 2026-06-28 01:25 - Composer mobile ajustado como botoes reais e textarea menor
+
+Context:
+- Anders apontou que a simplificacao anterior tinha ficado pela metade: a barra inferior parecia conter apenas links/texto em vez de receber os botoes de fato, e o textarea ficou visualmente grande demais por causa da protecao anti-zoom.
+
+Details:
+- `components/workspace-v2/WorkspaceLayoutV2.tsx` agora esconde `Documento` e `Voz` da linha principal no mobile (`md:flex`) e mantém esses fluxos como botoes completos na barra inferior mobile.
+- A barra inferior mobile ganhou botoes com altura, borda, superficie, radius, estado ativo e feedback de gravacao por `audioLevel`, em vez de links simples.
+- `app/globals.css` removeu `textarea` da regra mobile que forcava `font-size: 16px !important`; o token `--gc-mobile-textarea-font-size` foi ajustado para `13.25px` e o textarea voltou a consumir o token diretamente.
+- Validação: `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service`, health local e publico `/chat/api/health` com HTTP 200.
+
+Notes:
+- Remover o `16px` do textarea melhora proporcao visual, mas pode reabrir risco de Safari aplicar zoom ao focar inputs menores que 16px. A preferencia visual de Anders nesta rodada foi priorizada.
+- Apos qualquer `npm run build` em producao/local servido pelo systemd, reiniciar `chatgpt.service` antes de pedir reload no browser.
+
+### 2026-06-28 01:05 - Hotfix de estabilidade apos simplificacao do composer mobile
+
+Context:
+- Apos a rodada que removeu redundancias no mobile, Anders sinalizou percepcao de quebra no layout/fluxo do composer.
+
+Details:
+- `components/workspace-v2/WorkspaceLayoutV2.tsx` recebeu hotfix para restaurar visibilidade dos controles de `Documento` e `Voz` na linha principal tambem no mobile, reduzindo risco de fluxo quebrado enquanto mantemos a nova barra inferior de 3 acoes (`Gravar`, `Documento`, `Pesquisa`).
+- A barra inferior ganhou hardening de estados: botoes agora respeitam `disabled` quando necessario (`isLoading`, `isTranscribing`, suporte de voz) para evitar interacoes invalidas.
+- Mantido o objetivo da rodada: pricing removido do composer (`CostCounter` fora de `CommandComposerContainerV2`).
+- Validacao executada: `npx tsc --noEmit` e `npm run build` (passaram).
+
+Notes:
+- Este hotfix prioriza estabilidade visual/funcional imediata; a remocao total de redundancia pode ser retomada em segunda passada guiada por teste manual no iPhone real.
+
+### 2026-06-28 00:45 - Composer mobile sem redundancia e sem pricing
+
+Context:
+- Anders pediu simplificar o mobile removendo botoes redundantes (anexar/anexar imagem/voz duplicados), mover acoes chave para a faixa inferior e retirar o pricing do composer.
+
+Details:
+- `components/workspace-v2/WorkspaceLayoutV2.tsx`:
+  - Escondeu no mobile os controles redundantes da linha principal (`Documento` dropdown e botao de voz) mantendo-os no desktop (`md:`).
+  - Removeu o menu mobile de `Mais` redundante.
+  - Refez a faixa inferior mobile para 3 acoes diretas: `Gravar`, `Documento` e `Pesquisa`.
+  - A gravacao na faixa inferior ganhou feedback visual com `animate-pulse` no icone e glow dinamico por `audioLevel` durante recording.
+  - Removeu o slot de `costControl` do componente.
+- `components/workspace-v2/CommandComposerContainerV2.tsx`:
+  - Removeu import/uso de `CostCounter`, tirando o pricing do composer.
+- Validacao executada: `npx tsc --noEmit` e `npm run build` (passaram).
+
+Notes:
+- O fluxo de anexar arquivo continua disponivel pelo clipe da linha principal; o que saiu foi a duplicacao na barra inferior mobile.
+- A nova barra inferior mobile agora e orientada a tarefa (voz/documento/pesquisa), reduzindo ruido visual.
+
+### 2026-06-28 00:20 - Compactacao extra de header/subheader e composer mobile
+
+Context:
+- Depois do primeiro ajuste mobile, Anders pediu mais 10% de compactacao visual no topo (topbar + subtopbar) e melhor alinhamento dos controles de modelo/reasoning com os demais botoes do composer no iPhone Pro Max.
+
+Details:
+- `app/globals.css` (media mobile) reduziu densidade de tokens criticos: `--gc-mobile-header-height` (2.25rem), `--gc-mobile-composer-footer-top/bottom`, `--gc-mobile-composer-radius`, `--gc-mobile-textarea-min/max-height`, `--gc-mobile-control-height` (1.85rem) e `--gc-mobile-icon-button-size` (2rem).
+- `components/workspace-v2/WorkspaceLayoutV2.tsx` reduziu o bloco mobile da subtopbar (`h-[3.2rem]`, paddings menores, tipografia dos atalhos mobile ajustada) e alinhou o fallback do botao de reasoning para formato quadrado, igual ao resto dos controles.
+- `components/workspace-v2/CommandComposerContainerV2.tsx` ajustou os controles customizados de modelo/reasoning para proporcao mobile mais enxuta e coerente com o restante (`max-w` menor no modelo e reasoning quadrado por `size-[var(--gc-mobile-control-height)]`).
+- Mantida a protecao anti-zoom no iOS (`textarea` com base 16px no composer + regra global mobile para `textarea`).
+- Validacao executada: `npx tsc --noEmit` e `npm run build` (passaram).
+
+Notes:
+- Essa rodada foi de refinamento visual apenas; sem mudanca de logica de chat, storage ou APIs.
+- Se precisar mais compactacao, seguir ajuste incremental por tokens e evitar voltar para classes hardcoded no composer/header.
+
+### 2026-06-28 00:00 - Ajuste de proporcao mobile no composer e header
+
+Context:
+- Anders sinalizou descompasso fino no mobile (Safari iPhone Pro Max), com area de input parecendo maior que o restante e tipografia sem proporcao uniforme.
+
+Details:
+- Diagnostico principal: parte do contrato `--gc-mobile-*` estava definido em `app/globals.css`, mas alguns pontos criticos do composer/header ainda usavam tamanhos hardcoded no JSX.
+- `components/workspace-v2/CommandComposerContainerV2.tsx` normalizou os botoes de modelo/reasoning para `--gc-mobile-control-height` e `--gc-mobile-control-font-size` (antes `h-11`/`text-sm`), reduzindo o salto visual no mobile.
+- `components/workspace-v2/WorkspaceLayoutV2.tsx` passou a consumir tokens no header (`--gc-mobile-header-height`, `--gc-mobile-header-x`), no footer/composer (`--gc-mobile-composer-footer-*`, `--gc-mobile-composer-radius`) e no botao de envio (`--gc-mobile-icon-button-size`).
+- `components/workspace-v2/WorkspaceLayoutV2.tsx` tambem ganhou `min-height` do textarea por token e `font-size` com `max(16px, var(--gc-mobile-textarea-font-size))` para evitar zoom automatico do iOS ao focar o campo.
+- `app/globals.css` incluiu `textarea` na regra mobile de `font-size: 16px !important` junto de `input`/`select`, reforcando comportamento estavel no Safari.
+- Validacao executada: `npx tsc --noEmit` e `npm run build` (ambos passaram).
+
+Notes:
+- O ajuste foi propositalmente cirurgico: sem mudar logica de chat, tools, storage ou comportamento de API.
+- Se houver novo ajuste de densidade mobile, priorizar primeiro os tokens em `app/globals.css` e depois os pontos de consumo do composer/header, para evitar drift de tamanho entre controles.
+
 ### 2026-06-13 14:18 - Fundo dos arredores mobile voltou para wallpaper da página
 
 Context:

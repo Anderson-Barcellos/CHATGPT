@@ -1,6 +1,6 @@
 # Arquitetura
 
-**Última atualização:** 2026-06-18
+**Última atualização:** 2026-06-28
 
 ## Visão Geral
 
@@ -26,6 +26,8 @@ O shell legado foi removido. Novas mudanças de UI devem seguir `workspace-v2`, 
 ### Densidade visual mobile
 
 A compactação mobile atual foi implementada como uma passada paralela ao fluxo Codex de refinamentos. Abaixo de `md`, o app usa tokens `--gc-mobile-*` em `app/globals.css` para reduzir em torno de 15% o sistema espacial do shell: frame, header, subheader, composer, área do chat, empty state, painel contextual, rail e settings. A regra é compactar espaçamento, altura, raio e agrupamento; não usar `zoom`, viewport artificial ou `transform: scale()` global, e não escalar tipografia de leitura por viewport.
+
+Na harmonização mais recente, o contrato mobile ficou ainda mais explícito no composer: header, footer e textarea usam tokens semânticos (`--gc-mobile-header-*`, `--gc-mobile-composer-*`, `--gc-mobile-textarea-*`), e a linha principal concentra anexos, modelo, reasoning, pesquisa, `Rec` e envio. Em vez de uma segunda faixa fixa de anexos, o mobile agora usa um menu único de paperclip com `Arquivo` e `Imagem`, liberando mais área útil para a sessão do chat.
 
 ## Fluxo de Chat
 
@@ -173,7 +175,7 @@ O TTS padrão usa `/api/tts` com `gpt-4o-mini-tts`.
 
 ## Modelos
 
-O catálogo vive em `lib/models/modelConfig.ts`. O default atual é `gpt-5.4-mini`; modelos removidos conhecidos caem para esse default. `gpt-5.2` inicia com reasoning `medium`, modelos `mini` iniciam com reasoning `none`, `responseMode="quiz"` força `gpt-5.4` com reasoning `high` e schema JSON, e os presets `deepsearch_medium|deepsearch_high` são aplicados hoje pelo `hooks/useChat.ts`, que envia `gpt-5.4-mini` com reasoning `medium|high` mantendo saída em artifact de documento/canvas. A rota server-side não faz enforcement específico de deepsearch. A montagem efetiva do objeto `reasoning` fica em `lib/chat/reasoningConfig.ts`, não no catálogo.
+O catálogo vive em `lib/models/modelConfig.ts`. O default atual é `gpt-5.4-mini`; modelos removidos conhecidos caem para esse default. `chat-latest` expõe o alias rápido `GPT-5.5 Instant` no seletor, e os slugs curtos `gpt-chat-latest` e `gpt-5-chat-latest` são normalizados localmente para esse ID antes do request. `gpt-5.2` inicia com reasoning `medium`, modelos `mini` iniciam com reasoning `none`, `responseMode="quiz"` força `gpt-5.4` com reasoning `high` e schema JSON, e os presets `deepsearch_medium|deepsearch_high` são aplicados hoje pelo `hooks/useChat.ts`, que envia `gpt-5.4-mini` com reasoning `medium|high` mantendo saída em artifact de documento/canvas. A rota server-side não faz enforcement específico de deepsearch. A montagem efetiva do objeto `reasoning` fica em `lib/chat/reasoningConfig.ts`, não no catálogo.
 
 Tools padrão:
 

@@ -43,6 +43,8 @@ export async function downloadDocumentArtifactPdf(
   artifact: DocumentMessageArtifact,
   _sourceElement: HTMLElement | null
 ): Promise<void> {
+  void _sourceElement;
+
   const response = await fetch(apiUrl("/api/artifacts/pdf"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },

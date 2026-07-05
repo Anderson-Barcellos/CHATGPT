@@ -26,6 +26,13 @@ describe("settings store model defaults", () => {
     expect(useSettingsStore.getState().parameters.reasoningSummary).toBe("detailed");
   });
 
+  it("supports GPT-5.5 Instant chat latest alias", () => {
+    useSettingsStore.getState().updateParameters({ model: "chat-latest" });
+
+    expect(useSettingsStore.getState().parameters.model).toBe("chat-latest");
+    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("medium");
+  });
+
   it("defaults mini models to no reasoning", () => {
     useSettingsStore.getState().updateParameters({ model: "gpt-5.4-mini" });
     expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("none");
@@ -36,5 +43,17 @@ describe("settings store model defaults", () => {
     useSettingsStore.getState().updateParameters({ model: "gpt-5.1" });
 
     expect(useSettingsStore.getState().parameters.model).toBe("gpt-5.4-mini");
+  });
+
+  it("maps short chat-latest aliases to Chat Latest", () => {
+    useSettingsStore.getState().updateParameters({ model: "gpt-chat-latest" });
+
+    expect(useSettingsStore.getState().parameters.model).toBe("chat-latest");
+  });
+
+  it("maps the GPT-5 chat latest slug to Chat Latest", () => {
+    useSettingsStore.getState().updateParameters({ model: "gpt-5-chat-latest" });
+
+    expect(useSettingsStore.getState().parameters.model).toBe("chat-latest");
   });
 });

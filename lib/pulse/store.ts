@@ -194,6 +194,7 @@ export async function createPulseRun(task: PulseTask): Promise<PulseRun> {
       taskId: task.id,
       status: "running",
       title: task.title,
+      taskTitle: task.title,
       content: "",
       citations: [],
       startedAt: now,

@@ -3,7 +3,7 @@ import { buildDocumentArtifactPdfHtml } from "./documentArtifactPdf";
 import type { DocumentMessageArtifact } from "@/types";
 
 describe("buildDocumentArtifactPdfHtml", () => {
-  it("renders a branded A4 document shell with print-friendly source styling", () => {
+  it("renders a compact A4 document shell without export metadata chrome", () => {
     const artifact: DocumentMessageArtifact = {
       id: "doc-visual",
       kind: "document",
@@ -16,10 +16,15 @@ describe("buildDocumentArtifactPdfHtml", () => {
 
     const html = buildDocumentArtifactPdfHtml(artifact);
 
-    expect(html).toContain("Gaucho Chat");
-    expect(html).toContain("document-brand-mark");
-    expect(html).toContain("document-meta-grid");
-    expect(html).toContain("Documento A4 exportável");
+    expect(html).toContain("Lexend");
+    expect(html).toContain("document-title-lockup");
+    expect(html).toContain("openai-title-mark");
+    expect(html).not.toContain("Gaucho Chat");
+    expect(html).not.toContain("document-brand-mark");
+    expect(html).not.toContain("document-meta-grid");
+    expect(html).not.toContain("Documento A4 exportável");
+    expect(html).not.toContain("Exportado em");
+    expect(html).not.toContain("PDF A4");
     expect(html).toContain('a[href^="http"]::after');
     expect(html).toContain("tbody tr:nth-child(even)");
     expect(html).toContain("Pesquisa Profunda");

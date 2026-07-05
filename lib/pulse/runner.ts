@@ -13,6 +13,7 @@ import {
   getDuePulseTasks,
   hasRunningPulseRun,
 } from "@/lib/pulse/store";
+import { derivePulseRunTitle } from "@/lib/pulse/runTitle";
 
 const DEFAULT_PULSE_MODEL = "gpt-5.4-mini";
 const DEFAULT_IMAGE_MODEL = "gpt-image-2";
@@ -173,7 +174,8 @@ async function executeTask(task: PulseTask, openai: OpenAI): Promise<PulseRun> {
         : {};
     const completed = await finishPulseRun(run.id, {
       status: patch.streamStatus === "completed" ? "completed" : "failed",
-      title: task.title,
+      title: derivePulseRunTitle(finalContent, task.title),
+      taskTitle: task.title,
       content: finalContent,
       citations: patch.citations ?? output.citations ?? [],
       ...(patch.imageBase64 || output.imageBase64 || fallbackImage.imageBase64
@@ -207,6 +209,7 @@ async function executeTask(task: PulseTask, openai: OpenAI): Promise<PulseRun> {
     const failed = await finishPulseRun(run.id, {
       status: "failed",
       title: task.title,
+      taskTitle: task.title,
       content: "",
       error: message,
       completedAt: new Date().toISOString(),

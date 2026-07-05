@@ -34,6 +34,7 @@ export interface PulseRun {
   taskId: string;
   status: PulseRunStatus;
   title: string;
+  taskTitle?: string;
   content: string;
   imageBase64?: string;
   imageMimeType?: string;

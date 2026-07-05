@@ -1,0 +1,71 @@
+# .cursorignore — reduz indexacao/analise do Cursor
+# Mantem o foco no codigo-fonte real, ignorando peso morto e dados runtime.
+
+# ── Dependencias e gerenciadores ──────────────────────────────
+node_modules/
+.pnp
+.pnp.*
+.yarn/
+
+# ── Build / output do Next.js ─────────────────────────────────
+.next/
+out/
+build/
+dist/
+
+# ── Lockfiles e caches grandes (alto ruido, baixo valor) ──────
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+.eslintcache
+
+# ── Cobertura e relatorios de teste ───────────────────────────
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# ── Dados runtime privados/pessoais do Anders ─────────────────
+data/conversations.json
+data/memories.json
+data/persona.json
+data/google-calendar-token.json
+data/calendar-event-drafts.json
+data/workspace-notes.json
+data/chat-background-jobs.json
+data/pulse-tasks.json
+data/pulse-runs.json
+data/memory-suggestions.json
+data/memory-index/
+
+# ── Artefatos de debug / browser MCP / screenshots ────────────
+.playwright-mcp/
+screenshot-*.png
+*.png
+
+# ── Logs ──────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+.pnpm-debug.log*
+
+# ── Env e segredos (nunca indexar) ────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Ferramentas/agentes auxiliares e estado de sessao ─────────
+.superpowers/
+.remember/
+.opencode/
+.claude/
+.vercel/
+
+# ── Sistema / IDE ─────────────────────────────────────────────
+.DS_Store
+.idea/
+*.swp
+*.swo
+*.pem

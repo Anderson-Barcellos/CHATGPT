@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import type { DocumentMessageArtifact } from "@/types";
 import { jsonError } from "@/lib/api/errors";
 import { renderDocumentArtifactPdf } from "@/lib/server/documentArtifactPdf";

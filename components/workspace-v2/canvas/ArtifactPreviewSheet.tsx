@@ -2,7 +2,7 @@
 
 import { useCallback, useRef } from "react";
 import { motion } from "framer-motion";
-import { FileDown, Printer, Download, X } from "lucide-react";
+import { FileDown, Download, X } from "lucide-react";
 import { toast } from "sonner";
 import { ChatMarkdown } from "@/components/chat/ChatMarkdown";
 import { DocumentCanvas } from "@/components/artifacts/DocumentCanvas";
@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CANVAS_CONTENT_MODE } from "@/lib/artifacts/canvasContract";
 import { downloadDocumentArtifactPdf } from "@/lib/export/documentPdf";
-import { openA4PrintWindow } from "@/lib/export/documentPrint";
 import { downloadArtifact } from "@/lib/artifacts/exportArtifact";
 import type { DocumentMessageArtifact, MessageArtifact, QuizMessageArtifact } from "@/types";
 
@@ -42,29 +41,6 @@ export function ArtifactPreviewSheet({ artifact, onClose }: ArtifactPreviewSheet
   const previewRef = useRef<HTMLDivElement>(null);
   const docArtifact =
     artifact.kind === "document" ? (artifact as DocumentMessageArtifact) : null;
-
-  const handlePrint = useCallback(() => {
-    if (!docArtifact) return;
-
-    const bodyHtml =
-      docArtifact.type === "html"
-        ? docArtifact.content
-        : (previewRef.current?.innerHTML ?? "");
-
-    if (!bodyHtml.trim()) {
-      toast.error("Não consegui preparar a pré-visualização para impressão.");
-      return;
-    }
-
-    const opened = openA4PrintWindow({
-      title: docArtifact.title,
-      bodyHtml,
-    });
-
-    if (!opened) {
-      toast.error("Popup bloqueado. Libera popups para imprimir.");
-    }
-  }, [docArtifact]);
 
   const handleExportPdf = useCallback(async () => {
     if (!docArtifact) return;
@@ -128,15 +104,6 @@ export function ArtifactPreviewSheet({ artifact, onClose }: ArtifactPreviewSheet
                       title="Exportar PDF"
                     >
                       <FileDown className="size-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={ACTION_BUTTON_CLASS}
-                      onClick={handlePrint}
-                      title="Imprimir"
-                    >
-                      <Printer className="size-4" />
                     </Button>
                     <Button
                       variant="ghost"

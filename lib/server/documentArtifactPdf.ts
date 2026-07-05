@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkBreaks from "remark-breaks";
@@ -9,7 +11,49 @@ import rehypeStringify from "rehype-stringify";
 import type { DocumentMessageArtifact } from "@/types";
 import { normalizeChatMarkdown } from "@/lib/formatting/chatMarkdown";
 
+function readLexendFontDataUrl(weight: 400 | 600 | 700): string | null {
+  try {
+    const fontPath = join(
+      process.cwd(),
+      "node_modules",
+      "@fontsource",
+      "lexend",
+      "files",
+      `lexend-latin-${weight}-normal.woff2`
+    );
+    const fontData = readFileSync(fontPath).toString("base64");
+    return `data:font/woff2;base64,${fontData}`;
+  } catch {
+    return null;
+  }
+}
+
+function buildLexendFontFaceCss(): string {
+  return ([400, 600, 700] as const)
+    .map((weight) => {
+      const dataUrl = readLexendFontDataUrl(weight);
+      if (!dataUrl) return "";
+
+      return `
+  @font-face {
+    font-family: "Lexend";
+    font-style: normal;
+    font-weight: ${weight};
+    font-display: swap;
+    src: url("${dataUrl}") format("woff2");
+  }`;
+    })
+    .join("");
+}
+
+const OPENAI_TITLE_MARK = `
+  <svg class="openai-title-mark" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z" />
+  </svg>`;
+
 const A4_PDF_CSS = `
+  ${buildLexendFontFaceCss()}
+
   @page {
     size: A4;
     margin: 14mm 16mm 18mm;
@@ -25,9 +69,9 @@ const A4_PDF_CSS = `
     padding: 0;
     background: #ffffff;
     color: #111827;
-    font-family: Georgia, "Times New Roman", serif;
+    font-family: "Lexend", "Inter", "Segoe UI", Arial, sans-serif;
     font-size: 11pt;
-    line-height: 1.58;
+    line-height: 1.62;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -38,126 +82,33 @@ const A4_PDF_CSS = `
   }
 
   .document-header {
-    position: relative;
-    margin-bottom: 22pt;
-    padding: 14pt 16pt 16pt;
-    border: 1px solid #dbe3ef;
-    border-radius: 16pt;
-    background:
-      linear-gradient(135deg, rgba(15, 23, 42, 0.04), rgba(226, 232, 240, 0.18)),
-      #ffffff;
-    overflow: hidden;
+    margin-bottom: 16pt;
+    padding-bottom: 10pt;
+    border-bottom: 1px solid #e2e8f0;
   }
 
-  .document-header::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto;
-    height: 4pt;
-    background: linear-gradient(90deg, #0f172a, #64748b 46%, #cbd5e1);
-  }
-
-  .document-brand {
+  .document-title-lockup {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12pt;
-    margin-bottom: 14pt;
-    font-family: Arial, Helvetica, sans-serif;
+    align-items: flex-start;
+    gap: 8pt;
   }
 
-  .document-brand-left {
-    display: flex;
-    align-items: center;
-    gap: 7pt;
-    min-width: 0;
-  }
-
-  .document-brand-mark {
-    display: inline-flex;
-    width: 20pt;
-    height: 20pt;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
-    background: #0f172a;
-    color: #ffffff;
-    font-size: 8pt;
-    font-weight: 800;
-    letter-spacing: 0.02em;
-  }
-
-  .document-brand-name {
+  .openai-title-mark {
+    width: 17pt;
+    height: 17pt;
+    flex: 0 0 auto;
+    margin-top: 3pt;
     color: #0f172a;
-    font-size: 9pt;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-  }
-
-  .document-brand-kind {
-    color: #64748b;
-    font-size: 8pt;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .document-eyebrow {
-    margin: 0 0 5pt;
-    color: #64748b;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 8pt;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    fill: currentColor;
   }
 
   .document-title {
     margin: 0;
     color: #020617;
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 22pt;
-    line-height: 1.14;
-  }
-
-  .document-summary {
-    max-width: 150mm;
-    margin: 9pt 0 0;
-    color: #475569;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 10pt;
-    line-height: 1.45;
-  }
-
-  .document-meta-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8pt;
-    margin-top: 14pt;
-    font-family: Arial, Helvetica, sans-serif;
-  }
-
-  .document-meta-item {
-    padding: 7pt 8pt;
-    border: 1px solid #e2e8f0;
-    border-radius: 9pt;
-    background: rgba(248, 250, 252, 0.82);
-  }
-
-  .document-meta-label {
-    margin: 0 0 2pt;
-    color: #64748b;
-    font-size: 7.2pt;
+    font-family: "Lexend", "Inter", "Segoe UI", Arial, sans-serif;
+    font-size: 20pt;
     font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .document-meta-value {
-    margin: 0;
-    color: #1e293b;
-    font-size: 8.6pt;
-    font-weight: 650;
+    line-height: 1.18;
   }
 
   .document-body {
@@ -173,7 +124,8 @@ const A4_PDF_CSS = `
     color: #0f172a;
     break-after: avoid;
     page-break-after: avoid;
-    font-family: Georgia, "Times New Roman", serif;
+    font-family: "Lexend", "Inter", "Segoe UI", Arial, sans-serif;
+    font-weight: 700;
     line-height: 1.22;
   }
 
@@ -217,7 +169,7 @@ const A4_PDF_CSS = `
     width: 100%;
     border-collapse: collapse;
     break-inside: auto;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: "Lexend", "Inter", "Segoe UI", Arial, sans-serif;
     font-size: 9pt;
     border: 1px solid #cbd5e1;
     border-radius: 8pt;
@@ -281,7 +233,7 @@ const A4_PDF_CSS = `
   .document-body a[href^="http"]::after {
     content: " (" attr(href) ")";
     color: #64748b;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: "Lexend", "Inter", "Segoe UI", Arial, sans-serif;
     font-size: 8pt;
     overflow-wrap: anywhere;
   }
@@ -292,7 +244,7 @@ const A4_PDF_CSS = `
     padding-top: 10pt;
     border-top: 1px solid #cbd5e1;
     color: #475569;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: "Lexend", "Inter", "Segoe UI", Arial, sans-serif;
     font-size: 8.5pt;
   }
 
@@ -309,14 +261,6 @@ function escapeHtml(value: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
-}
-
-function formatExportedAt(date = new Date()): string {
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-    timeZone: "America/Sao_Paulo",
-  }).format(date);
 }
 
 function stripUnsafeHtml(rawHtml: string): string {
@@ -381,8 +325,6 @@ export function buildDocumentArtifactPdfHtml(
 ): string {
   const { bodyHtml, headStyles } = renderArtifactBody(artifact);
   const title = escapeHtml(artifact.title || "Documento");
-  const summary = artifact.summary ? escapeHtml(artifact.summary) : "";
-  const exportedAt = escapeHtml(formatExportedAt());
 
   return `<!doctype html>
 <html lang="pt-BR">
@@ -396,25 +338,9 @@ export function buildDocumentArtifactPdfHtml(
   <body>
     <article class="document-page">
       <header class="document-header">
-        <div class="document-brand">
-          <div class="document-brand-left">
-            <span class="document-brand-mark">GC</span>
-            <span class="document-brand-name">Gaucho Chat</span>
-          </div>
-          <span class="document-brand-kind">Documento A4 exportável</span>
-        </div>
-        <p class="document-eyebrow">Documento</p>
-        <h1 class="document-title">${title}</h1>
-        ${summary ? `<p class="document-summary">${summary}</p>` : ""}
-        <div class="document-meta-grid">
-          <div class="document-meta-item">
-            <p class="document-meta-label">Exportado em</p>
-            <p class="document-meta-value">${exportedAt}</p>
-          </div>
-          <div class="document-meta-item">
-            <p class="document-meta-label">Formato</p>
-            <p class="document-meta-value">PDF A4</p>
-          </div>
+        <div class="document-title-lockup">
+          ${OPENAI_TITLE_MARK}
+          <h1 class="document-title">${title}</h1>
         </div>
       </header>
       <main class="document-body">${bodyHtml}</main>

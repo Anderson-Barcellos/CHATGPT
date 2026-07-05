@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { MEMORY_TOOL_NAMES, buildResponseCreateParams } from "./chatRequest";
+import {
+  MEMORY_TOOL_NAMES,
+  buildResponseCreateParams,
+  resolveRequestedModel,
+} from "./chatRequest";
 
 function toolTypesFor(responseMode: "default" | "document" | "deepsearch_medium" | "deepsearch_high" | "quiz") {
   const params = buildResponseCreateParams({
@@ -67,5 +71,11 @@ describe("buildResponseCreateParams", () => {
 
   it("removes all tools in quiz mode", () => {
     expect(toolTypesFor("quiz")).toEqual([]);
+  });
+
+  it("maps chat latest aliases to the supported Chat Latest model", () => {
+    expect(resolveRequestedModel("gpt-chat-latest")).toBe("chat-latest");
+    expect(resolveRequestedModel("gpt-5-chat-latest")).toBe("chat-latest");
+    expect(resolveRequestedModel("chat-latest")).toBe("chat-latest");
   });
 });

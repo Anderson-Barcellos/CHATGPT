@@ -42,6 +42,7 @@ import type {
   PulseTaskProposal,
 } from "@/lib/pulse/types";
 import { describeSchedule, weekdayOptions } from "@/lib/pulse/schedule";
+import { derivePulseRunTitle } from "@/lib/pulse/runTitle";
 
 const NEUROPSYCH_PRESET =
   "Semanalmente, encontre um artigo recente, importante e de alto impacto em neuropsiquiatria. Gere uma imagem inicial conceitual relacionada ao tema do artigo, como abertura visual. Em seguida, escreva uma revisão em português, em prosa técnico-narrativa, explicando o contexto, a pergunta científica, o desenho do estudo, os achados centrais, a relevância clínica/conceitual, as limitações e por que esse artigo merece atenção. Priorize artigos de periódicos fortes, acesso aberto quando possível, e inclua referências/citações das fontes usadas.";
@@ -164,6 +165,10 @@ function PulseRunCard({
   onDelete: (run: PulseRun) => void;
 }) {
   const src = imageSrc(run);
+  const displayTitle = derivePulseRunTitle(run.content, run.title);
+  const routineTitle = run.taskTitle ?? (run.content ? run.title : undefined);
+  const shouldShowRoutineTitle =
+    Boolean(routineTitle) && routineTitle !== displayTitle;
   const stopCardToggle = (event: MouseEvent) => {
     event.stopPropagation();
   };
@@ -201,11 +206,19 @@ function PulseRunCard({
         </div>
       )}
 
+      {shouldShowRoutineTitle && (
+        <div className="border-y border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-3 py-1.5">
+          <p className="truncate text-[10px] font-medium uppercase text-muted-foreground/75">
+            Rotina · {routineTitle}
+          </p>
+        </div>
+      )}
+
       <div className="min-w-0 p-3">
         <div className="mb-2 flex items-start justify-between gap-2">
           <div className="min-w-0">
             <h3 className="line-clamp-2 text-xs font-semibold text-foreground">
-              {run.title}
+              {displayTitle}
             </h3>
             <p className="mt-1 text-nano text-muted-foreground">
               {run.status === "completed"
@@ -237,7 +250,7 @@ function PulseRunCard({
                 stopCardToggle(event);
                 onDelete(run);
               }}
-              aria-label={`Excluir geracao ${run.title}`}
+              aria-label={`Excluir geracao ${displayTitle}`}
               className="rounded-md text-rose-700 hover:text-rose-700 dark:text-rose-300"
             >
               <Trash2 className="size-3.5" />
@@ -351,8 +364,9 @@ export function PulseActivityPanelV2() {
 
   const handleDeleteRun = useCallback(
     async (run: PulseRun) => {
+      const displayTitle = derivePulseRunTitle(run.content, run.title);
       const shouldDelete = window.confirm(
-        `Excluir a geracao "${run.title || "Pulse"}"?`
+        `Excluir a geracao "${displayTitle || "Pulse"}"?`
       );
       if (!shouldDelete) return;
 

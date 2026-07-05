@@ -1012,3 +1012,36 @@ Details:
 
 Notes:
 Validação desta rodada: `git diff --check`, `npx tsc --noEmit`, `npm run build`, `npm test`, restart de `chatgpt.service` e health local/público em `/chat/api/health`. Se o botão não aparecer no navegador do Anders, primeiro forçar refresh/cache do browser antes de mexer de novo no contrato de TTS.
+
+### 2026-06-27 17:05 - Streaming mais fluido com coalescencia por frame
+
+Context:
+Anders percebeu aquecimento do aparelho durante respostas longas em streaming. O comportamento desejado foi preservado: markdown continua renderizando como markdown desde o primeiro momento ate o final, sem trocar para texto limpo intermediario.
+
+Details:
+`lib/chat/streamPatchScheduler.ts` foi criado para coalescer multiplos patches de SSE no maximo em uma atualizacao de React por frame. `hooks/useChat.ts` agora agenda os patches de `assistantStreamStateToMessagePatch(streamState)` pelo scheduler durante o loop SSE, com `flush()` antes de completar, abortar ou tratar erro, e `cancel()` no `finally`. `lib/chat/streamPatchScheduler.test.ts` cobre coalescencia, flush sincrono e cancelamento. A experiencia visual ficou mais fluida no uso real, sem alterar o contrato de markdown, artifacts, reasoning ou persistencia.
+
+Notes:
+Validacao desta rodada: teste focado de stream, `npm test` completo (63 arquivos / 202 testes), `npx tsc --noEmit`, `npm run build` e `git diff --check`. Depois do build, surgiu `ChunkLoadError` em aba antiga porque `chatgpt.service` ainda servia bundle anterior; foi feito `systemctl restart chatgpt.service`, com health local/publico healthy e todos os chunks atuais de `/chat/login` respondendo 200. Se reaparecer `ChunkLoadError` apos build, primeiro alinhar runtime com restart do `chatgpt.service` e pedir refresh forte da aba.
+
+### 2026-06-28 14:40 - Harmonizacao mobile fina e seletor de modelo mais largo
+
+Context:
+O layout mobile recebeu uma passada paralela via Open Code para harmonizar densidade do shell e do composer. Faltava registrar o formato final nas docs e dar um pouco mais de respiro ao seletor de modelo, porque o composer passou a ter sobra horizontal util.
+
+Details:
+`app/globals.css` e `components/workspace-v2/WorkspaceLayoutV2.tsx` consolidam o contrato mobile atual com header mais baixo, footer do composer mais enxuto, textarea menor e controles redistribuidos na primeira faixa: anexos, modelo, reasoning, pesquisa, `Rec` e envio. A antiga barrinha inferior de `Arquivo`/`Imagem` foi removida e substituida por um menu unico de paperclip. `components/workspace-v2/CommandComposerContainerV2.tsx` aumentou a bolha de selecao de modelo para `max-w-[9rem]` no mobile e `md:max-w-[10rem]`, preservando truncamento e altura compacta, mas deixando os nomes respirarem melhor. `docs/ARCHITECTURE.md` foi atualizado para refletir essa harmonizacao e o alias `chat-latest` / `GPT-5.5 Instant` no seletor.
+
+Notes:
+Validacao desta rodada: teste focado de `components/workspace-v2/WorkspaceLayoutV2.test.tsx`. Se a bolha ainda parecer curta em uso real, continuar ajustando primeiro em `CommandComposerContainerV2.tsx` antes de mexer no contrato global `--gc-mobile-control-*`.
+
+### 2026-07-05 18:15 - PDF A4 limpo e fechamento de arvore
+
+Context:
+Anders pediu remover a opcao de imprimir do painel A4 e limpar o cabecalho grande do PDF exportado, mantendo a essencia visual do documento.
+
+Details:
+`components/workspace-v2/canvas/ArtifactPreviewSheet.tsx` removeu o botao/fluxo de imprimir e preservou apenas exportar PDF e baixar fonte. `lib/server/documentArtifactPdf.ts` substituiu o bloco grande de cabecalho/metadados (`Gaucho Chat`, `Documento A4 exportavel`, `Exportado em`, `PDF A4`) por um lockup compacto com icone OpenAI ao lado do titulo. O PDF agora usa Lexend embutida via `@fontsource/lexend`, sem depender de rede no Playwright. `lib/server/documentArtifactPdf.test.ts` cobre a ausencia do cabecalho antigo e a presenca do novo lockup.
+
+Notes:
+Validacao desta rodada antes do fechamento: `npm test`, `npx tsc --noEmit`, `npm run build`, restart de `chatgpt.service`, health local/publico healthy e smoke autenticado real de `/chat/api/artifacts/pdf` confirmando PDF 200 e ausencia do cabecalho antigo no texto extraido. A primeira chamada de health logo apos restart pode recusar conexao por janela curta; rebater depois que `next start` assumir a porta 3040.

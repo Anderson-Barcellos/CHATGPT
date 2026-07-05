@@ -1,6 +1,6 @@
 # Modelos
 
-**Última atualização:** 2026-06-18
+**Última atualização:** 2026-06-28
 **Fonte:** `lib/models/modelConfig.ts`
 
 ## Catálogo Atual
@@ -9,6 +9,7 @@
 
 | ID | Nome | Família | Reasoning | Contexto | Max output | Badge |
 |---|---|---|---|---|---|---|
+| `chat-latest` | GPT-5.5 Instant | `gpt-5` | Sim | 400K | 128K | Instant |
 | `gpt-5.5` | GPT-5.5 | `gpt-5` | Sim | 1.05M | 128K | Frontier |
 | `gpt-5.4` | GPT-5.4 | `gpt-5` | Sim | 1.05M | 128K | Frontier |
 | `gpt-5.4-mini` | GPT-5.4 mini | `gpt-5` | Sim | 128K | 16K | Eficiente |
@@ -24,6 +25,7 @@
 ## Defaults
 
 - Modelo padrão do chat: `gpt-5.4-mini`.
+- `gpt-chat-latest` e `gpt-5-chat-latest` são aceitos como aliases locais e resolvem para `chat-latest`.
 - `gpt-5.2` inicia com reasoning `medium` + summary `detailed`.
 - Modelos mini iniciam com reasoning `none` + summary `detailed`; como o effort começa em `none`, esse summary não é enviado ao backend até o usuário ativar reasoning.
 - Modelo de imagem usado pela tool: `gpt-image-2`.

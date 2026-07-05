@@ -28,25 +28,8 @@ import { CommandPalette } from "@/components/command/CommandPalette";
 import { useConversations } from "@/hooks/useConversations";
 import { useComponentPreloader } from "@/lib/performance/lazy";
 import { MODELS } from "@/lib/models/modelConfig";
-import { useIsMobile } from "@/hooks/useIsMobile";
 import { useChatStore } from "@/stores/chatStore";
 import { useSettingsStore } from "@/stores/settingsStore";
-
-const CONTEXT_DOCKED_QUERY = "(min-width: 1280px)";
-
-function subscribeContextDocked(callback: () => void) {
-  const mql = window.matchMedia(CONTEXT_DOCKED_QUERY);
-  mql.addEventListener("change", callback);
-  return () => mql.removeEventListener("change", callback);
-}
-
-function getContextDockedSnapshot() {
-  return window.matchMedia(CONTEXT_DOCKED_QUERY).matches;
-}
-
-function getContextDockedServerSnapshot() {
-  return false;
-}
 
 export function GauchoChatShellV2() {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -54,12 +37,6 @@ export function GauchoChatShellV2() {
   const [mobileContextOpen, setMobileContextOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [responseMode, setResponseMode] = useState<ResponseMode>("default");
-  const isMobile = useIsMobile();
-  const isContextDocked = useSyncExternalStore(
-    subscribeContextDocked,
-    getContextDockedSnapshot,
-    getContextDockedServerSnapshot
-  );
   const isHydrated = useSyncExternalStore(
     () => () => undefined,
     () => true,

@@ -11,6 +11,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@fontsource/lexend": "5.2.11",
     "@lancedb/lancedb": "0.30.0",
     "@monaco-editor/react": "4.7.0",
     "@radix-ui/react-collapsible": "1.1.12",

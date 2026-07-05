@@ -1,6 +1,23 @@
 import { ModelCapability, ModelFamily, ModelInfo, TokenUsage } from "@/types";
 
 export const MODELS: Record<string, ModelInfo> = {
+  "chat-latest": {
+    id: "chat-latest",
+    name: "GPT-5.5 Instant",
+    family: "gpt-5",
+    description: "Alias rapido do ChatGPT mais novo para conversa diaria com baixa latencia",
+    contextWindow: 400000,
+    maxOutput: 128000,
+    pricing: { input: 5.0, output: 30.0, cachedInput: 0.5 },
+    capabilities: ["chat", "reasoning", "vision", "function-calling", "json-mode"],
+    supportsStreaming: true,
+
+    supportsTemperature: false,
+    supportsVerbosity: true,
+    supportsCodeInterpreter: true,
+    recommendedFor: ["Chat rapido", "Uso diario premium", "Resposta polida"],
+    badge: "Instant",
+  },
   "gpt-5.5": {
     id: "gpt-5.5",
     name: "GPT-5.5",

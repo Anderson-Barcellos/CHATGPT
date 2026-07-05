@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { CommandComposerContainerV2 } from "@/components/workspace-v2/CommandComposerContainerV2";
 import {
   CommandComposerV2,
   WorkspaceFrameV2,
@@ -57,6 +58,7 @@ describe("CommandComposerV2", () => {
         onSubmit={() => undefined}
         onStop={() => undefined}
         onFileSelect={() => undefined}
+        onImageSelect={() => undefined}
         onMicrophoneClick={() => undefined}
         onSelectDocumentMode={() => undefined}
         onToggleQuiz={() => undefined}
@@ -66,10 +68,31 @@ describe("CommandComposerV2", () => {
     expect(markup).toContain("Mensagem para o GPT...");
     expect(markup).toContain("gpt-5.3-chat-latest");
     expect(markup).toContain('aria-label="Ajustar nível de raciocínio"');
+    expect(markup).toContain('aria-label="Adicionar anexos"');
     expect(markup).toContain("Documento");
     expect(markup).toContain("Quiz");
-    expect(markup).toContain('aria-label="Adicionar arquivos"');
     expect(markup).toContain('aria-label="Gravar áudio"');
     expect(markup).toContain('aria-label="Enviar mensagem"');
+  });
+});
+
+describe("CommandComposerContainerV2", () => {
+  it("promotes attachments to the first row and removes the mobile bottom attachment bar", () => {
+    const markup = renderToStaticMarkup(
+      <CommandComposerContainerV2
+        sendMessage={async () => false}
+        stopGeneration={() => undefined}
+        isLoading={false}
+        error={null}
+      />
+    );
+
+    expect(markup).toContain('aria-label="Adicionar anexos"');
+    expect(markup).toContain('aria-label="Selecionar modelo"');
+    expect(markup).toContain("max-w-[9rem]");
+    expect(markup).toContain("md:max-w-[10rem]");
+    expect(markup).toContain(">Rec<");
+    expect(markup).not.toContain(">Arquivo<");
+    expect(markup).not.toContain(">Imagem<");
   });
 });

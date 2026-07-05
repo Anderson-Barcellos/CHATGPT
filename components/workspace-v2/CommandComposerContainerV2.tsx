@@ -29,7 +29,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CommandComposerV2 } from "@/components/workspace-v2/WorkspaceLayoutV2";
-import { CostCounter } from "@/components/chat/CostCounter";
 import { useFileAttachments } from "@/hooks/useFileAttachments";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -55,6 +54,11 @@ const REASONING_OPTIONS: { value: ReasoningEffort; label: string; desc: string }
   { value: "high", label: "Alto", desc: "Raciocinio profundo" },
   { value: "xhigh", label: "Maximo", desc: "Analise exaustiva" },
 ];
+
+const IMAGE_ATTACHMENT_ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
+const FILE_ATTACHMENT_ACCEPT =
+  "application/pdf,.txt,.md,.csv,.json,.xml,.log,.yaml,.yml,.toml,.ini,.sh,.py,.js,.ts,.tsx,.jsx,.html,.css";
+const DEFAULT_ATTACHMENT_ACCEPT = `${IMAGE_ATTACHMENT_ACCEPT},${FILE_ATTACHMENT_ACCEPT}`;
 
 interface CommandComposerContainerV2Props {
   sendMessage: (content: string, options?: SendMessageOptions) => Promise<boolean>;
@@ -198,6 +202,14 @@ export function CommandComposerContainerV2({
     });
   }, [toggleRecording]);
 
+  const openAttachmentPicker = useCallback((mode: "file" | "image") => {
+    const input = fileInputRef.current;
+    if (!input) return;
+
+    input.accept = mode === "image" ? IMAGE_ATTACHMENT_ACCEPT : FILE_ATTACHMENT_ACCEPT;
+    input.click();
+  }, []);
+
   const handlePaste = useCallback(
     (event: ClipboardEvent<HTMLTextAreaElement>) => {
       const imageFiles: File[] = [];
@@ -315,7 +327,7 @@ export function CommandComposerContainerV2({
             disabled={isLoading || isTranscribing || isDeepsearchMode}
             aria-label="Selecionar modelo"
             title={isDeepsearchMode ? `Deepsearch usa modelo fixo (${deepsearchModelLabel}).` : undefined}
-            className="h-11 max-w-[8.8rem] gap-1.5 rounded-2xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-3 text-sm font-medium text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:h-8 md:max-w-[7rem] md:rounded-lg md:px-1.5 md:text-nano"
+            className="h-[var(--gc-mobile-control-height)] max-w-[9rem] gap-1 rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-2.5 text-[var(--gc-mobile-control-font-size)] font-medium text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:h-8 md:max-w-[10rem] md:rounded-lg md:px-2.5 md:text-nano"
           >
             <span className="truncate">{displayModel?.name || parameters.model}</span>
             <ChevronDown className="size-3.5 shrink-0" />
@@ -377,7 +389,7 @@ export function CommandComposerContainerV2({
               size="sm"
               disabled={isLoading || isTranscribing}
               aria-label="Ajustar nível de raciocínio"
-              className="h-11 rounded-2xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-3 text-sm text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:h-8 md:rounded-lg md:px-1.5 md:text-nano"
+              className="size-[var(--gc-mobile-control-height)] rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-0 text-[var(--gc-mobile-control-font-size)] text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:h-8 md:w-8 md:rounded-lg md:text-nano"
             >
               <Brain className="size-3.5" style={{ opacity: reasoningOpacity }} />
             </Button>
@@ -411,7 +423,7 @@ export function CommandComposerContainerV2({
         ref={fileInputRef}
         type="file"
         multiple
-        accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,.txt,.md,.csv,.json,.xml,.log,.yaml,.yml,.toml,.ini,.sh,.py,.js,.ts,.tsx,.jsx,.html,.css"
+        accept={DEFAULT_ATTACHMENT_ACCEPT}
         onChange={(event) => {
           if (event.target.files && event.target.files.length > 0) {
             addFiles(event.target.files);
@@ -445,7 +457,6 @@ export function CommandComposerContainerV2({
         }
         modelControl={modelControl}
         reasoningControl={hasReasoning ? reasoningControl : undefined}
-        costControl={<CostCounter />}
         onValueChange={setInput}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
@@ -453,7 +464,8 @@ export function CommandComposerContainerV2({
           void handleSubmit();
         }}
         onStop={stopGeneration}
-        onFileSelect={() => fileInputRef.current?.click()}
+        onFileSelect={() => openAttachmentPicker("file")}
+        onImageSelect={() => openAttachmentPicker("image")}
         onMicrophoneClick={() => {
           void handleMicrophoneClick();
         }}

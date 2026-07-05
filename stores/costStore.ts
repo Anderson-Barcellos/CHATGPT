@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { calculateCost, formatCost } from "@/lib/models/modelConfig";
-import { useChatStore } from "@/stores/chatStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { Message } from "@/types";
 

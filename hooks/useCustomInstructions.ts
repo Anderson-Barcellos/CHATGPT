@@ -254,6 +254,7 @@ export function useCustomInstructions() {
     });
   }, [
     debouncedSnapshot,
+    instructions,
     isLoaded,
     isSaving,
     saveContextAboutUser,
