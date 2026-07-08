@@ -45,6 +45,7 @@ import { buildAbortedAssistantMessagePatch } from "@/lib/chat/abortCompletion";
 import { buildReasoningConfig } from "@/lib/chat/reasoningConfig";
 import { createThrottle } from "@/lib/performance/throttle";
 import {
+  isDeepSeekModel,
   modelSupportsCodeInterpreter,
   modelSupportsTemperature,
   modelSupportsVerbosity,
@@ -61,6 +62,7 @@ import {
 
 const STREAM_AUTO_SAVE_INTERVAL_MS = 2000;
 const BACKGROUND_POLL_INTERVAL_MS = 5000;
+const DOCUMENT_FORCED_MODEL = "gpt-5.4-mini";
 const DEEPSEARCH_MEDIUM_MODEL = "gpt-5.4-mini";
 const DEEPSEARCH_HIGH_MODEL = "gpt-5.4";
 
@@ -632,6 +634,8 @@ export function useChat() {
       const assistantMessageId = crypto.randomUUID();
       const requestModel = responseMode === "quiz"
         ? QUIZ_FORCED_MODEL
+        : responseMode === "document" && isDeepSeekModel(parameters.model)
+        ? DOCUMENT_FORCED_MODEL
         : responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
         ? resolveDeepsearchModel(responseMode)
         : parameters.model;

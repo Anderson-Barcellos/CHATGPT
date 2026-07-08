@@ -12,6 +12,11 @@ import {
   resolveRequestedModel,
 } from "@/lib/server/chatRequest";
 import {
+  DEEPSEEK_MODEL,
+  createDeepSeekClient,
+  createDeepSeekEventStream,
+} from "@/lib/server/deepseekChat";
+import {
   createMemoryToolEventStream,
   createResponseWithMemoryTools,
 } from "@/lib/server/chatToolOrchestrator";
@@ -65,6 +70,44 @@ export async function POST(request: NextRequest) {
       return jsonError(400, "Model not allowed", {
         message: "Modelo nao permitido.",
         code: "chat_model_not_allowed",
+      });
+    }
+
+    if (effectiveModel === DEEPSEEK_MODEL) {
+      if (responseMode !== "default") {
+        return jsonError(400, "DeepSeek mode not supported", {
+          message: "DeepSeek V4 Pro esta habilitado somente para chat padrao.",
+          code: "chat_deepseek_mode_not_supported",
+        });
+      }
+
+      if (!stream) {
+        return jsonError(400, "DeepSeek requires streaming", {
+          message: "DeepSeek V4 Pro esta habilitado somente no fluxo de chat com streaming.",
+          code: "chat_deepseek_stream_required",
+        });
+      }
+
+      const deepseek = createDeepSeekClient();
+      if (!deepseek) {
+        return jsonError(503, "DeepSeek API key is missing", {
+          message: "DEEPSEEK_API_KEY nao configurada no servidor.",
+          code: "chat_deepseek_api_key_missing",
+        });
+      }
+
+      const readableStream = await createDeepSeekEventStream(
+        deepseek,
+        body,
+        request.signal
+      );
+
+      return new Response(readableStream, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache, no-transform",
+          Connection: "keep-alive",
+        },
       });
     }
 

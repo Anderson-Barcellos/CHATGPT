@@ -86,6 +86,23 @@ export const MODELS: Record<string, ModelInfo> = {
     recommendedFor: ["Analise", "Coding complexo", "Raciocinio medio"],
     badge: "Reasoning",
   },
+  "deepseek-v4-pro": {
+    id: "deepseek-v4-pro",
+    name: "DeepSeek V4 Pro",
+    family: "deepseek",
+    description: "Modelo DeepSeek de contexto longo para chat com raciocinio maximo fixo",
+    contextWindow: 1_000_000,
+    maxOutput: 384_000,
+    pricing: { input: 0.435, output: 0.87, cachedInput: 0.003625 },
+    capabilities: ["chat", "reasoning", "function-calling", "json-mode"],
+    supportsStreaming: true,
+
+    supportsTemperature: false,
+    supportsVerbosity: true,
+    supportsCodeInterpreter: false,
+    recommendedFor: ["Chat longo", "Raciocinio profundo", "Analise economica"],
+    badge: "DeepSeek",
+  },
   "gpt-image-2": {
     id: "gpt-image-2",
     name: "GPT Image 2",
@@ -124,6 +141,10 @@ export const MODELS: Record<string, ModelInfo> = {
 export function isReasoningModel(modelId: string): boolean {
   const model = MODELS[modelId];
   return model?.capabilities.includes("reasoning") ?? false;
+}
+
+export function isDeepSeekModel(modelId: string): boolean {
+  return modelId === "deepseek-v4-pro";
 }
 
 const REASONING_LABELS: Record<string, string> = {

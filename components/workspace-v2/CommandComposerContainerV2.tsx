@@ -35,6 +35,7 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { useSpeechToText } from "@/hooks/useSpeechToText";
 import {
   getChatModels,
+  isDeepSeekModel,
   isReasoningModel as checkReasoning,
   MODELS,
 } from "@/lib/models/modelConfig";
@@ -116,6 +117,7 @@ export function CommandComposerContainerV2({
   const isDeepsearchMode =
     responseMode === "deepsearch_medium" || responseMode === "deepsearch_high";
   const currentModel = MODELS[parameters.model];
+  const isDeepSeekSelected = isDeepSeekModel(parameters.model);
   const deepsearchModelId =
     responseMode === "deepsearch_high" ? "gpt-5.4" : "gpt-5.4-mini";
   const displayModel = isDeepsearchMode ? MODELS[deepsearchModelId] : currentModel;
@@ -387,7 +389,7 @@ export function CommandComposerContainerV2({
             <Button
               variant="ghost"
               size="sm"
-              disabled={isLoading || isTranscribing}
+              disabled={isLoading || isTranscribing || isDeepSeekSelected}
               aria-label="Ajustar nível de raciocínio"
               className="size-[var(--gc-mobile-control-height)] rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-0 text-[var(--gc-mobile-control-font-size)] text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:h-8 md:w-8 md:rounded-lg md:text-nano"
             >
@@ -395,7 +397,11 @@ export function CommandComposerContainerV2({
             </Button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
-        <TooltipContent>Raciocínio: {currentReasoning?.label || "Medio"}</TooltipContent>
+        <TooltipContent>
+          {isDeepSeekSelected
+            ? "DeepSeek usa raciocinio maximo fixo"
+            : `Raciocínio: ${currentReasoning?.label || "Medio"}`}
+        </TooltipContent>
       </Tooltip>
       <DropdownMenuContent align="start" className="w-48">
         <DropdownMenuLabel>Raciocinio</DropdownMenuLabel>
@@ -404,6 +410,7 @@ export function CommandComposerContainerV2({
           <DropdownMenuItem
             key={option.value}
             onClick={() => updateParameters({ reasoningEffort: option.value })}
+            disabled={isDeepSeekSelected}
             className={cn(
               "flex flex-col items-start gap-0.5",
               parameters.reasoningEffort === option.value && "bg-primary/10 text-foreground"

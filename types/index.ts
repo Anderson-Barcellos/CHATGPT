@@ -299,6 +299,7 @@ export type ModelCapability =
 export type ModelFamily =
   | "gpt-4o"
   | "gpt-5"
+  | "deepseek"
   | "dall-e"
   | "gpt-image";
 

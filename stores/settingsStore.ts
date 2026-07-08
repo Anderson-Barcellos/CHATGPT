@@ -7,6 +7,7 @@ import {
 } from "@/types";
 import {
   MODELS,
+  isDeepSeekModel,
   isReasoningModel,
 } from "@/lib/models/modelConfig";
 
@@ -49,7 +50,9 @@ function usesNoReasoningByDefault(modelId: string): boolean {
 function buildDefaultModelSettings(modelId: string): ModelScopedParameters {
   const resolvedModelId = resolveSupportedModelId(modelId);
   const defaultReasoningEffort =
-    usesNoReasoningByDefault(resolvedModelId)
+    isDeepSeekModel(resolvedModelId)
+      ? "xhigh"
+      : usesNoReasoningByDefault(resolvedModelId)
       ? "none"
       : isReasoningModel(resolvedModelId)
       ? "medium"
@@ -62,7 +65,7 @@ function buildDefaultModelSettings(modelId: string): ModelScopedParameters {
     topP: 0.95,
     reasoningEffort: defaultReasoningEffort,
     reasoningSummary: defaultReasoningSummary,
-    verbosity: "medium",
+    verbosity: isDeepSeekModel(resolvedModelId) ? "high" : "medium",
     codeInterpreterEnabled: false,
   };
 }
@@ -82,6 +85,13 @@ function clampModelSettings(
     maxOutputTokens,
     temperature: Number(settings.temperature.toFixed(2)),
     topP: Number(settings.topP.toFixed(2)),
+    ...(isDeepSeekModel(resolvedModelId)
+      ? {
+          reasoningEffort: "xhigh" as const,
+          verbosity: "high" as const,
+          codeInterpreterEnabled: false,
+        }
+      : {}),
   };
 }
 

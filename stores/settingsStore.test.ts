@@ -56,4 +56,20 @@ describe("settings store model defaults", () => {
 
     expect(useSettingsStore.getState().parameters.model).toBe("chat-latest");
   });
+
+  it("locks DeepSeek V4 Pro to maximum reasoning and high verbosity", () => {
+    useSettingsStore.getState().updateParameters({ model: "deepseek-v4-pro" });
+
+    expect(useSettingsStore.getState().parameters.model).toBe("deepseek-v4-pro");
+    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("xhigh");
+    expect(useSettingsStore.getState().parameters.verbosity).toBe("high");
+
+    useSettingsStore.getState().updateParameters({
+      reasoningEffort: "low",
+      verbosity: "medium",
+    });
+
+    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("xhigh");
+    expect(useSettingsStore.getState().parameters.verbosity).toBe("high");
+  });
 });

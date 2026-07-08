@@ -78,4 +78,8 @@ describe("buildResponseCreateParams", () => {
     expect(resolveRequestedModel("gpt-5-chat-latest")).toBe("chat-latest");
     expect(resolveRequestedModel("chat-latest")).toBe("chat-latest");
   });
+
+  it("allows DeepSeek V4 Pro as a selectable chat model", () => {
+    expect(resolveRequestedModel("deepseek-v4-pro")).toBe("deepseek-v4-pro");
+  });
 });

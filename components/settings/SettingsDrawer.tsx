@@ -27,6 +27,7 @@ import { useMemorySuggestions } from "@/hooks/useMemorySuggestions";
 import { useCustomInstructions } from "@/hooks/useCustomInstructions";
 import {
   MODELS,
+  isDeepSeekModel,
   modelSupportsCodeInterpreter,
   modelSupportsTemperature,
   modelSupportsVerbosity,
@@ -344,6 +345,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   const [isIndexingMemory, setIsIndexingMemory] = useState(false);
 
   const currentModel = MODELS[parameters.model];
+  const isDeepSeekSelected = isDeepSeekModel(parameters.model);
   const showTemperature = modelSupportsTemperature(parameters.model);
   const showVerbosity = modelSupportsVerbosity(parameters.model);
   const showCodeInterpreter = modelSupportsCodeInterpreter(parameters.model);
@@ -560,12 +562,14 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                             <button
                               key={option.id}
                               type="button"
+                              disabled={isDeepSeekSelected}
                               onClick={() => updateParameters({ verbosity: option.id })}
                               className={cn(
                                 "gc-refined-panel rounded-xl border p-[var(--gc-mobile-settings-card-pad)] text-left transition-colors sm:p-3",
                                 parameters.verbosity === option.id
                                   ? "border-primary/30 bg-primary/10 text-foreground"
-                                  : "text-muted-foreground hover:text-foreground"
+                                  : "text-muted-foreground hover:text-foreground",
+                                isDeepSeekSelected && "cursor-not-allowed opacity-70 hover:text-muted-foreground"
                               )}
                             >
                               <p className="text-xs font-medium">{option.label}</p>
@@ -575,6 +579,11 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                             </button>
                           ))}
                         </div>
+                        {isDeepSeekSelected && (
+                          <p className="text-micro text-muted-foreground">
+                            DeepSeek V4 Pro usa verbosity alta fixa neste fluxo.
+                          </p>
+                        )}
                       </div>
                     )}
 
