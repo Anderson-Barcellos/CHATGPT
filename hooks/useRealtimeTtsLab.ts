@@ -143,7 +143,7 @@ export function useRealtimeTtsLab(content: string) {
       void reportRealtimeClientLog(
         "info",
         "settings.applied",
-        "Preferências TTS carregadas para Realtime mini.",
+        "Preferências TTS carregadas para Realtime 2.1 mini.",
         {
           voice: preferences.voice,
           realtimeVoice: normalizeRealtimeTtsVoice(preferences.voice),
@@ -171,7 +171,7 @@ export function useRealtimeTtsLab(content: string) {
         void reportRealtimeClientLog(
           "warn",
           "peer.icecandidateerror",
-          "Erro no ICE candidate do Realtime mini.",
+          "Erro no ICE candidate do Realtime 2.1 mini.",
           {
             errorCode: event.errorCode,
             errorText: event.errorText,
@@ -218,7 +218,7 @@ export function useRealtimeTtsLab(content: string) {
             console.warn("Realtime audio element playback failed:", playError);
             const message = describeAudioPlayError(
               playError,
-              "O navegador bloqueou o áudio Realtime; clique em Realtime mini de novo para tentar liberar."
+              "O navegador bloqueou o áudio Realtime; clique em Realtime 2.1 mini de novo para tentar liberar."
             );
             cleanup();
             setStatus("error");
@@ -242,7 +242,7 @@ export function useRealtimeTtsLab(content: string) {
             void reportRealtimeClientLog(
               "warn",
               "track.ended",
-              "Faixa de áudio remota encerrada no Realtime mini."
+              "Faixa de áudio remota encerrada no Realtime 2.1 mini."
             );
           };
 
@@ -250,7 +250,7 @@ export function useRealtimeTtsLab(content: string) {
             void reportRealtimeClientLog(
               "info",
               "track.muted",
-              "Faixa de áudio remota mutada no Realtime mini."
+              "Faixa de áudio remota mutada no Realtime 2.1 mini."
             );
           };
 
@@ -258,7 +258,7 @@ export function useRealtimeTtsLab(content: string) {
             void reportRealtimeClientLog(
               "info",
               "track.unmuted",
-              "Faixa de áudio remota desmutada no Realtime mini."
+              "Faixa de áudio remota desmutada no Realtime 2.1 mini."
             );
           };
         }
@@ -317,7 +317,7 @@ export function useRealtimeTtsLab(content: string) {
         void reportRealtimeClientLog(
           "error",
           "channel.error",
-          "Erro no data channel do Realtime mini."
+          "Erro no data channel do Realtime 2.1 mini."
         );
       });
 
@@ -325,7 +325,7 @@ export function useRealtimeTtsLab(content: string) {
         void reportRealtimeClientLog(
           "warn",
           "channel.close",
-          "Data channel do Realtime mini foi fechado."
+          "Data channel do Realtime 2.1 mini foi fechado."
         );
       });
 

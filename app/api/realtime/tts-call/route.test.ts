@@ -49,7 +49,7 @@ describe("/api/realtime/tts-call route", () => {
     });
   });
 
-  it("posts a realtime mini session with typed multipart SDP and a normalized voice", async () => {
+  it("posts a realtime 2.1 mini session with typed multipart SDP and no token cap", async () => {
     const {
       POST,
       buildRealtimeCallMultipartBody,
@@ -63,6 +63,9 @@ describe("/api/realtime/tts-call route", () => {
     ]);
     expect(buildRealtimeTtsSessionConfig("onyx")).not.toHaveProperty(
       "modalities"
+    );
+    expect(buildRealtimeTtsSessionConfig("onyx")).not.toHaveProperty(
+      "max_output_tokens"
     );
     expect(buildRealtimeTtsSessionConfig("onyx")).not.toHaveProperty("voice");
     expect(buildRealtimeTtsSessionConfig("cedar").instructions).toContain(
@@ -79,7 +82,8 @@ describe("/api/realtime/tts-call route", () => {
     expect(multipart.body).toContain("v=0\r\n");
     expect(multipart.body).toContain('Content-Disposition: form-data; name="session"');
     expect(multipart.body).toContain("Content-Type: application/json");
-    expect(multipart.body).toContain('"model":"gpt-realtime-mini"');
+    expect(multipart.body).toContain('"model":"gpt-realtime-2.1-mini"');
+    expect(multipart.body).not.toContain("max_output_tokens");
     expect(multipart.body).toContain("Codex-like presence");
 
     const response = await POST(

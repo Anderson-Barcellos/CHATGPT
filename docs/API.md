@@ -208,7 +208,7 @@ de formato é `flac`.
 |---|---|---|
 | `POST` | `/api/artifacts/pdf` | Renderiza artifact de documento como PDF A4 server-side, com fonte Lexend embutida e cabeçalho compacto OpenAI + título |
 | `POST` | `/api/tts` | Gera áudio clássico com `gpt-4o-mini-tts`; aceita `format` `flac`, `mp3` ou `wav` |
-| `POST` | `/api/realtime/tts-call` | Cria sessão SDP/WebRTC experimental com `gpt-realtime-mini` |
+| `POST` | `/api/realtime/tts-call` | Cria sessão SDP/WebRTC experimental com `gpt-realtime-2.1-mini` |
 | `POST` | `/api/transcribe` | Transcreve áudio com `gpt-4o-transcribe` |
 
 Notas do PDF:

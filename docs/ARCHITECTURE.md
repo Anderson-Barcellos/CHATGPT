@@ -137,7 +137,7 @@ A aba Rotinas substitui a superfície visível de Agenda. Ela cria rotinas recor
 - O prompt de execução do Pulse usa um contexto enxuto proprio: instruções da rotina, preferencias uteis de `persona.json`, ate 5 memorias ativas compactadas e 3 trechos relevantes do histórico via `searchMemoryContext`. Ele evita injetar o prompt global completo do chat para reduzir latencia e tokens.
 - Se a resposta principal não trouxer `image_generation`, o runner tenta uma segunda chamada curta para gerar a imagem conceitual de abertura do card.
 - Resultados de Pulse reutilizam o TTS estável do app via `useAssistantTts` e `/api/tts` (`gpt-4o-mini-tts`), mas não criam mensagens automáticas na conversa principal.
-- O Realtime mini (`/api/realtime/tts-call`) permanece opção paralela para balões do chat e não substitui o TTS padrão do Pulse.
+- O Realtime 2.1 mini (`/api/realtime/tts-call`) permanece opção paralela para balões do chat e não substitui o TTS padrão do Pulse.
 
 ## Agenda Google e Notas Locais Legadas
 
@@ -173,7 +173,7 @@ O TTS padrão usa `/api/tts` com `gpt-4o-mini-tts`.
 - Texto é sanitizado e dividido em chunks em `lib/tts/speechText.ts`.
 - `hooks/useAssistantTts.ts` faz cache em memória, fila turbo e controle de playback.
 - `ttsPreferences.format` controla `response_format` (`flac` por padrão, com `mp3` e `wav` disponíveis); download completo fica habilitado apenas em `mp3` porque chunks `flac`/`wav` não devem ser concatenados como um arquivo único.
-- `/api/realtime/tts-call` segue como caminho experimental separado com `gpt-realtime-mini` via SDP/WebRTC para mensagens do chat; na barra do balão ele aparece como botão `Realtime` separado do alto-falante principal.
+- `/api/realtime/tts-call` segue como caminho experimental separado com `gpt-realtime-2.1-mini` via SDP/WebRTC para mensagens do chat; na barra do balão ele aparece como botão `Realtime` separado do alto-falante principal. O payload não define `max_output_tokens`, deixando o Realtime usar o default `inf` do contrato GA.
 
 ## Modelos
 

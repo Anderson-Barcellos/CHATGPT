@@ -163,14 +163,14 @@ function TtsPlayer({
           type="button"
           onClick={onRealtimeToggle}
           className="inline-flex h-6 items-center gap-1 rounded-lg bg-background/70 px-2 font-medium text-foreground hover:bg-background"
-          title="Laboratório Realtime mini"
+          title="Laboratório Realtime 2.1 mini"
         >
           {realtime.status === "connecting" || realtime.status === "ready" ? (
             <LoaderCircle className="size-3 animate-spin" />
           ) : (
             <Radio className="size-3" />
           )}
-          {realtime.isActive ? "Parar realtime" : "Realtime mini"}
+          {realtime.isActive ? "Parar realtime" : "Realtime 2.1"}
         </button>
         <span className="min-w-0 truncate text-muted-foreground/80">
           {realtime.error ||
@@ -295,7 +295,7 @@ export function QuickActionsBar({
       </ActionButton>
       <ActionButton
         onClick={handleRealtimeToggle}
-        title={realtime.isActive ? "Parar Realtime mini" : "Testar Realtime mini"}
+        title={realtime.isActive ? "Parar Realtime 2.1 mini" : "Testar Realtime 2.1 mini"}
         disabled={!tts.canPlay}
         className="w-auto gap-1 px-2 text-nano font-medium"
       >

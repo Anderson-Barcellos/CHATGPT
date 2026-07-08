@@ -235,7 +235,7 @@ Rodar, quando fizer sentido:
 - O branch principal rastreado e `main`
 - Evitar sobrescrever mudancas locais nao relacionadas sem confirmar antes
 - O painel operacional usa a aba principal `Pulse` para o feed de geracoes e a aba `Rotinas` para criar/pausar/executar/excluir recorrencias. Google Calendar pode permanecer no codigo como legado, mas novos fluxos recorrentes devem usar `/api/pulse/*`, `data/pulse-tasks.json`, `data/pulse-runs.json` e `chatgpt-pulse.timer`.
-- O player padrao de leitura segue em `/api/tts` via `useAssistantTts` (`gpt-4o-mini-tts`). `Realtime mini` continua como opcao paralela nos baloes do chat, visivel como botao/pill `Realtime` ao lado do alto-falante, e nao deve ser promovido ao fluxo principal do Pulse sem comparacao explicita.
+- O player padrao de leitura segue em `/api/tts` via `useAssistantTts` (`gpt-4o-mini-tts`). `Realtime 2.1 mini` (`gpt-realtime-2.1-mini`) continua como opcao paralela nos baloes do chat, visivel como botao/pill `Realtime` ao lado do alto-falante, sem `max_output_tokens` explicito, e nao deve ser promovido ao fluxo principal do Pulse sem comparacao explicita.
 - Execucoes do Pulse devem usar contexto pessoal enxuto, nao o prompt global completo do chat: regras da rotina, campos uteis de `persona.json`, ate 5 memorias ativas compactadas e 3 trechos de `searchMemoryContext` com a rotina como query. Default atual: `gpt-5.4-mini`, reasoning `low`, verbosity `high`, `PULSE_MAX_OUTPUT_TOKENS=25000`; `PULSE_RUN_MODEL`, `PULSE_MAX_OUTPUT_TOKENS` e `PULSE_REASONING_EFFORT` sao overrides operacionais. Com `web_search`/`image_generation`, `none` e `minimal` devem subir para `low`, pois a API rejeita esses esforços com tools. Se a resposta principal nao trouxer imagem, o runner tenta fallback curto de imagem de abertura.
 
 ## Preferencia De Comunicacao
@@ -1045,3 +1045,36 @@ Details:
 
 Notes:
 Validacao desta rodada antes do fechamento: `npm test`, `npx tsc --noEmit`, `npm run build`, restart de `chatgpt.service`, health local/publico healthy e smoke autenticado real de `/chat/api/artifacts/pdf` confirmando PDF 200 e ausencia do cabecalho antigo no texto extraido. A primeira chamada de health logo apos restart pode recusar conexao por janela curta; rebater depois que `next start` assumir a porta 3040.
+
+### 2026-07-06 09:20 - DeepSeek V4 Pro no chat padrao
+
+Context:
+Anders pediu adicionar DeepSeek V4 Pro ao seletor junto dos modelos existentes, mas sem mexer nos harness/fluxos OpenAI que ja estao funcionando.
+
+Details:
+`deepseek-v4-pro` foi adicionado ao catalogo como provider DeepSeek separado, com `reasoningEffort` travado em `xhigh` e `verbosity` em `high` no estado/UI. `/api/chat` agora desvia somente o chat padrao streaming desse modelo para `https://api.deepseek.com/chat/completions` usando `DEEPSEEK_API_KEY`, `thinking` habilitado e `reasoning_effort: "max"`, adaptando chunks para os eventos SSE internos do front. OpenAI Responses continua igual para os demais modelos, e Documento/Deepsearch/Quiz nao usam DeepSeek.
+
+Notes:
+`DEEPSEEK_API_KEY` foi documentada em `.env.example` e adicionada ao `.env.production` ignorado pelo Git a partir do fish sem expor valor. `/etc/apache2/APACHE.md` foi atualizado para registrar o novo provider em `/chat/api/chat`. Validacao desta rodada: teste focado DeepSeek/settings/chatRequest, `npx tsc --noEmit`, `npm test`, `npm run build`, `npm run lint`, `git diff --check`, restart de `chatgpt.service`, health local/publico 200 e smoke autenticado real de DeepSeek com SSE 200 + `[DONE]`.
+
+### 2026-07-06 09:55 - Fresh web context para DeepSeek via OpenAI
+
+Context:
+Anders sugeriu um loop externo para o DeepSeek se atualizar usando o harness OpenAI, sem contratar motores de busca pagos por fora.
+
+Details:
+`lib/server/deepseekChat.ts` ganhou a function tool `fresh_web_context`. O primeiro turno DeepSeek pode chamar essa ferramenta; o servidor acumula `tool_calls` do stream, chama OpenAI Responses com `web_search_preview`, `reasoning: low` e `text.verbosity: high`, injeta o resultado como mensagem `tool` e faz um segundo turno DeepSeek sem ferramentas para streamar a resposta final. O modelo do harness e configuravel por `DEEPSEEK_WEB_CONTEXT_MODEL`, com fallback `gpt-5.4-mini`.
+
+Notes:
+O fluxo e propositalmente limitado a uma rodada de busca por mensagem para evitar loop/custo imprevisivel. `reasoning none` nao foi usado no harness porque o projeto ja validou que tools como `web_search_preview` rejeitam efforts baixos demais; `low` e o menor seguro aqui.
+
+### 2026-07-07 12:35 - Realtime TTS em GPT-Realtime-2.1 mini sem teto de tokens
+
+Context:
+Anders pediu verificar se o Realtime TTS estava sendo serrado por `max_tokens` e atualizar para o modelo novo mais barato.
+
+Details:
+`app/api/realtime/tts-call/route.ts` agora usa `gpt-realtime-2.1-mini` no `session.model`. O payload continua sem `max_output_tokens` no `session` e o evento client-side `response.create` segue sem cap, deixando o contrato GA do Realtime usar o default `inf`. `app/api/realtime/tts-call/route.test.ts` cobre o modelo novo e falha se `max_output_tokens` voltar ao multipart.
+
+Notes:
+Documentacao corrente atualizada em `README.md`, `docs/API.md`, `docs/ARCHITECTURE.md` e `docs/MODELS.md`. O TTS classico permanece em `/api/tts` com `gpt-4o-mini-tts`; Realtime 2.1 mini segue como botao opcional separado nos baloes do chat e nao entrou no Pulse.
