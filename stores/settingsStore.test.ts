@@ -41,11 +41,20 @@ describe("settings store model defaults", () => {
     expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("none");
   });
 
-  it("migrates the hidden GPT-5.4 mini selection to Luna", () => {
+  it.each(["chat-latest", "gpt-5.5", "gpt-5.4", "gpt-5.2"])(
+    "keeps selector-hidden model %s valid for internal flows",
+    (model) => {
+      useSettingsStore.getState().updateParameters({ model });
+
+      expect(useSettingsStore.getState().parameters.model).toBe(model);
+    }
+  );
+
+  it("allows GPT-5.4 mini with reasoning disabled by default", () => {
     useSettingsStore.getState().updateParameters({ model: "gpt-5.4-mini" });
 
-    expect(useSettingsStore.getState().parameters.model).toBe("gpt-5.6-luna");
-    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("low");
+    expect(useSettingsStore.getState().parameters.model).toBe("gpt-5.4-mini");
+    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("none");
   });
 
   it("falls legacy removed models back to the current default", () => {

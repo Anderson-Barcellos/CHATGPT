@@ -325,6 +325,7 @@ export interface ModelInfo {
   supportsVerbosity: boolean;
   supportsCodeInterpreter: boolean;
   selectable?: boolean;
+  hiddenFromChatSelector?: boolean;
   supportedReasoningEfforts?: ReasoningEffort[];
   supportedReasoningModes?: ReasoningMode[];
   recommendedFor: string[];

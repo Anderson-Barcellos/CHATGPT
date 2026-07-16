@@ -66,6 +66,7 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsTemperature: false,
     supportsVerbosity: false,
     supportsCodeInterpreter: true,
+    hiddenFromChatSelector: true,
     recommendedFor: ["Chat rapido", "Uso diario premium", "Resposta polida"],
     badge: "Instant",
   },
@@ -83,6 +84,7 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsTemperature: false,
     supportsVerbosity: true,
     supportsCodeInterpreter: true,
+    hiddenFromChatSelector: true,
     recommendedFor: ["Analise profunda", "Trabalho tecnico", "Raciocinio avancado"],
     badge: "Frontier",
   },
@@ -100,6 +102,7 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsTemperature: false,
     supportsVerbosity: true,
     supportsCodeInterpreter: true,
+    hiddenFromChatSelector: true,
     recommendedFor: ["Analise profunda", "Tarefas profissionais complexas", "Raciocinio avancado"],
     badge: "Frontier",
   },
@@ -117,7 +120,6 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsTemperature: false,
     supportsVerbosity: true,
     supportsCodeInterpreter: true,
-    selectable: false,
     recommendedFor: ["Uso diario", "Coding economico", "Raciocinio com menor custo"],
     badge: "Eficiente",
   },
@@ -135,6 +137,7 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsTemperature: false,
     supportsVerbosity: true,
     supportsCodeInterpreter: true,
+    hiddenFromChatSelector: true,
     recommendedFor: ["Analise", "Coding complexo", "Raciocinio medio"],
     badge: "Reasoning",
   },
@@ -303,6 +306,7 @@ export function getChatModels(): ModelInfo[] {
   return Object.values(MODELS).filter(
     (m) =>
       m.selectable !== false &&
+      m.hiddenFromChatSelector !== true &&
       (m.capabilities.includes("chat") || m.capabilities.includes("reasoning"))
   );
 }

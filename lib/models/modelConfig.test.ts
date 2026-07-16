@@ -7,12 +7,15 @@ import {
 } from "./modelConfig";
 
 describe("GPT-5.6 model capabilities", () => {
-  it("shows Sol and Luna while hiding GPT-5.4 mini from the selector", () => {
+  it("shows only Sol, Luna, GPT-5.4 mini and DeepSeek in the chat selector", () => {
     const ids = getChatModels().map((model) => model.id);
 
-    expect(ids).toContain("gpt-5.6-sol");
-    expect(ids).toContain("gpt-5.6-luna");
-    expect(ids).not.toContain("gpt-5.4-mini");
+    expect(ids).toEqual([
+      "gpt-5.6-sol",
+      "gpt-5.6-luna",
+      "gpt-5.4-mini",
+      "deepseek-v4-pro",
+    ]);
   });
 
   it("offers max reasoning only to GPT-5.6 models", () => {
