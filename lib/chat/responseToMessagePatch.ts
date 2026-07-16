@@ -37,12 +37,18 @@ function extractOutput(response: ResponseLike) {
   const citations: UrlCitation[] = [];
   let imageBase64: string | undefined;
   let imageMimeType: string | undefined;
+  let didSearch = false;
 
   if (typeof response.output_text === "string" && response.output_text.trim()) {
     textParts.push(response.output_text.trim());
   }
 
   for (const item of (response.output ?? []) as OutputItem[]) {
+    if (item.type === "web_search_call") {
+      didSearch = true;
+      continue;
+    }
+
     if (item.type === "image_generation_call" && item.result) {
       imageBase64 = item.result;
       imageMimeType = "image/png";
@@ -73,6 +79,7 @@ function extractOutput(response: ResponseLike) {
     citations: dedupeCitations(citations),
     imageBase64,
     imageMimeType,
+    didSearch,
   };
 }
 
@@ -96,6 +103,7 @@ export function responseToMessagePatch(
       streamStatus: "aborted",
       isGeneratingImage: false,
       isSearching: false,
+      ...(output.didSearch ? { didSearch: true } : {}),
     };
   }
 
@@ -116,6 +124,7 @@ export function responseToMessagePatch(
       ...(output.imageMimeType ? { imageMimeType: output.imageMimeType } : {}),
       isGeneratingImage: false,
       isSearching: false,
+      ...(output.didSearch ? { didSearch: true } : {}),
     };
   }
 
@@ -124,6 +133,7 @@ export function responseToMessagePatch(
       streamStatus: "streaming",
       isGeneratingImage: false,
       isSearching: true,
+      ...(output.didSearch ? { didSearch: true } : {}),
     };
   }
 
@@ -144,5 +154,6 @@ export function responseToMessagePatch(
     reasoningStatus: "complete",
     isGeneratingImage: false,
     isSearching: false,
+    ...(output.didSearch ? { didSearch: true } : {}),
   };
 }

@@ -15,6 +15,9 @@ export type AssistantStreamEvent =
       type: "response.output_item.done";
       item?: { type?: string; result?: string };
     }
+  | { type: "response.web_search_call.in_progress" }
+  | { type: "response.web_search_call.searching" }
+  | { type: "response.web_search_call.completed" }
   | {
       type: "response.image_generation_call.partial_image";
       partial_image_b64?: string;
@@ -67,6 +70,7 @@ export interface AssistantStreamState {
   imageMimeType?: string;
   isGeneratingImage: boolean;
   isSearching: boolean;
+  didSearch: boolean;
   terminalStatus: AssistantStreamTerminalStatus;
   inputTokens?: number;
   outputTokens?: number;
@@ -87,6 +91,7 @@ export function createInitialAssistantStreamState(
     imageMimeType: undefined,
     isGeneratingImage: false,
     isSearching: false,
+    didSearch: false,
     terminalStatus: "streaming",
   };
 }
@@ -126,7 +131,7 @@ export function reduceAssistantStreamEvent(
         return { ...state, isGeneratingImage: true };
       }
       if (event.item?.type === "web_search_call") {
-        return { ...state, isSearching: true };
+        return { ...state, isSearching: true, didSearch: true };
       }
       return state;
     case "response.output_item.done":
@@ -143,9 +148,14 @@ export function reduceAssistantStreamEvent(
         };
       }
       if (event.item?.type === "web_search_call") {
-        return state;
+        return { ...state, isSearching: false, didSearch: true };
       }
       return state;
+    case "response.web_search_call.in_progress":
+    case "response.web_search_call.searching":
+      return { ...state, isSearching: true, didSearch: true };
+    case "response.web_search_call.completed":
+      return { ...state, isSearching: false, didSearch: true };
     case "response.image_generation_call.partial_image":
       return {
         ...state,
@@ -251,6 +261,7 @@ export function assistantStreamStateToMessagePatch(
     streamStatus: state.terminalStatus,
     isGeneratingImage: state.isGeneratingImage,
     isSearching: state.isSearching,
+    ...(state.didSearch ? { didSearch: true } : {}),
   };
 }
 

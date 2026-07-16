@@ -113,6 +113,7 @@ export interface Message {
   imageMimeType?: string;
   isGeneratingImage?: boolean;
   isSearching?: boolean;
+  didSearch?: boolean;
   citations?: UrlCitation[];
   artifact?: MessageArtifact;
   attachments?: FileAttachment[];

@@ -341,6 +341,7 @@ export function useChat() {
         imageMimeType: normalized.imageMimeType,
         isGeneratingImage: normalized.isGeneratingImage,
         isSearching: normalized.isSearching,
+        didSearch: normalized.didSearch,
         citations: normalized.citations,
         artifact: normalized.artifact,
         inputTokens: normalized.inputTokens,

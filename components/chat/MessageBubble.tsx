@@ -32,6 +32,14 @@ interface MessageBubbleProps {
 const APP_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 const USER_AVATAR_SRC = `${APP_BASE_PATH}/images/anders-avatar.png`;
 
+export function getWebSearchIndicatorStatus(
+  message: Pick<Message, "isSearching" | "didSearch">
+): "searching" | "completed" | null {
+  if (message.isSearching) return "searching";
+  if (message.didSearch) return "completed";
+  return null;
+}
+
 function formatTime(date: Date): string {
   try {
     return new Date(date).toLocaleTimeString("pt-BR", {
@@ -45,6 +53,7 @@ function formatTime(date: Date): string {
 
 export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: MessageBubbleProps) {
   const isUser = message.role === "user";
+  const webSearchStatus = getWebSearchIndicatorStatus(message);
   const { appendToNotes } = useNotes();
   const { setActivePanelTab } = useUIStore();
   const [isEditing, setIsEditing] = useState(false);
@@ -222,21 +231,35 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
             </>
           )}
 
-          {message.isSearching && (
+          {webSearchStatus && (
             <div className="gc-refined-soft-surface mt-3 flex items-center gap-2 rounded-2xl border px-3 py-2.5">
-              <Globe className="h-4 w-4 text-emerald-500 animate-pulse" />
-              <span className="text-micro font-medium text-emerald-600 dark:text-emerald-400 animate-pulse">
-                Pesquisando na web...
+              <Globe
+                className={cn(
+                  "h-4 w-4 text-emerald-500",
+                  webSearchStatus === "searching" && "animate-pulse"
+                )}
+              />
+              <span
+                className={cn(
+                  "text-micro font-medium text-emerald-600 dark:text-emerald-400",
+                  webSearchStatus === "searching" && "animate-pulse"
+                )}
+              >
+                {webSearchStatus === "searching"
+                  ? "Pesquisando na web..."
+                  : "Pesquisa na web concluída"}
               </span>
-              <div className="flex gap-1 ml-1">
-                {[0, 1, 2].map((i) => (
-                  <span
-                    key={i}
-                    className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500/60 animate-bounce"
-                    style={{ animationDelay: `${i * 0.2}s`, animationDuration: "1.2s" }}
-                  />
-                ))}
-              </div>
+              {webSearchStatus === "searching" && (
+                <div className="flex gap-1 ml-1">
+                  {[0, 1, 2].map((i) => (
+                    <span
+                      key={i}
+                      className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500/60 animate-bounce"
+                      style={{ animationDelay: `${i * 0.2}s`, animationDuration: "1.2s" }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

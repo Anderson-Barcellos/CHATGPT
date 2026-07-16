@@ -76,6 +76,7 @@ describe("stream machine", () => {
       { title: "Fonte", url: "https://example.com" },
     ]);
     expect(state.isSearching).toBe(true);
+    expect((state as { didSearch?: boolean }).didSearch).toBe(true);
     expect(state.isGeneratingImage).toBe(true);
     expect(state.imageBase64).toBe("base64-preview");
 
@@ -83,7 +84,8 @@ describe("stream machine", () => {
       type: "response.output_item.done",
       item: { type: "web_search_call" },
     });
-    expect(state.isSearching).toBe(true);
+    expect(state.isSearching).toBe(false);
+    expect(state.didSearch).toBe(true);
 
     state = reduceAssistantStreamEvent(state, {
       type: "response.output_item.done",
@@ -92,6 +94,7 @@ describe("stream machine", () => {
     state = finalizeAssistantStreamState(state, "completed", true);
 
     expect(state.isSearching).toBe(false);
+    expect((state as { didSearch?: boolean }).didSearch).toBe(true);
     expect(state.isGeneratingImage).toBe(false);
     expect(state.reasoningStatus).toBe("complete");
     expect(assistantStreamStateToMessagePatch(state)).toMatchObject({
@@ -103,8 +106,27 @@ describe("stream machine", () => {
       reasoningStatus: "complete",
       streamStatus: "completed",
       isSearching: false,
+      didSearch: true,
       isGeneratingImage: false,
     });
+  });
+
+  it("captures the dedicated web search lifecycle events", () => {
+    let state = createInitialAssistantStreamState(false);
+
+    state = reduceAssistantStreamEvent(
+      state,
+      { type: "response.web_search_call.searching" } as never
+    );
+    expect(state.isSearching).toBe(true);
+    expect((state as { didSearch?: boolean }).didSearch).toBe(true);
+
+    state = reduceAssistantStreamEvent(
+      state,
+      { type: "response.web_search_call.completed" } as never
+    );
+    expect(state.isSearching).toBe(false);
+    expect((state as { didSearch?: boolean }).didSearch).toBe(true);
   });
 
   it("captures a reasoning summary that arrives only as a done event", () => {

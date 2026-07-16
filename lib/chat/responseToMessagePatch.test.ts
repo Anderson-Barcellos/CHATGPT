@@ -81,6 +81,7 @@ describe("responseToMessagePatch", () => {
       cachedTokens: 3,
       reasoningTokens: 4,
       isSearching: false,
+      didSearch: true,
       isGeneratingImage: false,
     });
   });
