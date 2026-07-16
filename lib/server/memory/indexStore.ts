@@ -35,6 +35,11 @@ export interface IndexConversationResult {
   chunks: number;
 }
 
+export interface MemoryIndexReconciliationResult {
+  removedConversations: number;
+  removedChunks: number;
+}
+
 let connectionPromise: Promise<lancedb.Connection> | null = null;
 
 function sqlString(value: string): string {
@@ -139,6 +144,55 @@ export async function indexConversation(
     conversationId: conversation.id,
     status: "indexed",
     chunks: records.length,
+  };
+}
+
+export async function deleteConversationFromMemoryIndex(
+  conversationId: string
+): Promise<number> {
+  const table = await getChunksTable();
+  if (!table) return 0;
+
+  const filter = `conversationId = ${sqlString(conversationId)}`;
+  const chunks = await table.countRows(filter);
+  if (chunks > 0) {
+    await table.delete(filter);
+  }
+  return chunks;
+}
+
+export async function reconcileMemoryIndex(
+  validConversationIds: string[]
+): Promise<MemoryIndexReconciliationResult> {
+  const table = await getChunksTable();
+  if (!table) {
+    return { removedConversations: 0, removedChunks: 0 };
+  }
+
+  const validIds = new Set(validConversationIds);
+  const rows = (await table
+    .query()
+    .select(["conversationId"])
+    .toArray()) as Array<Pick<MemoryChunkRecord, "conversationId">>;
+  const orphanCounts = new Map<string, number>();
+
+  for (const row of rows) {
+    if (validIds.has(row.conversationId)) continue;
+    orphanCounts.set(
+      row.conversationId,
+      (orphanCounts.get(row.conversationId) ?? 0) + 1
+    );
+  }
+
+  let removedChunks = 0;
+  for (const [conversationId, chunks] of orphanCounts) {
+    await table.delete(`conversationId = ${sqlString(conversationId)}`);
+    removedChunks += chunks;
+  }
+
+  return {
+    removedConversations: orphanCounts.size,
+    removedChunks,
   };
 }
 

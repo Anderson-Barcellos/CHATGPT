@@ -33,11 +33,8 @@ import {
 import { useCustomInstructions } from "@/hooks/useCustomInstructions";
 import { useMemories } from "@/hooks/useMemories";
 import { buildSystemPrompt } from "@/lib/openai/contextBuilder";
-import {
-  createMemorySuggestions,
-  indexConversationMemory,
-  searchMemoryContext,
-} from "@/lib/storage/memoryRag";
+import { searchMemoryContext } from "@/lib/storage/memoryRag";
+import { refreshConversationMemoryLayer } from "@/lib/chat/memoryRefresh";
 import { apiUrl } from "@/lib/utils";
 import { buildEditResendOptions } from "@/lib/chat/resendOptions";
 import { buildQuizCompletionPatch } from "@/lib/chat/quizCompletion";
@@ -240,10 +237,12 @@ async function persistConversationSnapshot(
   });
 }
 
-async function refreshMemoryLayerForConversation(conversationId: string) {
+async function refreshMemoryLayerForConversation(
+  conversationId: string,
+  status: "completed" | "aborted" | "interrupted" | "failed"
+) {
   try {
-    await indexConversationMemory(conversationId);
-    await createMemorySuggestions(conversationId);
+    await refreshConversationMemoryLayer(conversationId, status);
   } catch (error) {
     console.warn("[useChat] Falha ao atualizar camada de memoria:", error);
   }
@@ -506,12 +505,19 @@ export function useChat() {
                 activeConversationId,
                 cloneMessagesForStorage(normalized)
               )
-            ).catch((err) => {
-              console.warn(
-                "[useChat] Falha ao persistir normalização de interrupted:",
-                err
-              );
-            });
+            )
+              .then(() =>
+                refreshMemoryLayerForConversation(
+                  activeConversationId,
+                  "interrupted"
+                )
+              )
+              .catch((err) => {
+                console.warn(
+                  "[useChat] Falha ao persistir normalização de interrupted:",
+                  err
+                );
+              });
           }
           if (normalized.some(isPendingBackgroundMessage)) {
             void reconcileBackgroundJobs();
@@ -903,7 +909,10 @@ export function useChat() {
           "Mensagem enviada, mas não foi salva. Tente recarregar."
         );
 
-        void refreshMemoryLayerForConversation(activeConversationId);
+        void refreshMemoryLayerForConversation(
+          activeConversationId,
+          "completed"
+        );
 
         sent = true;
       } catch (err) {
@@ -917,6 +926,11 @@ export function useChat() {
             activeConversationId,
             queryClient,
             "A geração foi interrompida, mas não consegui salvar esse estado."
+          );
+
+          void refreshMemoryLayerForConversation(
+            activeConversationId,
+            "aborted"
           );
 
           sent = true;
@@ -941,6 +955,11 @@ export function useChat() {
             activeConversationId,
             queryClient,
             "A mensagem falhou e eu também não consegui persistir esse estado."
+          );
+
+          void refreshMemoryLayerForConversation(
+            activeConversationId,
+            "failed"
           );
 
           sent = false;

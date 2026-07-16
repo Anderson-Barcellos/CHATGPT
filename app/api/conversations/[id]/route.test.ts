@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 const getConversationMock = vi.fn();
 const updateConversationMock = vi.fn();
 const deleteConversationMock = vi.fn();
+const deleteConversationFromMemoryIndexMock = vi.fn();
 const isAuthEnabledMock = vi.fn();
 const isAuthenticatedRequestMock = vi.fn();
 
@@ -16,6 +17,10 @@ vi.mock("../data", () => ({
 vi.mock("@/lib/server/auth", () => ({
   isAuthEnabled: isAuthEnabledMock,
   isAuthenticatedRequest: isAuthenticatedRequestMock,
+}));
+
+vi.mock("@/lib/server/memory/indexStore", () => ({
+  deleteConversationFromMemoryIndex: deleteConversationFromMemoryIndexMock,
 }));
 
 describe("/api/conversations/[id] route", () => {
@@ -111,5 +116,26 @@ describe("/api/conversations/[id] route", () => {
       code: "invalid_workspace_payload",
     });
     expect(updateConversationMock).not.toHaveBeenCalled();
+  });
+
+  it("removes RAG chunks before deleting the canonical conversation", async () => {
+    getConversationMock.mockResolvedValueOnce({ id: "conv-1" });
+    deleteConversationFromMemoryIndexMock.mockResolvedValueOnce(2);
+    deleteConversationMock.mockResolvedValueOnce(true);
+
+    const { DELETE } = await import("./route");
+    const response = await DELETE(
+      new NextRequest("http://localhost/api/conversations/conv-1", {
+        method: "DELETE",
+      }),
+      { params: Promise.resolve({ id: "conv-1" }) }
+    );
+
+    expect(response.status).toBe(200);
+    expect(deleteConversationFromMemoryIndexMock).toHaveBeenCalledWith("conv-1");
+    expect(deleteConversationMock).toHaveBeenCalledWith("conv-1");
+    expect(
+      deleteConversationFromMemoryIndexMock.mock.invocationCallOrder[0]
+    ).toBeLessThan(deleteConversationMock.mock.invocationCallOrder[0]);
   });
 });

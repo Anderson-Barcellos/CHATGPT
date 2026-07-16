@@ -3,7 +3,21 @@ import type {
   RetrievedMemoryContext,
   SerializedMemorySuggestion,
 } from "@/types";
+import { parseApiErrorResponse } from "@/lib/api/errors";
 import { apiUrl } from "@/lib/utils";
+
+export interface MemoryIndexResult {
+  results: Array<{
+    conversationId: string;
+    status: "indexed" | "skipped" | "empty";
+    chunks: number;
+  }>;
+  stats: { chunks: number };
+  reconciliation?: {
+    removedConversations: number;
+    removedChunks: number;
+  };
+}
 
 function toSuggestion(input: SerializedMemorySuggestion): MemorySuggestion {
   return {
@@ -22,6 +36,21 @@ async function safeJson(res: Response) {
   }
 }
 
+async function assertOk(res: Response): Promise<void> {
+  if (!res.ok) {
+    throw await parseApiErrorResponse(res);
+  }
+}
+
+async function readMemoryIndexResult(res: Response): Promise<MemoryIndexResult> {
+  await assertOk(res);
+  const data = (await safeJson(res)) as MemoryIndexResult | null;
+  if (!data || !Array.isArray(data.results) || typeof data.stats?.chunks !== "number") {
+    throw new Error("A API de memoria retornou um resultado de indexacao invalido.");
+  }
+  return data;
+}
+
 export async function searchMemoryContext(input: {
   query: string;
   excludeConversationId?: string;
@@ -33,7 +62,7 @@ export async function searchMemoryContext(input: {
     body: JSON.stringify(input),
   });
 
-  if (!response.ok) return [];
+  await assertOk(response);
   const data = (await safeJson(response)) as {
     results?: RetrievedMemoryContext[];
   } | null;
@@ -42,22 +71,24 @@ export async function searchMemoryContext(input: {
 
 export async function indexConversationMemory(
   conversationId: string
-): Promise<void> {
-  await fetch(apiUrl("/api/memory/index"), {
+): Promise<MemoryIndexResult> {
+  const response = await fetch(apiUrl("/api/memory/index"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ conversationId }),
   });
+  return readMemoryIndexResult(response);
 }
 
 export async function indexRecentConversationMemories(
   limit = 50
-): Promise<void> {
-  await fetch(apiUrl("/api/memory/index"), {
+): Promise<MemoryIndexResult> {
+  const response = await fetch(apiUrl("/api/memory/index"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ limit }),
   });
+  return readMemoryIndexResult(response);
 }
 
 export async function createMemorySuggestions(

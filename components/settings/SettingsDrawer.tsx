@@ -399,8 +399,13 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   const handleIndexRecentMemory = async () => {
     setIsIndexingMemory(true);
     try {
-      await indexRecentConversationMemories(75);
-      toast.success("Histórico recente indexado para RAG.");
+      const result = await indexRecentConversationMemories(75);
+      const removedChunks = result.reconciliation?.removedChunks ?? 0;
+      toast.success(
+        removedChunks > 0
+          ? `RAG atualizado: ${result.stats.chunks} chunks ativos; ${removedChunks} órfãos removidos.`
+          : `RAG atualizado: ${result.stats.chunks} chunks ativos.`
+      );
     } catch {
       toast.error("Não consegui indexar o histórico agora.");
     } finally {

@@ -6,6 +6,7 @@ import {
 } from "../data";
 import { jsonError } from "@/lib/api/errors";
 import { isAuthEnabled, isAuthenticatedRequest } from "@/lib/server/auth";
+import { deleteConversationFromMemoryIndex } from "@/lib/server/memory/indexStore";
 import { deserializeMessage, serializeConversation } from "@/lib/storage/serializers";
 import { ConversationWorkspace } from "@/types";
 
@@ -158,6 +159,15 @@ export async function DELETE(
 
   try {
     const { id } = await params;
+    const conversation = await getConversation(id);
+    if (!conversation) {
+      return jsonError(404, "Not found", {
+        message: "Conversa nao encontrada.",
+        code: "conversation_not_found",
+      });
+    }
+
+    await deleteConversationFromMemoryIndex(id);
     const ok = await deleteConversation(id);
     if (!ok) {
       return jsonError(404, "Not found", {
