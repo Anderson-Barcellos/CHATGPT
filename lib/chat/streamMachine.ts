@@ -143,7 +143,7 @@ export function reduceAssistantStreamEvent(
         };
       }
       if (event.item?.type === "web_search_call") {
-        return { ...state, isSearching: false };
+        return state;
       }
       return state;
     case "response.image_generation_call.partial_image":

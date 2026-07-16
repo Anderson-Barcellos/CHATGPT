@@ -38,7 +38,7 @@ describe("settings store model defaults", () => {
     useSettingsStore.getState().updateParameters({ model: "chat-latest" });
 
     expect(useSettingsStore.getState().parameters.model).toBe("chat-latest");
-    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("medium");
+    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("none");
   });
 
   it("migrates the hidden GPT-5.4 mini selection to Luna", () => {

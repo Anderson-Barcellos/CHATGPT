@@ -83,6 +83,8 @@ describe("stream machine", () => {
       type: "response.output_item.done",
       item: { type: "web_search_call" },
     });
+    expect(state.isSearching).toBe(true);
+
     state = reduceAssistantStreamEvent(state, {
       type: "response.output_item.done",
       item: { type: "image_generation_call", result: "final-image" },

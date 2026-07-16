@@ -64,7 +64,7 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsStreaming: true,
 
     supportsTemperature: false,
-    supportsVerbosity: true,
+    supportsVerbosity: false,
     supportsCodeInterpreter: true,
     recommendedFor: ["Chat rapido", "Uso diario premium", "Resposta polida"],
     badge: "Instant",

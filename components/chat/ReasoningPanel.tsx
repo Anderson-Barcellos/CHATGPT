@@ -30,6 +30,7 @@ interface ReasoningThinkingContentInput {
 
 interface ReasoningCompletedContentInput extends ReasoningThinkingContentInput {
   reasoningTokens?: number;
+  reasoningConfigured?: boolean;
 }
 
 export function getNextReasoningPanelOpenState({
@@ -54,11 +55,15 @@ export function getReasoningCompletedContent({
   summary,
   full,
   reasoningTokens,
+  reasoningConfigured = false,
 }: ReasoningCompletedContentInput): string {
   if (summary.length > 0) return summary;
   if (full.length > 0) return full;
   if (reasoningTokens && reasoningTokens > 0) {
     return `Raciocínio aplicado (${reasoningTokens.toLocaleString("pt-BR")} tokens), mas a API não emitiu um resumo textual nesta resposta.`;
+  }
+  if (reasoningConfigured) {
+    return "Raciocínio configurado, mas a API não emitiu um resumo textual nesta resposta.";
   }
   return "";
 }
@@ -87,6 +92,7 @@ export function ReasoningPanel({ message }: ReasoningPanelProps) {
     summary,
     full,
     reasoningTokens: message.reasoningTokens,
+    reasoningConfigured: message.reasoningStatus === "complete",
   });
   const hasReasoning = hasSummary || hasFull || completedContent.length > 0 || isThinking;
   const [isOpen, setIsOpen] = useState(isThinking);

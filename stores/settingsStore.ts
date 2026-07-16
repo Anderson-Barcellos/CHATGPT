@@ -47,7 +47,11 @@ function resolveSupportedModelId(modelId: string | undefined): string {
 }
 
 function usesNoReasoningByDefault(modelId: string): boolean {
-  return modelId.includes("-mini") || modelId.includes("-nano");
+  return (
+    modelId === "chat-latest" ||
+    modelId.includes("-mini") ||
+    modelId.includes("-nano")
+  );
 }
 
 function buildDefaultModelSettings(modelId: string): ModelScopedParameters {

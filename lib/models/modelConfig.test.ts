@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getChatModels,
   getSupportedReasoningEfforts,
+  modelSupportsVerbosity,
   modelSupportsReasoningMode,
 } from "./modelConfig";
 
@@ -24,5 +25,9 @@ describe("GPT-5.6 model capabilities", () => {
     expect(modelSupportsReasoningMode("gpt-5.6-sol", "pro")).toBe(true);
     expect(modelSupportsReasoningMode("gpt-5.6-luna", "pro")).toBe(true);
     expect(modelSupportsReasoningMode("gpt-5.5", "pro")).toBe(false);
+  });
+
+  it("does not send text verbosity to the ChatGPT Instant alias", () => {
+    expect(modelSupportsVerbosity("chat-latest")).toBe(false);
   });
 });

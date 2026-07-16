@@ -87,4 +87,17 @@ describe("getReasoningCompletedContent", () => {
 
     expect(content).toContain("Raciocínio aplicado (26 tokens)");
   });
+
+  it("keeps the panel visible when reasoning was configured but the API reports zero tokens", () => {
+    const input = {
+      summary: "",
+      full: "",
+      reasoningTokens: 0,
+      reasoningConfigured: true,
+    };
+
+    const content = getReasoningCompletedContent(input);
+
+    expect(content).toContain("API não emitiu um resumo textual");
+  });
 });
