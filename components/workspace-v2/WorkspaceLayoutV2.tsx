@@ -110,6 +110,7 @@ interface CommandComposerV2Props {
   responseMode: ResponseMode;
   modelControl?: ReactNode;
   reasoningControl?: ReactNode;
+  proControl?: ReactNode;
   error?: string | null;
   speechError?: string | null;
   fileErrors?: string[];
@@ -527,6 +528,7 @@ export function CommandComposerV2({
   responseMode,
   modelControl,
   reasoningControl,
+  proControl,
   error,
   speechError,
   fileErrors = [],
@@ -687,6 +689,8 @@ export function CommandComposerV2({
                   </button>
                 )
               )}
+
+              {proControl}
 
               <Button
                 type="button"

@@ -658,7 +658,8 @@ export function useChat() {
       const reasoning = buildReasoningConfig(
         requestModel,
         requestReasoningEffort,
-        parameters.reasoningSummary
+        parameters.reasoningSummary,
+        parameters.reasoningMode
       );
       const usesReasoning = !!reasoning && responseMode !== "quiz";
       const preferredDisplayMode = getPreferredDisplayMode(responseMode);
@@ -989,6 +990,7 @@ export function useChat() {
       parameters.model,
       parameters.codeInterpreterEnabled,
       parameters.reasoningEffort,
+      parameters.reasoningMode,
       parameters.reasoningSummary,
       parameters.systemPrompt,
       parameters.temperature,

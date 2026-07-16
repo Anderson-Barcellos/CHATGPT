@@ -187,7 +187,8 @@ export interface ActiveSelection {
   rect: DOMRect | null;
 }
 
-export type ReasoningEffort = "none" | "low" | "medium" | "high" | "xhigh";
+export type ReasoningEffort = "none" | "low" | "medium" | "high" | "xhigh" | "max";
+export type ReasoningMode = "standard" | "pro";
 export type ReasoningSummary = "off" | "auto" | "concise" | "detailed";
 export type ResponseVerbosity = "low" | "medium" | "high";
 
@@ -196,6 +197,7 @@ export interface ModelScopedParameters {
   temperature: number;
   topP: number;
   reasoningEffort: ReasoningEffort;
+  reasoningMode: ReasoningMode;
   reasoningSummary: ReasoningSummary;
   verbosity: ResponseVerbosity;
   codeInterpreterEnabled: boolean;
@@ -322,6 +324,9 @@ export interface ModelInfo {
   supportsTemperature: boolean;
   supportsVerbosity: boolean;
   supportsCodeInterpreter: boolean;
+  selectable?: boolean;
+  supportedReasoningEfforts?: ReasoningEffort[];
+  supportedReasoningModes?: ReasoningMode[];
   recommendedFor: string[];
   badge?: string;
 }

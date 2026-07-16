@@ -13,6 +13,7 @@ import {
 import {
   Brain,
   ChevronDown,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,9 +36,11 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { useSpeechToText } from "@/hooks/useSpeechToText";
 import {
   getChatModels,
+  getSupportedReasoningEfforts,
   isDeepSeekModel,
   isReasoningModel as checkReasoning,
   MODELS,
+  modelSupportsReasoningMode,
 } from "@/lib/models/modelConfig";
 import { canSubmitComposerMessage } from "@/lib/chat/composerSubmit";
 import {
@@ -53,7 +56,8 @@ const REASONING_OPTIONS: { value: ReasoningEffort; label: string; desc: string }
   { value: "low", label: "Baixo", desc: "Raciocinio leve" },
   { value: "medium", label: "Medio", desc: "Equilibrado" },
   { value: "high", label: "Alto", desc: "Raciocinio profundo" },
-  { value: "xhigh", label: "Maximo", desc: "Analise exaustiva" },
+  { value: "xhigh", label: "Muito alto", desc: "Analise exaustiva" },
+  { value: "max", label: "Maximo", desc: "Qualidade extrema" },
 ];
 
 const IMAGE_ATTACHMENT_ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
@@ -118,6 +122,14 @@ export function CommandComposerContainerV2({
     responseMode === "deepsearch_medium" || responseMode === "deepsearch_high";
   const currentModel = MODELS[parameters.model];
   const isDeepSeekSelected = isDeepSeekModel(parameters.model);
+  const supportedReasoningEfforts = useMemo(
+    () => getSupportedReasoningEfforts(parameters.model),
+    [parameters.model]
+  );
+  const hasProMode =
+    modelSupportsReasoningMode(parameters.model, "pro") &&
+    responseMode !== "quiz" &&
+    !isDeepsearchMode;
   const deepsearchModelId =
     responseMode === "deepsearch_high" ? "gpt-5.4" : "gpt-5.4-mini";
   const displayModel = isDeepsearchMode ? MODELS[deepsearchModelId] : currentModel;
@@ -376,7 +388,8 @@ export function CommandComposerContainerV2({
       low: 0.45,
       medium: 0.6,
       high: 0.8,
-      xhigh: 1.0,
+      xhigh: 0.9,
+      max: 1.0,
     };
     return map[parameters.reasoningEffort] ?? 0.6;
   }, [parameters.reasoningEffort]);
@@ -406,7 +419,9 @@ export function CommandComposerContainerV2({
       <DropdownMenuContent align="start" className="w-48">
         <DropdownMenuLabel>Raciocinio</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {REASONING_OPTIONS.map((option) => (
+        {REASONING_OPTIONS.filter((option) =>
+          supportedReasoningEfforts.includes(option.value)
+        ).map((option) => (
           <DropdownMenuItem
             key={option.value}
             onClick={() => updateParameters({ reasoningEffort: option.value })}
@@ -423,6 +438,39 @@ export function CommandComposerContainerV2({
       </DropdownMenuContent>
     </DropdownMenu>
   );
+
+  const proControl = hasProMode ? (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={isLoading || isTranscribing}
+          aria-label={parameters.reasoningMode === "pro" ? "Desativar modo Pro" : "Ativar modo Pro"}
+          aria-pressed={parameters.reasoningMode === "pro"}
+          onClick={() =>
+            updateParameters({
+              reasoningMode: parameters.reasoningMode === "pro" ? "standard" : "pro",
+            })
+          }
+          className={cn(
+            "size-[var(--gc-mobile-control-height)] rounded-lg border p-0 md:h-8 md:w-8",
+            parameters.reasoningMode === "pro"
+              ? "border-amber-500/45 bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 dark:text-amber-300"
+              : "border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground"
+          )}
+        >
+          <Zap className="size-3.5" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        {parameters.reasoningMode === "pro"
+          ? "Pro ativo: mais qualidade, latencia e uso de tokens"
+          : "Pro: mais qualidade, latencia e uso de tokens"}
+      </TooltipContent>
+    </Tooltip>
+  ) : undefined;
 
   return (
     <>
@@ -464,6 +512,7 @@ export function CommandComposerContainerV2({
         }
         modelControl={modelControl}
         reasoningControl={hasReasoning ? reasoningControl : undefined}
+        proControl={proControl}
         onValueChange={setInput}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}

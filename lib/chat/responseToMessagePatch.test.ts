@@ -38,6 +38,7 @@ describe("responseToMessagePatch", () => {
             type: "web_search_call",
             id: "ws_1",
             status: "completed",
+            action: { type: "search", queries: ["teste"] },
           },
           {
             type: "message",
@@ -65,7 +66,7 @@ describe("responseToMessagePatch", () => {
           input_tokens: 10,
           output_tokens: 20,
           total_tokens: 30,
-          input_tokens_details: { cached_tokens: 3 },
+          input_tokens_details: { cached_tokens: 3, cache_write_tokens: 0 },
           output_tokens_details: { reasoning_tokens: 4 },
         },
       })

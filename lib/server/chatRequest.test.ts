@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_CHAT_MODEL,
   MEMORY_TOOL_NAMES,
   buildResponseCreateParams,
   resolveRequestedModel,
@@ -15,6 +16,35 @@ function toolTypesFor(responseMode: "default" | "document" | "deepsearch_medium"
 }
 
 describe("buildResponseCreateParams", () => {
+  it("uses GPT-5.6 Luna as the API default", () => {
+    expect(DEFAULT_CHAT_MODEL).toBe("gpt-5.6-luna");
+    expect(buildResponseCreateParams({ input: [{ role: "user", content: "Oi" }] }).model)
+      .toBe("gpt-5.6-luna");
+  });
+
+  it("passes GPT-5.6 Pro mode and max effort to the Responses API", () => {
+    const params = buildResponseCreateParams({
+      input: [{ role: "user", content: "Teste" }],
+      model: "gpt-5.6-sol",
+      reasoning: { mode: "pro", effort: "max", summary: "detailed" },
+    });
+
+    expect(params.reasoning).toEqual({
+      mode: "pro",
+      effort: "max",
+      summary: "detailed",
+    });
+  });
+
+  it("strips unsupported Pro mode and max effort from older models", () => {
+    const params = buildResponseCreateParams({
+      input: [{ role: "user", content: "Teste" }],
+      model: "gpt-5.4",
+      reasoning: { mode: "pro", effort: "max", summary: "detailed" },
+    });
+
+    expect(params.reasoning).toEqual({ summary: "detailed" });
+  });
   it("keeps image generation available in default chat mode", () => {
     expect(toolTypesFor("default")).toContain("image_generation");
   });

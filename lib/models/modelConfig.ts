@@ -1,6 +1,57 @@
-import { ModelCapability, ModelFamily, ModelInfo, TokenUsage } from "@/types";
+import {
+  ModelCapability,
+  ModelFamily,
+  ModelInfo,
+  ReasoningEffort,
+  ReasoningMode,
+  TokenUsage,
+} from "@/types";
+
+const GPT_56_REASONING_EFFORTS: ReasoningEffort[] = [
+  "none", "low", "medium", "high", "xhigh", "max",
+];
+const GPT_56_REASONING_MODES: ReasoningMode[] = ["standard", "pro"];
+const STANDARD_REASONING_EFFORTS: ReasoningEffort[] = [
+  "none", "low", "medium", "high", "xhigh",
+];
 
 export const MODELS: Record<string, ModelInfo> = {
+  "gpt-5.6-sol": {
+    id: "gpt-5.6-sol",
+    name: "GPT-5.6 Sol",
+    family: "gpt-5",
+    description: "Modelo frontier mais potente para analise, coding e pesquisa complexa",
+    contextWindow: 1_050_000,
+    maxOutput: 128_000,
+    pricing: { input: 5, output: 30, cachedInput: 0.5 },
+    capabilities: ["chat", "reasoning", "vision", "function-calling", "json-mode"],
+    supportsStreaming: true,
+    supportsTemperature: false,
+    supportsVerbosity: true,
+    supportsCodeInterpreter: true,
+    supportedReasoningEfforts: GPT_56_REASONING_EFFORTS,
+    supportedReasoningModes: GPT_56_REASONING_MODES,
+    recommendedFor: ["Analise frontier", "Coding complexo", "Pesquisa profunda"],
+    badge: "Mais potente",
+  },
+  "gpt-5.6-luna": {
+    id: "gpt-5.6-luna",
+    name: "GPT-5.6 Luna",
+    family: "gpt-5",
+    description: "Modelo GPT-5.6 eficiente para conversa diaria e alto volume",
+    contextWindow: 400_000,
+    maxOutput: 128_000,
+    pricing: { input: 1, output: 6, cachedInput: 0.1 },
+    capabilities: ["chat", "reasoning", "vision", "function-calling", "json-mode"],
+    supportsStreaming: true,
+    supportsTemperature: false,
+    supportsVerbosity: true,
+    supportsCodeInterpreter: true,
+    supportedReasoningEfforts: GPT_56_REASONING_EFFORTS,
+    supportedReasoningModes: GPT_56_REASONING_MODES,
+    recommendedFor: ["Uso diario", "Baixa latencia", "Alto volume"],
+    badge: "Default",
+  },
   "chat-latest": {
     id: "chat-latest",
     name: "GPT-5.5 Instant",
@@ -66,6 +117,7 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsTemperature: false,
     supportsVerbosity: true,
     supportsCodeInterpreter: true,
+    selectable: false,
     recommendedFor: ["Uso diario", "Coding economico", "Raciocinio com menor custo"],
     badge: "Eficiente",
   },
@@ -152,7 +204,8 @@ const REASONING_LABELS: Record<string, string> = {
   low: "Baixo",
   medium: "Medio",
   high: "Alto",
-  xhigh: "Maximo",
+  xhigh: "Muito alto",
+  max: "Maximo",
 };
 
 export function getReasoningLabel(reasoningEffort: string | undefined): string {
@@ -172,6 +225,20 @@ export function modelSupportsVerbosity(modelId: string): boolean {
 export function modelSupportsCodeInterpreter(modelId: string): boolean {
   const model = MODELS[modelId];
   return model?.supportsCodeInterpreter ?? false;
+}
+
+export function getSupportedReasoningEfforts(modelId: string): ReasoningEffort[] {
+  const model = MODELS[modelId];
+  if (!model?.capabilities.includes("reasoning")) return [];
+  return model.supportedReasoningEfforts ?? STANDARD_REASONING_EFFORTS;
+}
+
+export function modelSupportsReasoningMode(
+  modelId: string,
+  mode: ReasoningMode
+): boolean {
+  const modes = MODELS[modelId]?.supportedReasoningModes ?? ["standard"];
+  return modes.includes(mode);
 }
 
 export function calculateCost(
@@ -234,7 +301,9 @@ export function getModelsByFamily(family: ModelFamily): ModelInfo[] {
 
 export function getChatModels(): ModelInfo[] {
   return Object.values(MODELS).filter(
-    (m) => m.capabilities.includes("chat") || m.capabilities.includes("reasoning")
+    (m) =>
+      m.selectable !== false &&
+      (m.capabilities.includes("chat") || m.capabilities.includes("reasoning"))
   );
 }
 

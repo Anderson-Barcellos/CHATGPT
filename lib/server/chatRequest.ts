@@ -2,10 +2,12 @@ import OpenAI from "openai";
 import type { ResponseMode, ResponseVerbosity } from "@/types";
 import {
   MODELS,
+  getSupportedReasoningEfforts,
   isReasoningModel,
   modelSupportsCodeInterpreter,
   modelSupportsTemperature,
   modelSupportsVerbosity,
+  modelSupportsReasoningMode,
 } from "@/lib/models/modelConfig";
 import {
   QUIZ_FORCED_MODEL,
@@ -36,7 +38,7 @@ export const ALLOWED_CHAT_MODELS = new Set(
   })
 );
 
-export const DEFAULT_CHAT_MODEL = "gpt-5.4-mini";
+export const DEFAULT_CHAT_MODEL = "gpt-5.6-luna";
 const DEFAULT_IMAGE_GENERATION_MODEL = "gpt-image-2";
 export const MEMORY_TOOL_NAMES = {
   remember: "remember_memory",
@@ -234,13 +236,19 @@ export function buildResponseCreateParams(body: ChatRequestBody) {
   }
 
   if (isReasoningModel(effectiveModel) && reasoning) {
-    requestParams.reasoning =
-      responseMode === "quiz"
-        ? {
-            ...reasoning,
-            effort: QUIZ_FORCED_REASONING_EFFORT,
-          }
-        : reasoning;
+    const { effort, mode, ...supportedReasoning } = reasoning;
+    const sanitizedReasoning = {
+      ...supportedReasoning,
+      ...(effort && effort !== "minimal" && getSupportedReasoningEfforts(effectiveModel).includes(effort) && {
+        effort,
+      }),
+      ...(mode === "pro" && modelSupportsReasoningMode(effectiveModel, "pro") && {
+        mode,
+      }),
+    };
+    requestParams.reasoning = responseMode === "quiz"
+      ? { ...sanitizedReasoning, effort: QUIZ_FORCED_REASONING_EFFORT }
+      : sanitizedReasoning;
   }
 
   if (responseMode === "quiz") {

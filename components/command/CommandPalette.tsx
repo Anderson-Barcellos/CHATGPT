@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useCommandPaletteContext } from "@/components/command/CommandPaletteProvider";
-import { getChatModels } from "@/lib/models/modelConfig";
+import { getChatModels, getSupportedReasoningEfforts } from "@/lib/models/modelConfig";
 import { useChatStore } from "@/stores/chatStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useUIStore } from "@/stores/uiStore";
@@ -28,7 +28,8 @@ const REASONING_LEVELS: { label: string; value: ReasoningEffort; hint: string }[
   { label: "Raciocínio baixo", value: "low", hint: "Low" },
   { label: "Raciocínio médio", value: "medium", hint: "Medium" },
   { label: "Raciocínio alto", value: "high", hint: "High" },
-  { label: "Raciocínio máximo", value: "xhigh", hint: "xHigh" },
+  { label: "Raciocínio muito alto", value: "xhigh", hint: "xHigh" },
+  { label: "Raciocínio máximo", value: "max", hint: "Max" },
 ];
 
 const RESPONSE_MODES = [
@@ -45,6 +46,7 @@ export function CommandPalette() {
   const { setActiveConversationId } = useChatStore();
 
   const chatModels = getChatModels();
+  const supportedReasoningEfforts = getSupportedReasoningEfforts(parameters.model);
 
   const run = useCallback(
     (fn: () => void) => {
@@ -115,7 +117,9 @@ export function CommandPalette() {
 
             {/* Raciocínio */}
             <Command.Group heading="Raciocínio">
-              {REASONING_LEVELS.map(({ label, value, hint }) => (
+              {REASONING_LEVELS.filter(({ value }) =>
+                supportedReasoningEfforts.includes(value)
+              ).map(({ label, value, hint }) => (
                 <Command.Item
                   key={value}
                   value={`raciocínio ${label} ${value}`}

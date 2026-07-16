@@ -7,8 +7,10 @@ import {
 } from "@/types";
 import {
   MODELS,
+  getSupportedReasoningEfforts,
   isDeepSeekModel,
   isReasoningModel,
+  modelSupportsReasoningMode,
 } from "@/lib/models/modelConfig";
 
 type ModelSettingsMap = Record<string, ModelScopedParameters>;
@@ -25,13 +27,14 @@ interface SettingsState {
   getActiveMemories: () => Memory[];
 }
 
-const DEFAULT_MODEL = "gpt-5.4-mini";
+const DEFAULT_MODEL = "gpt-5.6-luna";
 
 const LEGACY_MODEL_FALLBACKS: Record<string, string> = {
   "gpt-chat-latest": "chat-latest",
   "gpt-5-chat-latest": "chat-latest",
   "gpt-5.1-chat-latest": DEFAULT_MODEL,
   "gpt-5.3-chat-latest": DEFAULT_MODEL,
+  "gpt-5.4-mini": DEFAULT_MODEL,
   "gpt-5.1": DEFAULT_MODEL,
   "gpt-4.1": DEFAULT_MODEL,
   o3: DEFAULT_MODEL,
@@ -39,7 +42,7 @@ const LEGACY_MODEL_FALLBACKS: Record<string, string> = {
 
 function resolveSupportedModelId(modelId: string | undefined): string {
   if (!modelId) return DEFAULT_MODEL;
-  if (MODELS[modelId]) return modelId;
+  if (MODELS[modelId] && MODELS[modelId].selectable !== false) return modelId;
   return LEGACY_MODEL_FALLBACKS[modelId] ?? DEFAULT_MODEL;
 }
 
@@ -52,6 +55,8 @@ function buildDefaultModelSettings(modelId: string): ModelScopedParameters {
   const defaultReasoningEffort =
     isDeepSeekModel(resolvedModelId)
       ? "xhigh"
+      : resolvedModelId === "gpt-5.6-luna"
+      ? "low"
       : usesNoReasoningByDefault(resolvedModelId)
       ? "none"
       : isReasoningModel(resolvedModelId)
@@ -64,6 +69,7 @@ function buildDefaultModelSettings(modelId: string): ModelScopedParameters {
     temperature: 0.8,
     topP: 0.95,
     reasoningEffort: defaultReasoningEffort,
+    reasoningMode: "standard",
     reasoningSummary: defaultReasoningSummary,
     verbosity: isDeepSeekModel(resolvedModelId) ? "high" : "medium",
     codeInterpreterEnabled: false,
@@ -80,11 +86,24 @@ function clampModelSettings(
     ? Math.min(Math.max(Math.round(settings.maxOutputTokens), 256), modelMaxOutput)
     : Math.max(Math.round(settings.maxOutputTokens), 256);
 
+  const supportedEfforts = getSupportedReasoningEfforts(resolvedModelId);
+  const reasoningEffort = supportedEfforts.includes(settings.reasoningEffort)
+    ? settings.reasoningEffort
+    : buildDefaultModelSettings(resolvedModelId).reasoningEffort;
+  const reasoningMode = modelSupportsReasoningMode(
+    resolvedModelId,
+    settings.reasoningMode
+  )
+    ? settings.reasoningMode
+    : "standard";
+
   return {
     ...settings,
     maxOutputTokens,
     temperature: Number(settings.temperature.toFixed(2)),
     topP: Number(settings.topP.toFixed(2)),
+    reasoningEffort,
+    reasoningMode,
     ...(isDeepSeekModel(resolvedModelId)
       ? {
           reasoningEffort: "xhigh" as const,
@@ -101,6 +120,7 @@ function extractModelSettings(parameters: ModelParameters): ModelScopedParameter
     temperature: parameters.temperature,
     topP: parameters.topP,
     reasoningEffort: parameters.reasoningEffort,
+    reasoningMode: parameters.reasoningMode,
     reasoningSummary: parameters.reasoningSummary,
     verbosity: parameters.verbosity,
     codeInterpreterEnabled: parameters.codeInterpreterEnabled,
@@ -145,6 +165,9 @@ function pickModelScopedUpdates(
     }),
     ...(updates.reasoningEffort !== undefined && {
       reasoningEffort: updates.reasoningEffort,
+    }),
+    ...(updates.reasoningMode !== undefined && {
+      reasoningMode: updates.reasoningMode,
     }),
     ...(updates.reasoningSummary !== undefined && {
       reasoningSummary: updates.reasoningSummary,

@@ -22,4 +22,22 @@ describe("buildReasoningConfig", () => {
       effort: "medium",
     });
   });
+
+  it("adds Pro mode independently from the selected effort", () => {
+    expect(
+      buildReasoningConfig("gpt-5.6-luna", "low", "detailed", "pro")
+    ).toEqual({ effort: "low", summary: "detailed", mode: "pro" });
+  });
+
+  it("omits standard mode from the API payload", () => {
+    expect(
+      buildReasoningConfig("gpt-5.6-sol", "medium", "detailed", "standard")
+    ).toEqual({ effort: "medium", summary: "detailed" });
+  });
+
+  it("does not send Pro mode to models that do not support it", () => {
+    expect(
+      buildReasoningConfig("gpt-5.4", "high", "detailed", "pro")
+    ).toEqual({ effort: "high", summary: "detailed" });
+  });
 });
