@@ -1,5 +1,8 @@
 import { readDataFile, withDataFileLock, writeDataFile } from "@/lib/server/jsonFileStore";
 import {
+  DEFAULT_PULSE_MODEL,
+  PULSE_MODELS,
+  type PulseModel,
   PulseRun,
   PulseTask,
   PulseTaskCreateInput,
@@ -21,6 +24,14 @@ function cleanEmoji(value: unknown): string {
   return cleaned ? Array.from(cleaned)[0] ?? "✨" : "✨";
 }
 
+function parsePulseModel(value: unknown): PulseModel {
+  if (value === undefined || value === null || value === "") return DEFAULT_PULSE_MODEL;
+  if (typeof value === "string" && PULSE_MODELS.includes(value as PulseModel)) {
+    return value as PulseModel;
+  }
+  throw new Error("Modelo Pulse invalido.");
+}
+
 function parseTask(value: unknown): PulseTask | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Partial<PulseTask>;
@@ -39,7 +50,7 @@ function parseTask(value: unknown): PulseTask | null {
   ) {
     return null;
   }
-  return raw as PulseTask;
+  return { ...raw, model: parsePulseModel(raw.model) } as PulseTask;
 }
 
 function parseRun(value: unknown): PulseRun | null {
@@ -92,12 +103,14 @@ export function normalizePulseTaskInput(input: PulseTaskCreateInput): Omit<
 
   const schedule = normalizeScheduleInput(input);
   const executionPrompt = cleanString(input.executionPrompt) ?? prompt;
+  const model = parsePulseModel(input.model);
 
   return {
     title: title.slice(0, 120),
     emoji: cleanEmoji(input.emoji),
     prompt,
     executionPrompt,
+    model,
     schedule,
   };
 }
@@ -185,7 +198,10 @@ export async function getDuePulseTasks(now = new Date()): Promise<PulseTask[]> {
   );
 }
 
-export async function createPulseRun(task: PulseTask): Promise<PulseRun> {
+export async function createPulseRun(
+  task: PulseTask,
+  profile?: { model: string; reasoningEffort: PulseRun["reasoningEffort"] }
+): Promise<PulseRun> {
   return withDataFileLock(RUNS_FILE, async () => {
     const runs = await readRuns();
     const now = new Date().toISOString();
@@ -195,6 +211,8 @@ export async function createPulseRun(task: PulseTask): Promise<PulseRun> {
       status: "running",
       title: task.title,
       taskTitle: task.title,
+      modelUsed: profile?.model ?? task.model,
+      reasoningEffort: profile?.reasoningEffort ?? "medium",
       content: "",
       citations: [],
       startedAt: now,

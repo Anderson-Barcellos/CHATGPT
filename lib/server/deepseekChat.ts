@@ -6,7 +6,7 @@ import { extractResponseOutput } from "@/lib/chat/responseToMessagePatch";
 export const DEEPSEEK_MODEL = "deepseek-v4-pro";
 export const FRESH_WEB_CONTEXT_TOOL_NAME = "fresh_web_context";
 const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
-const DEFAULT_WEB_CONTEXT_MODEL = "gpt-5.4-mini";
+const DEFAULT_WEB_CONTEXT_MODEL = "gpt-5.6-luna";
 
 type TextPart = { type: "input_text"; text: string };
 type ImagePart = { type: "input_image"; image_url: string };

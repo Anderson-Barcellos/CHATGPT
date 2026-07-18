@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiUrl } from "@/lib/utils";
+import { parseTranscriptionStreamLine } from "@/lib/transcription/stream";
 
 export type SpeechToTextStatus = "idle" | "recording" | "transcribing" | "error";
 
@@ -55,6 +56,7 @@ export function useSpeechToText() {
   const [status, setStatus] = useState<SpeechToTextStatus>("idle");
   const [audioLevel, setAudioLevel] = useState(0);
   const [recordingDurationMs, setRecordingDurationMs] = useState(0);
+  const [transcriptPreview, setTranscriptPreview] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -149,6 +151,42 @@ export function useSpeechToText() {
       body: formData,
       signal: controller.signal,
     });
+    const isStreaming = response.headers
+      .get("content-type")
+      ?.includes("application/x-ndjson");
+
+    if (response.ok && isStreaming && response.body) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let accumulated = "";
+      let completedText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        buffer += decoder.decode(value, { stream: !done });
+        const lines = buffer.split("\n");
+        buffer = done ? "" : lines.pop() ?? "";
+
+        for (const line of lines) {
+          const event = parseTranscriptionStreamLine(line);
+          if (!event) continue;
+          if (event.type === "error") throw new Error(event.error);
+          if (event.type === "delta") {
+            accumulated += event.delta;
+            setTranscriptPreview(accumulated);
+          } else {
+            completedText = event.text;
+            setTranscriptPreview(event.text);
+          }
+        }
+
+        if (done) break;
+      }
+
+      return (completedText || accumulated).trim();
+    }
+
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
@@ -299,6 +337,7 @@ export function useSpeechToText() {
       setError(null);
       shouldTranscribeRef.current = true;
       chunksRef.current = [];
+      setTranscriptPreview("");
       setRecordingDurationMs(0);
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -410,6 +449,7 @@ export function useSpeechToText() {
     isSupported,
     recordingDurationMs,
     status,
+    transcriptPreview,
     startRecording,
     stopRecording,
     toggleRecording,

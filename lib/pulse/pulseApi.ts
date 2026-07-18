@@ -1,6 +1,7 @@
 import { ClientApiError, parseApiErrorResponse } from "@/lib/api/errors";
 import { apiUrl } from "@/lib/utils";
 import type {
+  PulseModel,
   PulseRecurrenceType,
   PulseRun,
   PulseTask,
@@ -14,6 +15,7 @@ export interface PulseTaskCreatePayload {
   emoji?: string;
   prompt: string;
   executionPrompt?: string;
+  model?: PulseModel;
   recurrenceType: PulseRecurrenceType;
   time: string;
   weekday?: number;

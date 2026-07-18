@@ -36,6 +36,7 @@ import {
   updatePulseTaskStatus,
 } from "@/lib/pulse/pulseApi";
 import type {
+  PulseModel,
   PulseRecurrenceType,
   PulseRun,
   PulseTask,
@@ -54,6 +55,7 @@ interface ProposalForm {
   emoji: string;
   prompt: string;
   executionPrompt: string;
+  model: PulseModel;
   recurrenceType: PulseRecurrenceType;
   time: string;
   weekday: string;
@@ -66,6 +68,7 @@ function proposalToForm(proposal: PulseTaskProposal): ProposalForm {
     emoji: proposal.emoji,
     prompt: proposal.prompt,
     executionPrompt: proposal.executionPrompt,
+    model: "gpt-5.4-mini",
     recurrenceType: proposal.recurrenceType,
     time: proposal.time || "09:00",
     weekday: String(proposal.weekday ?? 1),
@@ -83,6 +86,12 @@ function formatDateTime(value?: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function pulseModelLabel(model?: string, reasoningEffort = "medium"): string {
+  const modelLabel = model === "gpt-5.6-terra" ? "Terra" : "Mini";
+  const effortLabel = reasoningEffort.charAt(0).toUpperCase() + reasoningEffort.slice(1);
+  return `${modelLabel} · ${effortLabel}`;
 }
 
 function imageSrc(run: PulseRun): string | null {
@@ -229,6 +238,11 @@ function PulseRunCard({
                     ? "Falhou"
                     : "Na fila"}
             </p>
+            {run.modelUsed && (
+              <p className="mt-1 text-nano font-medium text-primary/80">
+                {pulseModelLabel(run.modelUsed, run.reasoningEffort)}
+              </p>
+            )}
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <span
@@ -482,6 +496,9 @@ function PulseTaskCard({
             <CalendarClock className="size-3" />
             {describeSchedule(task.schedule)} · proxima {formatDateTime(task.nextRunAt)}
           </p>
+          <p className="mt-1 text-nano font-medium text-primary/80">
+            {pulseModelLabel(task.model)}
+          </p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <span
@@ -653,6 +670,7 @@ export function PulsePanelV2() {
         emoji: form.emoji,
         prompt: form.prompt,
         executionPrompt: form.executionPrompt,
+        model: form.model,
         recurrenceType: form.recurrenceType,
         time: form.time,
         weekday: Number(form.weekday),
@@ -866,6 +884,27 @@ export function PulsePanelV2() {
                   />
                 </label>
               </div>
+
+              <label className="block space-y-1 text-nano text-muted-foreground">
+                <span>Modelo da rotina</span>
+                <select
+                  value={form.model}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current
+                        ? { ...current, model: event.target.value as PulseModel }
+                        : current
+                    )
+                  }
+                  className="h-8 w-full rounded-md border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-2 text-xs text-foreground"
+                >
+                  <option value="gpt-5.4-mini">GPT-5.4 Mini — padrao</option>
+                  <option value="gpt-5.6-terra">GPT-5.6 Terra — experimental</option>
+                </select>
+                <span className="block text-[10px] text-muted-foreground/75">
+                  Ambos usam reasoning medium; a escolha fica salva nesta rotina.
+                </span>
+              </label>
 
               {form.recurrenceType === "weekly" && (
                 <label className="block space-y-1 text-nano text-muted-foreground">

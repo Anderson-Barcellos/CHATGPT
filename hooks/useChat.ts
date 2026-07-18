@@ -26,7 +26,6 @@ import {
 import { withConversationPersistenceRetry } from "@/lib/storage/conversationPersistence";
 import {
   Message,
-  ReasoningEffort,
   ResponseMode,
   SendMessageOptions,
 } from "@/types";
@@ -40,6 +39,7 @@ import { buildEditResendOptions } from "@/lib/chat/resendOptions";
 import { buildQuizCompletionPatch } from "@/lib/chat/quizCompletion";
 import { buildAbortedAssistantMessagePatch } from "@/lib/chat/abortCompletion";
 import { buildReasoningConfig } from "@/lib/chat/reasoningConfig";
+import { resolveDeepsearchProfile } from "@/lib/chat/deepsearchConfig";
 import { createThrottle } from "@/lib/performance/throttle";
 import {
   isDeepSeekModel,
@@ -60,8 +60,6 @@ import {
 const STREAM_AUTO_SAVE_INTERVAL_MS = 2000;
 const BACKGROUND_POLL_INTERVAL_MS = 5000;
 const DOCUMENT_FORCED_MODEL = "gpt-5.4-mini";
-const DEEPSEARCH_MEDIUM_MODEL = "gpt-5.4-mini";
-const DEEPSEARCH_HIGH_MODEL = "gpt-5.4";
 
 function isPendingBackgroundMessage(message: Message): boolean {
   return (
@@ -169,16 +167,6 @@ function isDocumentLikeMode(responseMode: ResponseMode): boolean {
     responseMode === "deepsearch_medium" ||
     responseMode === "deepsearch_high"
   );
-}
-
-function resolveDeepsearchReasoningEffort(responseMode: ResponseMode): ReasoningEffort {
-  if (responseMode === "deepsearch_high") return "high";
-  return "medium";
-}
-
-function resolveDeepsearchModel(responseMode: ResponseMode): string {
-  if (responseMode === "deepsearch_high") return DEEPSEARCH_HIGH_MODEL;
-  return DEEPSEARCH_MEDIUM_MODEL;
 }
 
 function appendQuizModeInstructions(systemMessage: string): string {
@@ -639,18 +627,22 @@ export function useChat() {
       const input = buildInputFromMessages(useChatStore.getState().messages);
 
       const assistantMessageId = crypto.randomUUID();
+      const deepsearchProfile =
+        responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
+          ? resolveDeepsearchProfile(responseMode)
+          : null;
       const requestModel = responseMode === "quiz"
         ? QUIZ_FORCED_MODEL
         : responseMode === "document" && isDeepSeekModel(parameters.model)
         ? DOCUMENT_FORCED_MODEL
         : responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
-        ? resolveDeepsearchModel(responseMode)
+        ? deepsearchProfile!.model
         : parameters.model;
       const requestReasoningEffort =
         responseMode === "quiz"
           ? QUIZ_FORCED_REASONING_EFFORT
           : responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
-          ? resolveDeepsearchReasoningEffort(responseMode)
+          ? deepsearchProfile!.reasoningEffort
           : parameters.reasoningEffort;
       const requestVerbosity =
         responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"

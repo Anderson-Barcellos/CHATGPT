@@ -1,5 +1,9 @@
 import OpenAI from "openai";
 import type { PulseRun, PulseTask } from "@/lib/pulse/types";
+import {
+  resolvePulseExecutionProfile,
+  type PulseExecutionProfile,
+} from "@/lib/pulse/config";
 import { buildPulseSystemPrompt } from "@/lib/pulse/context";
 import { createOpenAIClient } from "@/lib/server/chatRequest";
 import {
@@ -15,23 +19,11 @@ import {
 } from "@/lib/pulse/store";
 import { derivePulseRunTitle } from "@/lib/pulse/runTitle";
 
-const DEFAULT_PULSE_MODEL = "gpt-5.4-mini";
 const DEFAULT_IMAGE_MODEL = "gpt-image-2";
 const DEFAULT_PULSE_MAX_OUTPUT_TOKENS = 25_000;
 const MIN_PULSE_MAX_OUTPUT_TOKENS = 8_000;
 const MAX_PULSE_MAX_OUTPUT_TOKENS = 32_000;
 const MAX_DUE_TASKS_PER_TICK = 2;
-const DEFAULT_PULSE_REASONING_EFFORT = "low";
-const PULSE_REASONING_EFFORTS = [
-  "none",
-  "minimal",
-  "low",
-  "medium",
-  "high",
-] as const;
-
-type PulseReasoningEffort = (typeof PULSE_REASONING_EFFORTS)[number];
-
 function getPulseMaxOutputTokens(): number {
   const configured = Number.parseInt(process.env.PULSE_MAX_OUTPUT_TOKENS ?? "", 10);
   if (!Number.isFinite(configured)) return DEFAULT_PULSE_MAX_OUTPUT_TOKENS;
@@ -39,22 +31,6 @@ function getPulseMaxOutputTokens(): number {
     MAX_PULSE_MAX_OUTPUT_TOKENS,
     Math.max(MIN_PULSE_MAX_OUTPUT_TOKENS, configured)
   );
-}
-
-function getPulseReasoningEffort(): PulseReasoningEffort {
-  const configured = process.env.PULSE_REASONING_EFFORT?.trim().toLowerCase();
-  if (
-    configured &&
-    PULSE_REASONING_EFFORTS.includes(configured as PulseReasoningEffort)
-  ) {
-    return configured as PulseReasoningEffort;
-  }
-  return DEFAULT_PULSE_REASONING_EFFORT;
-}
-
-function getPulseToolReasoningEffort(): Exclude<PulseReasoningEffort, "none" | "minimal"> {
-  const effort = getPulseReasoningEffort();
-  return effort === "none" || effort === "minimal" ? "low" : effort;
 }
 
 function getIncompleteReason(response: OpenAI.Responses.Response): string | null {
@@ -77,6 +53,7 @@ async function generatePulseOpeningImage(params: {
   openai: OpenAI;
   task: PulseTask;
   content: string;
+  profile: PulseExecutionProfile;
 }): Promise<{ imageBase64?: string; imageMimeType?: string }> {
   const prompt = [
     `Gere uma imagem conceitual de abertura para a rotina Pulse "${params.task.title}".`,
@@ -86,7 +63,7 @@ async function generatePulseOpeningImage(params: {
   ].join("\n\n");
 
   const response = await params.openai.responses.create({
-    model: process.env.PULSE_RUN_MODEL?.trim() || DEFAULT_PULSE_MODEL,
+    model: params.profile.model,
     instructions:
       "Tu geras somente uma imagem de abertura para um card Pulse. Nao escrevas explicacao textual.",
     input: [
@@ -96,7 +73,7 @@ async function generatePulseOpeningImage(params: {
       },
     ],
     max_output_tokens: 1200,
-    reasoning: { effort: getPulseToolReasoningEffort() },
+    reasoning: { effort: params.profile.reasoningEffort },
     tools: [
       {
         type: "image_generation",
@@ -131,16 +108,17 @@ function buildPulseInput(task: PulseTask): OpenAI.Responses.ResponseInput {
 }
 
 async function executeTask(task: PulseTask, openai: OpenAI): Promise<PulseRun> {
-  const run = await createPulseRun(task);
+  const profile = resolvePulseExecutionProfile(task);
+  const run = await createPulseRun(task, profile);
 
   try {
     const instructions = await buildPulseSystemPrompt(task);
     const response = await openai.responses.create({
-      model: process.env.PULSE_RUN_MODEL?.trim() || DEFAULT_PULSE_MODEL,
+      model: profile.model,
       instructions,
       input: buildPulseInput(task),
       max_output_tokens: getPulseMaxOutputTokens(),
-      reasoning: { effort: getPulseToolReasoningEffort() },
+      reasoning: { effort: profile.reasoningEffort },
       text: { verbosity: "high" },
       tools: [
         {
@@ -165,7 +143,7 @@ async function executeTask(task: PulseTask, openai: OpenAI): Promise<PulseRun> {
       output.content || (patch.streamStatus === "completed" ? patch.content || "" : "");
     const fallbackImage: { imageBase64?: string; imageMimeType?: string } =
       patch.streamStatus === "completed" && !output.imageBase64 && finalContent.trim()
-        ? await generatePulseOpeningImage({ openai, task, content: finalContent }).catch(
+        ? await generatePulseOpeningImage({ openai, task, content: finalContent, profile }).catch(
             (error) => {
               console.warn("[pulse] Falha ao gerar imagem fallback:", error);
               return {};

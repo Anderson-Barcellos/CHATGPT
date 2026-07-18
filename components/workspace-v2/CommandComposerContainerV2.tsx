@@ -98,6 +98,7 @@ export function CommandComposerContainerV2({
   const dragCounter = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const speechInputBaseRef = useRef("");
   const {
     attachments,
     isProcessing,
@@ -112,6 +113,7 @@ export function CommandComposerContainerV2({
     isSupported: speechSupported,
     recordingDurationMs,
     status: speechStatus,
+    transcriptPreview,
     toggleRecording,
   } = useSpeechToText();
   const { parameters, updateParameters } = useSettingsStore();
@@ -200,10 +202,14 @@ export function CommandComposerContainerV2({
   );
 
   const handleMicrophoneClick = useCallback(async () => {
+    if (!isRecording) {
+      speechInputBaseRef.current = input;
+    }
     const transcript = await toggleRecording();
     if (!transcript) return;
 
-    setInput((current) => {
+    setInput(() => {
+      const current = speechInputBaseRef.current;
       const trimmed = current.trim();
       if (!trimmed) return transcript;
       return `${current}${current.endsWith("\n") ? "" : "\n"}${transcript}`;
@@ -214,7 +220,17 @@ export function CommandComposerContainerV2({
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 180)}px`;
       textareaRef.current.focus();
     });
-  }, [toggleRecording]);
+  }, [input, isRecording, toggleRecording]);
+
+  useEffect(() => {
+    if (!isTranscribing || !transcriptPreview) return;
+    const base = speechInputBaseRef.current;
+    setInput(
+      base.trim()
+        ? `${base}${base.endsWith("\n") ? "" : "\n"}${transcriptPreview}`
+        : transcriptPreview
+    );
+  }, [isTranscribing, transcriptPreview]);
 
   const openAttachmentPicker = useCallback((mode: "file" | "image") => {
     const input = fileInputRef.current;

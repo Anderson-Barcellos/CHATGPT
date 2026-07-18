@@ -36,6 +36,59 @@ export async function POST(request: NextRequest) {
 
     const openai = new OpenAI({ apiKey });
 
+    if (process.env.TRANSCRIPTION_STREAMING_ENABLED !== "false") {
+      const upstream = await openai.audio.transcriptions.create(
+        {
+          file,
+          model: "gpt-4o-transcribe",
+          stream: true,
+        },
+        { signal: request.signal }
+      );
+      const encoder = new TextEncoder();
+
+      const body = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          try {
+            for await (const event of upstream) {
+              if (event.type === "transcript.text.delta") {
+                controller.enqueue(
+                  encoder.encode(`${JSON.stringify({ type: "delta", delta: event.delta })}\n`)
+                );
+              } else if (event.type === "transcript.text.done") {
+                controller.enqueue(
+                  encoder.encode(`${JSON.stringify({ type: "done", text: event.text })}\n`)
+                );
+              }
+            }
+          } catch (streamError) {
+            if (!request.signal.aborted) {
+              const message =
+                streamError instanceof Error
+                  ? streamError.message
+                  : "Falha ao transmitir a transcricao.";
+              controller.enqueue(
+                encoder.encode(`${JSON.stringify({ type: "error", error: message })}\n`)
+              );
+            }
+          } finally {
+            controller.close();
+          }
+        },
+        cancel() {
+          upstream.controller.abort();
+        },
+      });
+
+      return new Response(body, {
+        headers: {
+          "Content-Type": "application/x-ndjson; charset=utf-8",
+          "Cache-Control": "no-cache, no-transform",
+          "X-Accel-Buffering": "no",
+        },
+      });
+    }
+
     const transcription = await openai.audio.transcriptions.create({
       file,
       model: "gpt-4o-transcribe",
