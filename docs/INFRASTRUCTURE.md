@@ -1,6 +1,6 @@
 # Infraestrutura
 
-**Última atualização:** 2026-06-06
+**Última atualização:** 2026-07-17
 **Produção:** `https://ultrassom.ai/chat`
 **Porta local:** `3040`
 
@@ -11,7 +11,7 @@ Internet
   -> Apache2 HTTPS :443
   -> /chat e /chat/api/* proxy para http://localhost:3040/chat
   -> Next.js 16 via chatgpt.service
-  -> OpenAI APIs + JSON store local
+  -> OpenAI/DeepSeek APIs + JSON store local
 ```
 
 ## Fontes Canônicas
@@ -29,6 +29,7 @@ Internet
 Não transcreva segredos de `.env.production` ou `.env.local` em docs, issues ou commits.
 O nome público do app é `Gaucho Chat`; a descrição `Celer - Cliente IA Multi-Modal` na unit systemd é apenas um rótulo histórico interno.
 O repositório nao usa mais stack de deploy por Docker/Nginx; o runtime valido aqui e Apache + `chatgpt.service`.
+DeepSeek V4 Pro é acessado apenas server-side no chat padrão streaming; `DEEPSEEK_API_KEY` e `OPENAI_API_KEY` não devem aparecer no cliente nem em logs.
 
 ## Apache
 
@@ -43,9 +44,11 @@ ProxyPass        /chat/api http://localhost:3040/chat/api
 ProxyPassReverse /chat/api http://localhost:3040/chat/api
 ProxyPass        /chat http://localhost:3040/chat
 ProxyPassReverse /chat http://localhost:3040/chat
-ProxyPassReverseCookiePath / /chat
 
 <Location /chat>
+    # CookiePath DENTRO do Location — solto no vhost, reescreve o Path dos
+    # cookies de TODOS os serviços do ultrassom.ai (quebrou o Sonaris em 2026-07)
+    ProxyPassReverseCookiePath / /chat
     Require all granted
     Header always set X-Forwarded-SSL on
     RequestHeader set X-Forwarded-Proto "https"
@@ -56,7 +59,7 @@ ProxyPassReverseCookiePath / /chat
 Pontos críticos:
 
 - O app faz auth no Next; Apache fica como reverse proxy para `/chat`.
-- `ProxyPassReverseCookiePath / /chat` precisa ficar sem barra final.
+- `ProxyPassReverseCookiePath / /chat` precisa ficar sem barra final **e DENTRO do `<Location /chat>`** — no nível do vhost ela reescreve o `Path` dos cookies de todos os outros serviços do domínio (incidente 2026-07-11: 401 nas imagens do Sonaris).
 - `Path=/chat/` causa loop no mobile porque autentica `/chat/login`, mas não `/chat`.
 - Não adicionar rewrite de trailing slash para `/chat`.
 - Se editar o vhost ativo, ele pode estar protegido com `chattr +i`; remova a proteção, edite, valide, recarregue e recoloque.
@@ -104,6 +107,8 @@ Obrigatórias em produção:
 | Variável | Propósito |
 |---|---|
 | `OPENAI_API_KEY` | Chave server-side da OpenAI |
+| `DEEPSEEK_API_KEY` | Chave server-side do DeepSeek V4 Pro para chat padrão |
+| `DEEPSEEK_WEB_CONTEXT_MODEL` | Modelo OpenAI usado pelo helper `fresh_web_context` antes da síntese DeepSeek |
 | `NEXT_PUBLIC_BASE_PATH` | Deve ser `/chat` |
 | `NEXT_PUBLIC_APP_URL` | URL pública completa |
 | `PORT` | Deve ser `3040` |
@@ -121,7 +126,15 @@ Pulse:
 | `PULSE_RUNNER_TOKEN` | Token opcional para proteger `/api/pulse/run-due`; usado por `chatgpt-pulse.service` |
 | `PULSE_RUNNER_URL` | Override opcional do endpoint local do runner |
 | `PULSE_EXTRACT_MODEL` | Modelo opcional para interpretar prompts de rotina |
-| `PULSE_RUN_MODEL` | Modelo opcional para executar rotinas; default `gpt-5.4-mini` |
+| `PULSE_RUN_MODEL` | Override opcional global; sem ele, cada rotina escolhe Mini (default) ou Terra |
+| `PULSE_MAX_OUTPUT_TOKENS` | Orçamento de saída do runner; default `25000`, limitado entre 8k e 32k |
+| `PULSE_REASONING_EFFORT` | Override opcional de effort; default `medium`, com `none`/`minimal` coeridos para `low` |
+
+Transcrição:
+
+| Variável | Propósito |
+|---|---|
+| `TRANSCRIPTION_STREAMING_ENABLED` | `true` por padrão; `false` força resposta final `{ text }` sem NDJSON |
 
 | Variável | Propósito |
 |---|---|

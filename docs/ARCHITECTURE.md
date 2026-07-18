@@ -1,17 +1,17 @@
 # Arquitetura
 
-**Última atualização:** 2026-06-28
+**Última atualização:** 2026-07-17
 
 ## Visão Geral
 
-Gaucho Chat é um app Next.js com App Router que roda como BFF local para a OpenAI `Responses API`. O cliente React conversa apenas com rotas do próprio app; essas rotas cuidam de auth, rate limit, persistência local e chamadas server-side para OpenAI.
+Gaucho Chat é um app Next.js com App Router que roda como BFF local para providers de IA. O fluxo principal usa a OpenAI `Responses API`; o chat padrão também pode usar DeepSeek V4 Pro via adapter server-side. O cliente React conversa apenas com rotas do próprio app; essas rotas cuidam de auth, rate limit, persistência local e chamadas server-side.
 
 ```text
 Browser/PWA
   -> Next.js UI em /chat
   -> proxy.ts: auth, rate limit e headers
   -> app/api/*: BFF server-side
-  -> OpenAI APIs e JSON store local
+  -> OpenAI/DeepSeek APIs e JSON store local
 ```
 
 ## Entrada e Shell
@@ -34,7 +34,7 @@ Na harmonização mais recente, o contrato mobile ficou ainda mais explícito no
 1. O composer chama `useChat`.
 2. `useChat` monta payload com mensagens, anexos, persona, modelo e opções.
 3. `POST /api/chat` valida auth, body e modelo.
-4. A rota chama `openai.responses.create()` com streaming quando aplicável.
+4. A rota chama `openai.responses.create()` com streaming quando aplicável, ou o adapter DeepSeek quando o modelo é `deepseek-v4-pro`.
 5. Eventos SSE passam pelo reducer em `lib/chat/streamMachine.ts`.
 6. A mensagem do assistente é atualizada incrementalmente e persistida durante o stream.
 
@@ -44,6 +44,12 @@ Detalhes importantes:
 - Desconexões do cliente abortam também a chamada upstream.
 - Respostas interrompidas são preservadas e voltam como `streamStatus="interrupted"`.
 - Anexos persistidos mantêm conteúdo real para reload/edit/resend.
+
+### DeepSeek V4 Pro
+
+`deepseek-v4-pro` é um provider separado para chat padrão streaming. Ele passa por `lib/server/deepseekChat.ts`, exige `DEEPSEEK_API_KEY`, força reasoning máximo no payload DeepSeek, não suporta `code_interpreter` e rejeita modos `document`, `deepsearch_*` e `quiz`.
+
+O adapter expõe uma tool local `fresh_web_context`. Quando o DeepSeek chama essa tool, o servidor faz uma chamada OpenAI curta com `web_search_preview` usando `DEEPSEEK_WEB_CONTEXT_MODEL` ou `gpt-5.6-luna`, injeta o resultado como mensagem de tool e continua um segundo turno DeepSeek sem expor chaves ao browser.
 
 ## Reasoning
 
@@ -133,7 +139,7 @@ A aba Rotinas substitui a superfície visível de Agenda. Ela cria rotinas recor
 - `POST /api/pulse/tasks/propose` usa Responses API com JSON schema para transformar linguagem natural em proposta de rotina.
 - `POST /api/pulse/tasks` persiste rotinas `daily`, `weekly` ou `monthly` em `data/pulse-tasks.json`.
 - `POST /api/pulse/run-due` é chamado pelo `chatgpt-pulse.timer` e executa tarefas vencidas.
-- Cada execução chama Responses API com `gpt-5.4-mini`, reasoning `low`, verbosity `high`, `web_search_preview` e `image_generation`, salva texto, imagem e citações em `data/pulse-runs.json` e aparece apenas na aba Pulse. O orçamento padrão de saída é `PULSE_MAX_OUTPUT_TOKENS=25000` para reservar espaço para raciocínio e texto final; `PULSE_REASONING_EFFORT` permite testar `low`, `medium` ou `high` com tools. Se `none` ou `minimal` forem configurados, o runner sobe para `low`, porque a API rejeita esses esforços com `web_search`/`image_generation`.
+- Cada rotina Pulse escolhe `gpt-5.4-mini` (padrão) ou `gpt-5.6-terra` (experimental), ambos com reasoning `medium`, verbosity `high`, `web_search_preview` e `image_generation`. O modelo/effort efetivos ficam gravados no run; `PULSE_RUN_MODEL` e `PULSE_REASONING_EFFORT` ainda podem sobrepor operacionalmente. O orçamento padrão é `PULSE_MAX_OUTPUT_TOKENS=25000`, com clamp do runner entre 8k e 32k; `none` e `minimal` sobem para `low` com tools.
 - O prompt de execução do Pulse usa um contexto enxuto proprio: instruções da rotina, preferencias uteis de `persona.json`, ate 5 memorias ativas compactadas e 3 trechos relevantes do histórico via `searchMemoryContext`. Ele evita injetar o prompt global completo do chat para reduzir latencia e tokens.
 - Se a resposta principal não trouxer `image_generation`, o runner tenta uma segunda chamada curta para gerar a imagem conceitual de abertura do card.
 - Resultados de Pulse reutilizam o TTS estável do app via `useAssistantTts` e `/api/tts` (`gpt-4o-mini-tts`), mas não criam mensagens automáticas na conversa principal.
@@ -177,12 +183,12 @@ O TTS padrão usa `/api/tts` com `gpt-4o-mini-tts`.
 
 ## Modelos
 
-O catálogo vive em `lib/models/modelConfig.ts`. O default atual é `gpt-5.4-mini`; modelos removidos conhecidos caem para esse default. `chat-latest` expõe o alias rápido `GPT-5.5 Instant` no seletor, e os slugs curtos `gpt-chat-latest` e `gpt-5-chat-latest` são normalizados localmente para esse ID antes do request. `gpt-5.2` inicia com reasoning `medium`, modelos `mini` iniciam com reasoning `none`, `responseMode="quiz"` força `gpt-5.4` com reasoning `high` e schema JSON, e os presets `deepsearch_medium|deepsearch_high` são aplicados hoje pelo `hooks/useChat.ts`, que envia `gpt-5.4-mini` com reasoning `medium|high` mantendo saída em artifact de documento/canvas. A rota server-side não faz enforcement específico de deepsearch. A montagem efetiva do objeto `reasoning` fica em `lib/chat/reasoningConfig.ts`, não no catálogo.
+O catálogo vive em `lib/models/modelConfig.ts`. O default do chat é `gpt-5.6-luna` com reasoning `low` e modo `standard`; modelos removidos conhecidos e seleções antigas de `gpt-5.4-mini` caem para Luna. `gpt-5.6-sol` inicia em `medium/standard`; Sol e Luna aceitam modo `pro` independente do effort e effort `max`. O Mini permanece registrado para compatibilidade e fluxos internos, porque Pulse e Deepsearch ainda o usam. `responseMode="quiz"` força `gpt-5.4/high`; Deepsearch Medium usa `gpt-5.4-mini/high` e High usa `gpt-5.4/high`. O contexto web auxiliar do DeepSeek usa `gpt-5.6-luna/low` antes da síntese no DeepSeek V4 Pro.
 
 Tools padrão:
 
 - `responseMode="default"`: `image_generation`, `web_search_preview`, `remember_memory`, `search_memory` e `code_interpreter` opcional.
-- `document` e `deepsearch_*`: `web_search_preview` e `code_interpreter` opcional; o fluxo principal usa background sync.
+- `document` e `deepsearch_*`: `web_search_preview` e `code_interpreter` opcional, sem `image_generation`; o fluxo principal usa background sync.
 - `quiz`: sem tools, com schema JSON estrito.
 
 ## Regras Quebráveis

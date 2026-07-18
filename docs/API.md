@@ -1,6 +1,6 @@
 # API
 
-**Última atualização:** 2026-07-05
+**Última atualização:** 2026-07-17
 **Base URL pública:** `https://ultrassom.ai/chat`
 **Base path interno:** `NEXT_PUBLIC_BASE_PATH=/chat`
 
@@ -10,7 +10,7 @@ Todas as rotas abaixo são implementadas como Route Handlers do Next em `app/api
 
 ### `POST /api/chat`
 
-Proxy server-side para a OpenAI `Responses API`, com suporte a SSE streaming.
+Proxy server-side para chat com streaming. Modelos OpenAI usam a `Responses API`; `deepseek-v4-pro` usa o adapter DeepSeek apenas no chat padrão streaming.
 
 **Arquivo:** `app/api/chat/route.ts`
 
@@ -19,7 +19,7 @@ Proxy server-side para a OpenAI `Responses API`, com suporte a SSE streaming.
   "input": [
     { "role": "user", "content": "Explique neurite vestibular em tópicos." }
   ],
-  "model": "gpt-5.4-mini",
+  "model": "gpt-5.6-luna",
   "instructions": "You are a helpful assistant.",
   "maxOutputTokens": 4096,
   "verbosity": "medium",
@@ -38,7 +38,7 @@ Proxy server-side para a OpenAI `Responses API`, com suporte a SSE streaming.
 | Campo | Tipo | Padrão | Observação |
 |---|---|---|---|
 | `input` | array | obrigatório | Payload compatível com Responses API |
-| `model` | string | `gpt-5.4-mini` | Precisa existir em `lib/models/modelConfig.ts` com capacidade `chat` ou `reasoning`; modelos removidos conhecidos caem para esse default |
+| `model` | string | `gpt-5.6-luna` | Precisa existir em `lib/models/modelConfig.ts` com capacidade `chat` ou `reasoning`; modelos removidos conhecidos caem para esse default |
 | `instructions` | string | nenhum | Instruções de sistema |
 | `maxOutputTokens` | number | máximo do modelo | Sempre limitado ao `maxOutput` do modelo |
 | `temperature` | number | nenhum | Só enviado se o modelo suportar temperatura |
@@ -60,6 +60,8 @@ Ferramentas injetadas pelo backend:
 - `remember_memory` e `search_memory` apenas em `responseMode="default"`, com até duas rodadas de function-call/output para salvar memórias explícitas ou recuperar contexto histórico quando o usuário pedir.
 - `code_interpreter` apenas quando `codeInterpreterEnabled=true` e o modelo suporta.
 
+Quando `model="deepseek-v4-pro"`, a rota aceita somente `responseMode="default"` com `stream=true`, exige `DEEPSEEK_API_KEY` e usa `fresh_web_context` como tool local. Essa tool consulta a OpenAI com `web_search_preview` quando o DeepSeek pede contexto fresco, mas Documento, Deepsearch e Quiz não usam o provider DeepSeek.
+
 Em `responseMode="quiz"`, as tools são removidas e o backend força:
 
 - modelo `gpt-5.4`;
@@ -70,8 +72,8 @@ Em `responseMode="quiz"`, as tools são removidas e o backend força:
 Em `responseMode="deepsearch_medium"` e `responseMode="deepsearch_high"`:
 
 - no shell atual, `hooks/useChat.ts` envia o mesmo fluxo de documento/canvas;
-- no shell atual, `hooks/useChat.ts` envia `model: "gpt-5.4-mini"`;
-- no shell atual, `hooks/useChat.ts` envia reasoning `medium` (`deepsearch_medium`) ou `high` (`deepsearch_high`).
+- no shell atual, `hooks/useChat.ts` envia `gpt-5.4-mini` + reasoning `high` em `deepsearch_medium`;
+- no shell atual, `hooks/useChat.ts` envia `gpt-5.4` + reasoning `high` em `deepsearch_high`.
 
 ### Streaming
 
@@ -105,7 +107,7 @@ mensagem do assistente e sincroniza quando a aba volta ou durante polling leve.
 |---|---|---|
 | `POST` | `/api/chat/background` | Inicia uma Response em background e vincula `response_id` à mensagem |
 | `POST` | `/api/chat/background/sync` | Recupera a Response por `response_id` e persiste resultado final |
-| `POST` | `/api/chat/background/cancel` | Cancela a Response em background e marca a mensagem como abortada |
+| `POST` | `/api/chat/background/cancel` | Cancela a Response em background e sincroniza o estado terminal da mensagem |
 | `POST` | `/api/chat/background/reconcile` | Reprocessa jobs pendentes salvos e mensagens antigas com `response_id` pendente |
 
 Essas rotas exigem `conversationId`, `assistantMessageId` e, exceto na criação,
@@ -209,7 +211,7 @@ de formato é `flac`.
 | `POST` | `/api/artifacts/pdf` | Renderiza artifact de documento como PDF A4 server-side, com fonte Lexend embutida e cabeçalho compacto OpenAI + título |
 | `POST` | `/api/tts` | Gera áudio clássico com `gpt-4o-mini-tts`; aceita `format` `flac`, `mp3` ou `wav` |
 | `POST` | `/api/realtime/tts-call` | Cria sessão SDP/WebRTC experimental com `gpt-realtime-2.1-mini` |
-| `POST` | `/api/transcribe` | Transcreve áudio com `gpt-4o-transcribe` |
+| `POST` | `/api/transcribe` | Transcreve áudio com `gpt-4o-transcribe`; streaming NDJSON ativo por padrão e desativável com `TRANSCRIPTION_STREAMING_ENABLED=false` |
 
 Notas do PDF:
 
@@ -229,7 +231,7 @@ Todas as rotas de Pulse são privadas quando `AUTH_ENABLED=true`, exceto o runne
 
 Os resultados do Pulse reutilizam o TTS estável do app via `/api/tts` (`gpt-4o-mini-tts`). O endpoint Realtime `/api/realtime/tts-call` segue como opção experimental separada para mensagens do chat e não é o player padrão do Pulse.
 
-As execuções do Pulse usam `gpt-5.4-mini` por padrão, com raciocínio `low`, verbosity `high` e `PULSE_MAX_OUTPUT_TOKENS=25000`. O prompt de execução é enxuto e inclui apenas instruções da rotina, preferências úteis, memórias ativas compactadas e trechos relevantes do histórico recuperados pelo índice semântico. `PULSE_RUN_MODEL`, `PULSE_MAX_OUTPUT_TOKENS` e `PULSE_REASONING_EFFORT` são overrides operacionais; com `web_search`/`image_generation`, `none` e `minimal` são coeridos para `low`.
+As execuções do Pulse usam `gpt-5.4-mini` + reasoning `medium` por padrão e podem selecionar `gpt-5.6-terra` + `medium` em cada rotina. O modelo e effort efetivos ficam registrados em cada execução. O prompt continua enxuto, com preferências úteis, memórias ativas e histórico relevante. `PULSE_RUN_MODEL`, `PULSE_MAX_OUTPUT_TOKENS` e `PULSE_REASONING_EFFORT` permanecem overrides operacionais; `PULSE_MAX_OUTPUT_TOKENS` é limitado pelo runner entre 8k e 32k; `none` e `minimal` são coeridos para `low` quando há tools.
 
 | Método | Rota | Função |
 |---|---|---|

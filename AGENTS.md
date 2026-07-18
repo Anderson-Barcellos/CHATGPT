@@ -1,5 +1,7 @@
 # AGENTS.md
 
+> ⚠️ **INFRA — cookies e Apache (2026-07-11):** a diretiva `ProxyPassReverseCookiePath / /chat` deste app vive DENTRO do bloco `<Location /chat>` em `/etc/apache2/sites-available/ultrassom.ai-optimized.conf`. Ela já esteve solta no nível do vhost e reescrevia o `Path` dos cookies de TODOS os serviços do ultrassom.ai (quebrou a autenticação de imagens do Sonaris — 401). **Nunca mover essa diretiva pra fora do `<Location /chat>`**, e qualquer ajuste de cookie no Apache deve ficar escopado ao `<Location>` do serviço. Detalhes: `/etc/apache2/APACHE.md`, seção Proxy Settings.
+
 ## Visao Geral
 
 Projeto de chat multimodal em `Next.js 16` com `React 19`, `TypeScript`, `Zustand` e `TanStack Query`, usando a `Responses API` da OpenAI.
@@ -19,7 +21,7 @@ Principais areas:
 
 ## Estado Atual Do Projeto
 
-- Modelo padrao atual: `gpt-5.4-mini`
+- Modelo padrao atual do chat: `gpt-5.6-luna` com reasoning `low` e modo `standard`; `gpt-5.4-mini` permanece oculto para fluxos internos
 - Shell ativo: `GauchoChatShellV2` / `WorkspaceFrameV2` — redesign completo (S0-S12)
 - Tokens `--gc-*` unificados em `app/globals.css`; light/dark completos
 - Preview de artefatos via `ArtifactPreviewSheet`; painel lateral focado em atividade e notas
@@ -236,7 +238,7 @@ Rodar, quando fizer sentido:
 - Evitar sobrescrever mudancas locais nao relacionadas sem confirmar antes
 - O painel operacional usa a aba principal `Pulse` para o feed de geracoes e a aba `Rotinas` para criar/pausar/executar/excluir recorrencias. Google Calendar pode permanecer no codigo como legado, mas novos fluxos recorrentes devem usar `/api/pulse/*`, `data/pulse-tasks.json`, `data/pulse-runs.json` e `chatgpt-pulse.timer`.
 - O player padrao de leitura segue em `/api/tts` via `useAssistantTts` (`gpt-4o-mini-tts`). `Realtime 2.1 mini` (`gpt-realtime-2.1-mini`) continua como opcao paralela nos baloes do chat, visivel como botao/pill `Realtime` ao lado do alto-falante, sem `max_output_tokens` explicito, e nao deve ser promovido ao fluxo principal do Pulse sem comparacao explicita.
-- Execucoes do Pulse devem usar contexto pessoal enxuto, nao o prompt global completo do chat: regras da rotina, campos uteis de `persona.json`, ate 5 memorias ativas compactadas e 3 trechos de `searchMemoryContext` com a rotina como query. Default atual: `gpt-5.4-mini`, reasoning `low`, verbosity `high`, `PULSE_MAX_OUTPUT_TOKENS=25000`; `PULSE_RUN_MODEL`, `PULSE_MAX_OUTPUT_TOKENS` e `PULSE_REASONING_EFFORT` sao overrides operacionais. Com `web_search`/`image_generation`, `none` e `minimal` devem subir para `low`, pois a API rejeita esses esforços com tools. Se a resposta principal nao trouxer imagem, o runner tenta fallback curto de imagem de abertura.
+- Execucoes do Pulse usam contexto pessoal enxuto, nao o prompt global completo. Cada rotina escolhe `gpt-5.4-mini` (default) ou `gpt-5.6-terra`, ambos com reasoning `medium` e verbosity `high`; modelo/effort efetivos ficam gravados no run. `PULSE_RUN_MODEL`, `PULSE_MAX_OUTPUT_TOKENS` e `PULSE_REASONING_EFFORT` permanecem overrides operacionais. Com tools, `none` e `minimal` sobem para `low`. Se a resposta principal nao trouxer imagem, o runner tenta fallback curto com o mesmo modelo efetivo.
 
 ## Preferencia De Comunicacao
 
@@ -1078,3 +1080,58 @@ Details:
 
 Notes:
 Documentacao corrente atualizada em `README.md`, `docs/API.md`, `docs/ARCHITECTURE.md` e `docs/MODELS.md`. O TTS classico permanece em `/api/tts` com `gpt-4o-mini-tts`; Realtime 2.1 mini segue como botao opcional separado nos baloes do chat e nao entrou no Pulse.
+
+### 2026-07-11 16:03 - GPT-5.6 Sol/Luna e modo Pro
+
+Context:
+O chat precisava incorporar os modelos GPT-5.6 e expor o novo modo de reasoning Pro sem abandonar os fluxos internos que ainda usam GPT-5.4 mini.
+
+Details:
+`gpt-5.6-luna` virou o default do chat com reasoning `low/standard`; `gpt-5.6-sol` inicia em `medium/standard`. Sol e Luna oferecem effort `max` e um raio no compositor que alterna `reasoning.mode="pro"` independentemente do cerebro. GPT-5.4 mini permanece permitido no backend, mas oculto do seletor e migra para Luna quando selecionado no store. O SDK OpenAI foi atualizado para `6.46.0`, e o servidor remove `mode`/effort incompatíveis antes de chamar a API.
+
+Notes:
+Validacao: 233 testes, `npx tsc --noEmit`, `npm run build`, smokes reais Luna Standard/Luna Pro/Sol Pro, restart de `chatgpt.service`, health local/publico e smoke Playwright mobile autenticado. No prompt minimo, Luna Standard usou 12 tokens de entrada; os casos Pro contabilizaram 1.526, reforcando Pro desligado por padrao.
+
+### 2026-07-11 16:29 - Audit npm zerado sem force
+
+Context:
+O upgrade do SDK OpenAI revelou 13 advisories npm, incluindo jsPDF critico e Next.js alto na superficie de producao.
+
+Details:
+`jspdf` foi atualizado para `4.2.1`, `next` e `eslint-config-next` para `16.2.10`. Overrides escopados mantem `dompurify@3.4.12` apenas sob Monaco e `postcss@8.5.17` apenas sob Next, evitando os downgrades quebradores sugeridos pelo audit. `npm audit fix` sem `--force` atualizou somente transitivas restantes de desenvolvimento. A regra de cookies/Apache adicionada no topo deste documento permanece intacta.
+
+Notes:
+Validacao: `npm audit` e `npm audit --omit=dev` com zero vulnerabilidades, 234 testes, TypeScript, build, lint, smoke unitario jsPDF, exportacao PDF real no browser, restart e health local/publico healthy.
+
+### 2026-07-11 16:57 - Perfis de pesquisa e experimento Mini/Terra no Pulse
+
+Context:
+Anders quis aproveitar a baixa latencia do GPT-5.6 Luna no contexto web do DeepSeek, reforcar o Deepsearch Medium e comparar Mini contra Terra por rotina Pulse.
+
+Details:
+`fresh_web_context` usa agora `gpt-5.6-luna/low`, inclusive no override de producao. Deepsearch Medium passou a `gpt-5.4-mini/high`; High permanece `gpt-5.4/high`. Cada rotina Pulse salva `gpt-5.4-mini` (default) ou `gpt-5.6-terra` (experimental), ambos com reasoning `medium`; runs novos registram `modelUsed` e `reasoningEffort`. Rotinas antigas sem campo de modelo sao lidas como Mini sem reescrever o JSON privado. Overrides globais Pulse continuam disponiveis.
+
+Notes:
+Validacao: audit zero, 71 arquivos/242 testes, TypeScript, build, lint, restart, health local/publico e smoke autenticado do formulario Mini/Terra sem criar rotina. O aviso de escopo de cookies/Apache no topo deste documento permanece intacto.
+
+### 2026-07-16 06:50 - Ciclo de vida confiavel para o RAG de memoria
+
+Context:
+A busca semantica e a tool `search_memory` funcionavam, mas o LanceDB mantinha 92 chunks de 24 conversas ja removidas enquanto a conversa atual interrompida ainda nao estava indexada. Os helpers client-side tambem escondiam respostas HTTP de erro.
+
+Details:
+`lib/server/memory/indexStore.ts` ganhou exclusao por conversa e reconciliacao contra todos os IDs canonicos. O DELETE de conversa limpa o indice antes do JSON, e o bulk index remove orfaos antes de indexar o recorte recente. `lib/chat/memoryRefresh.ts` centraliza o refresh: estados terminais indexam, mas somente `completed` gera sugestoes. `hooks/useChat.ts` aplica isso a sucesso, abort, falha e normalizacao `streaming` -> `interrupted`. O cliente RAG agora propaga erros e retorna estatisticas, exibidas no toast de indexacao manual.
+
+Notes:
+Validacao: 76 arquivos/256 testes, `npx tsc --noEmit`, `npm run build`, `git diff --check`, restart de `chatgpt.service` e health local/publico healthy. A reconciliacao real removeu 24 conversas/92 chunks orfaos e deixou 1 chunk da unica conversa canonica; busca exata retornou a origem em primeiro lugar com score 0.8462, e o smoke do chat fez uma chamada `search_memory`, recebeu 1 resultado e concluiu duas rodadas SSE. O backup pre-reconciliacao foi removido apos a confirmacao do Anders.
+
+### 2026-07-17 21:50 - Documentacao canônica realinhada ao runtime atual
+
+Context:
+Anders pediu organizar a documentacao para espelhar o projeto, usando subagentes apenas para scouting read-only.
+
+Details:
+`README.md`, `docs/API.md`, `docs/ARCHITECTURE.md`, `docs/INFRASTRUCTURE.md`, `docs/MODELS.md`, `docs/README.md`, `CLAUDE.md`, `.env.example` e `.codex_remember/remember.md` foram alinhados ao runtime atual: Next `16.2.10`, OpenAI SDK `6.46.0`, chat default `gpt-5.6-luna`, DeepSeek V4 Pro como provider separado somente no chat padrao streaming, `fresh_web_context` em `gpt-5.6-luna`, Deepsearch Medium/High corretos, Pulse Mini/Terra com reasoning `medium`, transcricao NDJSON e variaveis documentaveis sem segredos. Os docs de Agenda/Notas foram rebaixados para legado/historico no indice, porque Pulse e a superficie recorrente atual.
+
+Notes:
+Validacao documental: scouting do runtime e do inventario de docs, busca por claims antigos nos docs canonicos e `git diff --check` nos arquivos tocados. Nao houve restart/build porque a rodada foi documental/config example, sem alterar codigo de runtime.

@@ -7,7 +7,7 @@ Alguns artefatos internos antigos ainda usam o rótulo histórico `Celer`, mas o
 
 ## O que o projeto faz
 
-- Chat com streaming, reasoning visível por summary/tokens, web search, geração de imagens, memory tools e code interpreter opcional.
+- Chat com streaming, reasoning visível por summary/tokens, web search, geração de imagens, DeepSeek V4 Pro no chat padrão, memory tools e code interpreter opcional.
 - Histórico de conversas com persistência incremental durante streaming e recuperação de respostas interrompidas.
 - Memórias, RAG local de conversas, persona, prompt principal visível, instruções customizadas e preferências de TTS persistidas server-side.
 - Player TTS nas respostas do assistente com chunking, formato FLAC por padrão, modo turbo e laboratório separado de Realtime 2.1 mini.
@@ -17,17 +17,17 @@ Alguns artefatos internos antigos ainda usam o rótulo histórico `Celer`, mas o
 
 ## Stack
 
-- `Next.js 16.1.6` com App Router e `basePath=/chat`.
+- `Next.js 16.2.10` com App Router e `basePath=/chat`.
 - `React 19.2.3`, `TypeScript`, `Tailwind CSS 4`.
 - `Zustand`, `TanStack Query`, `Radix UI`, `framer-motion`, `cmdk`.
-- `OpenAI Node SDK 6.17.0`, `jose`, `Vitest`, `Playwright`.
+- `OpenAI Node SDK 6.46.0`, `jose`, `Vitest`, `Playwright`.
 - Persistência simples em JSON local sob `data/*.json`.
 
 ## Estrutura principal
 
 ```text
 app/
-  api/                  Rotas BFF: chat, auth, persona, memoria/RAG, PDF, TTS
+  api/                  Rotas BFF: chat, background, auth, persona, memoria/RAG, PDF, TTS, Pulse
   login/                Tela de login do app
 components/
   chat/                 Balões, markdown, reasoning, ações rápidas e TTS
@@ -38,6 +38,7 @@ hooks/
 lib/
   chat/                 Reducer de stream, reasoning e helpers de estado
   models/               Catálogo de modelos
+  pulse/                Rotinas recorrentes, runner, scheduling e persistência Pulse
   server/               Auth, limites de body e helpers server-side
   storage/              Persistência JSON e beacon
   tts/                  Sanitização, chunking e áudio TTS

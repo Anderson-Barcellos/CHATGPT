@@ -6,8 +6,8 @@ Esta pasta contém a documentação canônica do Gaucho Chat. Docs antigos de Ve
 
 | Documento | Uso |
 |---|---|
-| [API](./API.md) | Contrato das rotas `app/api/*`, incluindo memória/RAG, persona, agenda e voz |
-| [Arquitetura](./ARCHITECTURE.md) | Como UI, proxy, streaming, storage, auth, memória/RAG, artifacts e TTS se conectam |
+| [API](./API.md) | Contrato das rotas `app/api/*`, incluindo chat OpenAI/DeepSeek, memória/RAG, persona, Pulse, agenda legada e voz |
+| [Arquitetura](./ARCHITECTURE.md) | Como UI, proxy, streaming, providers, storage, auth, memória/RAG, artifacts e TTS se conectam |
 | [Infraestrutura](./INFRASTRUCTURE.md) | Apache, systemd, variáveis, deploy e troubleshooting |
 | [Modelos](./MODELS.md) | Catálogo local de modelos e regras de runtime |
 
@@ -17,8 +17,6 @@ Esta pasta contém a documentação canônica do Gaucho Chat. Docs antigos de Ve
 |---|---|
 | [Redesign Roadpack](./REDESIGN_ROADPACK.md) | Documento vivo do shell clínico, refinamentos visuais e densidade mobile |
 | [Kickoff Codex](./CODEX_KICKOFF.md) | Handoff de refinamentos visuais Codex e próximos bundles seguros |
-| [Progresso Agenda/Notas](./CALENDAR_NOTES_PROGRESS.md) | Quadro vivo dos bundles C1-C4+ da frente Agenda Google + Notas locais |
-| [Kickoff Fresh Agenda/Notas](./CALENDAR_NOTES_FRESH_KICKOFF.md) | Handoff curto para retomar Agenda/Notas em sessão nova |
 
 ## Históricos Mantidos Por Contexto
 
@@ -26,6 +24,8 @@ Esta pasta contém a documentação canônica do Gaucho Chat. Docs antigos de Ve
 |---|---|
 | [Kickoff Agenda/Notas](./CALENDAR_NOTES_KICKOFF.md) | Contexto histórico da V1; nao usar como fonte canônica do estado atual |
 | [Kickoff C2 Agenda/Notas](./CALENDAR_NOTES_C2_KICKOFF.md) | Handoff histórico do bundle C2; mantido apenas como trilha de decisão |
+| [Progresso Agenda/Notas](./CALENDAR_NOTES_PROGRESS.md) | Quadro histórico da frente Agenda Google + Notas; Pulse é a superfície recorrente atual |
+| [Kickoff Fresh Agenda/Notas](./CALENDAR_NOTES_FRESH_KICKOFF.md) | Handoff histórico da frente Agenda/Notas; não usar como estado principal atual |
 
 ## Documentos Fora Desta Pasta
 

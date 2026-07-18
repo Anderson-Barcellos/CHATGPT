@@ -91,11 +91,11 @@ Next 16 renomeou `middleware.ts` → `proxy.ts`. **Não há `middleware.ts` no r
 
 Auth tem **dupla checagem**: além do proxy, `app/page.tsx` faz server-side guard via `verifyAuthToken` antes de renderizar. Mexer em auth exige atualizar os dois pontos. Em produção, o cookie precisa sair com `Path=/chat`, sem barra final; `Path=/chat/` reabre o loop mobile entre `/chat` e `/chat/login`.
 
-### 2. OpenAI Responses API (não completions)
+### 2. OpenAI Responses API e DeepSeek
 
-`app/api/chat/route.ts` usa `openai.responses.create()` — não `chat.completions`. Eventos SSE são serializados manualmente como `data: ${JSON.stringify(event)}\n\n`, terminando com `data: [DONE]\n\n`. O cliente consome via `extractSsePayloads` + reducer em `lib/chat/streamMachine.ts`.
+`app/api/chat/route.ts` usa `openai.responses.create()` para modelos OpenAI — não `chat.completions`. `deepseek-v4-pro` é exceção explícita: passa por `lib/server/deepseekChat.ts`, só no chat padrão streaming, com `DEEPSEEK_API_KEY` server-side e tool local `fresh_web_context` que pode chamar OpenAI `web_search_preview`.
 
-Não trocar para completions — o painel de reasoning, citações de web search e o fluxo de artefatos dependem dos eventos tipados da Responses API.
+Não trocar o fluxo OpenAI para completions — o painel de reasoning, citações de web search e o fluxo de artefatos dependem dos eventos tipados da Responses API.
 
 Reasoning tem contrato próprio: `lib/chat/reasoningConfig.ts` decide se envia `reasoning`
 e protege `summary=off` omitindo o campo. `streamMachine` deve continuar aceitando
@@ -119,9 +119,9 @@ Qualquer refactor em `buildRequestParams` ou `buildTools` precisa manter esses o
 
 `lib/models/modelConfig.ts` define `MODELS` + helpers (`isReasoningModel`, `modelSupportsTemperature`, `modelSupportsVerbosity`, `modelSupportsCodeInterpreter`). O gate `ALLOWED_MODELS` na rota é derivado daí (apenas modelos com capability `chat` ou `reasoning`).
 
-Adicionar modelo novo → editar `MODELS`, conferir que o `ChatComposer`/`ModelSelector` o exibe e que helpers retornam o flag correto. Modelo padrão atual: `gpt-5.4-mini`.
+Adicionar modelo novo → editar `MODELS`, conferir que o `ChatComposer`/`ModelSelector` o exibe e que helpers retornam o flag correto. Modelo padrão atual do chat: `gpt-5.6-luna` com reasoning `low` e modo `standard`; `gpt-5.4-mini` permanece compatível para fluxos internos e seleções antigas migram para Luna no chat padrão.
 
-Os modos `deepsearch_medium` e `deepsearch_high` reaproveitam o pipeline de documento/canvas, com modelo forçado para `gpt-5.4-mini` e reasoning `medium`/`high`, respectivamente.
+Os modos `deepsearch_medium` e `deepsearch_high` reaproveitam o pipeline de documento/canvas: Medium força `gpt-5.4-mini/high` e High força `gpt-5.4/high`.
 
 Não remontar reasoning manualmente em componentes: o caminho suportado é
 `settingsStore` → `buildReasoningConfig` → `/api/chat` → `streamMachine` → `ReasoningPanel`.
@@ -160,7 +160,7 @@ O shell legado (`components/layout/*`, `components/sidebar/*`, `components/chat/
 
 Apache vhost canônico: `/etc/apache2/sites-enabled/ultrassom.ai-optimized.conf`. Config local: `apache-config/chat.conf`.
 
-Para `/chat`, a regra crítica de cookie no Apache é `ProxyPassReverseCookiePath / /chat`. Não trocar para `/chat/`.
+Para `/chat`, a regra crítica de cookie no Apache é `ProxyPassReverseCookiePath / /chat`. Não trocar para `/chat/` — e ela deve viver **DENTRO do `<Location /chat>`**, nunca solta no vhost: no nível do vhost ela reescreve o `Path` dos cookies de TODOS os serviços do ultrassom.ai (incidente 2026-07-11: quebrou a auth de imagens do Sonaris com 401).
 
 ### 9. Tools default-on (exceto quiz)
 
