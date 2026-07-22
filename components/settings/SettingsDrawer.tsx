@@ -620,8 +620,15 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                         Voz
                       </h3>
                       <div className="gc-refined-panel space-y-4 rounded-[1.35rem] border p-[var(--gc-mobile-settings-card-pad)]">
+                        <p className="text-micro leading-relaxed text-muted-foreground">
+                          A voz e as instruções são compartilhadas. Modo, formato e
+                          velocidade afetam somente o TTS padrão; o Realtime usa uma
+                          cadência fluida própria.
+                        </p>
                         <label className="flex flex-col gap-1 text-xs">
-                          <span className="text-muted-foreground">Modo</span>
+                          <span className="text-muted-foreground">
+                            Modo — TTS padrão
+                          </span>
                           <select
                             value={ttsPreferences.mode}
                             onChange={(e) =>
@@ -640,7 +647,9 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                         </label>
 
                         <label className="flex flex-col gap-1 text-xs">
-                          <span className="text-muted-foreground">Voz</span>
+                          <span className="text-muted-foreground">
+                            Voz — TTS + Realtime
+                          </span>
                           <select
                             value={ttsPreferences.voice}
                             onChange={(e) => updateTtsPreferences({ voice: e.target.value })}
@@ -655,7 +664,9 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                         </label>
 
                         <label className="flex flex-col gap-1 text-xs">
-                          <span className="text-muted-foreground">Formato</span>
+                          <span className="text-muted-foreground">
+                            Formato — TTS padrão
+                          </span>
                           <select
                             value={ttsPreferences.format}
                             onChange={(e) =>
@@ -678,7 +689,9 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between gap-3">
                             <div>
-                              <p className="text-xs font-medium">Velocidade</p>
+                              <p className="text-xs font-medium">
+                                Velocidade — TTS padrão
+                              </p>
                               <p className="text-micro text-muted-foreground">
                                 Ajusta o ritmo da fala gerada.
                               </p>
@@ -697,7 +710,9 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                         </div>
 
                         <label className="flex flex-col gap-1 text-xs">
-                          <span className="text-muted-foreground">Instruções da voz</span>
+                          <span className="text-muted-foreground">
+                            Instruções da voz — TTS + Realtime
+                          </span>
                           <textarea
                             value={ttsPreferences.instructions}
                             onChange={(e) =>

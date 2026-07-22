@@ -15,7 +15,6 @@ import {
   Sparkles,
   Trash2,
   Volume2,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { ChatMarkdown } from "@/components/chat/ChatMarkdown";
-import { useAssistantTts } from "@/hooks/useAssistantTts";
+import { MiniAudioPlayer } from "@/components/chat/MiniAudioPlayer";
 import {
   createPulseTask,
   deletePulseRun,
@@ -99,65 +98,32 @@ function imageSrc(run: PulseRun): string | null {
   return `data:${run.imageMimeType || "image/png"};base64,${run.imageBase64}`;
 }
 
-function PulseTtsControls({ run }: { run: PulseRun }) {
-  const tts = useAssistantTts(run.content, `pulse-${run.id}`);
+export function PulseAudioControls({ run }: { run: PulseRun }) {
+  const [audioPlayerOpen, setAudioPlayerOpen] = useState(false);
 
   if (!run.content.trim()) return null;
 
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-2 py-1.5">
+    <div className="mt-3 flex flex-col items-start">
       <Button
         type="button"
         size="xs"
         variant="ghost"
-        onClick={tts.togglePlay}
+        onClick={() => setAudioPlayerOpen(true)}
+        title="Abrir player de áudio"
+        aria-label="Abrir player de áudio"
         className="h-7 rounded-md px-2 text-nano"
       >
-        {tts.status === "loading" ? (
-          <LoaderCircle className="size-3 animate-spin" />
-        ) : tts.isPlaying ? (
-          <Pause className="size-3" />
-        ) : (
-          <Volume2 className="size-3" />
-        )}
-        {tts.isPlaying ? "Pausar" : "Ouvir"}
+        <Volume2 className="size-3" />
+        Áudio
       </Button>
-      {tts.isOpen && (
-        <>
-          <span className="text-nano text-muted-foreground">
-            {tts.formattedCurrentTime} / {tts.formattedDuration}
-          </span>
-          <Button
-            type="button"
-            size="xs"
-            variant="ghost"
-            onClick={() => tts.seekBy(-15)}
-            className="h-7 rounded-md px-2 text-nano"
-          >
-            -15s
-          </Button>
-          <Button
-            type="button"
-            size="xs"
-            variant="ghost"
-            onClick={() => tts.seekBy(15)}
-            className="h-7 rounded-md px-2 text-nano"
-          >
-            +15s
-          </Button>
-          <Button
-            type="button"
-            size="xs"
-            variant="ghost"
-            onClick={tts.stop}
-            className="h-7 rounded-md px-2 text-nano"
-          >
-            <X className="size-3" />
-            Parar
-          </Button>
-        </>
+      {audioPlayerOpen && (
+        <MiniAudioPlayer
+          content={run.content}
+          messageId={`pulse-${run.id}`}
+          onClose={() => setAudioPlayerOpen(false)}
+        />
       )}
-      {tts.error && <span className="text-nano text-rose-600">{tts.error}</span>}
     </div>
   );
 }
@@ -329,7 +295,7 @@ function PulseRunCard({
             )}
 
             <div onClick={(event) => event.stopPropagation()}>
-              <PulseTtsControls run={run} />
+              <PulseAudioControls run={run} />
             </div>
           </div>
         )}

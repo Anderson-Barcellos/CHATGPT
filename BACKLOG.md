@@ -307,3 +307,14 @@ Details:
 
 Notes:
 Validação executada: `git diff --check`, `npx tsc --noEmit`, `npm run build`, `npm test`, `systemctl restart chatgpt.service`, health local e público em `/chat/api/health`.
+
+### 2026-07-22 - Mini-player de audio unificado no chat e Pulse
+
+Context:
+Os controles de voz estavam duplicados entre a barra das mensagens, o player TTS expandido e os cards Pulse. O Realtime tambem aparecia como acao separada, aumentando a densidade visual.
+
+Details:
+`components/chat/MiniAudioPlayer.tsx` centraliza TTS padrao e Realtime 2.1 atras de um unico alto-falante, abre sem iniciar audio e interrompe a engine anterior ao trocar. `QuickActionsBar` e `PulsePanelV2` reutilizam o componente; configuracoes de voz esclarecem quais preferencias afetam cada engine. A sessao Realtime ganhou instrucoes de cadencia continua, e as vozes compartilhadas foram reconciliadas entre os dois caminhos.
+
+Notes:
+O TTS padrao continua selecionado ao abrir, preserva seek/progresso/download e o Realtime continua manual/experimental. Validacao: 80 arquivos/270 testes, TypeScript, build, `git diff --check`, restart, health local/publico e smoke Playwright desktop/mobile; abrir o player gerou zero requests de audio. O lint completo manteve uma falha pre-existente em `CommandComposerContainerV2.tsx:228`, fora deste diff.

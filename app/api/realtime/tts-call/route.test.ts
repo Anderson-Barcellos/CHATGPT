@@ -74,6 +74,15 @@ describe("/api/realtime/tts-call route", () => {
     expect(buildRealtimeTtsSessionConfig("cedar").instructions).toContain(
       "Do not add regional slang"
     );
+    expect(buildRealtimeTtsSessionConfig("cedar").instructions).toContain(
+      "smooth, natural, continuous speaking pace"
+    );
+    expect(buildRealtimeTtsSessionConfig("cedar").instructions).toContain(
+      "without sounding rushed, choppy, theatrical, or overly slow"
+    );
+    expect(buildRealtimeTtsSessionConfig("cedar").instructions).toContain(
+      "Do not change, shorten, or paraphrase the text to alter pacing"
+    );
     const multipart = buildRealtimeCallMultipartBody("v=0\r\n", "cedar");
 
     expect(multipart.contentType).toContain("multipart/form-data; boundary=");

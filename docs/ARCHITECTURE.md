@@ -142,8 +142,8 @@ A aba Rotinas substitui a superfície visível de Agenda. Ela cria rotinas recor
 - Cada rotina Pulse escolhe `gpt-5.4-mini` (padrão) ou `gpt-5.6-terra` (experimental), ambos com reasoning `medium`, verbosity `high`, `web_search_preview` e `image_generation`. O modelo/effort efetivos ficam gravados no run; `PULSE_RUN_MODEL` e `PULSE_REASONING_EFFORT` ainda podem sobrepor operacionalmente. O orçamento padrão é `PULSE_MAX_OUTPUT_TOKENS=25000`, com clamp do runner entre 8k e 32k; `none` e `minimal` sobem para `low` com tools.
 - O prompt de execução do Pulse usa um contexto enxuto proprio: instruções da rotina, preferencias uteis de `persona.json`, ate 5 memorias ativas compactadas e 3 trechos relevantes do histórico via `searchMemoryContext`. Ele evita injetar o prompt global completo do chat para reduzir latencia e tokens.
 - Se a resposta principal não trouxer `image_generation`, o runner tenta uma segunda chamada curta para gerar a imagem conceitual de abertura do card.
-- Resultados de Pulse reutilizam o TTS estável do app via `useAssistantTts` e `/api/tts` (`gpt-4o-mini-tts`), mas não criam mensagens automáticas na conversa principal.
-- O Realtime 2.1 mini (`/api/realtime/tts-call`) permanece opção paralela para balões do chat e não substitui o TTS padrão do Pulse.
+- Resultados de Pulse e balões do chat reutilizam `MiniAudioPlayer`, que abre com `useAssistantTts` e `/api/tts` (`gpt-4o-mini-tts`) selecionados, mas não inicia áudio automaticamente.
+- O mesmo mini-player permite trocar manualmente para o Realtime 2.1 mini (`/api/realtime/tts-call`); trocar de engine interrompe qualquer reprodução anterior.
 
 ## Agenda Google e Notas Locais Legadas
 
@@ -179,7 +179,7 @@ O TTS padrão usa `/api/tts` com `gpt-4o-mini-tts`.
 - Texto é sanitizado e dividido em chunks em `lib/tts/speechText.ts`.
 - `hooks/useAssistantTts.ts` faz cache em memória, fila turbo e controle de playback.
 - `ttsPreferences.format` controla `response_format` (`flac` por padrão, com `mp3` e `wav` disponíveis); download completo fica habilitado apenas em `mp3` porque chunks `flac`/`wav` não devem ser concatenados como um arquivo único.
-- `/api/realtime/tts-call` segue como caminho experimental separado com `gpt-realtime-2.1-mini` via SDP/WebRTC para mensagens do chat; na barra do balão ele aparece como botão `Realtime` separado do alto-falante principal. O payload não define `max_output_tokens`, deixando o Realtime usar o default `inf` do contrato GA.
+- `/api/realtime/tts-call` segue como caminho experimental com `gpt-realtime-2.1-mini` via SDP/WebRTC. Chat e Pulse expõem um único alto-falante que abre `MiniAudioPlayer`; dentro dele, o usuário alterna entre TTS padrão e Realtime 2.1. O payload não define `max_output_tokens`, deixando o Realtime usar o default `inf` do contrato GA.
 
 ## Modelos
 

@@ -1,12 +1,33 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_TTS_PREFERENCES,
+  REALTIME_TTS_VOICES,
+  TTS_VOICES,
   normalizeTtsPreferences,
   sanitizeSpeechText,
   splitSpeechText,
 } from "@/lib/tts/speechText";
 
 describe("speech text helpers", () => {
+  it("offers only voices shared by standard TTS and Realtime", () => {
+    expect(TTS_VOICES).toEqual(REALTIME_TTS_VOICES);
+    expect(TTS_VOICES).toEqual([
+      "alloy",
+      "ash",
+      "ballad",
+      "coral",
+      "echo",
+      "sage",
+      "shimmer",
+      "verse",
+      "marin",
+      "cedar",
+    ]);
+    expect(normalizeTtsPreferences({ voice: "fable" }).voice).toBe("marin");
+    expect(normalizeTtsPreferences({ voice: "nova" }).voice).toBe("marin");
+    expect(normalizeTtsPreferences({ voice: "onyx" }).voice).toBe("marin");
+  });
+
   it("sanitizes markdown into readable speech text", () => {
     expect(
       sanitizeSpeechText(

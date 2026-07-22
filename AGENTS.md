@@ -237,7 +237,7 @@ Rodar, quando fizer sentido:
 - O branch principal rastreado e `main`
 - Evitar sobrescrever mudancas locais nao relacionadas sem confirmar antes
 - O painel operacional usa a aba principal `Pulse` para o feed de geracoes e a aba `Rotinas` para criar/pausar/executar/excluir recorrencias. Google Calendar pode permanecer no codigo como legado, mas novos fluxos recorrentes devem usar `/api/pulse/*`, `data/pulse-tasks.json`, `data/pulse-runs.json` e `chatgpt-pulse.timer`.
-- O player padrao de leitura segue em `/api/tts` via `useAssistantTts` (`gpt-4o-mini-tts`). `Realtime 2.1 mini` (`gpt-realtime-2.1-mini`) continua como opcao paralela nos baloes do chat, visivel como botao/pill `Realtime` ao lado do alto-falante, sem `max_output_tokens` explicito, e nao deve ser promovido ao fluxo principal do Pulse sem comparacao explicita.
+- Chat e Pulse usam o mesmo `MiniAudioPlayer`, aberto por um unico alto-falante e iniciado em `/api/tts` via `useAssistantTts` (`gpt-4o-mini-tts`). `Realtime 2.1 mini` (`gpt-realtime-2.1-mini`) e uma selecao manual dentro do player, sem `max_output_tokens` explicito; abrir o player nao inicia nem cobra nenhuma engine.
 - Execucoes do Pulse usam contexto pessoal enxuto, nao o prompt global completo. Cada rotina escolhe `gpt-5.4-mini` (default) ou `gpt-5.6-terra`, ambos com reasoning `medium` e verbosity `high`; modelo/effort efetivos ficam gravados no run. `PULSE_RUN_MODEL`, `PULSE_MAX_OUTPUT_TOKENS` e `PULSE_REASONING_EFFORT` permanecem overrides operacionais. Com tools, `none` e `minimal` sobem para `low`. Se a resposta principal nao trouxer imagem, o runner tenta fallback curto com o mesmo modelo efetivo.
 
 ## Preferencia De Comunicacao
@@ -405,7 +405,7 @@ Context:
 Anders pediu um login simples com credenciais no proprio Gaucho Chat. O gate inicial existia so por senha e a primeira ligacao real expôs dois problemas de integracao: redirect duplicando o `basePath` (`/chat/chat/login`) e cookie de sessao sendo reescrito para `/code/` pelo Apache.
 
 Details:
-`app/api/auth/login/route.ts` passou a validar `username` + `password`, e `lib/server/auth.ts` ganhou `AUTH_USERNAME` alem de fixar o `Path` do cookie no `NEXT_PUBLIC_BASE_PATH` (`/chat` em producao). `app/login/page.tsx` agora renderiza formulario com usuario e senha, e `app/page.tsx` parou de prefixar manualmente `/login`, deixando o redirect server-side respeitar o `basePath` nativo do Next. Em producao, `.env.production` ficou com `AUTH_ENABLED=true`, `AUTH_USERNAME=anders` e `AUTH_PASSWORD=1103`. No Apache, `ProxyPassReverseCookiePath / /code/` foi restringido ao bloco de `/code/`, `APACHE.md` foi atualizado para refletir que `/chat` usa JWT/app auth, e o `chatgpt.service` + `apache2` foram recarregados com validacao real.
+`app/api/auth/login/route.ts` passou a validar `username` + `password`, e `lib/server/auth.ts` ganhou `AUTH_USERNAME` alem de fixar o `Path` do cookie no `NEXT_PUBLIC_BASE_PATH` (`/chat` em producao). `app/login/page.tsx` agora renderiza formulario com usuario e senha, e `app/page.tsx` parou de prefixar manualmente `/login`, deixando o redirect server-side respeitar o `basePath` nativo do Next. Em producao, `.env.production` ficou com `AUTH_ENABLED=true` e credenciais configuradas apenas no arquivo ignorado pelo Git. No Apache, `ProxyPassReverseCookiePath / /code/` foi restringido ao bloco de `/code/`, `APACHE.md` foi atualizado para refletir que `/chat` usa JWT/app auth, e o `chatgpt.service` + `apache2` foram recarregados com validacao real.
 
 Notes:
 Validacao desta rodada: `npm test`, `npx tsc --noEmit`, `npm run build`, `systemctl restart chatgpt.service`, `apachectl configtest`, `systemctl reload apache2`, `curl -I https://ultrassom.ai/chat` retornando `location: /chat/login`, e login publico em `/chat/api/auth/login` seguido de `/chat/api/auth/check` retornando `authenticated:true`. O arquivo `/etc/apache2/sites-available/ultrassom.ai-optimized.conf` e mantido com atributo imutavel; para futuras mudancas, remover `chattr +i`, editar, validar e recolocar a protecao.
@@ -1135,3 +1135,14 @@ Details:
 
 Notes:
 Validacao documental: scouting do runtime e do inventario de docs, busca por claims antigos nos docs canonicos e `git diff --check` nos arquivos tocados. Nao houve restart/build porque a rodada foi documental/config example, sem alterar codigo de runtime.
+
+### 2026-07-22 - Mini-player de audio compartilhado entre chat e Pulse
+
+Context:
+Os controles TTS e Realtime estavam espalhados em acoes e players diferentes, enquanto Pulse mantinha uma implementacao propria apenas para o TTS classico.
+
+Details:
+`components/chat/MiniAudioPlayer.tsx` passou a ser a superficie unica aberta pelo alto-falante no chat e no Pulse. O player inicia selecionado em TTS padrao, sem autoplay, e oferece troca manual para Realtime 2.1 com exclusao mutua de playback. `SettingsDrawer` explicita quais preferencias sao compartilhadas, `speechText.ts` reconcilia vozes validas e a sessao Realtime recebeu instrucoes de cadencia mais fluida. Testes cobrem o componente compartilhado, os entry points e o contrato de voz/session.
+
+Notes:
+O TTS padrao preserva fila, seek, progresso e download; Realtime permanece experimental e sem `max_output_tokens` explicito. Validacao: 80 arquivos/270 testes, TypeScript, build, `git diff --check`, restart, health local/publico e smoke Playwright desktop/mobile com zero requests ao abrir o player. O lint completo manteve falha pre-existente em `CommandComposerContainerV2.tsx:228`, fora deste diff.

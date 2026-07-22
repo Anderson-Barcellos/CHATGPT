@@ -229,7 +229,7 @@ Todas as rotas abaixo são privadas quando `AUTH_ENABLED=true`. O browser nunca 
 
 Todas as rotas de Pulse são privadas quando `AUTH_ENABLED=true`, exceto o runner interno `/api/pulse/run-due`, protegido por `PULSE_RUNNER_TOKEN` quando configurado e usado pelo timer local do servidor.
 
-Os resultados do Pulse reutilizam o TTS estável do app via `/api/tts` (`gpt-4o-mini-tts`). O endpoint Realtime `/api/realtime/tts-call` segue como opção experimental separada para mensagens do chat e não é o player padrão do Pulse.
+Os resultados do Pulse e as mensagens do chat reutilizam o mesmo mini-player. Ele abre no TTS estável via `/api/tts` (`gpt-4o-mini-tts`) e permite selecionar manualmente o Realtime experimental via `/api/realtime/tts-call`; nenhuma engine inicia apenas ao abrir o player.
 
 As execuções do Pulse usam `gpt-5.4-mini` + reasoning `medium` por padrão e podem selecionar `gpt-5.6-terra` + `medium` em cada rotina. O modelo e effort efetivos ficam registrados em cada execução. O prompt continua enxuto, com preferências úteis, memórias ativas e histórico relevante. `PULSE_RUN_MODEL`, `PULSE_MAX_OUTPUT_TOKENS` e `PULSE_REASONING_EFFORT` permanecem overrides operacionais; `PULSE_MAX_OUTPUT_TOKENS` é limitado pelo runner entre 8k e 32k; `none` e `minimal` são coeridos para `low` quando há tools.
 

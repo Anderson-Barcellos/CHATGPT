@@ -5,25 +5,16 @@ import {
   ArrowDown,
   Check,
   Copy,
-  Download,
-  LoaderCircle,
   MessageSquareQuote,
   Minimize2,
-  Pause,
-  Play,
-  Radio,
   RefreshCw,
-  RotateCcw,
-  RotateCw,
   Sparkles,
-  Square,
   StickyNote,
   Volume2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { FadeIn } from "@/components/motion/FadeIn";
-import { useAssistantTts } from "@/hooks/useAssistantTts";
-import { useRealtimeTtsLab } from "@/hooks/useRealtimeTtsLab";
+import { MiniAudioPlayer } from "@/components/chat/MiniAudioPlayer";
 import { useNotes } from "@/hooks/useNotes";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useUIStore } from "@/stores/uiStore";
@@ -68,123 +59,6 @@ function ActionButton({
   );
 }
 
-function TtsPlayer({
-  tts,
-  realtime,
-  onRealtimeToggle,
-}: {
-  tts: ReturnType<typeof useAssistantTts>;
-  realtime: ReturnType<typeof useRealtimeTtsLab>;
-  onRealtimeToggle: () => void;
-}) {
-  if (!tts.isOpen) return null;
-
-  const isLoading = tts.status === "loading";
-
-  return (
-    <div className="mt-1.5 w-full max-w-[320px] rounded-xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-2 py-1.5 text-muted-foreground shadow-sm">
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={tts.togglePlay}
-          disabled={isLoading && !tts.isPlaying}
-          className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-background/80 text-foreground hover:bg-background disabled:opacity-50"
-          title={tts.isPlaying ? "Pausar" : "Tocar"}
-        >
-          {isLoading ? (
-            <LoaderCircle className="size-3.5 animate-spin" />
-          ) : tts.isPlaying ? (
-            <Pause className="size-3.5" />
-          ) : (
-            <Play className="size-3.5" />
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => tts.seekBy(-15)}
-          className="flex size-7 shrink-0 items-center justify-center rounded-lg hover:bg-background/70"
-          title="Voltar 15s"
-        >
-          <RotateCcw className="size-3.5" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => tts.seekBy(15)}
-          className="flex size-7 shrink-0 items-center justify-center rounded-lg hover:bg-background/70"
-          title="Avançar 15s"
-        >
-          <RotateCw className="size-3.5" />
-        </button>
-
-        <div className="min-w-0 flex-1">
-          <div className="h-1.5 overflow-hidden rounded-full bg-background/80">
-            <div
-              className="h-full rounded-full bg-primary transition-[width]"
-              style={{ width: `${tts.progress}%` }}
-            />
-          </div>
-          <div className="mt-1 flex items-center justify-between gap-2 text-nano leading-none">
-            <span>{tts.formattedCurrentTime}</span>
-            <span className="truncate">
-              {tts.error || `Parte ${tts.clipIndex + 1}/${tts.totalClips}`}
-            </span>
-            <span>{tts.formattedDuration}</span>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={tts.stop}
-          className="flex size-7 shrink-0 items-center justify-center rounded-lg hover:bg-background/70"
-          title="Parar"
-        >
-          <Square className="size-3.5" />
-        </button>
-
-        <button
-          type="button"
-          onClick={tts.downloadAudio}
-          disabled={!tts.canDownload}
-          className="flex size-7 shrink-0 items-center justify-center rounded-lg hover:bg-background/70 disabled:pointer-events-none disabled:opacity-40"
-          title={
-            tts.canDownload
-              ? "Baixar áudio completo"
-              : "Download completo disponível apenas em MP3"
-          }
-        >
-          <Download className="size-3.5" />
-        </button>
-      </div>
-
-      <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-[color:var(--gc-border-soft)] pt-1.5 text-nano leading-none">
-        <button
-          type="button"
-          onClick={onRealtimeToggle}
-          className="inline-flex h-6 items-center gap-1 rounded-lg bg-background/70 px-2 font-medium text-foreground hover:bg-background"
-          title="Laboratório Realtime 2.1 mini"
-        >
-          {realtime.status === "connecting" || realtime.status === "ready" ? (
-            <LoaderCircle className="size-3 animate-spin" />
-          ) : (
-            <Radio className="size-3" />
-          )}
-          {realtime.isActive ? "Parar realtime" : "Realtime 2.1"}
-        </button>
-        <span className="min-w-0 truncate text-muted-foreground/80">
-          {realtime.error ||
-            (realtime.firstAudioMs
-              ? `1º áudio ${realtime.firstAudioMs}ms`
-              : realtime.status === "idle"
-                ? "Lab isolado"
-                : realtime.status)}
-        </span>
-      </div>
-    </div>
-  );
-}
-
 export function QuickActionsBar({
   content,
   messageId,
@@ -196,9 +70,8 @@ export function QuickActionsBar({
   const isMobile = useIsMobile();
   const [copied, setCopied] = useState(false);
   const [touched, setTouched] = useState(false);
+  const [audioPlayerOpen, setAudioPlayerOpen] = useState(false);
   const touchTimer = useRef<number | undefined>(undefined);
-  const tts = useAssistantTts(content, messageId);
-  const realtime = useRealtimeTtsLab(content);
 
   const handleTouchStart = useCallback(() => {
     if (!isMobile) return;
@@ -236,16 +109,6 @@ export function QuickActionsBar({
       new CustomEvent("gaucho:quote-text", { detail: { text: content } })
     );
   }, [content]);
-
-  const handleRealtimeToggle = useCallback(() => {
-    if (realtime.isActive) {
-      realtime.stop();
-      return;
-    }
-
-    tts.stop();
-    void realtime.start();
-  }, [realtime, tts]);
 
   const handleContinue = useCallback(() => {
     window.dispatchEvent(
@@ -290,23 +153,12 @@ export function QuickActionsBar({
           <RefreshCw className="size-3.5" />
         </ActionButton>
       )}
-      <ActionButton onClick={tts.openAndPlay} title="Ler em voz alta" disabled={!tts.canPlay}>
-        <Volume2 className="size-3.5" />
-      </ActionButton>
       <ActionButton
-        onClick={handleRealtimeToggle}
-        title={realtime.isActive ? "Parar Realtime 2.1 mini" : "Testar Realtime 2.1 mini"}
-        disabled={!tts.canPlay}
-        className="w-auto gap-1 px-2 text-nano font-medium"
+        onClick={() => setAudioPlayerOpen(true)}
+        title="Abrir player de áudio"
+        disabled={content.trim().length === 0}
       >
-        {realtime.status === "connecting" || realtime.status === "ready" ? (
-          <LoaderCircle className="size-3.5 animate-spin" />
-        ) : realtime.isActive ? (
-          <Square className="size-3.5" />
-        ) : (
-          <Radio className="size-3.5" />
-        )}
-        <span>Realtime</span>
+        <Volume2 className="size-3.5" />
       </ActionButton>
       <ActionButton onClick={handleContinue} title="Continuar">
         <ArrowDown className="size-3.5" />
@@ -333,7 +185,13 @@ export function QuickActionsBar({
   const wrappedBar = (
     <div className={cn("flex flex-col items-start", className)}>
       {bar}
-      <TtsPlayer tts={tts} realtime={realtime} onRealtimeToggle={handleRealtimeToggle} />
+      {audioPlayerOpen && (
+        <MiniAudioPlayer
+          content={content}
+          messageId={messageId}
+          onClose={() => setAudioPlayerOpen(false)}
+        />
+      )}
     </div>
   );
 

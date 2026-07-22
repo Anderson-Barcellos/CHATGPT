@@ -19,21 +19,20 @@ export const TTS_CHUNKING_PROFILES: Record<
   },
 };
 
-export const TTS_VOICES = [
+export const SHARED_AUDIO_VOICES = [
   "alloy",
   "ash",
   "ballad",
   "coral",
   "echo",
-  "fable",
-  "nova",
-  "onyx",
   "sage",
   "shimmer",
   "verse",
   "marin",
   "cedar",
 ] as const;
+
+export const TTS_VOICES = SHARED_AUDIO_VOICES;
 
 export const TTS_AUDIO_FORMATS = ["flac", "mp3", "wav"] as const satisfies readonly TtsAudioFormat[];
 export const TTS_DOWNLOADABLE_FORMATS = ["mp3"] as const satisfies readonly TtsAudioFormat[];
@@ -43,18 +42,7 @@ export const TTS_CONTENT_TYPES: Record<TtsAudioFormat, string> = {
   wav: "audio/wav",
 };
 
-export const REALTIME_TTS_VOICES = [
-  "alloy",
-  "ash",
-  "ballad",
-  "coral",
-  "echo",
-  "sage",
-  "shimmer",
-  "verse",
-  "marin",
-  "cedar",
-] as const;
+export const REALTIME_TTS_VOICES = SHARED_AUDIO_VOICES;
 
 export type TtsVoice = (typeof TTS_VOICES)[number];
 export type RealtimeTtsVoice = (typeof REALTIME_TTS_VOICES)[number];
