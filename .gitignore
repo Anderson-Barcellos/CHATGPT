@@ -40,6 +40,9 @@
 # debug artifacts (screenshots, browser MCP output)
 /.playwright-mcp/
 /screenshot-*.png
+/.remember/
+/.superpowers/
+/.codex
 
 # debug
 npm-debug.log*
@@ -64,5 +67,6 @@ nginx/ssl/*.pem
 
 # IDE
 .idea
+.claude/settings.local.json
 *.swp
 *.swo

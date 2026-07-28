@@ -1,6 +1,6 @@
 # API
 
-**Última atualização:** 2026-07-17
+**Última atualização:** 2026-07-28
 **Base URL pública:** `https://ultrassom.ai/chat`
 **Base path interno:** `NEXT_PUBLIC_BASE_PATH=/chat`
 
@@ -10,7 +10,7 @@ Todas as rotas abaixo são implementadas como Route Handlers do Next em `app/api
 
 ### `POST /api/chat`
 
-Proxy server-side para chat com streaming. Modelos OpenAI usam a `Responses API`; `deepseek-v4-pro` usa o adapter DeepSeek apenas no chat padrão streaming.
+Proxy server-side para chat com streaming. Modelos OpenAI usam a `Responses API`; `deepseek-v4-pro` usa o adapter DeepSeek e `gemini-3.6-flash` usa a Interactions API, ambos apenas no chat padrão streaming.
 
 **Arquivo:** `app/api/chat/route.ts`
 
@@ -62,6 +62,8 @@ Ferramentas injetadas pelo backend:
 
 Quando `model="deepseek-v4-pro"`, a rota aceita somente `responseMode="default"` com `stream=true`, exige `DEEPSEEK_API_KEY` e usa `fresh_web_context` como tool local. Essa tool consulta a OpenAI com `web_search_preview` quando o DeepSeek pede contexto fresco, mas Documento, Deepsearch e Quiz não usam o provider DeepSeek.
 
+Quando `model="gemini-3.6-flash"`, a rota aceita somente `responseMode="default"` com `stream=true`, exige `GEMINI_API_KEY` e chama a Interactions API com `store=false`, Google Search, URL Context e `thinking_summaries="auto"`. Os níveis aceitos são `minimal`, `low`, `medium` e `high`; Documento, Deepsearch e Quiz permanecem nos fluxos OpenAI.
+
 Em `responseMode="quiz"`, as tools são removidas e o backend força:
 
 - modelo `gpt-5.4`;
@@ -93,7 +95,7 @@ Quando a API retorna `reasoning_tokens` em `response.completed`, mas nao emite
 summary textual, a UI preserva um estado visivel de reasoning aplicado sem
 inventar resumo.
 
-Desconexão do cliente é propagada para a OpenAI via `request.signal`; abortos retornam HTTP `499`.
+Desconexão do cliente é propagada para o provider upstream via `request.signal`; abortos retornam HTTP `499`.
 Esse comportamento vale para o fluxo streaming normal.
 
 ### Background para respostas longas
@@ -211,6 +213,7 @@ de formato é `flac`.
 | `POST` | `/api/artifacts/pdf` | Renderiza artifact de documento como PDF A4 server-side, com fonte Lexend embutida e cabeçalho compacto OpenAI + título |
 | `POST` | `/api/tts` | Gera áudio clássico com `gpt-4o-mini-tts`; aceita `format` `flac`, `mp3` ou `wav` |
 | `POST` | `/api/realtime/tts-call` | Cria sessão SDP/WebRTC experimental com `gpt-realtime-2.1-mini` |
+| `POST` | `/api/realtime/tts-call/log` | Recebe telemetria sanitizada do cliente Realtime para diagnóstico local |
 | `POST` | `/api/transcribe` | Transcreve áudio com `gpt-4o-transcribe`; streaming NDJSON ativo por padrão e desativável com `TRANSCRIPTION_STREAMING_ENABLED=false` |
 
 Notas do PDF:
@@ -299,4 +302,4 @@ Checa storage local, presença de chave OpenAI e uso de memória. Retorna status
 | `401` | Auth ligada e request não autenticado |
 | `429` | Rate limit |
 | `499` | Cliente desconectou durante stream |
-| `500` | Erro interno ou erro vindo da OpenAI |
+| `500` | Erro interno ou erro vindo do provider upstream |

@@ -470,7 +470,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                   type="button"
                   onClick={() => setActiveTab(key)}
                   className={cn(
-                    "flex min-w-0 items-center justify-center gap-1 rounded-lg px-1.5 py-1.5 text-[var(--gc-mobile-tab-font-size)] font-semibold transition-all sm:rounded-xl sm:py-2 sm:text-micro",
+                    "flex min-w-0 items-center justify-center gap-1 rounded-lg px-1.5 py-1.5 text-[length:var(--gc-mobile-tab-font-size)] font-semibold transition-all sm:rounded-xl sm:py-2 sm:text-micro",
                     activeTab === key
                       ? "bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(15,118,110,0.18)]"
                       : "text-muted-foreground hover:text-foreground"

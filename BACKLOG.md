@@ -1,5 +1,11 @@
 # BACKLOG
 
+## Estado operacional
+
+Nenhum PACK ou BUNDLE está ativo em 2026-07-28. As frentes Redesign S0-S12, Agenda C1-C5 e Memory/RAG lifecycle estão encerradas; o histórico detalhado permanece no Git e no diário append-only de `AGENTS.md`.
+
+Quando uma frente complexa for ativada, registrar aqui somente o pack ativo e seus bundles aprovados. As entradas abaixo são histórico de implementação, não fila atual.
+
 ### 2026-06-24 12:45 - Capturas locais mostram texto completo apos gravar
 
 Context:

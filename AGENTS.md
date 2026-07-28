@@ -21,7 +21,7 @@ Principais areas:
 
 ## Estado Atual Do Projeto
 
-- Modelo padrao atual do chat: `gpt-5.6-luna` com reasoning `low` e modo `standard`; `gpt-5.4-mini` permanece oculto para fluxos internos
+- Modelo padrao atual do chat: `gpt-5.6-luna` com reasoning `low` e modo `standard`; `gpt-5.4-mini` permanece oculto para fluxos internos; `gemini-3.6-flash` e selecionavel como provider separado no chat padrao
 - Shell ativo: `GauchoChatShellV2` / `WorkspaceFrameV2` — redesign completo (S0-S12)
 - Tokens `--gc-*` unificados em `app/globals.css`; light/dark completos
 - Preview de artefatos via `ArtifactPreviewSheet`; painel lateral focado em atividade e notas
@@ -35,6 +35,7 @@ Principais areas:
 - Chips do header conectados ao estado real (model, reasoning, responseMode)
 - Aba Persona mostra prévia somente-leitura do prompt principal (`BASE_SYSTEM_PROMPT` + `FIXED_PERSONA_PROMPT`) e edita `contextAboutUser`, `customSystemInstructions` e `responsePreferences`
 - Memory tools (`remember_memory`, `search_memory`) ativas apenas em `responseMode="default"`; document/deepsearch/quiz seguem sem essas tools
+- Gemini 3.6 Flash usa Interactions API stateless com thinking `minimal|low|medium|high`, Google Search e URL Context; Documento/Deepsearch/Quiz continuam nos fluxos OpenAI
 - Deepsearch/Documento devem seguir o protocolo de pesquisa profunda com neuro-storytelling estruturado: plano validado quando o pedido for aberto, fontes autoritativas, citacoes inline e prosa narrativa clara, sem tom gauchesco em conteudo de pesquisa
 - `image_generation` ativa apenas no modo default; `web_search_preview` entra em modos não-quiz; `code_interpreter` é opt-in
 - Breakpoints: `md=768`, `lg=1024 (sidebar)`, `xl=1280 (painel contextual)`
@@ -1146,3 +1147,36 @@ Details:
 
 Notes:
 O TTS padrao preserva fila, seek, progresso e download; Realtime permanece experimental e sem `max_output_tokens` explicito. Validacao: 80 arquivos/270 testes, TypeScript, build, `git diff --check`, restart, health local/publico e smoke Playwright desktop/mobile com zero requests ao abrir o player. O lint completo manteve falha pre-existente em `CommandComposerContainerV2.tsx:228`, fora deste diff.
+
+### 2026-07-24 23:50 - Gemini 3.6 Flash no chat padrao
+
+Context:
+Anders pediu adicionar o provider Gemini mais novo ao seletor, com niveis de reasoning e as tools nativas Google Search e URL Context, preservando os fluxos OpenAI existentes.
+
+Details:
+`gemini-3.6-flash` foi adicionado ao catalogo como provider separado apenas para chat padrao streaming, com thinking `minimal`, `low`, `medium` ou `high` e default `medium`. `lib/server/geminiChat.ts` usa `@google/genai` Interactions API em modo stateless (`store=false`), converte o historico e imagens para steps, expoe Google Search + URL Context e traduz texto, summaries, tools, citacoes e usage para o SSE atual. Documento, Deepsearch e Quiz continuam forcando OpenAI. `GEMINI_API_KEY` foi provisionada no `.env.production` ignorado sem exposicao e o arquivo passou a permissao `600`; `/etc/apache2/APACHE.md` e os docs canonicos foram alinhados.
+
+Notes:
+Validacao: 82 arquivos/285 testes, `npx tsc --noEmit`, build Next completo, lint limpo nos arquivos Gemini, restart de `chatgpt.service`, health local/publico 200, smoke autenticado real com SSE `[DONE]`, texto, reasoning, duas etapas de tooling, citacao e usage, mais QA Playwright confirmando Gemini no seletor e os quatro niveis. O lint completo ainda tem a falha pre-existente em `CommandComposerContainerV2.tsx:229`; `npm audit` passou a reportar 3 advisories altos em Next/PostCSS/Sharp, corrigiveis por upgrade separado para Next 16.2.11.
+
+### 2026-07-26 14:05 - Lint React e cadeia produtiva de seguranca corrigidos
+
+Context:
+Anders autorizou investigar e corrigir a falha de lint do composer e os advisories altos encontrados depois da integracao Gemini.
+
+Details:
+O preview incremental do STT deixou de copiar estado por `useEffect`: `useSpeechToText` agora oferece callback opcional no ponto em que cada delta nasce, e `lib/chat/speechComposer.ts` preserva a composicao da mensagem com cobertura RED/GREEN. A varredura completa revelou outros estados sincronizados durante efeitos e refs lidas em render; Quiz passou a reinicializar por key de sessao, carregamentos iniciais Pulse/Notas/Memoria/Chat foram agendados por timers cancelaveis, e o TTS ganhou estado reativo de disponibilidade de download. Next e `eslint-config-next` subiram para `16.2.12`; overrides fixam PostCSS `8.5.23`, Sharp `0.35.3` e TypeScript-ESLint `8.65.0`, mantendo ESLint `9.39.5` porque os plugins oficiais ainda nao aceitam ESLint 10.
+
+Notes:
+Validacao: 83 arquivos/288 testes, ESLint completo sem erros, `npx tsc --noEmit`, build Next `16.2.12`, `npm audit --omit=dev` com zero vulnerabilidades, restart e health local/publico 200. O otimizador real retornou PNG 64x77 via Sharp `0.35.3`; QA Playwright autenticado passou em desktop/mobile, abriu o seletor e confirmou Gemini sem overlay ou excecoes. O metadata do layout foi corrigido para usar o icone PWA sob `/chat`, removendo o ultimo 404 e deixando o console zerado. Permanecem 9 advisories dev-only na cadeia dos plugins ESLint do Next, sem upgrade compativel publicado; nao foram mascarados com overrides de major.
+
+### 2026-07-28 11:12 - Documentacao concentrada e legado comprovado removido
+
+Context:
+Anders pediu um levantamento amplo do projeto com poucos scouts read-only, concentracao dos docs e limpeza do que nao tinha mais uso.
+
+Details:
+A superficie canônica ficou em `README.md` + `docs/{API,ARCHITECTURE,INFRASTRUCTURE,MODELS,README}.md`; `CLAUDE.md` virou ponte curta e `BACKLOG.md` declara que nao ha PACK/BUNDLE ativo. Handoffs Agenda/Redesign e o plano Memory/RAG concluidos sairam do checkout, preservados no Git. Foram removidos `AgendaPanelV2`, print A4 client-side antigo, service worker desativado, estado `.superpowers`, a cadeia invisivel de custo e docs de export stale. Calendar/OAuth server-side e todos os dados runtime foram preservados. `html2canvas` e `@playwright/test` sairam das dependencias diretas; imports runtime antes transitivos foram declarados explicitamente.
+
+Notes:
+Validacao: scouting por tres agentes, Knip antes/depois, 83 arquivos/288 testes, TypeScript, lint completo, build Next `16.2.12`, `git diff --check`, `npm audit --omit=dev` com zero vulnerabilidades, restart de `chatgpt.service` e health local/publico `healthy`. Nenhuma rota ou porta mudou, entao `/etc/apache2/APACHE.md` foi apenas consultado.

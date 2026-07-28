@@ -43,6 +43,7 @@ import { resolveDeepsearchProfile } from "@/lib/chat/deepsearchConfig";
 import { createThrottle } from "@/lib/performance/throttle";
 import {
   isDeepSeekModel,
+  isGeminiModel,
   modelSupportsCodeInterpreter,
   modelSupportsTemperature,
   modelSupportsVerbosity,
@@ -473,57 +474,61 @@ export function useChat() {
     if (!activeConversationId) return;
 
     let isCurrent = true;
-    setIsRecovering(true);
-    setRecoveryError(null);
-    setMessages([]);
+    const recoveryTimer = window.setTimeout(() => {
+      if (!isCurrent) return;
+      setIsRecovering(true);
+      setRecoveryError(null);
+      setMessages([]);
 
-    getConversation(activeConversationId)
-      .then((conversation) => {
-        if (!isCurrent) return;
+      getConversation(activeConversationId)
+        .then((conversation) => {
+          if (!isCurrent) return;
 
-        if (conversation?.messages?.length) {
-          const normalized = normalizeStreamingMessages(conversation.messages);
-          setMessages(normalized);
+          if (conversation?.messages?.length) {
+            const normalized = normalizeStreamingMessages(conversation.messages);
+            setMessages(normalized);
 
-          const wasInterrupted = normalized.some(
-            (message, idx) => message !== conversation.messages[idx]
-          );
-          if (wasInterrupted) {
-            void withConversationPersistenceRetry(() =>
-              saveConversationMessages(
-                activeConversationId,
-                cloneMessagesForStorage(normalized)
-              )
-            )
-              .then(() =>
-                refreshMemoryLayerForConversation(
+            const wasInterrupted = normalized.some(
+              (message, idx) => message !== conversation.messages[idx]
+            );
+            if (wasInterrupted) {
+              void withConversationPersistenceRetry(() =>
+                saveConversationMessages(
                   activeConversationId,
-                  "interrupted"
+                  cloneMessagesForStorage(normalized)
                 )
               )
-              .catch((err) => {
-                console.warn(
-                  "[useChat] Falha ao persistir normalização de interrupted:",
-                  err
-                );
-              });
+                .then(() =>
+                  refreshMemoryLayerForConversation(
+                    activeConversationId,
+                    "interrupted"
+                  )
+                )
+                .catch((err) => {
+                  console.warn(
+                    "[useChat] Falha ao persistir normalização de interrupted:",
+                    err
+                  );
+                });
+            }
+            if (normalized.some(isPendingBackgroundMessage)) {
+              void reconcileBackgroundJobs();
+            }
           }
-          if (normalized.some(isPendingBackgroundMessage)) {
-            void reconcileBackgroundJobs();
-          }
-        }
-        setIsRecovering(false);
-      })
-      .catch((err) => {
-        if (!isCurrent) return;
-        console.error("[useChat] Erro ao carregar conversa:", err);
-        setMessages([]);
-        setRecoveryError("Nao consegui carregar esta conversa agora.");
-        setIsRecovering(false);
-      });
+          setIsRecovering(false);
+        })
+        .catch((err) => {
+          if (!isCurrent) return;
+          console.error("[useChat] Erro ao carregar conversa:", err);
+          setMessages([]);
+          setRecoveryError("Nao consegui carregar esta conversa agora.");
+          setIsRecovering(false);
+        });
+    }, 0);
 
     return () => {
       isCurrent = false;
+      window.clearTimeout(recoveryTimer);
     };
   }, [activeConversationId, conversationLoadNonce, reconcileBackgroundJobs, setMessages]);
 
@@ -571,8 +576,6 @@ export function useChat() {
       assistantMessageId: pending[0].id,
       responseId: pending[0].backgroundJob!.responseId!,
     };
-    setIsLoading(true);
-    setIsStreaming(true);
 
     const syncAll = () => {
       for (const message of pending) {
@@ -580,7 +583,11 @@ export function useChat() {
       }
     };
 
-    syncAll();
+    const initialSync = window.setTimeout(() => {
+      setIsLoading(true);
+      setIsStreaming(true);
+      syncAll();
+    }, 0);
     const interval = window.setInterval(syncAll, BACKGROUND_POLL_INTERVAL_MS);
 
     const handleVisibilityChange = () => {
@@ -591,6 +598,7 @@ export function useChat() {
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
+      window.clearTimeout(initialSync);
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
@@ -633,7 +641,8 @@ export function useChat() {
           : null;
       const requestModel = responseMode === "quiz"
         ? QUIZ_FORCED_MODEL
-        : responseMode === "document" && isDeepSeekModel(parameters.model)
+        : responseMode === "document" &&
+          (isDeepSeekModel(parameters.model) || isGeminiModel(parameters.model))
         ? DOCUMENT_FORCED_MODEL
         : responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
         ? deepsearchProfile!.model

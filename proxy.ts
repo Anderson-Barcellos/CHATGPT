@@ -21,7 +21,6 @@ const PUBLIC_PATHS = [
   "/_next",
   "/favicon.ico",
   "/manifest.webmanifest",
-  "/sw.js",
 ];
 
 function stripBasePath(pathname: string): string {

@@ -81,6 +81,7 @@ interface WorkspaceFrameV2Props {
   tabletSidebar?: ReactNode;
   activeConversationTitle: string;
   currentModelName: string;
+  onNewConversation: () => void;
   onOpenSettings: () => void;
   exportControl?: ReactNode;
   activeResponseMode?: ResponseMode;
@@ -200,6 +201,7 @@ export function WorkspaceFrameV2({
   tabletSidebar,
   activeConversationTitle,
   currentModelName,
+  onNewConversation,
   onOpenSettings,
   exportControl,
   activeResponseMode,
@@ -291,12 +293,12 @@ export function WorkspaceFrameV2({
                   </div>
                   <div className="min-w-0 leading-tight">
                     <div className="flex items-center gap-2">
-                      <h1 className="truncate text-[var(--gc-mobile-header-title-font-size)] font-semibold tracking-[-0.02em] text-foreground md:text-[0.96rem]">
+                      <h1 className="truncate text-[length:var(--gc-mobile-header-title-font-size)] font-semibold tracking-[-0.02em] text-foreground md:text-[0.96rem]">
                         <span className="hidden sm:inline">{activeConversationTitle}</span>
                         <span className="sm:hidden">Gaucho Chat</span>
                       </h1>
                     </div>
-                    <p className="truncate text-[var(--gc-mobile-header-caption-font-size)] text-muted-foreground/72 md:text-micro">
+                    <p className="truncate text-[length:var(--gc-mobile-header-caption-font-size)] text-muted-foreground/72 md:text-micro">
                       <span className="hidden sm:inline">Gaucho Chat</span>
                       <span className="sm:hidden">{activeConversationTitle}</span>
                     </p>
@@ -357,7 +359,7 @@ export function WorkspaceFrameV2({
                 <div className="grid h-[3.2rem] grid-cols-[minmax(0,1.75fr)_repeat(3,minmax(0,0.58fr))] items-center gap-1 rounded-[1.25rem] border border-[color:var(--gc-border-soft)] bg-background/84 p-1 shadow-[0_10px_24px_rgba(15,23,42,0.07)] md:hidden">
                   <button
                     type="button"
-                    onClick={handleFocusComposer}
+                    onClick={onNewConversation}
                     className="flex h-full items-center justify-center gap-1 rounded-[0.95rem] bg-primary px-2 text-[0.75rem] font-semibold text-primary-foreground shadow-[0_10px_22px_rgba(15,118,110,0.18)]"
                   >
                     <Plus className="size-4.5" />
@@ -366,7 +368,7 @@ export function WorkspaceFrameV2({
                   <button
                     type="button"
                     onClick={() => setContextOpen(true)}
-                    className="relative flex h-full flex-col items-center justify-center gap-0.25 rounded-xl text-[0.6rem] font-medium text-muted-foreground"
+                    className="relative flex h-full flex-col items-center justify-center gap-0.25 rounded-xl text-[length:var(--gc-mobile-tab-font-size)] font-medium text-muted-foreground"
                   >
                     <span className="absolute top-1.5 size-1.5 rounded-full bg-primary" />
                     <Activity className="size-4.5" />
@@ -375,7 +377,7 @@ export function WorkspaceFrameV2({
                   <button
                     type="button"
                     onClick={() => setContextOpen(true)}
-                    className="flex h-full flex-col items-center justify-center gap-0.25 rounded-xl text-[0.6rem] font-medium text-muted-foreground"
+                    className="flex h-full flex-col items-center justify-center gap-0.25 rounded-xl text-[length:var(--gc-mobile-tab-font-size)] font-medium text-muted-foreground"
                   >
                     <StickyNote className="size-4.5" />
                     Notas
@@ -383,7 +385,7 @@ export function WorkspaceFrameV2({
                   <button
                     type="button"
                     onClick={() => setContextOpen(true)}
-                    className="flex h-full flex-col items-center justify-center gap-0.25 rounded-xl text-[0.6rem] font-medium text-muted-foreground"
+                    className="flex h-full flex-col items-center justify-center gap-0.25 rounded-xl text-[length:var(--gc-mobile-tab-font-size)] font-medium text-muted-foreground"
                   >
                     <CalendarCheck className="size-4.5" />
                     Rotinas
@@ -592,7 +594,7 @@ export function CommandComposerV2({
             placeholder={placeholder}
             rows={1}
             disabled={disabled}
-            className="min-h-[var(--gc-mobile-textarea-min-height)] max-h-[var(--gc-mobile-textarea-max-height)] w-full resize-none bg-transparent px-[var(--gc-mobile-textarea-px)] pb-[var(--gc-mobile-textarea-pb)] pt-[var(--gc-mobile-textarea-pt)] text-[var(--gc-mobile-textarea-font-size)] leading-relaxed outline-none placeholder:text-muted-foreground/45 md:min-h-[42px] md:px-4 md:pb-2 md:pt-3 md:text-sm"
+            className="min-h-[var(--gc-mobile-textarea-min-height)] max-h-[var(--gc-mobile-textarea-max-height)] w-full resize-none bg-transparent px-[var(--gc-mobile-textarea-px)] pb-[var(--gc-mobile-textarea-pb)] pt-[var(--gc-mobile-textarea-pt)] text-[length:var(--gc-mobile-textarea-font-size)] leading-relaxed outline-none placeholder:text-muted-foreground/45 md:min-h-[42px] md:px-4 md:pb-2 md:pt-3 md:text-sm"
           />
 
           {attachments.length > 0 && (
@@ -666,7 +668,7 @@ export function CommandComposerV2({
                 <button
                   type="button"
                   className={cn(
-                    "flex h-[var(--gc-mobile-control-height)] max-w-[6rem] items-center gap-1 rounded-lg px-1.5 text-[var(--gc-mobile-control-font-size)] font-medium md:h-8 md:max-w-[6.5rem] md:text-nano",
+                    "flex h-[var(--gc-mobile-control-height)] max-w-[6rem] items-center gap-1 rounded-lg px-1.5 text-[length:var(--gc-mobile-control-font-size)] font-medium md:h-8 md:max-w-[6.5rem] md:text-nano",
                     COMPOSER_CONTROL_BUTTON_CLASS
                   )}
                 >
@@ -703,7 +705,7 @@ export function CommandComposerV2({
                   boxShadow: `0 0 ${5 + audioLevel * 10}px rgba(251,113,133,${(0.22 + audioLevel * 0.5).toFixed(2)})`,
                 } : undefined}
                 className={cn(
-                  "flex h-[var(--gc-mobile-control-height)] items-center gap-1 rounded-lg border px-2 text-[var(--gc-mobile-control-font-size)] font-medium transition-shadow md:hidden",
+                  "flex h-[var(--gc-mobile-control-height)] items-center gap-1 rounded-lg border px-2 text-[length:var(--gc-mobile-control-font-size)] font-medium transition-shadow md:hidden",
                   isRecording
                     ? "border-rose-500/35 bg-rose-500/12 text-rose-700 dark:text-rose-300"
                     : isTranscribing
@@ -727,7 +729,7 @@ export function CommandComposerV2({
                     size="sm"
                     disabled={disabled}
                     className={cn(
-                      "flex h-[var(--gc-mobile-control-height)] rounded-lg border px-1.5 text-[var(--gc-mobile-control-font-size)] md:hidden",
+                      "flex h-[var(--gc-mobile-control-height)] rounded-lg border px-1.5 text-[length:var(--gc-mobile-control-font-size)] md:hidden",
                       responseMode === "document" ||
                         responseMode === "deepsearch_medium" ||
                         responseMode === "deepsearch_high"
@@ -785,7 +787,7 @@ export function CommandComposerV2({
                     size="sm"
                     disabled={disabled}
                     className={cn(
-                      "hidden h-[var(--gc-mobile-control-height)] rounded-[1rem] border px-2.5 text-[var(--gc-mobile-control-font-size)] md:flex md:h-8 md:rounded-lg md:px-2 md:text-micro",
+                      "hidden h-[var(--gc-mobile-control-height)] rounded-[1rem] border px-2.5 text-[length:var(--gc-mobile-control-font-size)] md:flex md:h-8 md:rounded-lg md:px-2 md:text-micro",
                       responseMode === "document" ||
                         responseMode === "deepsearch_medium" ||
                         responseMode === "deepsearch_high"
@@ -831,7 +833,7 @@ export function CommandComposerV2({
                 disabled={disabled}
                 onClick={onToggleQuiz}
                   className={cn(
-                    "hidden h-[var(--gc-mobile-control-height)] rounded-lg border px-2 text-[var(--gc-mobile-control-font-size)] md:flex md:h-8 md:text-micro",
+                    "hidden h-[var(--gc-mobile-control-height)] rounded-lg border px-2 text-[length:var(--gc-mobile-control-font-size)] md:flex md:h-8 md:text-micro",
                     responseMode === "quiz"
                       ? "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300"
                       : COMPOSER_CONTROL_BUTTON_CLASS
@@ -852,7 +854,7 @@ export function CommandComposerV2({
                   boxShadow: `0 0 ${8 + audioLevel * 14}px rgba(251,113,133,${(0.3 + audioLevel * 0.6).toFixed(2)})`,
                 } : undefined}
                   className={cn(
-                    "hidden h-[var(--gc-mobile-control-height)] rounded-[1rem] border px-2.5 text-[var(--gc-mobile-control-font-size)] transition-shadow md:flex md:h-8 md:rounded-lg md:px-2 md:text-micro",
+                    "hidden h-[var(--gc-mobile-control-height)] rounded-[1rem] border px-2.5 text-[length:var(--gc-mobile-control-font-size)] transition-shadow md:flex md:h-8 md:rounded-lg md:px-2 md:text-micro",
                   isRecording
                     ? "border-rose-500/35 bg-rose-500/10 text-rose-700 dark:text-rose-300"
                   : isTranscribing
@@ -880,7 +882,7 @@ export function CommandComposerV2({
                   size="sm"
                   onClick={onStop}
                   aria-label="Parar geração"
-                  className="h-[var(--gc-mobile-control-height)] rounded-lg px-2.5 text-[var(--gc-mobile-send-font-size)] md:h-8 md:px-3 md:text-xs"
+                  className="h-[var(--gc-mobile-control-height)] rounded-lg px-2.5 text-[length:var(--gc-mobile-send-font-size)] md:h-8 md:px-3 md:text-xs"
                 >
                   <Square className="mr-1.5 size-3.5" />
                   Parar

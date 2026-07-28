@@ -24,7 +24,7 @@ export function ContextPanelV2() {
     <div className="flex h-full flex-col">
       <div className="gc-clinical-section-header flex items-center justify-between border-b border-[color:var(--gc-border-soft)] px-[var(--gc-mobile-context-header-x)] py-[var(--gc-mobile-context-header-y)] xl:hidden">
         <div className="min-w-0">
-          <h2 className="truncate text-[var(--gc-mobile-panel-title-font-size)] font-semibold md:text-sm">Painel operacional</h2>
+          <h2 className="truncate text-[length:var(--gc-mobile-panel-title-font-size)] font-semibold md:text-sm">Painel operacional</h2>
           <p className="text-nano uppercase tracking-label text-muted-foreground">
             Contexto
           </p>
@@ -49,20 +49,20 @@ export function ContextPanelV2() {
         <div className="gc-clinical-section-header border-b border-[color:var(--gc-border-soft)] px-[var(--gc-mobile-context-header-x)] py-[var(--gc-mobile-context-header-y)]">
           <div className="mb-2 flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <h2 className="truncate text-[var(--gc-mobile-panel-title-font-size)] font-semibold md:text-sm">Workspace</h2>
+              <h2 className="truncate text-[length:var(--gc-mobile-panel-title-font-size)] font-semibold md:text-sm">Workspace</h2>
               <p className="text-nano uppercase tracking-label text-muted-foreground">
                 acompanhamento em tempo real
               </p>
             </div>
           </div>
           <TabsList className="w-full rounded-xl border border-[color:var(--gc-border-soft)] bg-background/72 p-1">
-            <TabsTrigger value="activity" className="h-[var(--gc-mobile-control-height)] rounded-lg text-[var(--gc-mobile-tab-font-size)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground md:h-8 md:text-xs">
+            <TabsTrigger value="activity" className="h-[var(--gc-mobile-control-height)] rounded-lg text-[length:var(--gc-mobile-tab-font-size)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground md:h-8 md:text-xs">
               Pulse
             </TabsTrigger>
-            <TabsTrigger value="notes" className="h-[var(--gc-mobile-control-height)] rounded-lg text-[var(--gc-mobile-tab-font-size)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground md:h-8 md:text-xs">
+            <TabsTrigger value="notes" className="h-[var(--gc-mobile-control-height)] rounded-lg text-[length:var(--gc-mobile-tab-font-size)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground md:h-8 md:text-xs">
               Notas
             </TabsTrigger>
-            <TabsTrigger value="pulse" className="h-[var(--gc-mobile-control-height)] rounded-lg text-[var(--gc-mobile-tab-font-size)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground md:h-8 md:text-xs">
+            <TabsTrigger value="pulse" className="h-[var(--gc-mobile-control-height)] rounded-lg text-[length:var(--gc-mobile-tab-font-size)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground md:h-8 md:text-xs">
               Rotinas
             </TabsTrigger>
           </TabsList>

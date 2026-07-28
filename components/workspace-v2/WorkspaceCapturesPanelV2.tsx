@@ -111,7 +111,8 @@ export function WorkspaceCapturesPanelV2({
   }, []);
 
   useEffect(() => {
-    void loadNotes();
+    const initialLoad = window.setTimeout(() => void loadNotes(), 0);
+    return () => window.clearTimeout(initialLoad);
   }, [loadNotes]);
 
   useEffect(() => {

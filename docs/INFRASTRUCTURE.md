@@ -1,6 +1,6 @@
 # Infraestrutura
 
-**Última atualização:** 2026-07-17
+**Última atualização:** 2026-07-28
 **Produção:** `https://ultrassom.ai/chat`
 **Porta local:** `3040`
 
@@ -11,7 +11,7 @@ Internet
   -> Apache2 HTTPS :443
   -> /chat e /chat/api/* proxy para http://localhost:3040/chat
   -> Next.js 16 via chatgpt.service
-  -> OpenAI/DeepSeek APIs + JSON store local
+  -> OpenAI/DeepSeek/Gemini APIs + JSON store local
 ```
 
 ## Fontes Canônicas
@@ -29,7 +29,7 @@ Internet
 Não transcreva segredos de `.env.production` ou `.env.local` em docs, issues ou commits.
 O nome público do app é `Gaucho Chat`; a descrição `Celer - Cliente IA Multi-Modal` na unit systemd é apenas um rótulo histórico interno.
 O repositório nao usa mais stack de deploy por Docker/Nginx; o runtime valido aqui e Apache + `chatgpt.service`.
-DeepSeek V4 Pro é acessado apenas server-side no chat padrão streaming; `DEEPSEEK_API_KEY` e `OPENAI_API_KEY` não devem aparecer no cliente nem em logs.
+OpenAI, DeepSeek V4 Pro e Gemini 3.6 Flash são acessados apenas server-side; suas chaves não devem aparecer no cliente nem em logs.
 
 ## Apache
 
@@ -108,12 +108,18 @@ Obrigatórias em produção:
 |---|---|
 | `OPENAI_API_KEY` | Chave server-side da OpenAI |
 | `DEEPSEEK_API_KEY` | Chave server-side do DeepSeek V4 Pro para chat padrão |
-| `DEEPSEEK_WEB_CONTEXT_MODEL` | Modelo OpenAI usado pelo helper `fresh_web_context` antes da síntese DeepSeek |
+| `GEMINI_API_KEY` | Chave server-side do Gemini 3.6 Flash para chat padrão |
 | `NEXT_PUBLIC_BASE_PATH` | Deve ser `/chat` |
 | `NEXT_PUBLIC_APP_URL` | URL pública completa |
 | `PORT` | Deve ser `3040` |
 | `NODE_ENV` | `production` |
 | `JWT_SECRET` | Segredo para assinar sessão |
+
+Overrides opcionais:
+
+| Variável | Propósito |
+|---|---|
+| `DEEPSEEK_WEB_CONTEXT_MODEL` | Modelo OpenAI usado pelo helper `fresh_web_context`; fallback `gpt-5.6-luna` |
 
 Integração Google Calendar:
 

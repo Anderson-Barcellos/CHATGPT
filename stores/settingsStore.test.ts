@@ -91,6 +91,21 @@ describe("settings store model defaults", () => {
     expect(useSettingsStore.getState().parameters.verbosity).toBe("high");
   });
 
+  it("defaults Gemini 3.6 Flash to medium thinking and remembers its level", () => {
+    useSettingsStore.getState().updateParameters({ model: "gemini-3.6-flash" });
+
+    expect(useSettingsStore.getState().parameters.model).toBe("gemini-3.6-flash");
+    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("medium");
+    expect(useSettingsStore.getState().parameters.reasoningMode).toBe("standard");
+    expect(useSettingsStore.getState().parameters.maxOutputTokens).toBe(65_536);
+
+    useSettingsStore.getState().updateParameters({ reasoningEffort: "minimal" });
+    useSettingsStore.getState().updateParameters({ model: "gpt-5.6-luna" });
+    useSettingsStore.getState().updateParameters({ model: "gemini-3.6-flash" });
+
+    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("minimal");
+  });
+
   it("remembers Pro mode independently for each GPT-5.6 model", () => {
     useSettingsStore.getState().updateParameters({
       model: "gpt-5.6-luna",

@@ -1,47 +1,26 @@
 # Documentação
 
-Esta pasta contém a documentação canônica do Gaucho Chat. Docs antigos de Vercel, Docker, Nginx e instalação Apache duplicada foram removidos para evitar instruções conflitantes com o runtime real.
+Esta é a superfície documental canônica do Gaucho Chat. Handoffs encerrados, planos concluídos e conceitos visuais antigos ficam preservados no histórico Git, não ao lado das referências atuais.
 
-## Fontes Principais
-
-| Documento | Uso |
+| Documento | Fonte de verdade |
 |---|---|
-| [API](./API.md) | Contrato das rotas `app/api/*`, incluindo chat OpenAI/DeepSeek, memória/RAG, persona, Pulse, agenda legada e voz |
-| [Arquitetura](./ARCHITECTURE.md) | Como UI, proxy, streaming, providers, storage, auth, memória/RAG, artifacts e TTS se conectam |
-| [Infraestrutura](./INFRASTRUCTURE.md) | Apache, systemd, variáveis, deploy e troubleshooting |
-| [Modelos](./MODELS.md) | Catálogo local de modelos e regras de runtime |
+| [README](../README.md) | Visão geral, stack, estrutura e comandos essenciais |
+| [API](./API.md) | Contratos das rotas `app/api/*` |
+| [Arquitetura](./ARCHITECTURE.md) | Fluxos, providers, persistência e fronteiras do sistema |
+| [Infraestrutura](./INFRASTRUCTURE.md) | Apache, systemd, env, deploy e troubleshooting |
+| [Modelos](./MODELS.md) | Catálogo e regras de runtime de modelos |
 
-## Documentos De Trabalho / Retomada
+Documentos operacionais:
 
-| Documento | Uso |
-|---|---|
-| [Redesign Roadpack](./REDESIGN_ROADPACK.md) | Documento vivo do shell clínico, refinamentos visuais e densidade mobile |
-| [Kickoff Codex](./CODEX_KICKOFF.md) | Handoff de refinamentos visuais Codex e próximos bundles seguros |
+- [AGENTS](../AGENTS.md): instruções locais, invariantes e diário append-only.
+- [BACKLOG](../BACKLOG.md): frente ativa; quando não houver pack ativo, deve dizê-lo explicitamente.
+- [CLAUDE](../CLAUDE.md): ponte compacta para agentes Claude.
+- [.codex_remember/remember.md](../.codex_remember/remember.md): handoff curto da sessão mais recente.
 
-## Históricos Mantidos Por Contexto
+Regras de manutenção:
 
-| Documento | Uso |
-|---|---|
-| [Kickoff Agenda/Notas](./CALENDAR_NOTES_KICKOFF.md) | Contexto histórico da V1; nao usar como fonte canônica do estado atual |
-| [Kickoff C2 Agenda/Notas](./CALENDAR_NOTES_C2_KICKOFF.md) | Handoff histórico do bundle C2; mantido apenas como trilha de decisão |
-| [Progresso Agenda/Notas](./CALENDAR_NOTES_PROGRESS.md) | Quadro histórico da frente Agenda Google + Notas; Pulse é a superfície recorrente atual |
-| [Kickoff Fresh Agenda/Notas](./CALENDAR_NOTES_FRESH_KICKOFF.md) | Handoff histórico da frente Agenda/Notas; não usar como estado principal atual |
-
-## Documentos Fora Desta Pasta
-
-| Arquivo | Uso |
-|---|---|
-| [README](../README.md) | Visão geral do projeto |
-| [AGENTS](../AGENTS.md) | Memória operacional e decisões recentes |
-| [CLAUDE](../CLAUDE.md) | Handoff técnico compacto para sessões futuras |
-| [systemd/chatgpt.service](../systemd/chatgpt.service) | Unit versionada |
-| [apache-config/chat.conf](../apache-config/chat.conf) | Exemplo versionado do proxy `/chat` |
-
-## Regras de Atualização
-
-- Atualize `AGENTS.md` ao fim de uma rodada significativa.
-- Atualize o documento de progresso/ROADPACK ativo durante o processo, não só no fechamento.
-- Atualize `INFRASTRUCTURE.md` quando mudar Apache, systemd, env ou portas.
-- Atualize `API.md` quando mudar payload, rota, método ou auth.
-- Atualize `MODELS.md` quando mudar `lib/models/modelConfig.ts` ou defaults.
-- Não documente valores reais de segredos.
+- Mudou rota ou payload: atualize `API.md`.
+- Mudou provider, fluxo ou persistência: atualize `ARCHITECTURE.md`.
+- Mudou modelo/default: atualize `MODELS.md`.
+- Mudou Apache, systemd, porta ou env: atualize `INFRASTRUCTURE.md` e, quando aplicável, `/etc/apache2/APACHE.md`.
+- Nunca copie segredos ou dados runtime privados para a documentação.

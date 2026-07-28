@@ -74,11 +74,14 @@ export function useCustomInstructions() {
   const quickSaveTimerRef = useRef<number | null>(null);
 
   const instructions = hydratePersona(customInstructions);
-  instructionsRef.current = instructions;
   const debouncedSnapshot = useDebounce(
     toSnapshot(instructions),
     AUTOSAVE_DELAY_MS
   );
+
+  useEffect(() => {
+    instructionsRef.current = instructions;
+  }, [instructions]);
 
   const saveContextAboutUser = useCallback(async (nextInstructions?: CustomInstructions) => {
     const payload = hydratePersona(nextInstructions ?? instructionsRef.current);
@@ -125,14 +128,16 @@ export function useCustomInstructions() {
     bootstrapRef.current = true;
 
     if (instructionsBootstrapData) {
-      const current = useSettingsStore.getState().getCustomInstructions();
-      lastSavedSnapshotRef.current =
-        instructionsBootstrapSnapshot ?? toSnapshot(instructionsBootstrapData);
-      if (!current || toSnapshot(current) === lastSavedSnapshotRef.current) {
-        setCustomInstructions(instructionsBootstrapData);
-      }
-      setIsLoaded(true);
-      return;
+      const bootstrapTimer = window.setTimeout(() => {
+        const current = useSettingsStore.getState().getCustomInstructions();
+        lastSavedSnapshotRef.current =
+          instructionsBootstrapSnapshot ?? toSnapshot(instructionsBootstrapData!);
+        if (!current || toSnapshot(current) === lastSavedSnapshotRef.current) {
+          setCustomInstructions(instructionsBootstrapData!);
+        }
+        setIsLoaded(true);
+      }, 0);
+      return () => window.clearTimeout(bootstrapTimer);
     }
 
     if (!instructionsBootstrapPromise) {

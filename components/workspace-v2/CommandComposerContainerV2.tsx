@@ -43,6 +43,7 @@ import {
   modelSupportsReasoningMode,
 } from "@/lib/models/modelConfig";
 import { canSubmitComposerMessage } from "@/lib/chat/composerSubmit";
+import { composeSpeechTranscriptPreview } from "@/lib/chat/speechComposer";
 import {
   QUIZ_FORCED_MODEL,
   QUIZ_FORCED_REASONING_EFFORT,
@@ -53,6 +54,7 @@ import type { ReasoningEffort, ResponseMode, SendMessageOptions } from "@/types"
 
 const REASONING_OPTIONS: { value: ReasoningEffort; label: string; desc: string }[] = [
   { value: "none", label: "Sem", desc: "Resposta direta" },
+  { value: "minimal", label: "Minimo", desc: "Pensamento minimo" },
   { value: "low", label: "Baixo", desc: "Raciocinio leve" },
   { value: "medium", label: "Medio", desc: "Equilibrado" },
   { value: "high", label: "Alto", desc: "Raciocinio profundo" },
@@ -99,6 +101,11 @@ export function CommandComposerContainerV2({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const speechInputBaseRef = useRef("");
+  const handleTranscriptPreview = useCallback((preview: string) => {
+    setInput(
+      composeSpeechTranscriptPreview(speechInputBaseRef.current, preview)
+    );
+  }, []);
   const {
     attachments,
     isProcessing,
@@ -113,9 +120,8 @@ export function CommandComposerContainerV2({
     isSupported: speechSupported,
     recordingDurationMs,
     status: speechStatus,
-    transcriptPreview,
     toggleRecording,
-  } = useSpeechToText();
+  } = useSpeechToText({ onTranscriptPreview: handleTranscriptPreview });
   const { parameters, updateParameters } = useSettingsStore();
 
   const modelList = useMemo(() => getChatModels(), []);
@@ -161,7 +167,7 @@ export function CommandComposerContainerV2({
     ? `Descreva o assunto do quiz. O modo quiz entrega no minimo ${QUIZ_MIN_QUESTION_COUNT} questoes...`
     : attachments.length > 0
     ? "Adicione uma mensagem sobre os arquivos..."
-    : "Mensagem para o GPT...";
+    : "Mensagem para o modelo...";
 
   const handleSubmit = useCallback(async () => {
     if (!canSubmitComposerMessage({ hasContent, isProcessing })) return;
@@ -221,16 +227,6 @@ export function CommandComposerContainerV2({
       textareaRef.current.focus();
     });
   }, [input, isRecording, toggleRecording]);
-
-  useEffect(() => {
-    if (!isTranscribing || !transcriptPreview) return;
-    const base = speechInputBaseRef.current;
-    setInput(
-      base.trim()
-        ? `${base}${base.endsWith("\n") ? "" : "\n"}${transcriptPreview}`
-        : transcriptPreview
-    );
-  }, [isTranscribing, transcriptPreview]);
 
   const openAttachmentPicker = useCallback((mode: "file" | "image") => {
     const input = fileInputRef.current;
@@ -357,7 +353,7 @@ export function CommandComposerContainerV2({
             disabled={isLoading || isTranscribing || isDeepsearchMode}
             aria-label="Selecionar modelo"
             title={isDeepsearchMode ? `Deepsearch usa modelo fixo (${deepsearchModelLabel}).` : undefined}
-            className="h-[var(--gc-mobile-control-height)] max-w-[9rem] gap-1 rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-2.5 text-[var(--gc-mobile-control-font-size)] font-medium text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:h-8 md:max-w-[10rem] md:rounded-lg md:px-2.5 md:text-nano"
+            className="h-[var(--gc-mobile-control-height)] max-w-[9rem] gap-1 rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-2.5 text-[length:var(--gc-mobile-control-font-size)] font-medium text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:h-8 md:max-w-[10rem] md:rounded-lg md:px-2.5 md:text-nano"
           >
             <span className="truncate">{displayModel?.name || parameters.model}</span>
             <ChevronDown className="size-3.5 shrink-0" />
@@ -401,6 +397,7 @@ export function CommandComposerContainerV2({
   const reasoningOpacity = useMemo(() => {
     const map: Record<ReasoningEffort, number> = {
       none: 0.3,
+      minimal: 0.38,
       low: 0.45,
       medium: 0.6,
       high: 0.8,
@@ -420,7 +417,7 @@ export function CommandComposerContainerV2({
               size="sm"
               disabled={isLoading || isTranscribing || isDeepSeekSelected}
               aria-label="Ajustar nível de raciocínio"
-              className="size-[var(--gc-mobile-control-height)] rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-0 text-[var(--gc-mobile-control-font-size)] text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:h-8 md:w-8 md:rounded-lg md:text-nano"
+              className="size-[var(--gc-mobile-control-height)] rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-0 text-[length:var(--gc-mobile-control-font-size)] text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:h-8 md:w-8 md:rounded-lg md:text-nano"
             >
               <Brain className="size-3.5" style={{ opacity: reasoningOpacity }} />
             </Button>

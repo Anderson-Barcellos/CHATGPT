@@ -193,7 +193,7 @@ function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
                   </div>
                 </div>
 
-                <h2 className="mt-3 text-[var(--gc-mobile-welcome-title-size)] font-semibold leading-none tracking-[-0.04em] text-foreground md:mt-6 md:text-[2.6rem]">
+                <h2 className="mt-3 text-[length:var(--gc-mobile-welcome-title-size)] font-semibold leading-none tracking-[-0.04em] text-foreground md:mt-6 md:text-[2.6rem]">
                   {getGreeting()}, Anders.
                 </h2>
                 <p className="mt-2 max-w-md text-body-sm leading-relaxed text-muted-foreground md:mt-3 md:text-base">

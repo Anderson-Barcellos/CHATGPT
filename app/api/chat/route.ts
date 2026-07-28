@@ -17,6 +17,11 @@ import {
   createDeepSeekEventStream,
 } from "@/lib/server/deepseekChat";
 import {
+  GEMINI_MODEL,
+  createGeminiClient,
+  createGeminiEventStream,
+} from "@/lib/server/geminiChat";
+import {
   createMemoryToolEventStream,
   createResponseWithMemoryTools,
 } from "@/lib/server/chatToolOrchestrator";
@@ -70,6 +75,44 @@ export async function POST(request: NextRequest) {
       return jsonError(400, "Model not allowed", {
         message: "Modelo nao permitido.",
         code: "chat_model_not_allowed",
+      });
+    }
+
+    if (effectiveModel === GEMINI_MODEL) {
+      if (responseMode !== "default") {
+        return jsonError(400, "Gemini mode not supported", {
+          message: "Gemini 3.6 Flash esta habilitado somente para chat padrao.",
+          code: "chat_gemini_mode_not_supported",
+        });
+      }
+
+      if (!stream) {
+        return jsonError(400, "Gemini requires streaming", {
+          message: "Gemini 3.6 Flash esta habilitado somente no fluxo de chat com streaming.",
+          code: "chat_gemini_stream_required",
+        });
+      }
+
+      const gemini = createGeminiClient();
+      if (!gemini) {
+        return jsonError(503, "Gemini API key is missing", {
+          message: "GEMINI_API_KEY nao configurada no servidor.",
+          code: "chat_gemini_api_key_missing",
+        });
+      }
+
+      const readableStream = await createGeminiEventStream(
+        gemini,
+        body,
+        request.signal
+      );
+
+      return new Response(readableStream, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache, no-transform",
+          Connection: "keep-alive",
+        },
       });
     }
 

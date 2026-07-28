@@ -188,7 +188,14 @@ export interface ActiveSelection {
   rect: DOMRect | null;
 }
 
-export type ReasoningEffort = "none" | "low" | "medium" | "high" | "xhigh" | "max";
+export type ReasoningEffort =
+  | "none"
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh"
+  | "max";
 export type ReasoningMode = "standard" | "pro";
 export type ReasoningSummary = "off" | "auto" | "concise" | "detailed";
 export type ResponseVerbosity = "low" | "medium" | "high";
@@ -303,6 +310,7 @@ export type ModelFamily =
   | "gpt-4o"
   | "gpt-5"
   | "deepseek"
+  | "gemini"
   | "dall-e"
   | "gpt-image";
 

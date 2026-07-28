@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { CheckCircle2, Circle, CircleAlert, CircleDashed, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,19 @@ interface QuizCanvasProps {
 
 export function QuizCanvas({
   artifact,
+  ...props
+}: QuizCanvasProps) {
+  return (
+    <QuizCanvasSession
+      key={JSON.stringify(artifact.quiz.session)}
+      artifact={artifact}
+      {...props}
+    />
+  );
+}
+
+function QuizCanvasSession({
+  artifact,
   compact = false,
   className,
   onSessionChange,
@@ -26,11 +39,6 @@ export function QuizCanvas({
   );
   const [session, setSession] = useState(artifact.quiz.session);
   const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => {
-    setAnswersByQuestionId(artifact.quiz.session.answersByQuestionId);
-    setSession(artifact.quiz.session);
-  }, [artifact.quiz.session]);
 
   const answeredCount = useMemo(
     () =>

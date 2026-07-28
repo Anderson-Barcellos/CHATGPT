@@ -16,6 +16,7 @@ describe("WorkspaceFrameV2", () => {
         contextPanel={<div>Preview do documento</div>}
         mobileSidebar={<div>Menu mobile</div>}
         mobileContextPanel={<div>Painel mobile</div>}
+        onNewConversation={() => undefined}
         onOpenSettings={() => undefined}
         activeConversationTitle="Workspace Console"
         currentModelName="gpt-5.3-chat-latest"
@@ -32,6 +33,8 @@ describe("WorkspaceFrameV2", () => {
     expect(markup).toContain("Preview do documento");
     expect(markup).toContain("Canvas · artefato · atividade");
     expect(markup).toContain("gc-device-frame");
+    expect(markup).toContain("text-[length:var(--gc-mobile-tab-font-size)]");
+    expect(markup).not.toContain("text-[0.6rem]");
     expect(markup).not.toContain('class="dark ');
   });
 });

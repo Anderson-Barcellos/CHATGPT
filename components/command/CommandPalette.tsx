@@ -25,6 +25,7 @@ import type { ReasoningEffort } from "@/types";
 
 const REASONING_LEVELS: { label: string; value: ReasoningEffort; hint: string }[] = [
   { label: "Sem raciocínio", value: "none", hint: "Rápido" },
+  { label: "Raciocínio mínimo", value: "minimal", hint: "Minimal" },
   { label: "Raciocínio baixo", value: "low", hint: "Low" },
   { label: "Raciocínio médio", value: "medium", hint: "Medium" },
   { label: "Raciocínio alto", value: "high", hint: "High" },

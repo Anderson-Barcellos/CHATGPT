@@ -6,6 +6,10 @@ import { parseTranscriptionStreamLine } from "@/lib/transcription/stream";
 
 export type SpeechToTextStatus = "idle" | "recording" | "transcribing" | "error";
 
+interface UseSpeechToTextOptions {
+  onTranscriptPreview?: (text: string) => void;
+}
+
 const MIN_RECORDING_DURATION_MS = 900;
 const MIN_AUDIO_BLOB_SIZE = 2048;
 
@@ -52,7 +56,9 @@ function getSpeechErrorMessage(error: unknown) {
   return "Nao consegui gravar ou transcrever teu audio agora.";
 }
 
-export function useSpeechToText() {
+export function useSpeechToText({
+  onTranscriptPreview,
+}: UseSpeechToTextOptions = {}) {
   const [status, setStatus] = useState<SpeechToTextStatus>("idle");
   const [audioLevel, setAudioLevel] = useState(0);
   const [recordingDurationMs, setRecordingDurationMs] = useState(0);
@@ -71,6 +77,14 @@ export function useSpeechToText() {
   const stopResolverRef = useRef<((text: string | null) => void) | null>(null);
   const transcriptionAbortRef = useRef<AbortController | null>(null);
   const recordingStartedAtRef = useRef<number | null>(null);
+
+  const publishTranscriptPreview = useCallback(
+    (text: string) => {
+      setTranscriptPreview(text);
+      onTranscriptPreview?.(text);
+    },
+    [onTranscriptPreview]
+  );
 
   const isSupported = useMemo(() => {
     if (typeof window === "undefined") return false;
@@ -174,10 +188,10 @@ export function useSpeechToText() {
           if (event.type === "error") throw new Error(event.error);
           if (event.type === "delta") {
             accumulated += event.delta;
-            setTranscriptPreview(accumulated);
+            publishTranscriptPreview(accumulated);
           } else {
             completedText = event.text;
-            setTranscriptPreview(event.text);
+            publishTranscriptPreview(event.text);
           }
         }
 
@@ -202,7 +216,7 @@ export function useSpeechToText() {
     }
 
     return data.text.trim();
-  }, []);
+  }, [publishTranscriptPreview]);
 
   const resolveStop = useCallback((text: string | null) => {
     const resolve = stopResolverRef.current;

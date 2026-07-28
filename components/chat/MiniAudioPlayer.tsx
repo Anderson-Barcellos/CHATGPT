@@ -126,7 +126,7 @@ export function MiniAudioPlayer({
         <div
           role="group"
           aria-label="Motor de áudio"
-          className="flex min-w-0 items-center rounded-lg bg-background/55 p-0.5 text-nano"
+          className="flex min-w-0 items-center rounded-lg bg-background/55 p-0.5 text-micro md:text-nano"
         >
           <button
             type="button"
@@ -231,7 +231,7 @@ export function MiniAudioPlayer({
         ) : (
           <p
             className={cn(
-              "min-w-0 flex-1 truncate text-nano",
+              "min-w-0 flex-1 truncate text-micro md:text-nano",
               realtime.error && "text-rose-600 dark:text-rose-300"
             )}
             aria-live="polite"

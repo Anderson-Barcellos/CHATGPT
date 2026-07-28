@@ -112,7 +112,7 @@ export function PulseAudioControls({ run }: { run: PulseRun }) {
         onClick={() => setAudioPlayerOpen(true)}
         title="Abrir player de áudio"
         aria-label="Abrir player de áudio"
-        className="h-7 rounded-md px-2 text-nano"
+        className="h-7 rounded-md px-2 text-micro md:text-nano"
       >
         <Volume2 className="size-3" />
         Áudio
@@ -325,9 +325,12 @@ export function PulseActivityPanelV2() {
   }, []);
 
   useEffect(() => {
-    void loadRuns();
+    const initialLoad = window.setTimeout(() => void loadRuns(), 0);
     const interval = window.setInterval(() => void loadRuns(), 30_000);
-    return () => window.clearInterval(interval);
+    return () => {
+      window.clearTimeout(initialLoad);
+      window.clearInterval(interval);
+    };
   }, [loadRuns]);
 
   const handleToggleExpanded = useCallback((runId: string) => {
@@ -583,9 +586,12 @@ export function PulsePanelV2() {
   }, []);
 
   useEffect(() => {
-    void loadPulse();
+    const initialLoad = window.setTimeout(() => void loadPulse(), 0);
     const interval = window.setInterval(() => void loadPulse(), 30_000);
-    return () => window.clearInterval(interval);
+    return () => {
+      window.clearTimeout(initialLoad);
+      window.clearInterval(interval);
+    };
   }, [loadPulse]);
 
   useEffect(() => {

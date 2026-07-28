@@ -55,6 +55,7 @@ describe("MiniAudioPlayer", () => {
     expect(markup).toContain('aria-pressed="true"');
     expect(markup).toContain("Realtime 2.1");
     expect(markup).toContain('aria-label="Tocar"');
+    expect(markup).toContain("text-micro");
     expect(assistantTts.togglePlay).not.toHaveBeenCalled();
     expect(realtimeTts.start).not.toHaveBeenCalled();
   });

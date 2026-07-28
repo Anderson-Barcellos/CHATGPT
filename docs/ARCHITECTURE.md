@@ -1,17 +1,17 @@
 # Arquitetura
 
-**Última atualização:** 2026-07-17
+**Última atualização:** 2026-07-28
 
 ## Visão Geral
 
-Gaucho Chat é um app Next.js com App Router que roda como BFF local para providers de IA. O fluxo principal usa a OpenAI `Responses API`; o chat padrão também pode usar DeepSeek V4 Pro via adapter server-side. O cliente React conversa apenas com rotas do próprio app; essas rotas cuidam de auth, rate limit, persistência local e chamadas server-side.
+Gaucho Chat é um app Next.js com App Router que roda como BFF local para providers de IA. O fluxo principal usa a OpenAI `Responses API`; o chat padrão também pode usar DeepSeek V4 Pro ou Gemini 3.6 Flash via adapters server-side. O cliente React conversa apenas com rotas do próprio app; essas rotas cuidam de auth, rate limit, persistência local e chamadas server-side.
 
 ```text
 Browser/PWA
   -> Next.js UI em /chat
   -> proxy.ts: auth, rate limit e headers
   -> app/api/*: BFF server-side
-  -> OpenAI/DeepSeek APIs e JSON store local
+  -> OpenAI/DeepSeek/Gemini APIs e JSON store local
 ```
 
 ## Entrada e Shell
@@ -34,7 +34,7 @@ Na harmonização mais recente, o contrato mobile ficou ainda mais explícito no
 1. O composer chama `useChat`.
 2. `useChat` monta payload com mensagens, anexos, persona, modelo e opções.
 3. `POST /api/chat` valida auth, body e modelo.
-4. A rota chama `openai.responses.create()` com streaming quando aplicável, ou o adapter DeepSeek quando o modelo é `deepseek-v4-pro`.
+4. A rota chama `openai.responses.create()` com streaming quando aplicável, ou os adapters dedicados para `deepseek-v4-pro` e `gemini-3.6-flash`.
 5. Eventos SSE passam pelo reducer em `lib/chat/streamMachine.ts`.
 6. A mensagem do assistente é atualizada incrementalmente e persistida durante o stream.
 
@@ -51,11 +51,17 @@ Detalhes importantes:
 
 O adapter expõe uma tool local `fresh_web_context`. Quando o DeepSeek chama essa tool, o servidor faz uma chamada OpenAI curta com `web_search_preview` usando `DEEPSEEK_WEB_CONTEXT_MODEL` ou `gpt-5.6-luna`, injeta o resultado como mensagem de tool e continua um segundo turno DeepSeek sem expor chaves ao browser.
 
+### Gemini 3.6 Flash
+
+`gemini-3.6-flash` é um provider separado para chat padrão streaming. `lib/server/geminiChat.ts` converte o histórico e imagens para turns da Interactions API, envia `store=false`, Google Search, URL Context e summaries de pensamento, e traduz o stream Gemini para o mesmo contrato SSE usado pelo reducer do chat.
+
+O adapter exige `GEMINI_API_KEY`, aceita thinking `minimal`, `low`, `medium` e `high`, não envia os parâmetros depreciados `temperature`, `top_p` ou `top_k` e rejeita Documento, Deepsearch e Quiz. Esses modos continuam usando seus modelos OpenAI forçados.
+
 ## Reasoning
 
 O reasoning é montado em `lib/chat/reasoningConfig.ts` e usado por `hooks/useChat.ts`.
 Modelos sem capacidade de reasoning, ou effort `none`, não enviam `reasoning` no payload.
-Para efforts ativos (`low`, `medium`, `high`, `xhigh`), o payload preserva a preferência
+Para efforts ativos (`minimal`, `low`, `medium`, `high`, `xhigh`), o payload preserva a preferência
 `reasoningSummary`; o valor local `off` vira omissão do campo `summary`, pois a API aceita
 apenas `auto`, `concise` e `detailed`.
 
@@ -147,7 +153,7 @@ A aba Rotinas substitui a superfície visível de Agenda. Ela cria rotinas recor
 
 ## Agenda Google e Notas Locais Legadas
 
-A V1 de agenda Google segue no código como legado operacional, mas não é mais a experiência visível principal do painel. Ela usa Google Calendar API diretamente no backend Next, sem connector externo e sem expor tokens ao browser.
+A V1 de agenda Google segue no backend como legado operacional, mas sua antiga aba visual foi removida quando Pulse assumiu o painel. As rotas ainda usam Google Calendar API diretamente no Next, sem connector externo e sem expor tokens ao browser.
 
 - OAuth começa em `/api/integrations/google/auth/start` e volta por `/api/integrations/google/auth/callback`.
 - O callback valida cookie `google-oauth-state` HttpOnly antes de trocar `code` por tokens.
@@ -183,7 +189,7 @@ O TTS padrão usa `/api/tts` com `gpt-4o-mini-tts`.
 
 ## Modelos
 
-O catálogo vive em `lib/models/modelConfig.ts`. O default do chat é `gpt-5.6-luna` com reasoning `low` e modo `standard`; modelos removidos conhecidos e seleções antigas de `gpt-5.4-mini` caem para Luna. `gpt-5.6-sol` inicia em `medium/standard`; Sol e Luna aceitam modo `pro` independente do effort e effort `max`. O Mini permanece registrado para compatibilidade e fluxos internos, porque Pulse e Deepsearch ainda o usam. `responseMode="quiz"` força `gpt-5.4/high`; Deepsearch Medium usa `gpt-5.4-mini/high` e High usa `gpt-5.4/high`. O contexto web auxiliar do DeepSeek usa `gpt-5.6-luna/low` antes da síntese no DeepSeek V4 Pro.
+O catálogo vive em `lib/models/modelConfig.ts`. O default do chat é `gpt-5.6-luna` com reasoning `low` e modo `standard`; modelos removidos conhecidos caem para Luna, enquanto uma seleção válida de `gpt-5.4-mini` é preservada. `gpt-5.6-sol` inicia em `medium/standard`; Sol e Luna aceitam modo `pro` independente do effort e effort `max`. O Mini permanece registrado para compatibilidade e fluxos internos, porque Pulse e Deepsearch ainda o usam. `responseMode="quiz"` força `gpt-5.4/high`; Deepsearch Medium usa `gpt-5.4-mini/high` e High usa `gpt-5.4/high`. O contexto web auxiliar do DeepSeek usa `gpt-5.6-luna/low` antes da síntese no DeepSeek V4 Pro.
 
 Tools padrão:
 

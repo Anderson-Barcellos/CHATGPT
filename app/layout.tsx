@@ -5,6 +5,8 @@ import { ThemeColorMeta } from "@/components/ui/theme-color-meta";
 import { Toaster } from "sonner";
 import "./globals.css";
 
+const METADATA_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
@@ -26,8 +28,8 @@ export const metadata: Metadata = {
     title: "GPT",
   },
   icons: {
-    icon: "/favicon.ico",
-    apple: "/icons/icon-192.png",
+    icon: `${METADATA_BASE_PATH}/icons/icon-192.png`,
+    apple: `${METADATA_BASE_PATH}/icons/icon-192.png`,
   },
   other: {
     "mobile-web-app-capable": "yes",

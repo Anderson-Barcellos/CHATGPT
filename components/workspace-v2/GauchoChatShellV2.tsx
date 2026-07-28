@@ -17,7 +17,6 @@ import { ConversationRailV2 } from "@/components/workspace-v2/ConversationRailV2
 import { WorkspaceFrameV2 } from "@/components/workspace-v2/WorkspaceLayoutV2";
 import { ExportDropdown } from "@/components/workspace-v2/ExportDropdown";
 import { getReasoningLabel, isReasoningModel } from "@/lib/models/modelConfig";
-import { useCostSync } from "@/hooks/useCostSync";
 import type { ResponseMode } from "@/types";
 import { useChat } from "@/hooks/useChat";
 import { NotesProvider } from "@/components/workspace-v2/NotesProvider";
@@ -30,6 +29,7 @@ import { useComponentPreloader } from "@/lib/performance/lazy";
 import { MODELS } from "@/lib/models/modelConfig";
 import { useChatStore } from "@/stores/chatStore";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { toast } from "sonner";
 
 export function GauchoChatShellV2() {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -48,11 +48,10 @@ export function GauchoChatShellV2() {
     !window.sessionStorage.getItem("gpt-splash-shown");
 
   useComponentPreloader();
-  const { activeConversationId, messages, setActiveConversationId } = useChatStore();
-  const { conversations } = useConversations();
+  const { activeConversationId, messages, isStreaming, setActiveConversationId } = useChatStore();
+  const { conversations, createConversation } = useConversations();
   const { parameters } = useSettingsStore();
   const textSelection = useTextSelection();
-  useCostSync();
   const {
     messages: chatMessages,
     isLoading: isChatLoading,
@@ -119,11 +118,28 @@ export function GauchoChatShellV2() {
     []
   );
 
+  const handleNewConversation = useCallback(async () => {
+    if (isStreaming) {
+      toast.info("Aguarde a resposta terminar para abrir uma nova conversa.");
+      return;
+    }
+
+    try {
+      const id = await createConversation("Nova conversa");
+      setActiveConversationId(id);
+      setMobileSidebarOpen(false);
+      setMobileContextOpen(false);
+    } catch (creationError) {
+      console.error("[GauchoChatShellV2] Falha ao criar conversa:", creationError);
+      toast.error("Nao consegui abrir uma nova conversa agora.");
+    }
+  }, [createConversation, isStreaming, setActiveConversationId]);
+
   return (
     <>
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
       <CommandPaletteProvider
-        onNewConversation={() => setActiveConversationId(null)}
+        onNewConversation={() => void handleNewConversation()}
         onOpenSettings={() => setSettingsOpen(true)}
       >
       <NotesProvider>
@@ -131,6 +147,7 @@ export function GauchoChatShellV2() {
         <WorkspaceFrameV2
           activeConversationTitle={activeConversation?.title || "Workspace"}
           currentModelName={currentModel?.name || parameters.model}
+          onNewConversation={() => void handleNewConversation()}
           activeResponseMode={responseMode}
           reasoningLabel={reasoningLabel}
           artifactCount={artifactCount}

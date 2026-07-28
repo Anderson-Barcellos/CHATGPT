@@ -1,6 +1,6 @@
 # Modelos
 
-**Última atualização:** 2026-07-17
+**Última atualização:** 2026-07-28
 **Fonte:** `lib/models/modelConfig.ts`
 
 ## Catálogo Atual
@@ -17,6 +17,7 @@
 | `gpt-5.4-mini` | GPT-5.4 mini | `gpt-5` | Sim | 128K | 16K | Eficiente |
 | `gpt-5.2` | GPT-5.2 | `gpt-5` | Sim | 400K | 128K | Reasoning |
 | `deepseek-v4-pro` | DeepSeek V4 Pro | `deepseek` | Sim (máximo fixo) | 1M | 384K | DeepSeek |
+| `gemini-3.6-flash` | Gemini 3.6 Flash | `gemini` | Sim (`minimal` a `high`) | 1.048M | 65.536 | Gemini |
 
 ### Imagem
 
@@ -30,7 +31,7 @@
 - Modelo padrão do chat: `gpt-5.6-luna`, reasoning `low`, modo `standard`.
 - `gpt-5.6-sol` inicia com reasoning `medium`, modo `standard`.
 - Sol e Luna aceitam `reasoning.mode="pro"` independentemente do effort e oferecem effort `max`.
-- `gpt-5.4-mini` permanece permitido e no catálogo; seleções antigas salvas na store migram para Luna no chat padrão, enquanto Pulse e Deepsearch ainda usam Mini internamente.
+- `gpt-5.4-mini` permanece permitido e no catálogo; uma seleção salva válida é preservada, e Pulse/Deepsearch também usam Mini internamente.
 - `gpt-chat-latest` e `gpt-5-chat-latest` são aceitos como aliases locais e resolvem para `chat-latest`.
 - `gpt-5.2` inicia com reasoning `medium` + summary `detailed`.
 - Modelos mini iniciam com reasoning `none` + summary `detailed`; como o effort começa em `none`, esse summary não é enviado ao backend até o usuário ativar reasoning.
@@ -40,6 +41,8 @@
 - O Pulse usa `gpt-5.4-mini` + `medium` por padrão e permite `gpt-5.6-terra` + `medium` por rotina.
 - O `fresh_web_context` do DeepSeek usa `gpt-5.6-luna` + `low`; a resposta final continua no DeepSeek V4 Pro com reasoning máximo.
 - `deepseek-v4-pro` é permitido apenas no chat padrão streaming, não usa `code_interpreter` e depende de `DEEPSEEK_API_KEY`.
+- `gemini-3.6-flash` inicia em thinking `medium`, permite `minimal`, `low`, `medium` e `high`, e depende de `GEMINI_API_KEY`.
+- Gemini usa Interactions API stateless (`store=false`) com Google Search e URL Context nativos; Documento, Deepsearch e Quiz continuam nos modelos OpenAI forçados.
 - TTS usa `gpt-4o-mini-tts` em `lib/tts/speechText.ts`.
 - Realtime TTS opcional usa `gpt-realtime-2.1-mini`, sem `max_output_tokens` explícito.
 - Transcrição usa `gpt-4o-transcribe`.
@@ -54,12 +57,13 @@
 - só envia `verbosity` quando `modelSupportsVerbosity()` permite;
 - só adiciona `code_interpreter` quando o usuário habilita e o modelo suporta.
 - faz enforcement rígido apenas para `responseMode="quiz"`; presets `document` e `deepsearch_*` são montados no app por `hooks/useChat.ts`.
+- roteia `gemini-3.6-flash` para o adapter Interactions API apenas em chat padrão streaming.
 
 `lib/chat/reasoningConfig.ts`:
 
 - não envia reasoning quando o modelo não tem capacidade `reasoning`;
 - não envia reasoning quando o effort é `none`;
-- repassa `low`, `medium`, `high` e `xhigh` como `reasoning.effort`;
+- repassa `minimal`, `low`, `medium`, `high` e `xhigh` como `reasoning.effort` quando o modelo selecionado suporta o nível;
 - repassa também `max` somente nos GPT-5.6;
 - envia `reasoning.mode="pro"` somente em Sol/Luna; `standard` é omitido por ser o default da API;
 - repassa `auto`, `concise` e `detailed` como `reasoning.summary`;

@@ -106,7 +106,7 @@ export function useAssistantTts(content: string, messageId: string) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [, setDownloadRevision] = useState(0);
+  const [isDownloadReady, setIsDownloadReady] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUnlockedRef = useRef(false);
@@ -124,7 +124,7 @@ export function useAssistantTts(content: string, messageId: string) {
   const waitingForClipRef = useRef<number | null>(null);
   const clipIndexRef = useRef(0);
 
-  const totalClips = activeCacheRef.current?.chunks.length || chunks.length || 1;
+  const totalClips = chunks.length || 1;
   const isPlaying = status === "playing";
   const canPlay = chunks.length > 0;
 
@@ -335,6 +335,7 @@ export function useAssistantTts(content: string, messageId: string) {
     let cache = speechCache.get(cacheKey);
     if (cache?.complete && cache.clips.length && !cache.failed) {
       activeCacheRef.current = cache;
+      setIsDownloadReady(isCacheDownloadReady(cache));
       playClip(clipIndexRef.current);
       return;
     }
@@ -348,6 +349,7 @@ export function useAssistantTts(content: string, messageId: string) {
     cache = { chunks, clips: [], complete: false, failed: false };
     speechCache.set(cacheKey, cache);
     activeCacheRef.current = cache;
+    setIsDownloadReady(false);
     setStatus("loading");
     setError(null);
 
@@ -393,7 +395,7 @@ export function useAssistantTts(content: string, messageId: string) {
       await Promise.all([firstClipPromise, ...workers]);
 
       cache.complete = true;
-      setDownloadRevision((value) => value + 1);
+      setIsDownloadReady(isCacheDownloadReady(cache));
       generatingKeyRef.current = null;
       if (status === "loading" && cache.clips.length > 0 && !requestedPlayRef.current) {
         setStatus("paused");
@@ -401,6 +403,7 @@ export function useAssistantTts(content: string, messageId: string) {
     } catch (err) {
       if (controllers.size === 0 && generatingKeyRef.current === null) return;
       cache.failed = true;
+      setIsDownloadReady(false);
       generatingKeyRef.current = null;
       controllers.forEach((controller) => controller.abort());
       controllers.clear();
@@ -669,7 +672,7 @@ export function useAssistantTts(content: string, messageId: string) {
     progress: duration > 0 ? Math.min((currentTime / duration) * 100, 100) : 0,
     canDownload:
       isDownloadableTtsFormat(preferences.format) &&
-      isCacheDownloadReady(activeCacheRef.current),
+      isDownloadReady,
     openAndPlay,
     togglePlay,
     stop,

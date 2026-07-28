@@ -25,7 +25,8 @@ export function useMemorySuggestions() {
   }, []);
 
   useEffect(() => {
-    void refresh();
+    const initialLoad = window.setTimeout(() => void refresh(), 0);
+    return () => window.clearTimeout(initialLoad);
   }, [refresh]);
 
   const acceptSuggestion = useCallback(

@@ -32,6 +32,7 @@ describe("Pulse audio controls", () => {
     const markup = renderToStaticMarkup(<PulseAudioControls run={run} />);
 
     expect(markup.match(/title="Abrir player de áudio"/g)).toHaveLength(1);
+    expect(markup).toContain("text-micro");
     expect(markup).not.toContain("-15s");
     expect(markup).not.toContain("+15s");
     expect(markup).not.toContain("Ouvir");
