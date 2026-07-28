@@ -13,7 +13,7 @@ Alguns artefatos internos antigos ainda usam o rótulo histórico `Celer`, mas o
 - Mini-player de áudio compartilhado entre respostas do chat e gerações Pulse, com TTS padrão em FLAC/turbo e Realtime 2.1 mini selecionável.
 - Artefatos de documento/quiz com preview, download de fonte e PDF A4 server-side.
 - Auth simples do app por usuário/senha, sessão JWT e cookie `auth-token`.
-- Shell `workspace-v2` com direção clínica clara e densidade mobile compacta por tokens, sem `zoom` ou escala global.
+- Shell `workspace-v2` com o sistema visual **Atmosphere Glass** como padrão: Midnight Glass no escuro, Daybreak no claro e densidade mobile compacta por tokens, sem `zoom` ou escala global.
 
 ## Stack
 
@@ -49,6 +49,17 @@ data/
   persona.json          Persona e preferências
   workspace-notes.json  Capturas/notas locais (runtime privado)
 ```
+
+## Sistema visual
+
+O tema padrão vive em `app/globals.css` e é identificado por
+`data-visual-theme="atmosphere-glass"` no `WorkspaceFrameV2`.
+
+- **Midnight Glass**: modo escuro em navy profundo, superfícies translúcidas e acentos azul-frio.
+- **Daybreak**: interpretação clara da mesma linguagem, com fundos clínicos azulados e contraste documental.
+- Tokens de cor compartilhados ficam em `:root` e `.dark` para também alcançar `Sheet`, dropdowns e outros portais Radix montados diretamente sob `body`.
+- Geometria, ambientação e tratamentos próprios do shell continuam restritos a `.gc-atmosphere-shell`, preservando o restante da aplicação.
+- Verde fica reservado a estados semânticos, como disponibilidade, sucesso e conteúdo salvo.
 
 ## Documentação
 

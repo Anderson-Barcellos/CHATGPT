@@ -23,6 +23,28 @@ Browser/PWA
 
 O shell legado foi removido. Novas mudanças de UI devem seguir `workspace-v2`, tokens `--gc-*` em `app/globals.css` e os padrões atuais de componentes Radix/lucide.
 
+### Atmosphere Glass
+
+`WorkspaceFrameV2` aplica `.gc-atmosphere-shell` e
+`data-visual-theme="atmosphere-glass"`. Esse é o sistema visual padrão do app:
+**Midnight Glass** no dark e **Daybreak** no light. A mudança é estritamente de
+apresentação; contratos de chat, providers, streaming, persistência, auth e
+ferramentas permanecem independentes do tema.
+
+Há duas camadas de tokens em `app/globals.css`:
+
+- cores Shadcn e superfícies `--gc-*` compartilhadas vivem no `:root` e em
+  `.dark`;
+- composição, geometria, ambientação, rail, balões e composer permanecem
+  escopados por `.gc-atmosphere-shell`.
+
+Essa separação é um contrato arquitetural. Componentes Radix como `Sheet` e
+`DropdownMenu` usam portals montados diretamente sob `body`, portanto não
+herdam variáveis definidas somente dentro do shell. Ao criar uma nova
+superfície em portal, reutilize os tokens globais e não introduza uma paleta
+local. Verde deve continuar semântico — online, salvo e sucesso — enquanto
+seleção e foco visual usam o azul-frio do Atmosphere.
+
 ### Densidade visual mobile
 
 A compactação mobile atual foi implementada como uma passada paralela ao fluxo Codex de refinamentos. Abaixo de `md`, o app usa tokens `--gc-mobile-*` em `app/globals.css` para reduzir em torno de 15% o sistema espacial do shell: frame, header, subheader, composer, área do chat, empty state, painel contextual, rail e settings. A regra é compactar espaçamento, altura, raio e agrupamento; não usar `zoom`, viewport artificial ou `transform: scale()` global, e não escalar tipografia de leitura por viewport.

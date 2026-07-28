@@ -16,6 +16,7 @@ Este arquivo é a ponte compacta para Claude Code. A autoridade operacional é `
 
 - Next.js 16 com `basePath=/chat`; produção em `chatgpt.service`, porta `3040`.
 - Shell único: `GauchoChatShellV2` / `workspace-v2`.
+- Tema padrão: Atmosphere Glass (`Midnight Glass` no dark e `Daybreak` no light); tokens de cor são globais para alcançar portals Radix, enquanto a geometria permanece escopada a `.gc-atmosphere-shell`.
 - Chat principal via OpenAI Responses API; DeepSeek V4 Pro e Gemini 3.6 Flash usam adapters server-side apenas no chat padrão streaming.
 - Documento, Deepsearch e Quiz continuam em fluxos OpenAI forçados.
 - Pulse é a superfície visível de rotinas; Calendar/OAuth permanece backend legado operacional.

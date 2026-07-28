@@ -23,7 +23,8 @@ Principais areas:
 
 - Modelo padrao atual do chat: `gpt-5.6-luna` com reasoning `low` e modo `standard`; `gpt-5.4-mini` permanece oculto para fluxos internos; `gemini-3.6-flash` e selecionavel como provider separado no chat padrao
 - Shell ativo: `GauchoChatShellV2` / `WorkspaceFrameV2` — redesign completo (S0-S12)
-- Tokens `--gc-*` unificados em `app/globals.css`; light/dark completos
+- Sistema visual padrão: Atmosphere Glass — Midnight Glass no dark e Daybreak no light
+- Tokens de cor Shadcn/`--gc-*` globais em `app/globals.css` para alcançar portals Radix; geometria e ambientação escopadas a `.gc-atmosphere-shell`
 - Preview de artefatos via `ArtifactPreviewSheet`; painel lateral focado em atividade e notas
 - Command palette cmd+k (`CommandPalette` + `cmdk`)
 - Quick actions nos balões do assistente (`QuickActionsBar`)
@@ -1180,3 +1181,14 @@ A superficie canônica ficou em `README.md` + `docs/{API,ARCHITECTURE,INFRASTRUC
 
 Notes:
 Validacao: scouting por tres agentes, Knip antes/depois, 83 arquivos/288 testes, TypeScript, lint completo, build Next `16.2.12`, `git diff --check`, `npm audit --omit=dev` com zero vulnerabilidades, restart de `chatgpt.service` e health local/publico `healthy`. Nenhuma rota ou porta mudou, entao `/etc/apache2/APACHE.md` foi apenas consultado.
+
+### 2026-07-28 15:39 - Atmosphere Glass promovido a padrão visual
+
+Context:
+Anders aprovou como padrão a experiência visual dark/glass criada a partir da referência do Gaucho Chat e deixou a interpretação clara a critério do Codex, preservando integralmente o funcionamento do produto.
+
+Details:
+`app/globals.css` consolidou o sistema Atmosphere Glass com Midnight Glass no dark e Daybreak no light; `WorkspaceFrameV2` identifica o tema por `data-visual-theme="atmosphere-glass"`. A correção `2b7886f` elevou os tokens de cor Shadcn e `--gc-*` para `:root`/`.dark`, porque `Sheet`, dropdowns e outros portals Radix são montados diretamente sob `body` e não herdavam a paleta escopada ao shell. Geometria, ambientação, rail, balões e composer continuam restritos a `.gc-atmosphere-shell`. Acentos de seleção passaram a azul-frio; verde ficou reservado a online, salvo e sucesso.
+
+Notes:
+Não houve mudança de auth, providers, streaming, APIs, storage ou infraestrutura. Validação da implementação: 83 arquivos/288 testes, TypeScript, lint, build Next `16.2.12`, Playwright desktop dark/light e mobile, restart de `chatgpt.service`, health local/publico `200` e smoke público sem overlay, overflow ou erros de console. Commits da frente: `158c74d` (experimento), `9f0da47` (promoção a padrão) e `2b7886f` (portals/configurações).

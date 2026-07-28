@@ -1,4 +1,7 @@
 State:
+- Atmosphere Glass foi promovido a tema padrão: Midnight Glass no dark e Daybreak no light.
+- `WorkspaceFrameV2` expõe `data-visual-theme="atmosphere-glass"`; tokens de cor globais alcançam Sheets/dropdowns Radix e os tratamentos de layout seguem escopados a `.gc-atmosphere-shell`.
+- O hotfix `2b7886f` alinhou Configurações e outros portals ao azul-frio do shell; verde permanece apenas para estados semânticos.
 - `gemini-3.6-flash` foi adicionado ao seletor como provider separado, apenas para chat padrao streaming.
 - `lib/server/geminiChat.ts` usa a Interactions API stateless (`store=false`) com Google Search, URL Context, thinking summaries e bridge para o SSE atual.
 - Thinking Gemini oferece `minimal`, `low`, `medium` e `high`, com `medium` por padrao e preferencia persistida por modelo.
@@ -8,8 +11,8 @@ State:
 - Legado sem importador, handoffs concluidos, service worker desativado e estado efemero versionado foram removidos.
 
 Next:
-- Partir da `main` limpa e sincronizada para criar uma branch experimental dedicada apenas ao novo visual dark/glass.
-- Preservar contratos, streaming, providers, dados runtime e comportamento; a nova frente deve se limitar a tokens, composição e responsividade.
+- Não há frente visual pendente: partir da `main` limpa e sincronizada.
+- Em novos componentes Radix com portal, usar os tokens globais Atmosphere; não criar paleta local dentro do drawer/menu.
 
 Context:
 - Nao limpar dados runtime em `data/*.json`.
