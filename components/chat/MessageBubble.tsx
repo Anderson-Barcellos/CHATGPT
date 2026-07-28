@@ -303,7 +303,7 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
             className={cn(
               "inline-flex items-center rounded-full border px-2.5 py-1 text-micro font-medium",
               isUser
-                ? "border-white/18 bg-white/10 text-white/72"
+                ? "gc-user-meta-chip"
                 : "gc-refined-chip"
             )}
           >

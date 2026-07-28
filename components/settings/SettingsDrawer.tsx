@@ -455,6 +455,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                   type="button"
                   variant="ghost"
                   size="icon"
+                  aria-label="Fechar configurações"
                   onClick={onClose}
                   className="gc-clinical-input-surface size-[var(--gc-mobile-icon-button-size)] rounded-xl border border-[color:var(--gc-border-soft)] hover:bg-[var(--gc-surface-control-hover)] sm:h-8 sm:w-8 sm:border-[color:var(--gc-border)]"
                 >

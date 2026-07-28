@@ -853,8 +853,134 @@ body {
   }
 }
 
-/* ── Midnight glass experiment ────────────────────────── */
-.gc-midnight-experiment {
+/* ── Atmosphere glass system ─────────────────────────── */
+.gc-atmosphere-shell {
+  --background: #eef6fa;
+  --foreground: #142536;
+  --card: #f8fbfd;
+  --card-foreground: #142536;
+  --popover: #f9fcfe;
+  --popover-foreground: #142536;
+  --primary: #277e9d;
+  --primary-foreground: #f8fdff;
+  --secondary: #dceaf2;
+  --secondary-foreground: #1c3547;
+  --muted: #e3edf3;
+  --muted-foreground: #62798b;
+  --accent: #6eafc6;
+  --accent-foreground: #102a3b;
+  --border: rgb(63 103 130 / 20%);
+  --input: rgb(63 103 130 / 24%);
+  --ring: #438fab;
+  --sidebar: #e8f2f7;
+  --sidebar-foreground: #1a3041;
+  --sidebar-accent: #d7e9f2;
+  --sidebar-accent-foreground: #142b3c;
+  --sidebar-border: rgb(63 103 130 / 18%);
+
+  --gc-bg: #dfeaf1;
+  --gc-bg-page: #edf5f9;
+  --gc-surface-shell: rgb(245 250 253 / 97%);
+  --gc-surface-panel: rgb(232 242 248 / 96%);
+  --gc-surface-panel-strong: rgb(248 252 254 / 98%);
+  --gc-surface-composer: rgb(247 251 254 / 98%);
+  --gc-surface-control: rgb(53 104 135 / 7%);
+  --gc-surface-control-hover: rgb(53 119 156 / 13%);
+  --gc-surface-canvas: rgb(238 247 251 / 97%);
+  --gc-surface-canvas-soft: rgb(214 231 240 / 84%);
+  --gc-overlay-gradient:
+    radial-gradient(ellipse 58% 66% at 92% 92%, rgb(85 170 221 / 22%), transparent 69%),
+    linear-gradient(135deg, rgb(249 252 254 / 96%), rgb(235 245 250 / 94%) 58%, rgb(222 239 249 / 94%));
+  --gc-ambient-aura:
+    radial-gradient(ellipse 52% 44% at 91% 84%, rgb(81 165 217 / 22%), transparent 70%),
+    radial-gradient(ellipse 38% 32% at 38% 8%, rgb(113 171 203 / 14%), transparent 72%);
+  --gc-ambient-mesh:
+    radial-gradient(ellipse 48% 58% at 88% 78%, rgb(78 163 216 / 16%), transparent 70%),
+    linear-gradient(180deg, rgb(255 255 255 / 50%), transparent 30%);
+
+  --gc-border: rgb(63 103 130 / 22%);
+  --gc-border-soft: rgb(63 103 130 / 13%);
+  --gc-bubble-user:
+    linear-gradient(145deg, rgb(55 91 119 / 98%), rgb(35 68 94 / 98%) 76%);
+  --gc-bubble-user-fg: #f7fbfe;
+  --gc-bubble-user-border: rgb(42 84 114 / 30%);
+  --gc-bubble-user-shadow:
+    0 20px 54px rgb(40 76 104 / 20%),
+    0 1px 0 rgb(255 255 255 / 18%) inset;
+  --gc-bubble-assistant:
+    linear-gradient(150deg, rgb(253 255 255 / 98%), rgb(237 246 251 / 97%));
+  --gc-bubble-assistant-border: rgb(63 103 130 / 20%);
+  --gc-bubble-assistant-shadow:
+    0 20px 54px rgb(49 83 105 / 14%),
+    0 1px 0 rgb(255 255 255 / 88%) inset;
+  --gc-glass-bg: rgb(248 252 254 / 82%);
+  --gc-glass-bg-strong: rgb(251 254 255 / 94%);
+  --gc-glass-border: rgb(63 103 130 / 18%);
+  --gc-glass-highlight: rgb(255 255 255 / 72%);
+
+  --gc-clinical-shell-bg:
+    linear-gradient(145deg, rgb(246 251 253 / 98%), rgb(230 241 247 / 98%)),
+    var(--gc-surface-shell);
+  --gc-clinical-shell-shadow:
+    0 26px 74px rgb(43 75 96 / 18%),
+    0 0 0 1px rgb(255 255 255 / 70%) inset;
+  --gc-clinical-panel-bg:
+    linear-gradient(180deg, rgb(239 247 251 / 98%), rgb(228 239 246 / 98%)),
+    var(--gc-surface-panel);
+  --gc-clinical-header-bg:
+    linear-gradient(180deg, rgb(249 252 254 / 99%), rgb(235 244 249 / 98%)),
+    var(--gc-surface-panel-strong);
+  --gc-clinical-header-shadow: 0 1px 0 rgb(255 255 255 / 84%) inset;
+  --gc-clinical-canvas-bg:
+    radial-gradient(ellipse 58% 64% at 91% 90%, rgb(81 164 220 / 24%), transparent 68%),
+    radial-gradient(ellipse 44% 34% at 42% 3%, rgb(116 172 204 / 13%), transparent 74%),
+    linear-gradient(145deg, #f7fbfd 0%, #edf6fa 54%, #dcecf7 100%);
+  --gc-clinical-composer-bg:
+    linear-gradient(180deg, rgb(251 254 255 / 99%), rgb(235 245 250 / 99%)),
+    var(--gc-surface-composer);
+  --gc-clinical-composer-border: rgb(55 119 154 / 26%);
+  --gc-clinical-composer-shadow:
+    0 24px 62px rgb(42 78 103 / 18%),
+    0 1px 0 rgb(255 255 255 / 88%) inset,
+    0 0 0 1px rgb(69 132 168 / 7%);
+  --gc-clinical-subheader-bg:
+    linear-gradient(90deg, rgb(237 246 250 / 98%), rgb(248 252 254 / 98%) 52%, rgb(221 238 248 / 96%));
+  --gc-clinical-section-header-bg:
+    linear-gradient(180deg, rgb(248 252 254 / 99%), rgb(232 242 248 / 98%));
+  --gc-clinical-card-bg:
+    linear-gradient(180deg, rgb(252 254 255 / 88%), rgb(232 242 248 / 90%));
+  --gc-clinical-card-shadow: 0 1px 0 rgb(255 255 255 / 88%) inset;
+  --gc-clinical-row-bg:
+    linear-gradient(135deg, rgb(248 252 254 / 90%), rgb(229 240 247 / 92%));
+  --gc-clinical-active-bg:
+    linear-gradient(135deg, rgb(114 178 208 / 25%), rgb(225 239 247 / 96%));
+  --gc-clinical-active-shadow:
+    0 12px 30px rgb(47 83 105 / 14%),
+    0 1px 0 rgb(255 255 255 / 82%) inset;
+  --gc-clinical-input-shadow: 0 1px 0 rgb(255 255 255 / 80%) inset;
+
+  --gc-refined-panel-bg:
+    linear-gradient(180deg, rgb(252 254 255 / 92%), rgb(232 242 248 / 94%));
+  --gc-refined-panel-border: rgb(63 103 130 / 18%);
+  --gc-refined-panel-shadow:
+    0 22px 56px rgb(45 78 99 / 14%),
+    0 1px 0 rgb(255 255 255 / 86%) inset;
+  --gc-refined-soft-bg:
+    linear-gradient(180deg, rgb(249 253 255 / 90%), rgb(230 241 247 / 94%));
+  --gc-refined-soft-border: rgb(63 103 130 / 16%);
+  --gc-refined-accent-bg:
+    linear-gradient(145deg, rgb(216 237 246 / 92%), rgb(237 247 251 / 96%));
+  --gc-refined-accent-border: rgb(55 119 154 / 20%);
+  --gc-refined-citation-bg:
+    linear-gradient(180deg, rgb(250 253 255 / 94%), rgb(231 241 247 / 95%));
+  --gc-refined-citation-border: rgb(63 103 130 / 16%);
+  --gc-refined-action-bg:
+    linear-gradient(180deg, rgb(248 252 254 / 90%), rgb(228 239 246 / 94%));
+  --gc-refined-action-border: rgb(63 103 130 / 15%);
+  --gc-refined-chip-bg: rgb(216 233 242 / 88%);
+  --gc-refined-chip-border: rgb(63 103 130 / 15%);
+  --gc-refined-chip-text: #536c7e;
+
   --gc-shell-gutter: 0.35rem;
   --gc-shell-rail-width: 14.5rem;
   --gc-shell-context-width: 18rem;
@@ -865,7 +991,7 @@ body {
   --gc-mobile-panel-content-gap: 0.5rem;
 }
 
-.dark .gc-midnight-experiment {
+.dark .gc-atmosphere-shell {
   --background: #07101d;
   --foreground: #eef5ff;
   --card: #0d1929;
@@ -993,113 +1119,113 @@ body {
   --gc-refined-chip-text: #a9bbcd;
 }
 
-.gc-midnight-experiment .gc-clinical-shell {
+.gc-atmosphere-shell .gc-clinical-shell {
   border-radius: 1rem;
 }
 
-.gc-midnight-experiment .gc-clinical-rail::before,
-.gc-midnight-experiment .gc-clinical-panel::before {
+.gc-atmosphere-shell .gc-clinical-rail::before,
+.gc-atmosphere-shell .gc-clinical-panel::before {
   display: none;
 }
 
-.gc-midnight-experiment .gc-subtle-grid {
+.gc-atmosphere-shell .gc-subtle-grid {
   opacity: 0.08 !important;
 }
 
-.gc-midnight-experiment .gc-ambient-overlay {
+.gc-atmosphere-shell .gc-ambient-overlay {
   opacity: 0.88;
 }
 
-.gc-midnight-experiment.gc-dynamic-bg::before {
+.gc-atmosphere-shell.gc-dynamic-bg::before {
   opacity: 0.46;
   filter: blur(30px);
 }
 
-.gc-midnight-experiment .gc-clinical-header > div:first-child {
+.gc-atmosphere-shell .gc-clinical-header > div:first-child {
   height: 2.8rem;
 }
 
-.gc-midnight-experiment .gc-clinical-subheader {
+.gc-atmosphere-shell .gc-clinical-subheader {
   min-height: 1.9rem;
   padding-block: 0.28rem;
 }
 
-.gc-midnight-experiment .gc-clinical-header .gc-clinical-input-surface {
+.gc-atmosphere-shell .gc-clinical-header .gc-clinical-input-surface {
   height: 1.9rem;
   border-radius: 0.65rem;
 }
 
-.gc-midnight-experiment .gc-rail-header {
+.gc-atmosphere-shell .gc-rail-header {
   padding: 0.62rem 0.56rem;
 }
 
-.gc-midnight-experiment .gc-rail-header > .mb-3 {
+.gc-atmosphere-shell .gc-rail-header > .mb-3 {
   margin-bottom: 0.58rem;
 }
 
-.gc-midnight-experiment .gc-rail-header .size-10 {
+.gc-atmosphere-shell .gc-rail-header .size-10 {
   width: 2.15rem;
   height: 2.15rem;
   border-radius: 0.7rem;
 }
 
-.gc-midnight-experiment .gc-rail-header .size-9 {
+.gc-atmosphere-shell .gc-rail-header .size-9 {
   width: 2rem;
   height: 2rem;
   border-radius: 0.65rem;
 }
 
-.gc-midnight-experiment .gc-rail-header input {
+.gc-atmosphere-shell .gc-rail-header input {
   height: 2rem;
   border-radius: 0.65rem;
 }
 
-.gc-midnight-experiment .gc-rail-filters {
+.gc-atmosphere-shell .gc-rail-filters {
   border-radius: 0.7rem;
   padding: 0.2rem;
 }
 
-.gc-midnight-experiment .gc-rail-filters button {
+.gc-atmosphere-shell .gc-rail-filters button {
   height: 1.6rem;
   border-radius: 0.48rem;
 }
 
-.gc-midnight-experiment .gc-rail-stats > div {
+.gc-atmosphere-shell .gc-rail-stats > div {
   border-radius: 0.7rem;
   padding-block: 0.34rem;
 }
 
-.gc-midnight-experiment .gc-conversation-row {
+.gc-atmosphere-shell .gc-conversation-row {
   border-radius: 0.7rem;
   padding: 0.48rem 2.1rem 0.48rem 0.55rem;
 }
 
-.gc-midnight-experiment .gc-rail-footer {
+.gc-atmosphere-shell .gc-rail-footer {
   padding: 0.55rem;
 }
 
-.gc-midnight-experiment .gc-rail-footer button {
+.gc-atmosphere-shell .gc-rail-footer button {
   height: 2rem;
   border-radius: 0.65rem;
 }
 
-.gc-midnight-experiment .gc-chat-thread {
+.gc-atmosphere-shell .gc-chat-thread {
   max-width: 58rem;
   padding-top: 0.95rem;
   padding-bottom: 1.3rem;
 }
 
-.gc-midnight-experiment .gc-message-row {
+.gc-atmosphere-shell .gc-message-row {
   gap: 0.65rem;
 }
 
-.gc-midnight-experiment .gc-message-frame {
+.gc-atmosphere-shell .gc-message-frame {
   display: flex;
   min-width: 0;
   flex-direction: column;
 }
 
-.gc-midnight-experiment .gc-user-bubble {
+.gc-atmosphere-shell .gc-user-bubble {
   align-self: flex-end;
   width: min(100%, 42rem);
   max-width: min(76%, 42rem) !important;
@@ -1107,7 +1233,27 @@ body {
   padding: 1.15rem 1.3rem;
 }
 
-.gc-midnight-experiment .gc-assistant-bubble {
+.gc-atmosphere-shell .gc-user-bubble :is(h1, h2, h3, h4, h5, h6, strong, blockquote) {
+  color: var(--gc-bubble-user-fg);
+}
+
+.gc-atmosphere-shell .gc-user-bubble hr {
+  border-color: rgb(255 255 255 / 18%);
+}
+
+.gc-atmosphere-shell .gc-user-meta-chip {
+  border-color: rgb(63 103 130 / 18%);
+  background: rgb(235 244 249 / 82%);
+  color: #607789;
+}
+
+.dark .gc-atmosphere-shell .gc-user-meta-chip {
+  border-color: rgb(255 255 255 / 18%);
+  background: rgb(255 255 255 / 10%);
+  color: rgb(255 255 255 / 72%);
+}
+
+.gc-atmosphere-shell .gc-assistant-bubble {
   align-self: flex-start;
   width: min(100%, 46rem);
   max-width: min(88%, 46rem) !important;
@@ -1115,80 +1261,80 @@ body {
   padding: 1.15rem 1.3rem;
 }
 
-.gc-midnight-experiment .gc-assistant-bubble::before {
+.gc-atmosphere-shell .gc-assistant-bubble::before {
   width: 1px;
   opacity: 0.26;
 }
 
-.gc-midnight-experiment .gc-message-meta {
+.gc-atmosphere-shell .gc-message-meta {
   max-width: 42rem;
 }
 
-.gc-midnight-experiment .gc-message-quick-actions {
+.gc-atmosphere-shell .gc-message-quick-actions {
   max-width: 46rem;
   border-radius: 0.72rem;
 }
 
-.dark .gc-midnight-experiment .gc-message-quick-actions {
+.dark .gc-atmosphere-shell .gc-message-quick-actions {
   background: rgb(8 20 36 / 62%);
 }
 
-.gc-midnight-experiment .gc-composer-dock {
+.gc-atmosphere-shell .gc-composer-dock {
   position: relative;
   z-index: 12;
   background: transparent;
 }
 
-.gc-midnight-experiment .gc-composer-width {
+.gc-atmosphere-shell .gc-composer-width {
   max-width: 56rem;
 }
 
-.gc-midnight-experiment .gc-clinical-composer {
+.gc-atmosphere-shell .gc-clinical-composer {
   border-radius: 0.88rem;
 }
 
-.gc-midnight-experiment .gc-clinical-composer textarea {
+.gc-atmosphere-shell .gc-clinical-composer textarea {
   min-height: 2.65rem;
   padding-top: 0.78rem;
 }
 
-.dark .gc-midnight-experiment .gc-clinical-composer > div:last-child {
+.dark .gc-atmosphere-shell .gc-clinical-composer > div:last-child {
   background: rgb(5 16 30 / 42%);
 }
 
-.gc-midnight-experiment [data-workspace-region="context"][data-collapsed="true"] {
+.gc-atmosphere-shell [data-workspace-region="context"][data-collapsed="true"] {
   width: 2.85rem;
 }
 
-.gc-midnight-experiment [data-workspace-region="context"] > div {
+.gc-atmosphere-shell [data-workspace-region="context"] > div {
   gap: 0.75rem;
 }
 
 @media (max-width: 767px) {
-  .gc-midnight-experiment {
+  .gc-atmosphere-shell {
     --gc-shell-gutter: 0;
     --gc-shell-rail-width: 100vw;
     --gc-shell-context-width: 100vw;
     --gc-shell-context-expanded-width: 100vw;
   }
 
-  .gc-midnight-experiment .gc-clinical-shell {
+  .gc-atmosphere-shell .gc-clinical-shell {
     border-radius: 0;
   }
 
-  .gc-midnight-experiment .gc-chat-thread {
+  .gc-atmosphere-shell .gc-chat-thread {
     padding-top: 0.75rem;
     padding-bottom: 0.9rem;
   }
 
-  .gc-midnight-experiment .gc-user-bubble,
-  .gc-midnight-experiment .gc-assistant-bubble {
+  .gc-atmosphere-shell .gc-user-bubble,
+  .gc-atmosphere-shell .gc-assistant-bubble {
     width: 100%;
     max-width: 100% !important;
     padding: 0.78rem 0.85rem;
   }
 
-  .dark .gc-midnight-experiment .gc-composer-dock {
+  .dark .gc-atmosphere-shell .gc-composer-dock {
     background: rgb(3 10 19 / 86%);
   }
 }

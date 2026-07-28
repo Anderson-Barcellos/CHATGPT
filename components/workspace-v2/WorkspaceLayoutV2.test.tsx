@@ -33,8 +33,8 @@ describe("WorkspaceFrameV2", () => {
     expect(markup).toContain("Artefato");
     expect(markup).not.toContain("Preview do documento");
     expect(markup).toContain("gc-device-frame");
-    expect(markup).toContain("gc-midnight-experiment");
-    expect(markup).toContain('data-visual-theme="midnight-glass"');
+    expect(markup).toContain("gc-atmosphere-shell");
+    expect(markup).toContain('data-visual-theme="atmosphere-glass"');
     expect(markup).toContain("text-[length:var(--gc-mobile-tab-font-size)]");
     expect(markup).not.toContain("text-[0.6rem]");
     expect(markup).not.toContain('class="dark ');

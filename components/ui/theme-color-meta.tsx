@@ -4,8 +4,8 @@ import { useEffect } from "react";
 import { useTheme } from "next-themes";
 
 const THEME_COLORS = {
-  light: "#eef1f4",
-  dark: "#0a0e14",
+  light: "#edf5f9",
+  dark: "#030812",
 } as const;
 
 export const SPLASH_THEME_COLOR = "#0e131c";

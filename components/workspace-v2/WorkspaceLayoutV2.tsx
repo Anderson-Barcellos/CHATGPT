@@ -230,8 +230,8 @@ export function WorkspaceFrameV2({
 
   return (
     <div
-      className="gc-midnight-experiment gc-dynamic-bg gc-device-frame gc-mobile-density relative overflow-hidden text-foreground"
-      data-visual-theme="midnight-glass"
+      className="gc-atmosphere-shell gc-dynamic-bg gc-device-frame gc-mobile-density relative overflow-hidden text-foreground"
+      data-visual-theme="atmosphere-glass"
     >
       <div
         aria-hidden="true"
