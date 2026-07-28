@@ -120,7 +120,7 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
       className={cn(
-        "group flex gap-2 md:gap-3",
+        "gc-message-row group flex gap-2 md:gap-3",
         isUser ? "justify-end" : "justify-start"
       )}
       data-message-id={message.id}
@@ -131,7 +131,7 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
         </div>
       )}
 
-      <div className={cn("w-full max-w-full min-w-0", isUser && "order-first")}>
+      <div className={cn("gc-message-frame w-full max-w-full min-w-0", isUser && "order-first")}>
         <Card
           className={cn(
             "relative w-full min-w-0 gap-0 overflow-hidden break-words border px-3 py-2.5 text-left text-body-sm leading-relaxed md:px-5 md:py-4 md:text-body",
@@ -296,7 +296,7 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
         </Card>
 
         <div className={cn(
-          "mt-2 flex items-center gap-2 px-1 text-xs text-muted-foreground/60",
+          "gc-message-meta mt-2 flex items-center gap-2 px-1 text-xs text-muted-foreground/60",
           isUser ? "justify-end" : "justify-start"
         )}>
           <span
@@ -382,7 +382,7 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
         {!isUser &&
           (message.content ||
             (message.artifact?.kind === "document" ? message.artifact.content : "")) && (
-          <div className="gc-refined-action-surface mt-2 rounded-2xl border px-2.5 py-2 md:px-3">
+          <div className="gc-message-quick-actions gc-refined-action-surface mt-2 rounded-2xl border px-2.5 py-2 md:px-3">
             <QuickActionsBar
               content={
                 message.artifact?.kind === "document"

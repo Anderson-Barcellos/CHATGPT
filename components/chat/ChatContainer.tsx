@@ -537,7 +537,7 @@ export function ChatContainer({
       <ScrollArea ref={scrollAreaRef} className="h-full">
         <div
           ref={contentRef}
-          className="mx-auto flex w-full max-w-3xl flex-col gap-[var(--gc-mobile-chat-content-gap)] px-[var(--gc-mobile-chat-content-x)] py-[var(--gc-mobile-chat-content-y)] md:gap-5 md:px-5 md:py-7 lg:max-w-[50rem] min-[1490px]:max-w-[60rem]"
+          className="gc-chat-thread mx-auto flex w-full max-w-3xl flex-col gap-[var(--gc-mobile-chat-content-gap)] px-[var(--gc-mobile-chat-content-x)] py-[var(--gc-mobile-chat-content-y)] md:gap-5 md:px-5 md:py-7 lg:max-w-[50rem] min-[1490px]:max-w-[60rem]"
         >
           {messages.length === 0 ? (
             <WelcomeScreen onSuggestionClick={handleSuggestion} />

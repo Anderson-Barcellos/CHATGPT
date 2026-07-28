@@ -134,7 +134,7 @@ function ConversationRowV2({
         data-active={isActive}
         onClick={onSelect}
         className={cn(
-            "flex w-full min-w-0 items-start gap-2 rounded-xl border border-transparent px-2.5 py-2 pr-9 text-left text-muted-foreground transition-colors hover:border-[color:var(--gc-border-soft)] hover:bg-[var(--gc-surface-control)] hover:text-foreground data-[active=true]:border-primary/35 data-[active=true]:bg-[var(--gc-clinical-active-bg)] data-[active=true]:text-foreground data-[active=true]:shadow-[var(--gc-clinical-active-shadow)]",
+            "gc-conversation-row flex w-full min-w-0 items-start gap-2 rounded-xl border border-transparent px-2.5 py-2 pr-9 text-left text-muted-foreground transition-colors hover:border-[color:var(--gc-border-soft)] hover:bg-[var(--gc-surface-control)] hover:text-foreground data-[active=true]:border-primary/35 data-[active=true]:bg-[var(--gc-clinical-active-bg)] data-[active=true]:text-foreground data-[active=true]:shadow-[var(--gc-clinical-active-shadow)]",
           disabled && "cursor-not-allowed opacity-70"
         )}
       >
@@ -432,8 +432,8 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="gc-clinical-section-header shrink-0 border-b border-[color:var(--gc-border-soft)] px-[var(--gc-mobile-context-header-x)] py-[var(--gc-mobile-context-header-y)]">
+    <div className="gc-conversation-rail flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="gc-rail-header gc-clinical-section-header shrink-0 border-b border-[color:var(--gc-border-soft)] px-[var(--gc-mobile-context-header-x)] py-[var(--gc-mobile-context-header-y)]">
         <div className="mb-3 flex items-center gap-2">
           <div className="flex size-10 items-center justify-center rounded-xl border border-primary/18 bg-primary/10 shadow-[0_10px_22px_rgba(15,118,110,0.10)]">
             <GPTLogo size={25} />
@@ -465,7 +465,7 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
           />
         </div>
 
-        <div className={cn("mt-2 grid grid-cols-4 gap-1 p-1", RAIL_SURFACE_CARD_CLASS)}>
+        <div className={cn("gc-rail-filters mt-2 grid grid-cols-4 gap-1 p-1", RAIL_SURFACE_CARD_CLASS)}>
           {FILTER_OPTIONS.map((option) => (
             <button
               key={option.value}
@@ -479,7 +479,7 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
           ))}
         </div>
 
-        <div className="mt-2 grid grid-cols-2 gap-1.5">
+        <div className="gc-rail-stats mt-2 grid grid-cols-2 gap-1.5">
           <div className={cn("px-2 py-1.5", RAIL_SURFACE_CARD_CLASS)}>
             <p className="text-nano uppercase tracking-label text-muted-foreground">Hoje</p>
             <p className="text-xs font-semibold text-foreground">{todayCount}</p>
@@ -549,7 +549,7 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
         </div>
       </ScrollArea>
 
-      <div className="shrink-0 border-t border-[color:var(--gc-border-soft)] p-[var(--gc-mobile-panel-content-pad)]">
+      <div className="gc-rail-footer shrink-0 border-t border-[color:var(--gc-border-soft)] p-[var(--gc-mobile-panel-content-pad)]">
         <Button
           variant="ghost"
           onClick={onOpenSettings}

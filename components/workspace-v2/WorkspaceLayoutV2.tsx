@@ -217,7 +217,7 @@ export function WorkspaceFrameV2({
   const sidebarOpen = mobileSidebarOpen ?? internalSidebarOpen;
   const setSidebarOpen = onMobileSidebarOpenChange ?? setInternalSidebarOpen;
   const [internalContextOpen, setInternalContextOpen] = useState(false);
-  const [contextCollapsed, setContextCollapsed] = useState(false);
+  const [contextCollapsed, setContextCollapsed] = useState(true);
   const [contextExpanded, setContextExpanded] = useState(false);
   const contextOpen = mobileContextOpen ?? internalContextOpen;
   const setContextOpen = onMobileContextOpenChange ?? setInternalContextOpen;
@@ -229,7 +229,10 @@ export function WorkspaceFrameV2({
   }, []);
 
   return (
-    <div className="gc-dynamic-bg gc-device-frame gc-mobile-density relative overflow-hidden text-foreground">
+    <div
+      className="gc-midnight-experiment gc-dynamic-bg gc-device-frame gc-mobile-density relative overflow-hidden text-foreground"
+      data-visual-theme="midnight-glass"
+    >
       <div
         aria-hidden="true"
         className="gc-ambient-overlay pointer-events-none absolute inset-0"
@@ -427,6 +430,7 @@ export function WorkspaceFrameV2({
 
             <aside
               data-workspace-region="context"
+              data-collapsed={contextCollapsed}
               className={cn(
                 "gc-clinical-panel hidden min-h-0 shrink-0 overflow-hidden border-l border-[color:var(--gc-border)] transition-[width] duration-200 xl:block",
                 contextCollapsed
@@ -557,8 +561,8 @@ export function CommandComposerV2({
   const statusMessage = error || speechError || fileErrors[0] || null;
 
   return (
-    <footer className="shrink-0 border-t border-[color:var(--gc-border-soft)] bg-background/80 px-[var(--gc-mobile-composer-footer-x)] pb-[calc(env(safe-area-inset-bottom)+var(--gc-mobile-composer-footer-bottom))] pt-[var(--gc-mobile-composer-footer-top)] backdrop-blur-xl md:border-t-0 md:bg-transparent md:px-5 md:pb-4 md:pt-0">
-      <div className="mx-auto max-w-[48rem] min-[1490px]:max-w-[58rem]">
+    <footer className="gc-composer-dock shrink-0 border-t border-[color:var(--gc-border-soft)] bg-background/80 px-[var(--gc-mobile-composer-footer-x)] pb-[calc(env(safe-area-inset-bottom)+var(--gc-mobile-composer-footer-bottom))] pt-[var(--gc-mobile-composer-footer-top)] backdrop-blur-xl md:border-t-0 md:bg-transparent md:px-5 md:pb-4 md:pt-0">
+      <div className="gc-composer-width mx-auto max-w-[48rem] min-[1490px]:max-w-[58rem]">
         {statusMessage && (
           <div className="mb-2 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
             {statusMessage}
