@@ -1388,7 +1388,7 @@ git commit -m "feat(studio): register Monaco FIM provider"
 - Modify: `components/studio/GauchoStudioShell.tsx`
 - Modify: `components/studio/GauchoStudioShell.module.css`
 
-- [ ] **Step 1: Write the failing accessible-control test**
+- [x] **Step 1: Write the failing accessible-control test**
 
 Criar `components/studio/StudioAutocompleteControl.test.tsx`:
 
@@ -1418,13 +1418,13 @@ describe("StudioAutocompleteControl", () => {
 });
 ```
 
-- [ ] **Step 2: Run the UI test and verify RED**
+- [x] **Step 2: Run the UI test and verify RED**
 
 Run: `npm test -- components/studio/StudioAutocompleteControl.test.tsx`
 
 Expected: FAIL because the component does not exist.
 
-- [ ] **Step 3: Implement the status control**
+- [x] **Step 3: Implement the status control**
 
 Criar `components/studio/StudioAutocompleteControl.tsx`:
 
@@ -1472,7 +1472,7 @@ export function StudioAutocompleteControl({
 }
 ```
 
-- [ ] **Step 4: Wire the provider into `StudioEditor`**
+- [x] **Step 4: Wire the provider into `StudioEditor`**
 
 Adicionar props:
 
@@ -1496,7 +1496,7 @@ autocompleteRef.current = registerStudioAutocompleteProvider({
 
 Ao mudar `autocompleteEnabled`, chamar `autocompleteRef.current?.setEnabled(enabled)` para abortar e limpar imediatamente quando desligado. No cleanup do componente, chamar `dispose()` e `onReadyChange?.(false)`.
 
-- [ ] **Step 5: Wire persistence and status into the shell**
+- [x] **Step 5: Wire persistence and status into the shell**
 
 Em `GauchoStudioShell.tsx`, obter `setAutocompleteEnabled` do hook, criar:
 
@@ -1528,7 +1528,7 @@ Renderizar o controle dentro de `.executionStatus`, depois de “Salvo”, e pas
 />
 ```
 
-- [ ] **Step 6: Add desktop-only visual states**
+- [x] **Step 6: Add desktop-only visual states**
 
 Adicionar ao CSS module:
 
@@ -1568,13 +1568,13 @@ Adicionar ao CSS module:
 }
 ```
 
-- [ ] **Step 7: Run focused UI/integration tests and TypeScript**
+- [x] **Step 7: Run focused UI/integration tests and TypeScript**
 
 Run: `npm test -- components/studio/StudioAutocompleteControl.test.tsx lib/studio/workspace.test.ts lib/studio/autocompleteProvider.test.ts && npx tsc --noEmit`
 
 Expected: PASS with no change to `StudioAssistantPanel` or runner behavior.
 
-- [ ] **Step 8: Commit the integrated UI**
+- [x] **Step 8: Commit the integrated UI**
 
 ```bash
 git add components/studio/StudioAutocompleteControl.tsx components/studio/StudioAutocompleteControl.test.tsx components/studio/StudioEditor.tsx components/studio/GauchoStudioShell.tsx components/studio/GauchoStudioShell.module.css

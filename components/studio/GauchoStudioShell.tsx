@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { SettingsDrawer } from "@/components/settings/SettingsDrawer";
 import { StudioAssistantPanel } from "@/components/studio/StudioAssistantPanel";
+import { StudioAutocompleteControl } from "@/components/studio/StudioAutocompleteControl";
 import { StudioConsole } from "@/components/studio/StudioConsole";
 import {
   StudioEditor,
@@ -23,6 +24,7 @@ import {
 import { StudioExplorer } from "@/components/studio/StudioExplorer";
 import { useStudioWorkspace } from "@/hooks/useStudioWorkspace";
 import { runCompiledStudioModule } from "@/lib/studio/runner";
+import type { StudioAutocompleteStatus } from "@/lib/studio/autocomplete";
 import type { StudioConsoleEntry, StudioRunResult } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
 import styles from "@/components/studio/GauchoStudioShell.module.css";
@@ -61,6 +63,7 @@ export function GauchoStudioShell() {
     updateAssistantMessage,
     clearAssistantMessages,
     setSelectedModelId,
+    setAutocompleteEnabled,
   } = useStudioWorkspace();
   const editorRef = useRef<StudioEditorHandle | null>(null);
   const runAbortRef = useRef<AbortController | null>(null);
@@ -70,6 +73,10 @@ export function GauchoStudioShell() {
   const [mobileExplorerOpen, setMobileExplorerOpen] = useState(false);
   const [running, setRunning] = useState(false);
   const [runSession, setRunSession] = useState<StudioRunSession | null>(null);
+  const [autocompleteStatus, setAutocompleteStatus] =
+    useState<StudioAutocompleteStatus>(
+      workspace.autocompleteEnabled ? "idle" : "off"
+    );
 
   const executable =
     activeFile?.language === "typescript" ||
@@ -184,13 +191,21 @@ export function GauchoStudioShell() {
             <span>{running ? "Executando" : "Execução local"}</span>
             <span className={styles.topbarDivider} />
             <span className={styles.savedDot} />
-            <span>
+            <span className={styles.saveLabel}>
               {saveState === "saving"
                 ? "Salvando"
                 : saveState === "error"
                 ? "Erro ao salvar"
                 : "Salvo"}
             </span>
+            <span className={styles.topbarDivider} />
+            <StudioAutocompleteControl
+              enabled={workspace.autocompleteEnabled}
+              status={
+                workspace.autocompleteEnabled ? autocompleteStatus : "off"
+              }
+              onToggle={setAutocompleteEnabled}
+            />
           </div>
 
           <div className={styles.topbarActions}>
@@ -272,6 +287,8 @@ export function GauchoStudioShell() {
             <StudioEditor
               ref={editorRef}
               file={activeFile}
+              autocompleteEnabled={workspace.autocompleteEnabled}
+              onAutocompleteStatusChange={setAutocompleteStatus}
               onChange={updateActiveFile}
               onReadyChange={setEditorReady}
             />

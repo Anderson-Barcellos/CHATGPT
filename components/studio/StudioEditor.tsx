@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import {
   forwardRef,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useRef,
   useState,
@@ -12,6 +13,11 @@ import { useTheme } from "next-themes";
 import type { Monaco, OnMount } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 import { registerMonacoThemes } from "@/lib/monaco/theme";
+import {
+  registerStudioAutocompleteProvider,
+  type StudioAutocompleteProviderHandle,
+} from "@/lib/studio/autocompleteProvider";
+import type { StudioAutocompleteStatus } from "@/lib/studio/autocomplete";
 import type { StudioFile } from "@/lib/studio/types";
 import styles from "@/components/studio/GauchoStudioShell.module.css";
 
@@ -42,7 +48,9 @@ export interface StudioEditorHandle {
 
 interface StudioEditorProps {
   file: StudioFile;
+  autocompleteEnabled: boolean;
   onChange: (content: string) => void;
+  onAutocompleteStatusChange?: (status: StudioAutocompleteStatus) => void;
   onReadyChange?: (ready: boolean) => void;
 }
 
@@ -78,22 +86,70 @@ function markerMessage(marker: editor.IMarker): string {
 }
 
 export const StudioEditor = forwardRef<StudioEditorHandle, StudioEditorProps>(
-  function StudioEditor({ file, onChange, onReadyChange }, ref) {
+  function StudioEditor(
+    {
+      file,
+      autocompleteEnabled,
+      onChange,
+      onAutocompleteStatusChange,
+      onReadyChange,
+    },
+    ref
+  ) {
     const { resolvedTheme } = useTheme();
     const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
     const monacoRef = useRef<Monaco | null>(null);
+    const autocompleteRef = useRef<StudioAutocompleteProviderHandle | null>(
+      null
+    );
+    const autocompleteEnabledRef = useRef(autocompleteEnabled);
+    const filePathRef = useRef(file.path);
+    const autocompleteStatusRef = useRef(onAutocompleteStatusChange);
+    const readyChangeRef = useRef(onReadyChange);
     const [ready, setReady] = useState(false);
+
+    autocompleteEnabledRef.current = autocompleteEnabled;
+    filePathRef.current = file.path;
+    autocompleteStatusRef.current = onAutocompleteStatusChange;
+    readyChangeRef.current = onReadyChange;
 
     const handleMount = useCallback<OnMount>(
       (instance, monaco) => {
+        autocompleteRef.current?.dispose();
         editorRef.current = instance;
         monacoRef.current = monaco;
+        autocompleteRef.current = registerStudioAutocompleteProvider({
+          monaco,
+          editor: instance,
+          isEnabled: () => autocompleteEnabledRef.current,
+          isDesktop: () =>
+            window.matchMedia(
+              "(min-width: 861px) and (pointer: fine)"
+            ).matches,
+          getFilePath: () => filePathRef.current,
+          onStatusChange: (status) =>
+            autocompleteStatusRef.current?.(status),
+        });
         setReady(true);
         onReadyChange?.(true);
         instance.focus();
       },
       [onReadyChange]
     );
+
+    useEffect(() => {
+      autocompleteRef.current?.setEnabled(autocompleteEnabled);
+    }, [autocompleteEnabled]);
+
+    useEffect(() => {
+      return () => {
+        autocompleteRef.current?.dispose();
+        autocompleteRef.current = null;
+        editorRef.current = null;
+        monacoRef.current = null;
+        readyChangeRef.current?.(false);
+      };
+    }, []);
 
     useImperativeHandle(
       ref,
