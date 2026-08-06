@@ -42,6 +42,23 @@ describe("MessageContent streaming routing", () => {
     expect(markup).toContain("item pronto");
   });
 
+  it("promotes a completed Mermaid fence from live code to the diagram renderer", () => {
+    const markup = renderToStaticMarkup(
+      <MessageContent
+        message={{
+          id: "assistant-mermaid-done",
+          role: "assistant",
+          content: "```mermaid\nflowchart LR\n  A --> B\n```",
+          timestamp: new Date("2026-08-05T12:00:00.000Z"),
+          streamStatus: "completed",
+        }}
+      />
+    );
+
+    expect(markup).toContain('data-mermaid-diagram="true"');
+    expect(markup).not.toContain(">mermaid</span>");
+  });
+
   it("does not render panel actions while an artifact is still being prepared", () => {
     const markup = renderToStaticMarkup(
       <MessageContent

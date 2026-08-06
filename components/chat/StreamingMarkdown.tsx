@@ -12,7 +12,7 @@ import {
 import type { MessageStreamStatus } from "@/types";
 import { cn } from "@/lib/utils";
 import {
-  chatMarkdownComponents,
+  createChatMarkdownComponents,
   chatMarkdownRehypePlugins,
   chatMarkdownRemarkPlugins,
 } from "@/components/chat/chatMarkdownRenderer";
@@ -40,6 +40,7 @@ export function StreamingMarkdown({
     streamStatus,
     isSettling
   );
+  const renderMermaid = streamStatus !== "streaming" && !isSettling;
 
   const rehypePlugins = useMemo(
     () =>
@@ -52,10 +53,10 @@ export function StreamingMarkdown({
   const components = useMemo(
     () =>
       ({
-        ...chatMarkdownComponents,
+        ...createChatMarkdownComponents({ renderMermaid }),
         [STREAMING_CURSOR_TAG]: StreamingCursor,
       }) as Components,
-    []
+    [renderMermaid]
   );
 
   return (
