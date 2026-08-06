@@ -59,10 +59,7 @@ export async function POST(request: NextRequest) {
 
     return Response.json(response);
   } catch (error) {
-    if (
-      request.signal.aborted ||
-      (error instanceof Error && error.name === "AbortError")
-    ) {
+    if (request.signal.aborted) {
       return new Response(null, { status: 499 });
     }
 
@@ -74,6 +71,10 @@ export async function POST(request: NextRequest) {
         message: "Autocomplete temporariamente indisponível.",
         code: "studio_autocomplete_timeout",
       });
+    }
+
+    if (error instanceof Error && error.name === "AbortError") {
+      return new Response(null, { status: 499 });
     }
 
     if (error instanceof OpenAI.APIError && error.status === 429) {

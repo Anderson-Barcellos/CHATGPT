@@ -125,6 +125,37 @@ describe("Studio autocomplete route", () => {
     expect(JSON.stringify(payload)).not.toContain("sensitive");
   });
 
+  it("maps an AbortError raised by the timeout signal to 504", async () => {
+    const timeoutController = new AbortController();
+    const timeoutSpy = vi
+      .spyOn(AbortSignal, "timeout")
+      .mockReturnValue(timeoutController.signal);
+    mocks.complete.mockImplementationOnce((_client, _body, signal) => {
+      return new Promise((_resolve, reject) => {
+        signal.addEventListener(
+          "abort",
+          () => {
+            const error = new Error("aborted by linked timeout");
+            error.name = "AbortError";
+            reject(error);
+          },
+          { once: true }
+        );
+      });
+    });
+
+    const responsePromise = POST(request(validRequest));
+    await vi.waitFor(() => expect(mocks.complete).toHaveBeenCalledOnce());
+    timeoutController.abort();
+    const response = await responsePromise;
+    timeoutSpy.mockRestore();
+
+    expect(response.status).toBe(504);
+    expect(await response.json()).toMatchObject({
+      code: "studio_autocomplete_timeout",
+    });
+  });
+
   it("preserves Retry-After without returning the upstream message", async () => {
     mocks.complete.mockRejectedValueOnce(
       new OpenAI.APIError(
