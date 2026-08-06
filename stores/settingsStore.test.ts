@@ -27,6 +27,15 @@ describe("settings store model defaults", () => {
     expect(useSettingsStore.getState().parameters.reasoningMode).toBe("standard");
   });
 
+  it("defaults GPT-5.6 Terra to medium standard reasoning", () => {
+    useSettingsStore.getState().updateParameters({ model: "gpt-5.6-terra" });
+
+    expect(useSettingsStore.getState().parameters.model).toBe("gpt-5.6-terra");
+    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("medium");
+    expect(useSettingsStore.getState().parameters.reasoningMode).toBe("standard");
+    expect(useSettingsStore.getState().parameters.maxOutputTokens).toBe(128_000);
+  });
+
   it("defaults full reasoning models to medium reasoning", () => {
     useSettingsStore.getState().updateParameters({ model: "gpt-5.2" });
 

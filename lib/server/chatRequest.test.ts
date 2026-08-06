@@ -112,4 +112,8 @@ describe("buildResponseCreateParams", () => {
   it("allows DeepSeek V4 Pro as a selectable chat model", () => {
     expect(resolveRequestedModel("deepseek-v4-pro")).toBe("deepseek-v4-pro");
   });
+
+  it("allows GPT-5.6 Terra as a selectable chat model", () => {
+    expect(resolveRequestedModel("gpt-5.6-terra")).toBe("gpt-5.6-terra");
+  });
 });

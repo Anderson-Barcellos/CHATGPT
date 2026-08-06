@@ -1,6 +1,6 @@
 # Modelos
 
-**Última atualização:** 2026-07-28
+**Última atualização:** 2026-08-04
 **Fonte:** `lib/models/modelConfig.ts`
 
 ## Catálogo Atual
@@ -10,6 +10,7 @@
 | ID | Nome | Família | Reasoning | Contexto | Max output | Badge |
 |---|---|---|---|---|---|---|
 | `gpt-5.6-sol` | GPT-5.6 Sol | `gpt-5` | Sim (`standard`/`pro`, até `max`) | 1.05M | 128K | Mais potente |
+| `gpt-5.6-terra` | GPT-5.6 Terra | `gpt-5` | Sim (`standard`/`pro`, até `max`) | 1.05M | 128K | Equilibrado |
 | `gpt-5.6-luna` | GPT-5.6 Luna | `gpt-5` | Sim (`standard`/`pro`, até `max`) | 400K | 128K | Default |
 | `chat-latest` | GPT-5.5 Instant | `gpt-5` | Sim | 400K | 128K | Instant |
 | `gpt-5.5` | GPT-5.5 | `gpt-5` | Sim | 1.05M | 128K | Frontier |
@@ -30,7 +31,8 @@
 
 - Modelo padrão do chat: `gpt-5.6-luna`, reasoning `low`, modo `standard`.
 - `gpt-5.6-sol` inicia com reasoning `medium`, modo `standard`.
-- Sol e Luna aceitam `reasoning.mode="pro"` independentemente do effort e oferecem effort `max`.
+- `gpt-5.6-terra` inicia com reasoning `medium`, modo `standard`.
+- Sol, Terra e Luna aceitam `reasoning.mode="pro"` independentemente do effort e oferecem effort `max`.
 - `gpt-5.4-mini` permanece permitido e no catálogo; uma seleção salva válida é preservada, e Pulse/Deepsearch também usam Mini internamente.
 - `gpt-chat-latest` e `gpt-5-chat-latest` são aceitos como aliases locais e resolvem para `chat-latest`.
 - `gpt-5.2` inicia com reasoning `medium` + summary `detailed`.
@@ -65,7 +67,7 @@
 - não envia reasoning quando o effort é `none`;
 - repassa `minimal`, `low`, `medium`, `high` e `xhigh` como `reasoning.effort` quando o modelo selecionado suporta o nível;
 - repassa também `max` somente nos GPT-5.6;
-- envia `reasoning.mode="pro"` somente em Sol/Luna; `standard` é omitido por ser o default da API;
+- envia `reasoning.mode="pro"` somente em Sol/Terra/Luna; `standard` é omitido por ser o default da API;
 - repassa `auto`, `concise` e `detailed` como `reasoning.summary`;
 - converte a preferência local `summary=off` em omissão do campo, evitando valor inválido na Responses API.
 
