@@ -43,6 +43,7 @@
 /.remember/
 /.superpowers/
 /.codex
+/.worktrees/
 
 # debug
 npm-debug.log*
