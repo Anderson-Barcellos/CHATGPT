@@ -1781,21 +1781,21 @@ Nota operacional: `/etc/apache2/APACHE.md` não pertence ao repositório Git; at
 - Verify: all files touched by Tasks 1–7
 - Verify: `/etc/apache2/APACHE.md`
 
-- [ ] **Step 1: Run all focused RED/GREEN neighbors**
+- [x] **Step 1: Run all focused RED/GREEN neighbors**
 
 Run: `npm test -- lib/studio/workspace.test.ts lib/studio/autocomplete.test.ts lib/server/studioAutocomplete.test.ts app/api/studio/autocomplete/route.test.ts lib/studio/autocompleteProvider.test.ts components/studio/StudioAutocompleteControl.test.tsx proxy.test.ts lib/security/rateLimit.test.ts`
 
 Expected: PASS for every focused file.
 
-- [ ] **Step 2: Run the full quality ladder**
+- [x] **Step 2: Run the full quality ladder**
 
 Run: `npm test && npx tsc --noEmit && npm run lint && npm run build && git diff --check && npm audit --omit=dev`
 
 Expected: all commands exit 0 and audit reports zero production vulnerabilities. If lint reports an unrelated existing failure, record `PRE_EXISTING_FAILURE` with the exact file and still require build success.
 
-- [ ] **Step 3: Run the real FIM smoke without exposing secrets**
+- [x] **Step 3: Run the real FIM smoke without exposing secrets**
 
-Run: `set -a; . ./.env.production; set +a; node scripts/smoke-studio-autocomplete-real.mjs`
+Run: `node --env-file=.env.production scripts/smoke-studio-autocomplete-real.mjs`
 
 Expected: `DeepSeek FIM contract smoke: OK`. Do not print completion content, request body or key.
 
