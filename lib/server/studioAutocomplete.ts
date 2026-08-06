@@ -72,7 +72,12 @@ export function createStudioFimClient(): OpenAI | null {
   const apiKey = process.env.DEEPSEEK_API_KEY?.trim();
   if (!apiKey) return null;
 
-  return new OpenAI({ apiKey, baseURL: STUDIO_FIM_BASE_URL });
+  return new OpenAI({
+    apiKey,
+    baseURL: STUDIO_FIM_BASE_URL,
+    maxRetries: 0,
+    logLevel: "off",
+  });
 }
 
 export function buildStudioFimParams(request: StudioAutocompleteRequest) {

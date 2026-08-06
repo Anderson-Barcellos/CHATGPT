@@ -8,6 +8,8 @@ if (!apiKey) {
 const client = new OpenAI({
   apiKey,
   baseURL: "https://api.deepseek.com/beta",
+  maxRetries: 0,
+  logLevel: "off",
 });
 const response = await client.completions.create({
   model: "deepseek-v4-pro",

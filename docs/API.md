@@ -160,7 +160,7 @@ Autocomplete FIM não streaming do Monaco, restrito a TypeScript e JavaScript em
 }
 ```
 
-`prefix + suffix` aceita no máximo 32 mil caracteres e `filePath`, 320. Quando o arquivo inteiro cabe, o cliente o envia; acima disso, preserva até 24 mil caracteres antes e 8 mil depois do cursor. O body HTTP é limitado a 256 KiB. O provider usa `deepseek-v4-pro`, até 256 tokens, `temperature=0.1`, timeout de 8 segundos e não envia histórico, reasoning ou tools.
+`prefix + suffix` aceita no máximo 32 mil caracteres e `filePath`, 320. Quando o arquivo inteiro cabe, o cliente o envia; acima disso, preserva até 24 mil caracteres antes e 8 mil depois do cursor. O body HTTP é limitado a 256 KiB. O provider usa `deepseek-v4-pro`, até 256 tokens, `temperature=0.1`, timeout de 8 segundos, sem retries automáticos do SDK, e não envia histórico, reasoning ou tools.
 
 ```json
 {
@@ -169,7 +169,7 @@ Autocomplete FIM não streaming do Monaco, restrito a TypeScript e JavaScript em
 }
 ```
 
-Somente `finishReason="stop"` produz ghost text; respostas vazias, cercas Markdown ou finais truncados são descartados. A rota retorna `401` sem sessão, `400/413` para corpo inválido, `503` sem credencial, `504` em timeout e `429` com `Retry-After` quando o provider limita o tráfego. Falhas upstream são sanitizadas: logs registram apenas classe/status do erro, nunca prefixo, suffix ou completion.
+Somente `finishReason="stop"` produz ghost text; respostas vazias, cercas Markdown ou finais truncados são descartados. A rota retorna `401` sem sessão, `400/413` para corpo inválido, `503` sem credencial, `504` em timeout e `429` com `Retry-After` quando o provider limita o tráfego. Falhas upstream são sanitizadas: o log do SDK fica forçado em `off`, e a rota registra apenas classe/status do erro, nunca prefixo, suffix ou completion.
 
 ## Auth
 

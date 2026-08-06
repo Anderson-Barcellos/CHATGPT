@@ -19,12 +19,18 @@ const validRequest = {
 };
 
 const previousDeepSeekKey = process.env.DEEPSEEK_API_KEY;
+const previousOpenAiLog = process.env.OPENAI_LOG;
 
 afterEach(() => {
   if (previousDeepSeekKey === undefined) {
     delete process.env.DEEPSEEK_API_KEY;
   } else {
     process.env.DEEPSEEK_API_KEY = previousDeepSeekKey;
+  }
+  if (previousOpenAiLog === undefined) {
+    delete process.env.OPENAI_LOG;
+  } else {
+    process.env.OPENAI_LOG = previousOpenAiLog;
   }
 });
 
@@ -89,8 +95,11 @@ describe("Studio autocomplete server contract", () => {
     expect(createStudioFimClient()).toBeNull();
 
     process.env.DEEPSEEK_API_KEY = "test-key";
+    process.env.OPENAI_LOG = "debug";
     const client = createStudioFimClient();
     expect(client?.baseURL).toBe(STUDIO_FIM_BASE_URL);
+    expect(client?.maxRetries).toBe(0);
+    expect(client?.logLevel).toBe("off");
   });
 
   it("returns only completion and a supported finish reason", async () => {
