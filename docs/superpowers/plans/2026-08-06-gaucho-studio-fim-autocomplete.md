@@ -845,7 +845,7 @@ git commit -m "feat(studio): expose protected FIM autocomplete route"
 - Create: `lib/studio/autocompleteProvider.ts`
 - Create: `lib/studio/autocompleteProvider.test.ts`
 
-- [ ] **Step 1: Write failing provider tests with Monaco fakes**
+- [x] **Step 1: Write failing provider tests with Monaco fakes**
 
 Criar `lib/studio/autocompleteProvider.test.ts` cobrindo o contrato público do controller:
 
@@ -1113,13 +1113,13 @@ it("does not request during IME composition or outside desktop", async () => {
 });
 ```
 
-- [ ] **Step 2: Run provider tests and verify RED**
+- [x] **Step 2: Run provider tests and verify RED**
 
 Run: `npm test -- lib/studio/autocompleteProvider.test.ts`
 
 Expected: FAIL because the provider/controller module does not exist.
 
-- [ ] **Step 3: Implement the request controller**
+- [x] **Step 3: Implement the request controller**
 
 Em `lib/studio/autocompleteProvider.ts`, exportar:
 
@@ -1232,7 +1232,7 @@ export function createStudioAutocompleteRequestController(options: {
 
 Importar `apiUrl` de `@/lib/utils` e os contratos/constantes de `@/lib/studio/autocomplete`.
 
-- [ ] **Step 4: Implement the Monaco registration**
+- [x] **Step 4: Implement the Monaco registration**
 
 No mesmo arquivo, exportar `registerStudioAutocompleteProvider(options)` recebendo `monaco`, `editor`, getters de `enabled`, `desktop`, `filePath`, callback de status e `fetchImpl` opcional. O provider deve:
 
@@ -1366,13 +1366,13 @@ return {
 };
 ```
 
-- [ ] **Step 5: Run provider tests and TypeScript**
+- [x] **Step 5: Run provider tests and TypeScript**
 
 Run: `npm test -- lib/studio/autocompleteProvider.test.ts && npx tsc --noEmit`
 
 Expected: PASS for abort, timeout, cooldown, stale response, eligibility, range and 450 ms registration.
 
-- [ ] **Step 6: Commit the provider**
+- [x] **Step 6: Commit the provider**
 
 ```bash
 git add lib/studio/autocompleteProvider.ts lib/studio/autocompleteProvider.test.ts
