@@ -1,6 +1,6 @@
 # Gaucho Studio FIM Autocomplete Design
 
-**Status:** aprovado em conversa; aguardando revisão do documento por Anders
+**Status:** aprovado por Anders; implementação segue pelo Writing Plans e TDD
 **Data:** 2026-08-06
 **Escopo:** autocomplete inline para scripts TypeScript e JavaScript no Gaucho Studio desktop
 
