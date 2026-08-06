@@ -586,7 +586,7 @@ git commit -m "feat(studio): add DeepSeek FIM adapter"
 - Modify: `proxy.test.ts`
 - Modify: `.env.example`
 
-- [ ] **Step 1: Write failing route and rate-limit tests**
+- [x] **Step 1: Write failing route and rate-limit tests**
 
 Criar `app/api/studio/autocomplete/route.test.ts` com mocks hoisted para auth e adapter:
 
@@ -700,13 +700,13 @@ expect(getRateLimitConfig("/api/studio/autocomplete")).toMatchObject({
 expect(shouldRateLimitPath("/api/studio/autocomplete")).toBe(true);
 ```
 
-- [ ] **Step 2: Run the route/rate tests and verify RED**
+- [x] **Step 2: Run the route/rate tests and verify RED**
 
 Run: `npm test -- app/api/studio/autocomplete/route.test.ts lib/security/rateLimit.test.ts proxy.test.ts`
 
 Expected: FAIL because the route and dedicated 180 RPM configuration do not exist.
 
-- [ ] **Step 3: Implement the dedicated rate-limit mapping**
+- [x] **Step 3: Implement the dedicated rate-limit mapping**
 
 Adicionar a `RATE_LIMITS` em `lib/security/rateLimit.ts`:
 
@@ -733,7 +733,7 @@ Adicionar a `.env.example`:
 RATE_LIMIT_STUDIO_AUTOCOMPLETE_RPM=180
 ```
 
-- [ ] **Step 4: Implement the route with linked timeout**
+- [x] **Step 4: Implement the route with linked timeout**
 
 Criar `app/api/studio/autocomplete/route.ts`:
 
@@ -826,13 +826,13 @@ export async function POST(request: NextRequest) {
 }
 ```
 
-- [ ] **Step 5: Run route/rate tests and verify GREEN**
+- [x] **Step 5: Run route/rate tests and verify GREEN**
 
 Run: `npm test -- app/api/studio/autocomplete/route.test.ts lib/security/rateLimit.test.ts proxy.test.ts`
 
 Expected: PASS, with auth, 180 RPM, abort and sanitized failures covered.
 
-- [ ] **Step 6: Commit the API slice**
+- [x] **Step 6: Commit the API slice**
 
 ```bash
 git add app/api/studio/autocomplete/route.ts app/api/studio/autocomplete/route.test.ts lib/security/rateLimit.ts lib/security/rateLimit.test.ts proxy.ts proxy.test.ts .env.example

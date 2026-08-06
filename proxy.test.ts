@@ -25,6 +25,14 @@ describe("proxy rate limit routing", () => {
     });
   });
 
+  it("rate limits Studio autocomplete independently from the assistant", () => {
+    expect(shouldRateLimitPath("/api/studio/autocomplete")).toBe(true);
+    expect(getRateLimitConfig("/api/studio/autocomplete")).toMatchObject({
+      windowMs: 60_000,
+      max: 180,
+    });
+  });
+
   it("removes network access from the Studio runner response", () => {
     const csp = getSecurityContentSecurityPolicy("/api/studio/runner");
 

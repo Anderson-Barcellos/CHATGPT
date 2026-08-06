@@ -9,6 +9,13 @@ export const RATE_LIMITS = {
     windowMs: 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_STUDIO_RPM || "20", 10),
   },
+  studioAutocomplete: {
+    windowMs: 60 * 1000,
+    max: parseInt(
+      process.env.RATE_LIMIT_STUDIO_AUTOCOMPLETE_RPM || "180",
+      10
+    ),
+  },
   transcribe: {
     windowMs: 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_TRANSCRIBE_RPM || "10", 10),
@@ -116,6 +123,10 @@ export function getUserIdentifier(request: NextRequest): string {
 export function getRateLimitConfig(endpoint: string): { windowMs: number; max: number } {
   if (endpoint === "/api/auth/login") {
     return RATE_LIMITS.login;
+  }
+
+  if (endpoint === "/api/studio/autocomplete") {
+    return RATE_LIMITS.studioAutocomplete;
   }
 
   const normalizedEndpoint = endpoint.replace(/^\/api\//, "").split("/")[0];

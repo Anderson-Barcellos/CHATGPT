@@ -6,6 +6,7 @@ const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 const RATE_LIMITED_PATHS = [
   "/api/chat",
   "/api/studio/assist",
+  "/api/studio/autocomplete",
   "/api/transcribe",
   "/api/auth/login",
   "/api/integrations/google/auth/start",
