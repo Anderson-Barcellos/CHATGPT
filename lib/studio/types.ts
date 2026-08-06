@@ -29,6 +29,7 @@ export interface StudioAssistantMessage {
 
 export interface StudioWorkspaceSnapshot {
   version: 1;
+  autocompleteEnabled: boolean;
   files: Record<string, StudioFile>;
   openFilePaths: string[];
   activeFilePath: string;

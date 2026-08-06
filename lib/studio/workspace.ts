@@ -162,6 +162,7 @@ function filesToRecord(files: StudioFile[]): Record<string, StudioFile> {
 export function createInitialStudioWorkspace(): StudioWorkspaceSnapshot {
   return {
     version: 1,
+    autocompleteEnabled: true,
     files: filesToRecord(INITIAL_FILES),
     openFilePaths: [
       "src/utils/calculadora.ts",
@@ -314,6 +315,10 @@ export function parseStudioWorkspace(
 
     return {
       version: 1,
+      autocompleteEnabled:
+        typeof candidate.autocompleteEnabled === "boolean"
+          ? candidate.autocompleteEnabled
+          : true,
       files,
       openFilePaths,
       activeFilePath,

@@ -8,6 +8,29 @@ import {
 } from "@/lib/studio/workspace";
 
 describe("Studio workspace persistence", () => {
+  it("enables autocomplete by default in a new workspace", () => {
+    expect(createInitialStudioWorkspace().autocompleteEnabled).toBe(true);
+  });
+
+  it("normalizes legacy v1 snapshots without an autocomplete preference to enabled", () => {
+    const initial = createInitialStudioWorkspace();
+    const { autocompleteEnabled: _removed, ...legacy } = initial;
+
+    expect(
+      parseStudioWorkspace(JSON.stringify(legacy)).autocompleteEnabled
+    ).toBe(true);
+  });
+
+  it("restores an explicitly disabled autocomplete preference", () => {
+    const initial = createInitialStudioWorkspace();
+    const restored = parseStudioWorkspace(
+      JSON.stringify({ ...initial, autocompleteEnabled: false })
+    );
+
+    expect(restored.version).toBe(1);
+    expect(restored.autocompleteEnabled).toBe(false);
+  });
+
   it("creates the calculator project shown in the approved concept", () => {
     const workspace = createInitialStudioWorkspace();
 

@@ -36,7 +36,7 @@
 - Modify: `lib/studio/workspace.test.ts`
 - Modify: `hooks/useStudioWorkspace.ts`
 
-- [ ] **Step 1: Write the failing persistence tests**
+- [x] **Step 1: Write the failing persistence tests**
 
 Adicionar a `lib/studio/workspace.test.ts`:
 
@@ -63,13 +63,13 @@ it("restores an explicitly disabled autocomplete preference", () => {
 });
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run: `npm test -- lib/studio/workspace.test.ts`
 
 Expected: FAIL because `autocompleteEnabled` does not exist on `StudioWorkspaceSnapshot`.
 
-- [ ] **Step 3: Add the field, normalization and mutation**
+- [x] **Step 3: Add the field, normalization and mutation**
 
 Adicionar a `StudioWorkspaceSnapshot` em `lib/studio/types.ts`:
 
@@ -107,13 +107,13 @@ const setAutocompleteEnabled = useCallback(
 
 Expor `setAutocompleteEnabled` no objeto retornado pelo hook.
 
-- [ ] **Step 4: Run the focused test and verify GREEN**
+- [x] **Step 4: Run the focused test and verify GREEN**
 
 Run: `npm test -- lib/studio/workspace.test.ts`
 
 Expected: PASS, incluindo snapshots antigos sem alteração de `version: 1`.
 
-- [ ] **Step 5: Commit the persistence slice**
+- [x] **Step 5: Commit the persistence slice**
 
 ```bash
 git add lib/studio/types.ts lib/studio/workspace.ts lib/studio/workspace.test.ts hooks/useStudioWorkspace.ts

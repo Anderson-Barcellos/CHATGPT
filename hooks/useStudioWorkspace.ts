@@ -215,6 +215,17 @@ export function useStudioWorkspace() {
     [mutateWorkspace]
   );
 
+  const setAutocompleteEnabled = useCallback(
+    (enabled: boolean) => {
+      mutateWorkspace((current) =>
+        current.autocompleteEnabled === enabled
+          ? current
+          : { ...current, autocompleteEnabled: enabled }
+      );
+    },
+    [mutateWorkspace]
+  );
+
   return {
     workspace,
     activeFile,
@@ -228,5 +239,6 @@ export function useStudioWorkspace() {
     updateAssistantMessage,
     clearAssistantMessages,
     setSelectedModelId,
+    setAutocompleteEnabled,
   };
 }
