@@ -5,6 +5,7 @@ import { isAuthEnabled, isAuthenticatedRequest } from "@/lib/server/auth";
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 const RATE_LIMITED_PATHS = [
   "/api/chat",
+  "/api/studio/assist",
   "/api/transcribe",
   "/api/auth/login",
   "/api/integrations/google/auth/start",
@@ -57,35 +58,56 @@ async function applyRateLimit(request: NextRequest, pathname: string) {
     );
 
     addRateLimitHeaders(response.headers, rateLimitResult, pathname);
-    return finalizeResponse(response);
+    return finalizeResponse(response, pathname);
   }
 
   const response = NextResponse.next();
   addRateLimitHeaders(response.headers, rateLimitResult, pathname);
-  return finalizeResponse(response);
+  return finalizeResponse(response, pathname);
 }
 
 function buildLoginUrl(request: NextRequest): URL {
   return new URL(`${BASE_PATH}/login`, request.url);
 }
 
-function addSecurityHeaders(response: NextResponse): NextResponse {
+const APP_CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' blob:",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: https: blob:",
+  "media-src 'self' blob: data:",
+  "font-src 'self' data:",
+  "connect-src 'self' https://api.openai.com https://vercel.live wss:",
+  "frame-src 'self'",
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "upgrade-insecure-requests",
+].join("; ");
+
+const STUDIO_RUNNER_CONTENT_SECURITY_POLICY = [
+  "default-src 'none'",
+  "script-src blob:",
+  "connect-src 'none'",
+  "worker-src 'none'",
+  "object-src 'none'",
+  "base-uri 'none'",
+].join("; ");
+
+export function getSecurityContentSecurityPolicy(pathname: string): string {
+  return pathname === "/api/studio/runner"
+    ? STUDIO_RUNNER_CONTENT_SECURITY_POLICY
+    : APP_CONTENT_SECURITY_POLICY;
+}
+
+function addSecurityHeaders(
+  response: NextResponse,
+  pathname: string
+): NextResponse {
   const headers = response.headers;
-  const csp = [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'",
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https: blob:",
-    "media-src 'self' blob: data:",
-    "font-src 'self' data:",
-    "connect-src 'self' https://api.openai.com https://vercel.live wss:",
-    "frame-src 'self'",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "frame-ancestors 'none'",
-    "upgrade-insecure-requests",
-  ].join("; ");
+  const csp = getSecurityContentSecurityPolicy(pathname);
 
   headers.set("Content-Security-Policy", csp);
   headers.set("X-DNS-Prefetch-Control", "on");
@@ -104,8 +126,11 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
   return response;
 }
 
-function finalizeResponse(response: NextResponse): NextResponse {
-  return addSecurityHeaders(response);
+function finalizeResponse(
+  response: NextResponse,
+  pathname: string
+): NextResponse {
+  return addSecurityHeaders(response, pathname);
 }
 
 export async function proxy(request: NextRequest) {
@@ -116,7 +141,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isPublicPath(pathname)) {
-    return finalizeResponse(NextResponse.next());
+    return finalizeResponse(NextResponse.next(), pathname);
   }
 
   if (isAuthEnabled()) {
@@ -128,11 +153,15 @@ export async function proxy(request: NextRequest) {
           NextResponse.json(
             { error: "Unauthorized", message: "Faça login para continuar." },
             { status: 401 }
-          )
+          ),
+          pathname
         );
       }
 
-      return finalizeResponse(NextResponse.redirect(buildLoginUrl(request)));
+      return finalizeResponse(
+        NextResponse.redirect(buildLoginUrl(request)),
+        pathname
+      );
     }
   }
 
@@ -140,7 +169,7 @@ export async function proxy(request: NextRequest) {
     return applyRateLimit(request, pathname);
   }
 
-  return finalizeResponse(NextResponse.next());
+  return finalizeResponse(NextResponse.next(), pathname);
 }
 
 export const config = {

@@ -1,21 +1,21 @@
 State:
-- Atmosphere Glass foi promovido a tema padrão: Midnight Glass no dark e Daybreak no light.
-- `WorkspaceFrameV2` expõe `data-visual-theme="atmosphere-glass"`; tokens de cor globais alcançam Sheets/dropdowns Radix e os tratamentos de layout seguem escopados a `.gc-atmosphere-shell`.
-- O hotfix `2b7886f` alinhou Configurações e outros portals ao azul-frio do shell; verde permanece apenas para estados semânticos.
-- `gemini-3.6-flash` foi adicionado ao seletor como provider separado, apenas para chat padrao streaming.
-- `lib/server/geminiChat.ts` usa a Interactions API stateless (`store=false`) com Google Search, URL Context, thinking summaries e bridge para o SSE atual.
-- Thinking Gemini oferece `minimal`, `low`, `medium` e `high`, com `medium` por padrao e preferencia persistida por modelo.
-- Documento, Deepsearch e Quiz continuam nos modelos OpenAI forçados; GPT-5.6 Luna permanece o default global.
-- Next/ESLint Config estao em `16.2.12`; PostCSS `8.5.23` e Sharp `0.35.3` sao overrides de seguranca.
-- Docs canonicos concentrados em README + cinco arquivos sob `docs/`; nao ha PACK/BUNDLE ativo.
-- Legado sem importador, handoffs concluidos, service worker desativado e estado efemero versionado foram removidos.
+- Gaucho Studio implementado como página autenticada separada em `/studio` (`/chat/studio` público), seguindo a direção visual Midnight Glass escolhida por Anders.
+- Projeto local TypeScript persiste no browser; Monaco transpila e o Web Worker autenticado executa com CSP sem rede, protocolo tokenizado, orçamento de saída, Stop e timeout.
+- Chat lateral envia somente arquivo ativo + histórico curto para `/api/studio/assist`, com `store=false`, `tools: []` e sem aplicação automática.
+- Chat e Studio possuem navegação direta entre páginas; dados runtime em `data/*.json` não foram tocados.
+- A mesma árvore inclui Mermaid no markdown, GPT-5.6 Terra no catálogo e refinamentos visuais anteriores preservados.
 
 Next:
-- Não há frente visual pendente: partir da `main` limpa e sincronizada.
-- Em novos componentes Radix com portal, usar os tokens globais Atmosphere; não criar paleta local dentro do drawer/menu.
+- Avaliação multiagêntica consolidada, correções integradas e validação final fresca aprovada; faltam commits/push e a revisão de Anders.
+- Depois do fechamento, decidir o contrato do autocomplete sem ampliar o chat para modo agente.
 
 Context:
 - Nao limpar dados runtime em `data/*.json`.
-- `GEMINI_API_KEY` fica somente no runtime ignorado pelo Git; nunca expor o valor.
-- Calendar/OAuth server-side foi preservado; somente a antiga UI Agenda saiu.
-- Validacao do baseline: 83 arquivos/288 testes, TypeScript, lint completo, build e audit de producao zero.
+- Reutilizar `OPENAI_API_KEY` existente sem expor ou regravar o valor.
+- Anders aceitou manter a chave atual por ser nova e limitada ao domínio; rotação não bloqueia esta frente.
+- Runner v1 executa o arquivo ativo isoladamente e ainda não resolve imports entre arquivos.
+- Workspace limita o histórico, faz flush ao sair e preserva primeiro os arquivos se o `localStorage` atingir a quota; stream sem terminal fica `interrupted`.
+- Apache `/chat` alinha sua CSP à do Next para permitir Workers `blob:` sem retirar o cookie path escopado.
+- Monaco mantém dois warnings de fallback do language worker para o thread principal; funcionalidade e runner isolado passam no Chrome público.
+- Referência visual aceita: `/root/.codex/generated_images/019fd1cf-4dde-74d3-a380-1b379c8c0dea/exec-e74e881f-b566-4da1-8d7e-1bb0c4f131fc.png`.
+- QA final: Google Chrome desktop/mobile, `design-qa.md` passed, 92 arquivos/318 testes, TypeScript, lint, build, audit, SSE real e health local/público aprovados.

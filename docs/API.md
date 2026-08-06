@@ -1,6 +1,6 @@
 # API
 
-**Última atualização:** 2026-07-28
+**Última atualização:** 2026-08-06
 **Base URL pública:** `https://ultrassom.ai/chat`
 **Base path interno:** `NEXT_PUBLIC_BASE_PATH=/chat`
 
@@ -118,6 +118,34 @@ servidor local sincroniza o estado em `data/conversations.json`. Para sobreviver
 melhor à suspensão agressiva de navegador mobile, o app também mantém metadados
 de jobs pendentes em `data/chat-background-jobs.json` e chama `/reconcile` ao
 abrir, ao voltar para aba visível e ao carregar conversas com job pendente.
+
+## Gaucho Studio
+
+### `GET /api/studio/runner`
+
+Entrega o módulo autenticado do Web Worker usado pelo runner local. A resposta
+não é cacheada e possui CSP própria com `connect-src 'none'`; o cliente também
+valida um token privado por execução e limita quantidade e volume das mensagens
+recebidas do Worker.
+
+### `POST /api/studio/assist`
+
+Assistente contextual do editor em `/studio`. A rota usa a OpenAI Responses API com streaming SSE, `store=false`, reasoning baixo e `tools: []`. Ela não recebe autorização para editar arquivos, executar código, navegar na web, consultar memórias ou acionar o fluxo agente.
+
+```json
+{
+  "model": "gpt-5.6-luna",
+  "prompt": "Sugira uma forma mais segura de validar estes parâmetros.",
+  "file": {
+    "path": "src/utils/calculadora.ts",
+    "language": "typescript",
+    "content": "export function calcular(a: number, b: number) { return a + b }"
+  },
+  "history": []
+}
+```
+
+Os modelos aceitos ficam em `lib/studio/models.ts`. O body é limitado a 512 KiB, o prompt a 12 mil caracteres e o arquivo a 160 mil caracteres. O cliente apresenta a resposta no chat lateral para cópia manual; nenhuma resposta é aplicada automaticamente ao Monaco.
 
 ## Auth
 

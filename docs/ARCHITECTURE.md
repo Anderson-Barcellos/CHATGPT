@@ -1,6 +1,6 @@
 # Arquitetura
 
-**Última atualização:** 2026-07-28
+**Última atualização:** 2026-08-06
 
 ## Visão Geral
 
@@ -17,11 +17,25 @@ Browser/PWA
 ## Entrada e Shell
 
 - `app/page.tsx` é a entrada autenticada e renderiza `GauchoChatShellV2`.
+- `app/studio/page.tsx` é uma página autenticada independente e renderiza `GauchoStudioShell`.
 - `components/workspace-v2/*` contém o shell ativo: rail de conversas, canvas central, composer, painel de atividade/notas e preview de artifacts.
+- `components/studio/*` contém a experiência IDE: explorer, Monaco, console local e chat contextual.
 - `components/chat/*` concentra rendering de mensagens, markdown, reasoning, quick actions, TTS e export.
 - `components/settings/*` concentra persona, prompt principal visível, memórias, sugestões/RAG, tuning e preferências de voz.
 
 O shell legado foi removido. Novas mudanças de UI devem seguir `workspace-v2`, tokens `--gc-*` em `app/globals.css` e os padrões atuais de componentes Radix/lucide.
+
+## Gaucho Studio
+
+O Studio é uma mudança de página, não um modo interno da conversa. Chat e Studio compartilham auth, tema, configurações e o mesmo processo Next, mas mantêm estados e contratos separados:
+
+- o projeto inicial e as edições ficam no `localStorage` do navegador sob `gaucho-studio:workspace:v1`, sem tocar em `data/*.json`;
+- Monaco transpila o arquivo ativo e o Worker autenticado de `/api/studio/runner` executa esse módulo com CSP `connect-src 'none'`, APIs de rede bloqueadas, protocolo tokenizado, orçamento de saída e encerramento após 5 segundos; o runner v1 ainda não resolve imports entre arquivos do projeto;
+- `/api/studio/assist` recebe somente arquivo ativo, pergunta e histórico curto, usa `store=false` e não expõe tools;
+- a resposta do modelo permanece no painel lateral para cópia manual, sem edição automática, aplicação de patch ou modo agente; streams sem marcador terminal são preservados como interrompidos, não concluídos;
+- o workspace faz flush no `pagehide`, limita o histórico do assistente e, se o armazenamento atingir a quota, preserva primeiro os arquivos editados.
+
+A rota pública é `/chat/studio` por causa do `basePath=/chat`. O retorno ao chat usa navegação normal para `/chat`, preservando a separação visual escolhida para o produto.
 
 ### Atmosphere Glass
 

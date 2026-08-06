@@ -5,6 +5,10 @@ export const RATE_LIMITS = {
     windowMs: 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_CHAT_RPM || "20", 10),
   },
+  studio: {
+    windowMs: 60 * 1000,
+    max: parseInt(process.env.RATE_LIMIT_STUDIO_RPM || "20", 10),
+  },
   transcribe: {
     windowMs: 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_TRANSCRIBE_RPM || "10", 10),

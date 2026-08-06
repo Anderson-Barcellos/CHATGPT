@@ -14,6 +14,7 @@ Alguns artefatos internos antigos ainda usam o rótulo histórico `Celer`, mas o
 - Artefatos de documento/quiz com preview, download de fonte e PDF A4 server-side.
 - Auth simples do app por usuário/senha, sessão JWT e cookie `auth-token`.
 - Shell `workspace-v2` com o sistema visual **Atmosphere Glass** como padrão: Midnight Glass no escuro, Daybreak no claro e densidade mobile compacta por tokens, sem `zoom` ou escala global.
+- **Gaucho Studio** em `/studio`: página IDE separada com Monaco, arquivos persistidos no navegador, execução TypeScript/JavaScript local e assistente contextual somente leitura.
 
 ## Stack
 
@@ -29,17 +30,21 @@ Alguns artefatos internos antigos ainda usam o rótulo histórico `Celer`, mas o
 app/
   api/                  Rotas BFF: chat, background, auth, persona, memoria/RAG, PDF, TTS, Pulse
   login/                Tela de login do app
+  studio/               Página autenticada e separada do Gaucho Studio
 components/
   chat/                 Balões, markdown, reasoning, ações rápidas e TTS
   settings/             Drawer de persona, memória, tuning e voz
+  studio/               Explorer, Monaco, console local e assistente contextual
   workspace-v2/         Shell atual do Gaucho Chat
 hooks/
   useChat.ts            Orquestra streaming, persistência e anexos
+  useStudioWorkspace.ts Estado e autosave local do Studio
 lib/
   chat/                 Reducer de stream, reasoning e helpers de estado
   models/               Catálogo de modelos
   pulse/                Rotinas recorrentes, runner, scheduling e persistência Pulse
   server/               Auth, limites de body e helpers server-side
+  studio/               Contratos, projeto inicial e runner local isolado
   storage/              Persistência JSON e beacon
   tts/                  Sanitização, chunking e áudio TTS
 data/

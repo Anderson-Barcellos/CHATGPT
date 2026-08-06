@@ -2,7 +2,19 @@
 
 ## Estado operacional
 
-Nenhum PACK ou BUNDLE está ativo em 2026-07-28. As frentes Redesign S0-S12, Agenda C1-C5 e Memory/RAG lifecycle estão encerradas; o histórico detalhado permanece no Git e no diário append-only de `AGENTS.md`.
+### PACK — Gaucho Studio v1 (active)
+
+O bundle aprovado implementa o Studio como página autenticada separada em `/studio`, com Monaco, workspace local persistido, execução isolada em Web Worker e assistente contextual somente leitura. A frente também carrega a integração Mermaid no markdown, GPT-5.6 Terra no catálogo e refinamentos visuais preservados da árvore anterior.
+
+Status atual: implementação e revalidação concluídas após revisão multiagêntica externa. A validação fresca passou com 92 arquivos/318 testes, TypeScript, lint, build, audit de produção, serviço, health local/público e smoke Chrome autenticado. O bundle permanece **pronto para revisão de Anders**, sem ser marcado como fechado até a confirmação dele.
+
+Durante o smoke público, a CSP global do Apache bloqueou inicialmente o Worker `blob:` apesar da CSP correta do Next. O `<Location /chat>` foi alinhado à política do app sem mover `ProxyPassReverseCookiePath`; o replay autenticado no Chrome executou `Resultado: 42`, sem overflow ou `pageerror`.
+
+A revisão multiagêntica encontrou quatro lacunas relevantes e elas foram tratadas antes da integração: o runner passou a ser servido por endpoint autenticado com CSP `connect-src 'none'`, token e orçamento de saída; streams SSE sem marcador terminal agora ficam interrompidos com conteúdo parcial preservado; a persistência ganhou limites, flush e fallback que prioriza os arquivos; a UI ganhou Stop, console associado ao arquivo executado e Explorer mobile. O exemplo inicial deixou de depender de import não suportado, com migração restrita ao conteúdo legado intocado.
+
+Limites conscientes: o runner v1 executa somente o arquivo ativo e não resolve imports entre arquivos; autocomplete, aplicação de patches e modo agente não fazem parte deste bundle. O Monaco ainda registra dois warnings de fallback do language worker para o thread principal, sem erro funcional; configuração dedicada desse worker fica como endurecimento de performance futuro.
+
+Próxima ação operacional: integrar a árvore validada em commits coerentes e enviar para `origin/main`, conforme decisão de Anders.
 
 Quando uma frente complexa for ativada, registrar aqui somente o pack ativo e seus bundles aprovados. As entradas abaixo são histórico de implementação, não fila atual.
 

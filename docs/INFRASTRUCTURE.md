@@ -1,6 +1,6 @@
 # Infraestrutura
 
-**Última atualização:** 2026-07-28
+**Última atualização:** 2026-08-06
 **Produção:** `https://ultrassom.ai/chat`
 **Porta local:** `3040`
 
@@ -9,10 +9,12 @@
 ```text
 Internet
   -> Apache2 HTTPS :443
-  -> /chat e /chat/api/* proxy para http://localhost:3040/chat
+  -> /chat, /chat/studio e /chat/api/* proxy para http://localhost:3040/chat
   -> Next.js 16 via chatgpt.service
   -> OpenAI/DeepSeek/Gemini APIs + JSON store local
 ```
+
+O `<Location /chat>` mantém `ProxyPassReverseCookiePath / /chat` escopado ao serviço e alinha a CSP do Apache à política emitida pelo Next. `script-src blob:` e `worker-src 'self' blob:` são necessários para Monaco e para o runner local do Studio; não mover essas diretivas para o nível global do vhost. O script autenticado do runner em `/chat/api/studio/runner` acrescenta uma CSP mais restrita, com `connect-src 'none'`, que continua valendo pela interseção das políticas.
 
 ## Fontes Canônicas
 
@@ -175,6 +177,7 @@ Rate limit:
 |---|---|
 | `RATE_LIMIT_ENABLED` | Liga/desliga rate limit |
 | `RATE_LIMIT_CHAT_RPM` | Limite específico de chat |
+| `RATE_LIMIT_STUDIO_RPM` | Limite específico do assistente contextual do Studio |
 | `RATE_LIMIT_TRANSCRIBE_RPM` | Limite específico de transcrição |
 | `RATE_LIMIT_LOGIN_RPM` | Limite específico de login |
 

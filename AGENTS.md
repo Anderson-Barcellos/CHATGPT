@@ -10,6 +10,7 @@ Principais areas:
 
 - `components/chat/*`: experiencia principal do chat, baloes, input, reasoning e export
 - `components/workspace-v2/*`: shell atual do Gaucho Chat, rail de conversas, canvas central, composer e painel operacional
+- `components/studio/*`: pagina Gaucho Studio com explorer, Monaco, runner local e chat contextual somente leitura
 - `hooks/useChat.ts`: streaming, reasoning, citacoes, persistencia e fluxo de envio
 - `lib/chat/useStreamingTextBuffer.ts`: buffer STT-style do texto do assistente
 - `lib/models/modelConfig.ts`: catalogo de modelos e metadados usados no seletor
@@ -23,6 +24,7 @@ Principais areas:
 
 - Modelo padrao atual do chat: `gpt-5.6-luna` com reasoning `low` e modo `standard`; `gpt-5.4-mini` permanece oculto para fluxos internos; `gemini-3.6-flash` e selecionavel como provider separado no chat padrao
 - Shell ativo: `GauchoChatShellV2` / `WorkspaceFrameV2` — redesign completo (S0-S12)
+- Página separada `/studio`: `GauchoStudioShell`, projeto local persistido no browser, execução isolada em Worker e assistente OpenAI sem tools ou aplicação automática
 - Sistema visual padrão: Atmosphere Glass — Midnight Glass no dark e Daybreak no light
 - Tokens de cor Shadcn/`--gc-*` globais em `app/globals.css` para alcançar portals Radix; geometria e ambientação escopadas a `.gc-atmosphere-shell`
 - Preview de artefatos via `ArtifactPreviewSheet`; painel lateral focado em atividade e notas
@@ -1192,3 +1194,47 @@ Details:
 
 Notes:
 Não houve mudança de auth, providers, streaming, APIs, storage ou infraestrutura. Validação da implementação: 83 arquivos/288 testes, TypeScript, lint, build Next `16.2.12`, Playwright desktop dark/light e mobile, restart de `chatgpt.service`, health local/publico `200` e smoke público sem overlay, overflow ou erros de console. Commits da frente: `158c74d` (experimento), `9f0da47` (promoção a padrão) e `2b7886f` (portals/configurações).
+
+### 2026-08-05 18:53 - Mermaid no Markdown do chat e Canvas
+
+Context:
+Os agentes já eram orientados a emitir blocos `mermaid`, mas o renderer tratava esses blocos somente como código, apesar de KaTeX já estar ativo para fórmulas.
+
+Details:
+`MermaidDiagram` renderiza SVG sob demanda com Mermaid `11.16.1`, tema claro/escuro, `securityLevel: strict`, alternância código/diagrama e fallback legível para sintaxe inválida. `chatMarkdownRenderer` encaminha fences Mermaid concluídos ao novo componente; `StreamingMarkdown` preserva o CodeBlock durante streaming/assentamento e promove o bloco ao diagrama quando a resposta termina. Testes protegem o roteamento e a transição real de `MessageContent`.
+
+Notes:
+Validação: 84 arquivos/293 testes, TypeScript, lint, build Next, `npm audit --omit=dev` sem vulnerabilidades, restart de `chatgpt.service`, health local/publico `200` e smoke Playwright público isolado confirmando SVG, fallback, toggle e zero page errors. O advisory dev-only de `brace-expansion` continua vindo da cadeia ESLint e já existia antes desta rodada. Exportação PDF server-side de Mermaid não foi ampliada neste experimento.
+
+### 2026-08-06 - Gaucho Studio como pagina IDE separada
+
+Context:
+Anders escolheu a primeira direção visual do brainstorm: Midnight Glass com navegação de produto e explorer à esquerda, Monaco e console no centro, e assistente contextual à direita.
+
+Details:
+`/studio` ganhou shell autenticado próprio, projeto inicial TypeScript persistido em `localStorage`, abas/arquivos editáveis e execução local em Web Worker com rede bloqueada e timeout. `/api/studio/assist` reutiliza a chave OpenAI server-side com `store=false` e `tools: []`; o modelo só sugere código no chat lateral, sem modo agente nem aplicação automática. O rail do chat ganhou acesso direto ao Studio e o Studio retorna ao chat por navegação de página.
+
+Notes:
+A rota pública é `/chat/studio`; o proxy Apache existente de `/chat` já cobre a página e a API. Manter a fronteira read-only do assistente até Anders decidir conscientemente por autocomplete ou edição assistida. Validação final: 87 arquivos/302 testes, TypeScript, lint, build Next, `git diff --check`, restart de `chatgpt.service`, health local/público, smoke autenticado do SSE e QA Google Chrome desktop/mobile. O QA também provou Run local, persistência após reload, seletor de modelos, chat streaming e console sem erros; `design-qa.md` registra a comparação com a referência.
+
+### 2026-08-06 11:39 - Fechamento Superpowers e CSP pública do Studio
+
+Context:
+Na validação fresca da árvore completa, o Studio funcionava localmente, mas o Chrome público bloqueava o Worker `blob:` do runner. O response carregava a CSP global do Apache e a CSP do Next; por interseção, a política global mais restritiva vencia.
+
+Details:
+O `<Location /chat>` em `/etc/apache2/sites-available/ultrassom.ai-optimized.conf` passou a alinhar a CSP do Apache à do app, incluindo `script-src blob:` e `worker-src 'self' blob:`. A mudança permaneceu dentro do bloco `/chat`, ao lado do `ProxyPassReverseCookiePath / /chat`, que não foi movido. `/etc/apache2/APACHE.md` e `docs/INFRASTRUCTURE.md` registram o contrato. `parseStudioWorkspace` também converte uma resposta `streaming` restaurada após reload em falha explícita, preservando conteúdo parcial quando existir.
+
+Notes:
+Validação fresca: 87 arquivos/303 testes, `npx tsc --noEmit`, ESLint completo, build Next, `npm audit --omit=dev` zero, `git diff --check`, secret scan limpo, Apache `Syntax OK`, `chatgpt.service` ativo, health local/público 200, página e SSE autenticados 200. O replay no Google Chrome público executou `Resultado: 42`, sem overflow desktop/mobile nem `pageerror`. Permanecem dois warnings não funcionais do Monaco por fallback do language worker ao thread principal; configurar esse worker dedicado é endurecimento futuro, não parte do bundle v1.
+
+### 2026-08-06 12:25 - Revisão multiagêntica e hardening do Gaucho Studio
+
+Context:
+Anders pediu olhos externos focados somente na feature nova antes da integração Git. Três revisores read-only cobriram arquitetura/testes, segurança e experiência frontend; o agente principal consolidou e implementou apenas achados comprovados.
+
+Details:
+O runner deixou de depender apenas de stubs de APIs e passou a carregar de `/api/studio/runner`, rota autenticada cuja CSP pública efetiva inclui `connect-src 'none'`. O protocolo ganhou token privado e orçamento de mensagens/texto. O runner agora rejeita imports relativos com explicação clara, oferece Stop e associa o console ao arquivo realmente executado. O stream do assistente exige marcador terminal e preserva EOF/abort como `interrupted`. A persistência ganhou limite de histórico, flush no `pagehide`, tolerância a leitura bloqueada e fallback de quota que prioriza arquivos. O Explorer ficou acessível no mobile; o exemplo inicial passou a ser executável isoladamente, migrando apenas o conteúdo legado intocado.
+
+Notes:
+Validação final: 92 arquivos/318 testes, `npx tsc --noEmit`, ESLint completo, build Next `16.2.12`, `npm audit --omit=dev` zero, `git diff --check`, secret scan limpo, Apache `Syntax OK`, restart de `chatgpt.service` e health local/público 200. O smoke Google Chrome autenticado provou Run, associação do console, Stop, Explorer mobile, CSP restrita, zero requests externos na tentativa de rede, zero overflow, zero `pageerror` e zero erros de console. O SSE real retornou delta e `[DONE]`. O bundle continua aguardando revisão de Anders; resolução de grafo de imports, autocomplete e modo agente permanecem fora da v1.
