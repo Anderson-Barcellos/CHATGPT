@@ -529,7 +529,14 @@ export function parseStudioAutocompleteRequest(input: unknown): ParseResult {
 
 export function createStudioFimClient(): OpenAI | null {
   const apiKey = process.env.DEEPSEEK_API_KEY?.trim();
-  return apiKey ? new OpenAI({ apiKey, baseURL: STUDIO_FIM_BASE_URL }) : null;
+  return apiKey
+    ? new OpenAI({
+        apiKey,
+        baseURL: STUDIO_FIM_BASE_URL,
+        maxRetries: 0,
+        logLevel: "off",
+      })
+    : null;
 }
 
 export function buildStudioFimParams(request: StudioAutocompleteRequest) {
@@ -1735,7 +1742,12 @@ import OpenAI from "openai";
 
 const apiKey = process.env.DEEPSEEK_API_KEY;
 if (!apiKey) throw new Error("DEEPSEEK_API_KEY is required");
-const client = new OpenAI({ apiKey, baseURL: "https://api.deepseek.com/beta" });
+const client = new OpenAI({
+  apiKey,
+  baseURL: "https://api.deepseek.com/beta",
+  maxRetries: 0,
+  logLevel: "off",
+});
 const response = await client.completions.create({
   model: "deepseek-v4-pro",
   prompt: "function soma(a: number, b: number) {\n  return ",
