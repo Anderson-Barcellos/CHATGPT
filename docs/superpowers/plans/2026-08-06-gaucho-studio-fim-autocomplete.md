@@ -126,7 +126,7 @@ git commit -m "feat(studio): persist autocomplete preference"
 - Create: `lib/studio/autocomplete.ts`
 - Create: `lib/studio/autocomplete.test.ts`
 
-- [ ] **Step 1: Write failing tests for every pure rule**
+- [x] **Step 1: Write failing tests for every pure rule**
 
 Criar `lib/studio/autocomplete.test.ts`:
 
@@ -242,13 +242,13 @@ describe("Studio autocomplete rules", () => {
 });
 ```
 
-- [ ] **Step 2: Run the pure tests and verify RED**
+- [x] **Step 2: Run the pure tests and verify RED**
 
 Run: `npm test -- lib/studio/autocomplete.test.ts`
 
 Expected: FAIL because `@/lib/studio/autocomplete` does not exist.
 
-- [ ] **Step 3: Implement the pure module**
+- [x] **Step 3: Implement the pure module**
 
 Criar `lib/studio/autocomplete.ts` com estes contratos e regras:
 
@@ -377,13 +377,13 @@ export class StudioAutocompleteFailureTracker {
 }
 ```
 
-- [ ] **Step 4: Run the pure tests and verify GREEN**
+- [x] **Step 4: Run the pure tests and verify GREEN**
 
 Run: `npm test -- lib/studio/autocomplete.test.ts`
 
 Expected: PASS for all context, eligibility, stale-key, normalization and cooldown cases.
 
-- [ ] **Step 5: Commit the pure client rules**
+- [x] **Step 5: Commit the pure client rules**
 
 ```bash
 git add lib/studio/autocomplete.ts lib/studio/autocomplete.test.ts
