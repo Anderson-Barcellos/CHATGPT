@@ -39,3 +39,13 @@ Uso:
 ### `generate-icons.mjs`
 
 Script de apoio para gerar/atualizar ícones do app a partir dos assets de origem quando necessário.
+
+### `smoke-studio-autocomplete.mjs`
+
+Smoke determinístico do Monaco real. Intercepta apenas a rota FIM no contexto efêmero do Playwright e valida ghost text, `Tab`, undo, cancelamentos, troca de arquivo, toggle e ausência de requisições mobile sem persistir dados server-side.
+
+Variáveis opcionais: `STUDIO_SMOKE_BASE_URL`, `STUDIO_SMOKE_USERNAME`, `STUDIO_SMOKE_PASSWORD` e `CHROME_PATH`.
+
+### `smoke-studio-autocomplete-real.mjs`
+
+Smoke curto do contrato FIM real com código sintético. Exige `DEEPSEEK_API_KEY` no ambiente e imprime somente o status final; não imprime chave, prompt ou completion.

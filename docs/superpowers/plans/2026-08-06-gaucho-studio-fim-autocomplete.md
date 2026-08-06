@@ -1593,7 +1593,7 @@ git commit -m "feat(studio): show desktop FIM autocomplete"
 - Modify: `docs/INFRASTRUCTURE.md`
 - Modify: `/etc/apache2/APACHE.md`
 
-- [ ] **Step 1: Add a deterministic browser smoke**
+- [x] **Step 1: Add a deterministic browser smoke**
 
 Criar `scripts/smoke-studio-autocomplete.mjs` usando `playwright` e sem gravar dados server-side. O script deve:
 
@@ -1726,7 +1726,7 @@ try {
 
 O smoke lê o conteúdo aceito pela própria ação de copiar do Monaco, usando uma permissão de clipboard restrita ao contexto efêmero do Playwright. Não expor `window.monaco`, não duplicar o script em atributos DOM e não imprimir conteúdo do editor.
 
-- [ ] **Step 2: Add a short real-provider smoke**
+- [x] **Step 2: Add a short real-provider smoke**
 
 Criar `scripts/smoke-studio-autocomplete-real.mjs` que lê `DEEPSEEK_API_KEY` apenas de `process.env`, nunca imprime chave, prompt ou resposta completa, e envia código sintético:
 
@@ -1750,7 +1750,7 @@ if (!choice?.text || choice.finish_reason !== "stop") {
 console.log("DeepSeek FIM contract smoke: OK");
 ```
 
-- [ ] **Step 3: Update living documentation**
+- [x] **Step 3: Update living documentation**
 
 Documentar em `docs/API.md` o request/response exato, 32k, auth, 429 e ausência de logs de código. Em `docs/ARCHITECTURE.md`, adicionar provider/coordenador/rota mantendo chat read-only. Em `docs/INFRASTRUCTURE.md`, documentar `RATE_LIMIT_STUDIO_AUTOCOMPLETE_RPM=180` e `DEEPSEEK_API_KEY` também como credencial FIM. Em `README.md`, incluir autocomplete desktop TS/JS no resumo do Studio. Em `/etc/apache2/APACHE.md`, adicionar:
 
@@ -1760,13 +1760,13 @@ Documentar em `docs/API.md` o request/response exato, 32k, auth, 429 e ausência
 
 Nenhuma nova regra `ProxyPass` é necessária; manter `ProxyPassReverseCookiePath / /chat` dentro de `<Location /chat>`.
 
-- [ ] **Step 4: Run documentation and deterministic smoke checks**
+- [x] **Step 4: Run documentation and deterministic smoke checks**
 
 Run: `git diff --check && node scripts/smoke-studio-autocomplete.mjs`
 
 Expected: `Studio autocomplete deterministic smoke: OK`; nenhuma conversa, nota ou arquivo server-side criado.
 
-- [ ] **Step 5: Commit smoke and docs**
+- [x] **Step 5: Commit smoke and docs**
 
 ```bash
 git add scripts/smoke-studio-autocomplete.mjs scripts/smoke-studio-autocomplete-real.mjs scripts/README.md README.md docs/API.md docs/ARCHITECTURE.md docs/INFRASTRUCTURE.md

@@ -31,8 +31,10 @@ O Studio é uma mudança de página, não um modo interno da conversa. Chat e St
 
 - o projeto inicial e as edições ficam no `localStorage` do navegador sob `gaucho-studio:workspace:v1`, sem tocar em `data/*.json`;
 - Monaco transpila o arquivo ativo e o Worker autenticado de `/api/studio/runner` executa esse módulo com CSP `connect-src 'none'`, APIs de rede bloqueadas, protocolo tokenizado, orçamento de saída e encerramento após 5 segundos; o runner v1 ainda não resolve imports entre arquivos do projeto;
+- `lib/studio/autocompleteProvider.ts` registra o inline completion provider nativo do Monaco para TypeScript/JavaScript em desktop, coordena debounce, cancelamento, deduplicação, descarte de respostas obsoletas e recuperação silenciosa; `/api/studio/autocomplete` limita e encaminha somente prefix/suffix ao endpoint FIM do DeepSeek;
 - `/api/studio/assist` recebe somente arquivo ativo, pergunta e histórico curto, usa `store=false` e não expõe tools;
 - a resposta do modelo permanece no painel lateral para cópia manual, sem edição automática, aplicação de patch ou modo agente; streams sem marcador terminal são preservados como interrompidos, não concluídos;
+- o autocomplete insere ghost text apenas após aceitação explícita pelo usuário e não concede ao chat contextual autorização para editar; o toggle persiste no workspace local e o recurso não faz chamadas em viewport móvel ou ponteiro coarse;
 - o workspace faz flush no `pagehide`, limita o histórico do assistente e, se o armazenamento atingir a quota, preserva primeiro os arquivos editados.
 
 A rota pública é `/chat/studio` por causa do `basePath=/chat`. O retorno ao chat usa navegação normal para `/chat`, preservando a separação visual escolhida para o produto.

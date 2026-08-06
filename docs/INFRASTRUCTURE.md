@@ -109,7 +109,7 @@ Obrigatórias em produção:
 | Variável | Propósito |
 |---|---|
 | `OPENAI_API_KEY` | Chave server-side da OpenAI |
-| `DEEPSEEK_API_KEY` | Chave server-side do DeepSeek V4 Pro para chat padrão |
+| `DEEPSEEK_API_KEY` | Chave server-side do DeepSeek V4 Pro para chat padrão e autocomplete FIM do Studio |
 | `GEMINI_API_KEY` | Chave server-side do Gemini 3.6 Flash para chat padrão |
 | `NEXT_PUBLIC_BASE_PATH` | Deve ser `/chat` |
 | `NEXT_PUBLIC_APP_URL` | URL pública completa |
@@ -178,6 +178,7 @@ Rate limit:
 | `RATE_LIMIT_ENABLED` | Liga/desliga rate limit |
 | `RATE_LIMIT_CHAT_RPM` | Limite específico de chat |
 | `RATE_LIMIT_STUDIO_RPM` | Limite específico do assistente contextual do Studio |
+| `RATE_LIMIT_STUDIO_AUTOCOMPLETE_RPM` | Limite do autocomplete FIM do Studio; default `180` |
 | `RATE_LIMIT_TRANSCRIBE_RPM` | Limite específico de transcrição |
 | `RATE_LIMIT_LOGIN_RPM` | Limite específico de login |
 
