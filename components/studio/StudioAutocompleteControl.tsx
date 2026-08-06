@@ -12,10 +12,12 @@ const STATUS_LABELS: Record<StudioAutocompleteStatus, string> = {
 export function StudioAutocompleteControl({
   enabled,
   status,
+  disabled = false,
   onToggle,
 }: {
   enabled: boolean;
   status: StudioAutocompleteStatus;
+  disabled?: boolean;
   onToggle: (enabled: boolean) => void;
 }) {
   const label = STATUS_LABELS[status];
@@ -26,6 +28,7 @@ export function StudioAutocompleteControl({
       className={styles.autocompleteControl}
       aria-label={label}
       aria-pressed={enabled}
+      disabled={disabled}
       title={label}
       onClick={() => onToggle(!enabled)}
     >

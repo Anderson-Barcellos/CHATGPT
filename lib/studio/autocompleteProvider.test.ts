@@ -168,6 +168,22 @@ const token = {
   onCancellationRequested: () => disposable(),
 };
 
+function controlledToken() {
+  let cancel: (() => void) | null = null;
+
+  return {
+    token: {
+      onCancellationRequested(handler: () => void) {
+        cancel = handler;
+        return disposable();
+      },
+    },
+    cancel() {
+      cancel?.();
+    },
+  };
+}
+
 describe("Studio autocomplete request controller", () => {
   it("deduplicates concurrent requests with the same document key", async () => {
     let resolveFetch: ((response: Response) => void) | undefined;
@@ -408,6 +424,53 @@ describe("Studio Monaco inline completion provider", () => {
     handle.dispose();
   });
 
+  it("does not let an old Monaco token cancel a newer request", async () => {
+    const harness = createMonacoHarness();
+    const signals: AbortSignal[] = [];
+    const resolvers: Array<(response: Response) => void> = [];
+    const fetchImpl = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.signal) signals.push(init.signal);
+      return new Promise<Response>((resolve) => resolvers.push(resolve));
+    });
+    const handle = registerStudioAutocompleteProvider({
+      monaco: harness.monaco as never,
+      editor: harness.editor as never,
+      isEnabled: () => true,
+      isDesktop: () => true,
+      getFilePath: () => "src/index.ts",
+      fetchImpl,
+    });
+    const firstToken = controlledToken();
+    const secondToken = controlledToken();
+
+    const first = harness.provider.provideInlineCompletions(
+      harness.model as never,
+      { lineNumber: 1, column: 16 } as never,
+      {} as never,
+      firstToken.token as never
+    );
+    harness.setVersion(2);
+    const second = harness.provider.provideInlineCompletions(
+      harness.model as never,
+      { lineNumber: 1, column: 16 } as never,
+      {} as never,
+      secondToken.token as never
+    );
+
+    expect(signals[0]?.aborted).toBe(true);
+    expect(signals[1]?.aborted).toBe(false);
+    firstToken.cancel();
+    expect(signals[1]?.aborted).toBe(false);
+
+    resolvers[0]?.(Response.json({ completion: "old", finishReason: "stop" }));
+    resolvers[1]?.(Response.json({ completion: "new", finishReason: "stop" }));
+    await expect(first).resolves.toEqual({ items: [] });
+    await expect(second).resolves.toMatchObject({
+      items: [{ insertText: "new" }],
+    });
+    handle.dispose();
+  });
+
   it.each([
     { language: "json" },
     { desktop: false },
@@ -511,6 +574,86 @@ describe("Studio Monaco inline completion provider", () => {
       "editor.action.inlineSuggest.trigger",
       null
     );
+    handle.dispose();
+  });
+
+  it.each(["content", "cursor", "selection", "model"])(
+    "cancels the accepted-chain timer after a %s interaction",
+    async (event) => {
+      vi.useFakeTimers();
+      const harness = createMonacoHarness();
+      const handle = registerStudioAutocompleteProvider({
+        monaco: harness.monaco as never,
+        editor: harness.editor as never,
+        isEnabled: () => true,
+        isDesktop: () => true,
+        getFilePath: () => "src/index.ts",
+        fetchImpl: vi.fn(),
+      });
+
+      harness.invokeCommand();
+      harness.handlers.get(event)?.();
+      await vi.advanceTimersByTimeAsync(450);
+
+      expect(harness.editor.trigger).not.toHaveBeenCalled();
+      handle.dispose();
+    }
+  );
+
+  it("hides completions when the desktop capability disappears", () => {
+    const harness = createMonacoHarness();
+    const statuses: string[] = [];
+    const handle = registerStudioAutocompleteProvider({
+      monaco: harness.monaco as never,
+      editor: harness.editor as never,
+      isEnabled: () => true,
+      isDesktop: () => harness.isDesktop(),
+      getFilePath: () => "src/index.ts",
+      onStatusChange: (status) => statuses.push(status),
+      fetchImpl: vi.fn(),
+    });
+
+    harness.setDesktop(false);
+    handle.setEnabled(true);
+
+    expect(statuses.at(-1)).toBe("off");
+    expect(harness.editor.trigger).toHaveBeenCalledWith(
+      "studio.autocomplete",
+      "editor.action.inlineSuggest.hide",
+      null
+    );
+    handle.dispose();
+  });
+
+  it("suppresses a response when desktop capability is lost in flight", async () => {
+    const harness = createMonacoHarness();
+    let resolveFetch: ((response: Response) => void) | undefined;
+    const handle = registerStudioAutocompleteProvider({
+      monaco: harness.monaco as never,
+      editor: harness.editor as never,
+      isEnabled: () => true,
+      isDesktop: () => harness.isDesktop(),
+      getFilePath: () => "src/index.ts",
+      fetchImpl: vi.fn(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveFetch = resolve;
+          })
+      ),
+    });
+
+    const pending = harness.provider.provideInlineCompletions(
+      harness.model as never,
+      { lineNumber: 1, column: 16 } as never,
+      {} as never,
+      token as never
+    );
+    harness.setDesktop(false);
+    resolveFetch?.(
+      Response.json({ completion: "late", finishReason: "stop" })
+    );
+
+    await expect(pending).resolves.toEqual({ items: [] });
     handle.dispose();
   });
 });

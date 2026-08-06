@@ -56,6 +56,7 @@ export function GauchoStudioShell() {
     activeFile,
     openFiles,
     saveState,
+    hydrated,
     openFile,
     closeFile,
     updateActiveFile,
@@ -81,6 +82,8 @@ export function GauchoStudioShell() {
   const executable =
     activeFile?.language === "typescript" ||
     activeFile?.language === "javascript";
+  const autocompleteEnabled =
+    hydrated && workspace.autocompleteEnabled;
 
   useEffect(() => {
     return () => runAbortRef.current?.abort();
@@ -200,10 +203,11 @@ export function GauchoStudioShell() {
             </span>
             <span className={styles.topbarDivider} />
             <StudioAutocompleteControl
-              enabled={workspace.autocompleteEnabled}
+              enabled={autocompleteEnabled}
               status={
-                workspace.autocompleteEnabled ? autocompleteStatus : "off"
+                autocompleteEnabled ? autocompleteStatus : "off"
               }
+              disabled={!hydrated}
               onToggle={setAutocompleteEnabled}
             />
           </div>
@@ -287,7 +291,7 @@ export function GauchoStudioShell() {
             <StudioEditor
               ref={editorRef}
               file={activeFile}
-              autocompleteEnabled={workspace.autocompleteEnabled}
+              autocompleteEnabled={autocompleteEnabled}
               onAutocompleteStatusChange={setAutocompleteStatus}
               onChange={updateActiveFile}
               onReadyChange={setEditorReady}

@@ -40,6 +40,7 @@ export interface StudioAutocompleteRequestController {
     request: StudioAutocompleteRequest;
   }): Promise<StudioAutocompleteResponse | null>;
   cancel(nextStatus?: StudioAutocompleteStatus): void;
+  cancelRequest(key: string, nextStatus?: StudioAutocompleteStatus): void;
   dispose(): void;
 }
 
@@ -184,20 +185,32 @@ export function createStudioAutocompleteRequestController(options: {
     return promise;
   };
 
+  const cancelActive = (
+    nextStatus?: StudioAutocompleteStatus,
+    expectedKey?: string
+  ) => {
+    if (expectedKey !== undefined && active?.key !== expectedKey) return;
+
+    active?.controller.abort();
+    active = null;
+
+    if (nextStatus === "off") {
+      clearCooldownTimer();
+      setStatus("off");
+    } else if (failures.isCoolingDown()) {
+      reportCooldown();
+    } else {
+      setStatus(nextStatus ?? "idle");
+    }
+  };
+
   return {
     request,
     cancel(nextStatus) {
-      active?.controller.abort();
-      active = null;
-
-      if (nextStatus === "off") {
-        clearCooldownTimer();
-        setStatus("off");
-      } else if (failures.isCoolingDown()) {
-        reportCooldown();
-      } else {
-        setStatus(nextStatus ?? "idle");
-      }
+      cancelActive(nextStatus);
+    },
+    cancelRequest(key, nextStatus) {
+      cancelActive(nextStatus, key);
     },
     dispose() {
       clearCooldownTimer();
@@ -233,6 +246,11 @@ export function registerStudioAutocompleteProvider(options: {
     );
   };
 
+  const clearChainTimer = () => {
+    if (chainTimer) globalThis.clearTimeout(chainTimer);
+    chainTimer = null;
+  };
+
   const requests = createStudioAutocompleteRequestController({
     fetchImpl: options.fetchImpl,
     onStatusChange: options.onStatusChange,
@@ -242,7 +260,7 @@ export function registerStudioAutocompleteProvider(options: {
   });
 
   const acceptCommandId = instance.addCommand(0, () => {
-    if (chainTimer) globalThis.clearTimeout(chainTimer);
+    clearChainTimer();
     chainTimer = globalThis.setTimeout(
       trigger,
       STUDIO_AUTOCOMPLETE_DEBOUNCE_MS
@@ -278,7 +296,10 @@ export function registerStudioAutocompleteProvider(options: {
           ...context,
         });
         const cancellation = token.onCancellationRequested(() => {
-          requests.cancel(options.isEnabled() ? undefined : "off");
+          requests.cancelRequest(
+            key,
+            options.isEnabled() ? undefined : "off"
+          );
         });
         const payload = await requests.request({
           key,
@@ -294,6 +315,20 @@ export function registerStudioAutocompleteProvider(options: {
 
         const currentPosition = instance.getPosition();
         if (!currentPosition) return { items: [] };
+
+        const currentSelection = instance.getSelection();
+        if (
+          !isStudioAutocompleteEligible({
+            enabled: options.isEnabled(),
+            desktop: options.isDesktop(),
+            focused: instance.hasTextFocus(),
+            selectionEmpty: Boolean(currentSelection?.isEmpty()),
+            composing,
+            language: model.getLanguageId(),
+          })
+        ) {
+          return { items: [] };
+        }
 
         const currentContext = buildStudioAutocompleteContext(
           model.getValue(),
@@ -346,6 +381,7 @@ export function registerStudioAutocompleteProvider(options: {
   );
 
   const cancelStaleRequest = () => {
+    clearChainTimer();
     requests.cancel(options.isEnabled() ? undefined : "off");
   };
   const disposables = [
@@ -368,7 +404,8 @@ export function registerStudioAutocompleteProvider(options: {
 
   return {
     setEnabled(enabled) {
-      if (!enabled) {
+      clearChainTimer();
+      if (!enabled || !options.isDesktop()) {
         requests.cancel("off");
         instance.trigger(
           "studio.autocomplete",
@@ -381,8 +418,7 @@ export function registerStudioAutocompleteProvider(options: {
       }
     },
     dispose() {
-      if (chainTimer) globalThis.clearTimeout(chainTimer);
-      chainTimer = null;
+      clearChainTimer();
       requests.dispose();
       for (const disposable of disposables) disposable.dispose();
       registration.dispose();

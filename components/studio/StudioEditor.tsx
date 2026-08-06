@@ -102,6 +102,7 @@ export const StudioEditor = forwardRef<StudioEditorHandle, StudioEditorProps>(
     const autocompleteRef = useRef<StudioAutocompleteProviderHandle | null>(
       null
     );
+    const autocompleteMediaCleanupRef = useRef<(() => void) | null>(null);
     const autocompleteEnabledRef = useRef(autocompleteEnabled);
     const filePathRef = useRef(file.path);
     const autocompleteStatusRef = useRef(onAutocompleteStatusChange);
@@ -115,21 +116,31 @@ export const StudioEditor = forwardRef<StudioEditorHandle, StudioEditorProps>(
 
     const handleMount = useCallback<OnMount>(
       (instance, monaco) => {
+        autocompleteMediaCleanupRef.current?.();
         autocompleteRef.current?.dispose();
         editorRef.current = instance;
         monacoRef.current = monaco;
+        const desktopQuery = window.matchMedia(
+          "(min-width: 861px) and (pointer: fine)"
+        );
         autocompleteRef.current = registerStudioAutocompleteProvider({
           monaco,
           editor: instance,
           isEnabled: () => autocompleteEnabledRef.current,
-          isDesktop: () =>
-            window.matchMedia(
-              "(min-width: 861px) and (pointer: fine)"
-            ).matches,
+          isDesktop: () => desktopQuery.matches,
           getFilePath: () => filePathRef.current,
           onStatusChange: (status) =>
             autocompleteStatusRef.current?.(status),
         });
+        const syncDesktopCapability = () => {
+          autocompleteRef.current?.setEnabled(
+            autocompleteEnabledRef.current
+          );
+        };
+        desktopQuery.addEventListener("change", syncDesktopCapability);
+        autocompleteMediaCleanupRef.current = () => {
+          desktopQuery.removeEventListener("change", syncDesktopCapability);
+        };
         setReady(true);
         onReadyChange?.(true);
         instance.focus();
@@ -143,6 +154,8 @@ export const StudioEditor = forwardRef<StudioEditorHandle, StudioEditorProps>(
 
     useEffect(() => {
       return () => {
+        autocompleteMediaCleanupRef.current?.();
+        autocompleteMediaCleanupRef.current = null;
         autocompleteRef.current?.dispose();
         autocompleteRef.current = null;
         editorRef.current = null;

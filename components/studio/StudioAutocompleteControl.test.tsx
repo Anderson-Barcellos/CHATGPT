@@ -22,4 +22,18 @@ describe("StudioAutocompleteControl", () => {
     expect(markup).toContain(`aria-pressed="${status !== "off"}"`);
     expect(markup).toContain("Autocomplete");
   });
+
+  it("cannot toggle before the workspace preference is hydrated", () => {
+    const markup = renderToStaticMarkup(
+      <StudioAutocompleteControl
+        enabled={false}
+        status="off"
+        disabled
+        onToggle={vi.fn()}
+      />
+    );
+
+    expect(markup).toContain("disabled");
+    expect(markup).toContain('aria-pressed="false"');
+  });
 });

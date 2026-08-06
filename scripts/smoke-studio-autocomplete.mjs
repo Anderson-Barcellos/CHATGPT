@@ -184,6 +184,15 @@ try {
   if (requests.length !== requestsBeforeOff) {
     throw new Error("Disabled autocomplete still requested the API");
   }
+  const requestsBeforeDisabledReload = requests.length;
+  await page.reload({ waitUntil: "networkidle" });
+  await page
+    .getByRole("button", { name: "Autocomplete desligado" })
+    .waitFor({ state: "visible", timeout: 4_000 });
+  await page.waitForTimeout(700);
+  if (requests.length !== requestsBeforeDisabledReload) {
+    throw new Error("Persisted disabled autocomplete requested during reload");
+  }
   await page
     .getByRole("button", { name: "Autocomplete desligado" })
     .click();
