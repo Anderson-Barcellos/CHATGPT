@@ -396,7 +396,7 @@ git commit -m "feat(studio): add autocomplete context rules"
 - Create: `lib/server/studioAutocomplete.ts`
 - Create: `lib/server/studioAutocomplete.test.ts`
 
-- [ ] **Step 1: Write failing server-contract tests**
+- [x] **Step 1: Write failing server-contract tests**
 
 Criar `lib/server/studioAutocomplete.test.ts`:
 
@@ -465,13 +465,13 @@ describe("Studio autocomplete server contract", () => {
 });
 ```
 
-- [ ] **Step 2: Run the server-contract tests and verify RED**
+- [x] **Step 2: Run the server-contract tests and verify RED**
 
 Run: `npm test -- lib/server/studioAutocomplete.test.ts`
 
 Expected: FAIL because the server module does not exist.
 
-- [ ] **Step 3: Implement strict parsing and the dedicated client**
+- [x] **Step 3: Implement strict parsing and the dedicated client**
 
 Criar `lib/server/studioAutocomplete.ts`:
 
@@ -562,13 +562,13 @@ export async function requestStudioFimCompletion(
 }
 ```
 
-- [ ] **Step 4: Run the adapter tests and TypeScript**
+- [x] **Step 4: Run the adapter tests and TypeScript**
 
 Run: `npm test -- lib/server/studioAutocomplete.test.ts && npx tsc --noEmit`
 
 Expected: PASS with the exported browser union unchanged and unknown upstream terminal reasons normalized safely.
 
-- [ ] **Step 5: Commit the server adapter**
+- [x] **Step 5: Commit the server adapter**
 
 ```bash
 git add lib/server/studioAutocomplete.ts lib/server/studioAutocomplete.test.ts
