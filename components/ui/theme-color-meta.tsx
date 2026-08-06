@@ -8,7 +8,7 @@ const THEME_COLORS = {
   dark: "#030812",
 } as const;
 
-export const SPLASH_THEME_COLOR = "#0e131c";
+export const SPLASH_THEME_COLOR = "#14395b";
 
 function setThemeColorMeta(color: string) {
   let meta = document.querySelector<HTMLMetaElement>(

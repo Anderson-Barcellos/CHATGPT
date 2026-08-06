@@ -173,7 +173,7 @@ body {
 
   /* ── Splash ──────────────────────────────────────────── */
   --gc-bg-splash:
-    radial-gradient(ellipse at 50% 38%, oklch(0.42 0.08 212) 0%, oklch(0.28 0.05 224) 52%, oklch(0.15 0.03 232) 100%);
+    radial-gradient(ellipse at 50% 38%, #356f9e 0%, #14395b 52%, #030812 100%);
 
   /* ── Shadcn tokens ──────────────────────────────────── */
   --background: oklch(0.988 0.004 218);
@@ -585,6 +585,16 @@ body {
   background: var(--gc-clinical-row-bg);
 }
 
+.gc-workspace-note {
+  background: var(--gc-workspace-note-bg);
+  border-color: var(--gc-workspace-note-border);
+  box-shadow: var(--gc-workspace-note-shadow);
+}
+
+.gc-workspace-note-body {
+  color: var(--gc-workspace-note-body);
+}
+
 .gc-clinical-input-surface {
   background: var(--gc-surface-panel-strong);
   box-shadow: var(--gc-clinical-input-shadow);
@@ -910,6 +920,7 @@ body {
   --gc-bubble-assistant:
     linear-gradient(150deg, rgb(253 255 255 / 98%), rgb(237 246 251 / 97%));
   --gc-bubble-assistant-border: rgb(63 103 130 / 20%);
+  --gc-bubble-assistant-accent: #2f7fbd;
   --gc-bubble-assistant-shadow:
     0 20px 54px rgb(49 83 105 / 14%),
     0 1px 0 rgb(255 255 255 / 88%) inset;
@@ -952,6 +963,13 @@ body {
   --gc-clinical-card-shadow: 0 1px 0 rgb(255 255 255 / 88%) inset;
   --gc-clinical-row-bg:
     linear-gradient(135deg, rgb(248 252 254 / 90%), rgb(229 240 247 / 92%));
+  --gc-workspace-note-bg:
+    linear-gradient(145deg, rgb(255 255 255 / 96%), rgb(236 246 251 / 98%));
+  --gc-workspace-note-border: rgb(53 111 158 / 28%);
+  --gc-workspace-note-body: #405c72;
+  --gc-workspace-note-shadow:
+    0 10px 26px rgb(42 78 103 / 10%),
+    0 1px 0 rgb(255 255 255 / 94%) inset;
   --gc-clinical-active-bg:
     linear-gradient(135deg, rgb(114 178 208 / 25%), rgb(225 239 247 / 96%));
   --gc-clinical-active-shadow:
@@ -1047,6 +1065,7 @@ body {
   --gc-bubble-assistant:
     linear-gradient(150deg, rgb(20 39 65 / 94%), rgb(10 24 43 / 96%));
   --gc-bubble-assistant-border: rgb(118 163 205 / 18%);
+  --gc-bubble-assistant-accent: #79bdf2;
   --gc-bubble-assistant-shadow:
     0 22px 62px rgb(0 4 12 / 42%),
     0 1px 0 rgb(186 220 244 / 6%) inset;
@@ -1089,6 +1108,13 @@ body {
   --gc-clinical-card-shadow: 0 1px 0 rgb(185 218 240 / 5%) inset;
   --gc-clinical-row-bg:
     linear-gradient(135deg, rgb(17 33 55 / 78%), rgb(8 20 36 / 84%));
+  --gc-workspace-note-bg:
+    linear-gradient(145deg, rgb(18 36 60 / 96%), rgb(9 23 42 / 98%));
+  --gc-workspace-note-border: rgb(121 189 242 / 24%);
+  --gc-workspace-note-body: #c2d2e2;
+  --gc-workspace-note-shadow:
+    0 12px 30px rgb(0 4 13 / 34%),
+    0 1px 0 rgb(186 220 244 / 7%) inset;
   --gc-clinical-active-bg:
     linear-gradient(135deg, rgb(73 116 151 / 30%), rgb(18 35 57 / 92%));
   --gc-clinical-active-shadow:
@@ -1257,13 +1283,14 @@ body {
   align-self: flex-start;
   width: min(100%, 46rem);
   max-width: min(88%, 46rem) !important;
-  border-radius: 1rem 1rem 1rem 0.38rem;
+  border-radius: 1rem;
   padding: 1.15rem 1.3rem;
 }
 
 .gc-atmosphere-shell .gc-assistant-bubble::before {
-  width: 1px;
-  opacity: 0.26;
+  width: 2px;
+  background: var(--gc-bubble-assistant-accent);
+  opacity: 1;
 }
 
 .gc-atmosphere-shell .gc-message-meta {

@@ -4,8 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CalendarPlus,
+  Check,
   ChevronDown,
   ChevronUp,
+  Copy,
   LoaderCircle,
   Mic,
   RefreshCw,
@@ -79,6 +81,7 @@ export function WorkspaceCapturesPanelV2({
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [draftingNoteId, setDraftingNoteId] = useState<string | null>(null);
+  const [copiedNoteId, setCopiedNoteId] = useState<string | null>(null);
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -212,6 +215,19 @@ export function WorkspaceCapturesPanelV2({
     }
   }, []);
 
+  const handleCopy = useCallback(async (note: WorkspaceNote) => {
+    try {
+      await navigator.clipboard.writeText(note.body);
+      setCopiedNoteId(note.id);
+      toast.success("Nota copiada.");
+      window.setTimeout(() => {
+        setCopiedNoteId((current) => (current === note.id ? null : current));
+      }, 1600);
+    } catch {
+      toast.error("Nao consegui copiar a nota.");
+    }
+  }, []);
+
   const toggleNoteExpansion = useCallback((noteId: string) => {
     setExpandedNoteIds((current) => {
       const next = new Set(current);
@@ -307,7 +323,7 @@ export function WorkspaceCapturesPanelV2({
             return (
               <article
                 key={note.id}
-                className="gc-clinical-row rounded-xl border border-[color:var(--gc-border-soft)] px-2.5 py-2"
+                className="gc-workspace-note rounded-xl border px-2.5 py-2"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -315,28 +331,45 @@ export function WorkspaceCapturesPanelV2({
                       {note.title}
                     </p>
                     <p
-                      className={`mt-1 whitespace-pre-wrap break-words text-nano text-muted-foreground/85 ${
+                      className={`gc-workspace-note-body mt-1 whitespace-pre-wrap break-words text-nano ${
                         isNoteExpanded ? "" : "line-clamp-2"
                       }`}
                     >
                       {note.body}
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    size="icon-xs"
-                    variant="ghost"
-                    onClick={() => void handleDelete(note.id)}
-                    disabled={deletingNoteId === note.id}
-                    className="shrink-0 rounded-md"
-                    aria-label="Remover captura"
-                  >
-                    {deletingNoteId === note.id ? (
-                      <LoaderCircle className="size-3 animate-spin" />
-                    ) : (
-                      <Trash2 className="size-3" />
-                    )}
-                  </Button>
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    <Button
+                      type="button"
+                      size="icon-xs"
+                      variant="ghost"
+                      onClick={() => void handleCopy(note)}
+                      className="rounded-md"
+                      aria-label={copiedNoteId === note.id ? "Nota copiada" : "Copiar nota"}
+                      title={copiedNoteId === note.id ? "Nota copiada" : "Copiar nota"}
+                    >
+                      {copiedNoteId === note.id ? (
+                        <Check className="size-3 text-emerald-600 dark:text-emerald-400" />
+                      ) : (
+                        <Copy className="size-3" />
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="icon-xs"
+                      variant="ghost"
+                      onClick={() => void handleDelete(note.id)}
+                      disabled={deletingNoteId === note.id}
+                      className="rounded-md"
+                      aria-label="Remover captura"
+                    >
+                      {deletingNoteId === note.id ? (
+                        <LoaderCircle className="size-3 animate-spin" />
+                      ) : (
+                        <Trash2 className="size-3" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-1.5 text-nano text-muted-foreground">
                   <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">
