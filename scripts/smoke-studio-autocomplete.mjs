@@ -48,12 +48,15 @@ try {
   });
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   const page = await context.newPage();
+  const browserErrors = [];
   page.on("pageerror", (error) => {
-    console.error(`[browser pageerror] ${error.name}: ${error.message}`);
+    if (error.name !== "Canceled") {
+      browserErrors.push(`[pageerror] ${error.name}: ${error.message}`);
+    }
   });
   page.on("console", (message) => {
     if (message.type() === "error") {
-      console.error(`[browser console] ${message.text()}`);
+      browserErrors.push(`[console] ${message.text()}`);
     }
   });
   const requests = [];
@@ -92,10 +95,12 @@ try {
     if (!username || !password) {
       throw new Error("Smoke credentials are required");
     }
-    await page.locator("#username").fill(username);
-    await page.locator("#password").fill(password);
-    await page.getByRole("button", { name: "Entrar", exact: true }).click();
-    await page.waitForURL(/\/chat\/?$/);
+    const response = await page.request.post(`${baseUrl}/api/auth/login`, {
+      data: { username, password },
+    });
+    if (!response.ok()) {
+      throw new Error(`Smoke login failed with HTTP ${response.status()}`);
+    }
     await page.goto(`${baseUrl}/studio`, { waitUntil: "networkidle" });
   }
 
@@ -219,6 +224,10 @@ try {
   }
   if (await mobile.getByRole("button", { name: /Autocomplete/ }).isVisible()) {
     throw new Error("Mobile must hide the autocomplete control");
+  }
+
+  if (browserErrors.length > 0) {
+    throw new Error(`Unexpected browser errors: ${browserErrors.join(" | ")}`);
   }
 
   await context.close();

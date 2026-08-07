@@ -14,7 +14,7 @@ describe("Studio workspace persistence", () => {
 
   it("normalizes legacy v1 snapshots without an autocomplete preference to enabled", () => {
     const initial = createInitialStudioWorkspace();
-    const { autocompleteEnabled: _removed, ...legacy } = initial;
+    const legacy = { ...initial, autocompleteEnabled: undefined };
 
     expect(
       parseStudioWorkspace(JSON.stringify(legacy)).autocompleteEnabled
