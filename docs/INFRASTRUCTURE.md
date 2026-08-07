@@ -179,8 +179,19 @@ Rate limit:
 | `RATE_LIMIT_CHAT_RPM` | Limite específico de chat |
 | `RATE_LIMIT_STUDIO_RPM` | Limite específico do assistente contextual do Studio |
 | `RATE_LIMIT_STUDIO_AUTOCOMPLETE_RPM` | Limite do autocomplete FIM do Studio; default `180` |
+| `RATE_LIMIT_STUDIO_WORKSPACE_UNLOCK_RPM` | Limite do unlock do workspace Python; default `10` |
+| `RATE_LIMIT_STUDIO_WORKSPACE_RUN_RPM` | Limite do run do workspace Python; default `30` |
 | `RATE_LIMIT_TRANSCRIBE_RPM` | Limite específico de transcrição |
 | `RATE_LIMIT_LOGIN_RPM` | Limite específico de login |
+
+Workspace Python do Studio:
+
+| Variável | Propósito |
+|---|---|
+| `STUDIO_WORKSPACE_PASSWORD` | Senha do step-up auth; sem ela o modo servidor fica desabilitado (rollback = remover e reiniciar) |
+| `STUDIO_RUN_TIMEOUT_MS` | Timeout do run sandboxed; default `120000` |
+
+O host do workspace é provisionado por `scripts/studio-workspace-setup.sh` (idempotente): usuário de sistema `studio` sem shell, `/root/studio-projects/{active,archive}`, venv base em `/opt/studio-venv` (fora de `/root` — o `systemd-run` valida o executável antes de montar o namespace) com dependências congeladas em `scripts/studio-venv-requirements.txt`, e template inicial versionado em `templates/studio-python/`. As execuções rodam como units transient `gaucho-studio-run-<id>` com `--collect`; elas morrem sozinhas por `RuntimeMaxSec` e não sobrevivem a restart do serviço.
 
 ## Deploy e Validação
 

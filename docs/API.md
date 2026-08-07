@@ -149,7 +149,7 @@ Os modelos aceitos ficam em `lib/studio/models.ts`. O body é limitado a 512 KiB
 
 ### `POST /api/studio/autocomplete`
 
-Autocomplete FIM não streaming do Monaco, restrito a TypeScript e JavaScript em desktop. A rota exige a mesma sessão do app, usa `DEEPSEEK_API_KEY` apenas no servidor e aceita somente estes quatro campos:
+Autocomplete FIM não streaming do Monaco, restrito a TypeScript, JavaScript e Python em desktop. A rota exige a mesma sessão do app, usa `DEEPSEEK_API_KEY` apenas no servidor e aceita somente estes quatro campos:
 
 ```json
 {
@@ -170,6 +170,28 @@ Autocomplete FIM não streaming do Monaco, restrito a TypeScript e JavaScript em
 ```
 
 Somente `finishReason="stop"` produz ghost text; respostas vazias, cercas Markdown ou finais truncados são descartados. A rota retorna `401` sem sessão, `400/413` para corpo inválido, `503` sem credencial, `504` em timeout e `429` com `Retry-After` quando o provider limita o tráfego. Falhas upstream são sanitizadas: o log do SDK fica forçado em `off`, e a rota registra apenas classe/status do erro, nunca prefixo, suffix ou completion.
+
+### Workspace Python (`/api/studio/workspace/*`)
+
+Modo servidor do Studio: um projeto Python contínuo em `/root/studio-projects/active/`, executado num sandbox systemd (`User=studio`, `BindPaths` → `/workspace`, `ProtectSystem=strict`, rede liberada e `OPENAI_API_KEY` herdada do env do serviço). O recurso só existe quando `STUDIO_WORKSPACE_PASSWORD` está definida; sem ela, `status` responde `enabled: false` e as demais rotas respondem `503 studio_workspace_disabled`.
+
+Todas as rotas exigem a sessão do app **e** (exceto `status`/`unlock`) o token de step-up no header `X-Studio-Workspace-Token`, emitido por `unlock` (jose HS256, 60 min, secret derivado da senha + salt de processo — restart invalida tokens). Contratos compartilhados em `lib/studio/workspaceServerProtocol.ts`.
+
+| Rota | Método | Função |
+|---|---|---|
+| `status` | GET | `{ enabled, unlocked }` (só sessão do app) |
+| `unlock` | POST | `{ password }` → `{ token }`; rate limit próprio 10 RPM |
+| `tree` | GET | Árvore do workspace (até 2 000 entries; `editable` ≤ 1 MB e texto) |
+| `file` | GET/PUT/DELETE | Ler (`?path=`), gravar `{ path, content }`, apagar |
+| `rename` | POST | `{ from, to }` dentro da raiz |
+| `run` | POST | `{ filePath }` → stream SSE de `StudioWorkspaceRunEvent`; evento terminal `status` sempre presente; um run por vez (`409 studio_workspace_run_busy`); rate limit 30 RPM |
+| `stop` | POST | `systemctl stop` da unit transient do run ativo |
+| `save` | POST | `{ name }` → grava `archive/<slug>.zip` e responde o zip como download |
+| `archive` | GET | Lista `{ slug, savedAt, sizeBytes }` |
+| `restore` / `reset` | POST | Substitui o ativo pelo zip salvo / template (swap atômico via temp dir) |
+| `import` | POST | Upload multipart de zip ≤ 50 MB |
+
+Limites e códigos: paths ≤ 320 chars com allowlist de caracteres e validação por `realpath` (`400 studio_workspace_invalid_path`); extração rejeita zip-slip, symlinks, > 2 000 entries ou > 200 MB (`400 studio_workspace_zip_invalid`, `413 studio_workspace_too_large`); token ausente/expirado responde `401 studio_workspace_locked` — o cliente reabre o modal de senha e repete a ação pendente após novo unlock. Console do run com orçamento de 2 000 eventos / 512 KiB (entry ≤ 16 KiB) e truncamento avisado; timeout do run em `STUDIO_RUN_TIMEOUT_MS` (default 120 s) com `RuntimeMaxSec` de backstop na unit.
 
 ## Auth
 

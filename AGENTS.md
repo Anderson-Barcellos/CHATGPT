@@ -1238,3 +1238,14 @@ O runner deixou de depender apenas de stubs de APIs e passou a carregar de `/api
 
 Notes:
 Validação final: 92 arquivos/318 testes, `npx tsc --noEmit`, ESLint completo, build Next `16.2.12`, `npm audit --omit=dev` zero, `git diff --check`, secret scan limpo, Apache `Syntax OK`, restart de `chatgpt.service` e health local/público 200. O smoke Google Chrome autenticado provou Run, associação do console, Stop, Explorer mobile, CSP restrita, zero requests externos na tentativa de rede, zero overflow, zero `pageerror` e zero erros de console. O SSE real retornou delta e `[DONE]`. O bundle continua aguardando revisão de Anders; resolução de grafo de imports, autocomplete e modo agente permanecem fora da v1.
+
+### 2026-08-07 13:09 - Gaucho Studio Python Workspace: cliente, FIM e entrega viva
+
+Context:
+Continuação da frente aprovada de manhã (Tasks 1-5 já commitadas). Anders liberou a retomada e forneceu a senha do step-up auth para fechar a entrega.
+
+Details:
+Task 6 entregou o cliente do modo servidor com a lógica em lib pura (`lib/studio/serverWorkspace.ts`: parser SSE, árvore, autosave com debounce, máquina unlock/replay e controller testados em environment node), hook fino `useStudioServerWorkspace` via `useSyncExternalStore`, `StudioServerExplorer` novo, alternância Local ↔ Python no shell, modal de senha, console SSE ao vivo reusando `StudioConsole` (comando parametrizado) e ações salvar/restaurar/importar/resetar com `ConfirmDialog`. `"python"` entrou em `StudioFileLanguage`, badges, ícones e nas allowlists do assistente. Task 7 inverteu o contrato do FIM: python elegível no cliente, aceito no parser da rota e incluído no selector do `registerInlineCompletionsProvider` (lacuna não listada no plano). Task 8 definiu `STUDIO_WORKSPACE_PASSWORD` no `.env.production` (backup criado), reiniciou `chatgpt.service` e atualizou API.md, ARCHITECTURE.md, INFRASTRUCTURE.md, BACKLOG.md e CLAUDE.md.
+
+Notes:
+Validação: 462 testes, tsc, lint, build e `git diff --check` limpos; health local/público 200. Prova viva via API autenticada: run real com import local, log em arquivo (dono `studio`), OpenAI respondendo com a chave herdada do env (nunca em argv), `PermissionError`/`OSError` nas tentativas de escrita em `/root` e `/etc`, Stop matando loop infinito (`aborted` em 4 s), roundtrip salvar → resetar → restaurar byte a byte (sha256 idêntico), e negativos corretos (401 sem cookie, `studio_workspace_locked` sem token, senha errada rejeitada). Smoke Playwright em produção: unlock pela UI, árvore real, main.py aberto sozinho, run com console SSE ao vivo (268 ms), autosave UI→disco comprovado por mtime, ghost text FIM em python observado, zip salvo no archive e baixado pelo browser. Timeout do run segue coberto pela prova de `RuntimeMaxSec` da Task 1 + testes do runner (não re-provado ao vivo com env curto). `PRE_EXISTING_FAILURE`: advisory `pdfjs-dist` no `npm audit` (major 6.x, fora da frente). Commits locais sem push.

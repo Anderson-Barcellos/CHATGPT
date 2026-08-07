@@ -20,6 +20,7 @@ Este arquivo é a ponte compacta para Claude Code. A autoridade operacional é `
 - Chat principal via OpenAI Responses API; DeepSeek V4 Pro e Gemini 3.6 Flash usam adapters server-side apenas no chat padrão streaming.
 - Documento, Deepsearch e Quiz continuam em fluxos OpenAI forçados.
 - Pulse é a superfície visível de rotinas; Calendar/OAuth permanece backend legado operacional.
+- Studio tem dois modos: Local (v1, localStorage + Web Worker) e Python (workspace no servidor via `/api/studio/workspace/*`, sandbox systemd, step-up auth por `STUDIO_WORKSPACE_PASSWORD`).
 - Persistência pessoal vive em `data/*.json`; esses arquivos não são fixtures e não devem ser alterados sem pedido explícito.
 
 ## Invariantes

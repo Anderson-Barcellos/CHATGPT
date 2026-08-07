@@ -39,6 +39,15 @@ O Studio é uma mudança de página, não um modo interno da conversa. Chat e St
 
 A rota pública é `/chat/studio` por causa do `basePath=/chat`. O retorno ao chat usa navegação normal para `/chat`, preservando a separação visual escolhida para o produto.
 
+### Modo Python (workspace no servidor)
+
+Além do modo local v1 (intacto), o shell oferece alternância Local ↔ Python quando `STUDIO_WORKSPACE_PASSWORD` está definida no serviço. O modo Python troca a fonte de verdade do editor: os arquivos vivem em `/root/studio-projects/active/` no host, atrás de step-up auth (modal de senha → token efêmero de 60 min, guardado só em memória).
+
+- O núcleo server-side vive em `lib/server/studioWorkspace{Auth,Fs,Zip,Runner}.ts`, com rotas finas em `/api/studio/workspace/*` (contratos em `docs/API.md`).
+- O cliente segue o padrão de lógica pura testável: `lib/studio/serverWorkspace.ts` concentra parser SSE, árvore, autosave com debounce, máquina unlock/replay e o controller; `hooks/useStudioServerWorkspace.ts` é só a ponte React (`useSyncExternalStore`); `StudioServerExplorer` renderiza a árvore real e as ações de ciclo de vida (salvar/restaurar/importar/resetar, destrutivas com confirmação).
+- O run é server-side: unit transient do systemd (`User=studio`, `BindPaths` do ativo → `/workspace`, `ProtectSystem=strict`, `MemoryMax=1G`, `CPUQuota=100%`, `RuntimeMaxSec` de backstop), com stdout/stderr convertidos em eventos SSE e Stop via `systemctl stop`. Monaco fica em `language: "python"` sem compile — `compileActiveFile` não se aplica.
+- Rollback operacional: remover a env e reiniciar; sem ela a UI esconde a alternância e o app se comporta como o v1.
+
 ### Atmosphere Glass
 
 `WorkspaceFrameV2` aplica `.gc-atmosphere-shell` e

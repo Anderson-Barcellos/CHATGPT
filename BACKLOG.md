@@ -16,11 +16,11 @@ Limites conscientes: o runner v1 executa somente o arquivo ativo e não resolve 
 
 Próxima ação operacional: integrar a árvore validada em commits coerentes e enviar para `origin/main`, conforme decisão de Anders.
 
-### BUNDLE — Python Workspace (backend pronto, cliente em curso)
+### BUNDLE — Python Workspace (entregue em 2026-08-07, aguardando revisão de Anders)
 
 Desenho fechado em brainstorm com Anders em 2026-08-07: workspace Python contínuo em `/root/studio-projects/active/`, execução sandboxed via systemd com rede liberada, ciclo de vida por zip e step-up auth com token efêmero. Fontes: `docs/superpowers/specs/2026-08-07-gaucho-studio-python-workspace-design.md` (desenho) e `docs/superpowers/plans/2026-08-07-gaucho-studio-python-workspace.md` (8 tasks TDD — ver "Status de execução" no topo do plano).
 
-Backend completo e commitado (Tasks 1–5): host provisionado com jaula systemd provada ao vivo, step-up auth com token de 60 min, file API com path canônico, zip lifecycle com proteção zip-slip testada contra buffers forjados, runner SSE com Stop/timeout/orçamento. Próximo passo único: **Task 6 (cliente)** conforme decisões registradas no status do plano; depois Task 7 (autocomplete python, delta pequeno) e Task 8 (integração + prova viva + docs + senha no env com Anders).
+As 8 tasks foram concluídas com TDD e commits por fatia. Backend (Tasks 1–5): host provisionado com jaula systemd provada ao vivo, step-up auth de 60 min, file API com path canônico, zip lifecycle zip-slip-safe, runner SSE com Stop/timeout/orçamento. Cliente (Tasks 6–7): alternância Local ↔ Python no shell, modal de senha com replay da ação pendente, Explorer do servidor, console SSE ao vivo, autosave com debounce, ações de zip com confirmação destrutiva, e `"python"` liberado no autocomplete FIM. Entrega (Task 8): `STUDIO_WORKSPACE_PASSWORD` no env do serviço, prova viva da sandbox (OpenAI real com chave herdada, escrita fora de `/workspace` negada, Stop em loop infinito, roundtrip de zip byte a byte) e smoke autenticado em produção via Playwright — incluindo ghost text FIM em Python observado ao vivo. Dependência nova registrada: `adm-zip` (pinada) + `@types/adm-zip`. Pendência externa conhecida: advisory `pdfjs-dist` GHSA-hq66-cqwq-w95j no `npm audit` (fix é major 6.x, fora deste bundle). Commits locais sem push, aguardando decisão de Anders.
 
 Quando uma frente complexa for ativada, registrar aqui somente o pack ativo e seus bundles aprovados. As entradas abaixo são histórico de implementação, não fila atual.
 
