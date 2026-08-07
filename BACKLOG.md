@@ -16,9 +16,11 @@ Limites conscientes: o runner v1 executa somente o arquivo ativo e não resolve 
 
 Próxima ação operacional: integrar a árvore validada em commits coerentes e enviar para `origin/main`, conforme decisão de Anders.
 
-### BUNDLE — Python Workspace (spec e plano prontos, implementação não iniciada)
+### BUNDLE — Python Workspace (backend pronto, cliente em curso)
 
-Desenho fechado em brainstorm com Anders em 2026-08-07: workspace Python contínuo em `/root/studio-projects/active/`, execução sandboxed via systemd com rede liberada, ciclo de vida por zip e step-up auth com token efêmero. Fontes: `docs/superpowers/specs/2026-08-07-gaucho-studio-python-workspace-design.md` (desenho) e `docs/superpowers/plans/2026-08-07-gaucho-studio-python-workspace.md` (8 tasks TDD). Aguardando revisão final de Anders para iniciar a Task 1 (provisionamento do host).
+Desenho fechado em brainstorm com Anders em 2026-08-07: workspace Python contínuo em `/root/studio-projects/active/`, execução sandboxed via systemd com rede liberada, ciclo de vida por zip e step-up auth com token efêmero. Fontes: `docs/superpowers/specs/2026-08-07-gaucho-studio-python-workspace-design.md` (desenho) e `docs/superpowers/plans/2026-08-07-gaucho-studio-python-workspace.md` (8 tasks TDD — ver "Status de execução" no topo do plano).
+
+Backend completo e commitado (Tasks 1–5): host provisionado com jaula systemd provada ao vivo, step-up auth com token de 60 min, file API com path canônico, zip lifecycle com proteção zip-slip testada contra buffers forjados, runner SSE com Stop/timeout/orçamento. Próximo passo único: **Task 6 (cliente)** conforme decisões registradas no status do plano; depois Task 7 (autocomplete python, delta pequeno) e Task 8 (integração + prova viva + docs + senha no env com Anders).
 
 Quando uma frente complexa for ativada, registrar aqui somente o pack ativo e seus bundles aprovados. As entradas abaixo são histórico de implementação, não fila atual.
 

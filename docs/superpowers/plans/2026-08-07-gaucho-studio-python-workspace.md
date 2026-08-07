@@ -10,6 +10,8 @@
 
 **Execution constraint:** executar inline por padrão; subagentes só com autorização explícita de Anders. Task 1 muda estado do host (usuário, pastas, venv) — já aprovada em desenho, executar com Anders ciente da sessão.
 
+**Status de execução (2026-08-07, sessão Claude):** Tasks 1–5 concluídas com TDD e commits por fatia — `7c90676` provisionamento + jaula provada, `aef6b80` step-up auth, `db1735c` file API, `005ef47` zip lifecycle, `50c0bc5` runner SSE. Task 6 em curso (só leitura feita, zero código): decisões tomadas — criar `StudioServerExplorer` próprio (o Explorer v1 é hardcoded no projeto TS), reusar `StudioConsole` montando `StudioRunResult` ao vivo a partir do SSE, extrair lógica pura para `lib/studio/serverWorkspace.ts` (parser SSE, hierarquia da árvore, máquina unlock/retry) porque os testes da casa rodam em environment node com `renderToStaticMarkup` (sem jsdom), hook `useStudioServerWorkspace` fino por cima, `"python"` entra em `StudioFileLanguage` + `fileBadge`/ícone. Tasks 7–8 pendentes. `PRE_EXISTING_FAILURE`: `npm audit --omit=dev` acusa `pdfjs-dist` GHSA-hq66-cqwq-w95j (advisory nova, independente desta frente; fix é major 6.x — decisão de Anders fora deste escopo).
+
 **Rollout/rollback:** o modo servidor só existe quando `STUDIO_WORKSPACE_PASSWORD` está definida no env do serviço; sem ela, `/api/studio/workspace/status` responde `enabled: false`, as demais rotas respondem `503 studio_workspace_disabled` e a UI esconde a alternância — o app inteiro se comporta como hoje. Rollback = remover a env e reiniciar; units transient morrem sozinhas (`RuntimeMaxSec`); user/pastas/venv podem ficar no host sem efeito. Restart do serviço invalida tokens emitidos (aceitável e desejável).
 
 ---
