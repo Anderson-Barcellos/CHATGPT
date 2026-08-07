@@ -51,6 +51,7 @@ Contrato obrigatório:
 const ALLOWED_LANGUAGES = new Set<StudioFileLanguage>([
   "typescript",
   "javascript",
+  "python",
   "json",
   "markdown",
   "plaintext",

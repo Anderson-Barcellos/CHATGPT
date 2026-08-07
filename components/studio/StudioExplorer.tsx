@@ -29,6 +29,7 @@ interface StudioExplorerProps {
 const ICON_BY_LANGUAGE = {
   typescript: FileCode2,
   javascript: FileCode2,
+  python: FileCode2,
   json: Braces,
   markdown: BookOpen,
   plaintext: FileCode2,

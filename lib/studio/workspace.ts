@@ -181,6 +181,7 @@ function isStudioFileLanguage(value: unknown): value is StudioFileLanguage {
   return [
     "typescript",
     "javascript",
+    "python",
     "json",
     "markdown",
     "plaintext",

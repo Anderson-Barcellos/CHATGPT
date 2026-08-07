@@ -10,6 +10,7 @@ interface StudioConsoleProps {
   result: StudioRunResult | null;
   running: boolean;
   onClear: () => void;
+  command?: string;
 }
 
 function ConsoleLine({ entry }: { entry: StudioConsoleEntry }) {
@@ -28,6 +29,7 @@ export function StudioConsole({
   result,
   running,
   onClear,
+  command,
 }: StudioConsoleProps) {
   return (
     <section className={styles.consolePanel} aria-label="Saída da execução local">
@@ -54,7 +56,7 @@ export function StudioConsole({
               entry={{
                 id: "studio-command",
                 level: "command",
-                text: `tsx ${filePath}`,
+                text: command ?? `tsx ${filePath}`,
               }}
             />
           </>

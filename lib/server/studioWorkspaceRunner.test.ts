@@ -3,7 +3,6 @@ import { PassThrough } from "node:stream";
 import { describe, expect, it } from "vitest";
 import {
   RUNNER_MAX_EVENTS,
-  RUNNER_MAX_TOTAL_BYTES,
   StudioWorkspaceRunnerManager,
   buildRunnerCommand,
 } from "@/lib/server/studioWorkspaceRunner";

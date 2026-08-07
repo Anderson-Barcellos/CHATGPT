@@ -1,6 +1,7 @@
 export type StudioFileLanguage =
   | "typescript"
   | "javascript"
+  | "python"
   | "json"
   | "markdown"
   | "plaintext";

@@ -239,6 +239,68 @@
   color: var(--studio-text);
 }
 
+.treeEmpty {
+  padding: 0.6rem 0.9rem;
+  color: var(--studio-faint);
+  font-size: 0.76rem;
+}
+
+.serverActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.3rem;
+  border-top: 1px solid var(--studio-border);
+  padding: 0.6rem 0.7rem;
+}
+
+.serverActions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 0.55rem;
+  padding: 0.42rem 0.5rem;
+  color: var(--studio-muted);
+  font-size: 0.72rem;
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.serverActions button:hover {
+  background: var(--studio-hover);
+  color: var(--studio-text);
+}
+
+.serverActions button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.modeToggle {
+  display: inline-flex;
+  gap: 0.15rem;
+  border: 1px solid var(--studio-border);
+  border-radius: 999px;
+  padding: 0.14rem;
+  margin-right: 0.35rem;
+}
+
+.modeToggle button {
+  border-radius: 999px;
+  padding: 0.22rem 0.62rem;
+  color: var(--studio-muted);
+  font: inherit;
+  font-size: 0.74rem;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.modeToggle button:hover {
+  color: var(--studio-text);
+}
+
+.modeToggle button.modeToggleActive {
+  background: color-mix(in srgb, var(--studio-panel-strong) 78%, transparent);
+  color: var(--studio-text);
+}
+
 .topbar {
   position: relative;
   grid-column: 2 / -1;
@@ -904,6 +966,7 @@
   .explorerHeading,
   .projectRow,
   .fileTree,
+  .serverActions,
   .settingsButton span {
     display: none;
   }
