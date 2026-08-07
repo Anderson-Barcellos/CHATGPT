@@ -10,7 +10,7 @@
 
 **Execution constraint:** executar inline por padrão; subagentes só com autorização explícita de Anders. Task 1 muda estado do host (usuário, pastas, venv) — já aprovada em desenho, executar com Anders ciente da sessão.
 
-**Status de execução (2026-08-07, sessão Claude):** Tasks 1–5 concluídas com TDD e commits por fatia — `7c90676` provisionamento + jaula provada, `aef6b80` step-up auth, `db1735c` file API, `005ef47` zip lifecycle, `50c0bc5` runner SSE. Task 6 em curso (só leitura feita, zero código): decisões tomadas — criar `StudioServerExplorer` próprio (o Explorer v1 é hardcoded no projeto TS), reusar `StudioConsole` montando `StudioRunResult` ao vivo a partir do SSE, extrair lógica pura para `lib/studio/serverWorkspace.ts` (parser SSE, hierarquia da árvore, máquina unlock/retry) porque os testes da casa rodam em environment node com `renderToStaticMarkup` (sem jsdom), hook `useStudioServerWorkspace` fino por cima, `"python"` entra em `StudioFileLanguage` + `fileBadge`/ícone. Tasks 7–8 pendentes. `PRE_EXISTING_FAILURE`: `npm audit --omit=dev` acusa `pdfjs-dist` GHSA-hq66-cqwq-w95j (advisory nova, independente desta frente; fix é major 6.x — decisão de Anders fora deste escopo).
+**Status de execução (2026-08-07, sessão Claude):** Tasks 1–7 concluídas com TDD e commits por fatia — `7c90676` provisionamento + jaula provada, `aef6b80` step-up auth, `db1735c` file API, `005ef47` zip lifecycle, `50c0bc5` runner SSE, `6bec0a5` cliente modo Python (controller puro `lib/studio/serverWorkspace.ts` + hook fino + shell com alternância/modal/zip), `7351cc1` FIM em python. Gates atuais: 462 testes, tsc, lint, build e `git diff --check` limpos. Falta a Task 8, que depende de Anders: definir `STUDIO_WORKSPACE_PASSWORD` no env do serviço, restart, prova viva da sandbox e smoke autenticado. `PRE_EXISTING_FAILURE`: `npm audit --omit=dev` acusa `pdfjs-dist` GHSA-hq66-cqwq-w95j (advisory nova, independente desta frente; fix é major 6.x — decisão de Anders fora deste escopo).
 
 **Rollout/rollback:** o modo servidor só existe quando `STUDIO_WORKSPACE_PASSWORD` está definida no env do serviço; sem ela, `/api/studio/workspace/status` responde `enabled: false`, as demais rotas respondem `503 studio_workspace_disabled` e a UI esconde a alternância — o app inteiro se comporta como hoje. Rollback = remover a env e reiniciar; units transient morrem sozinhas (`RuntimeMaxSec`); user/pastas/venv podem ficar no host sem efeito. Restart do serviço invalida tokens emitidos (aceitável e desejável).
 
@@ -114,17 +114,17 @@ Orçamento do console:   2 000 eventos / 512 KiB, entry ≤ 16 KiB, truncamento 
 
 **Files:** Create: `hooks/useStudioServerWorkspace.ts`, `hooks/useStudioServerWorkspace.test.ts` (ou teste de componente focado); Modify: `components/studio/GauchoStudioShell.tsx`, `StudioExplorer.tsx`, `StudioConsole.tsx`, `StudioEditor.tsx`, `GauchoStudioShell.module.css`, `lib/studio/types.ts` (`"python"` em `StudioFileLanguage`)
 
-- [ ] **Step 1 (RED):** testes do hook: token só em memória (nunca storage); `401 studio_workspace_locked` dispara re-prompt e repete a ação pendente; autosave com debounce marca sujo/salvo; parse dos eventos SSE atualiza console e status; árvore recarrega após run terminar.
-- [ ] **Step 2 (GREEN):** implementar o hook consumindo as rotas das Tasks 2–5.
-- [ ] **Step 3:** UI: alternância Local ↔ Python no topo do shell (visível só com `enabled: true` no status); modal de senha; Explorer alimentado pela árvore do servidor; Run/Stop e console reutilizados; ações Salvar (download), Restaurar, Importar e Novo projeto com confirmação destrutiva; indicador "Salvo" refletindo o disco. Monaco em `language: "python"` sem compile (o run é server-side — `compileActiveFile` não se aplica ao modo servidor).
-- [ ] **Step 4:** testes focados verdes + render sem erro; commit.
+- [x] **Step 1 (RED):** testes do hook: token só em memória (nunca storage); `401 studio_workspace_locked` dispara re-prompt e repete a ação pendente; autosave com debounce marca sujo/salvo; parse dos eventos SSE atualiza console e status; árvore recarrega após run terminar. (Implementado como testes do controller puro em `lib/studio/serverWorkspace.test.ts` — environment node.)
+- [x] **Step 2 (GREEN):** implementar o hook consumindo as rotas das Tasks 2–5. (Controller puro em `lib/studio/serverWorkspace.ts` + hook fino `useStudioServerWorkspace` via `useSyncExternalStore`.)
+- [x] **Step 3:** UI: alternância Local ↔ Python no topo do shell (visível só com `enabled: true` no status); modal de senha; Explorer alimentado pela árvore do servidor; Run/Stop e console reutilizados; ações Salvar (download), Restaurar, Importar e Novo projeto com confirmação destrutiva; indicador "Salvo" refletindo o disco. Monaco em `language: "python"` sem compile (o run é server-side — `compileActiveFile` não se aplica ao modo servidor).
+- [x] **Step 4:** testes focados verdes + render sem erro; commit `6bec0a5` (suite completa 460 verdes, tsc, lint e build limpos).
 
 ### Task 7: Autocomplete FIM em Python
 
 **Files:** Modify: `lib/studio/autocomplete.ts` + teste, `lib/server/studioAutocomplete.ts` + teste
 
-- [ ] **Step 1 (RED→GREEN):** inverter o contrato: `"python"` passa a ser elegível no cliente e aceito no parser da rota; os demais bloqueios (mobile, seleção, cooldown) permanecem. Ajustar os testes que hoje rejeitam `language: "python"`.
-- [ ] **Step 2:** testes focados verdes; commit.
+- [x] **Step 1 (RED→GREEN):** inverter o contrato: `"python"` passa a ser elegível no cliente e aceito no parser da rota; os demais bloqueios (mobile, seleção, cooldown) permanecem. Ajustar os testes que hoje rejeitam `language: "python"`. (Inclui o selector do `registerInlineCompletionsProvider`, que também fixava o contrato antigo.)
+- [x] **Step 2:** testes focados verdes; commit `7351cc1` (suite completa 462 verdes).
 
 ### Task 8: Integração, prova viva e entrega
 
