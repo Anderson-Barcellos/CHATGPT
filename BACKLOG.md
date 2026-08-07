@@ -16,6 +16,10 @@ Limites conscientes: o runner v1 executa somente o arquivo ativo e não resolve 
 
 Próxima ação operacional: integrar a árvore validada em commits coerentes e enviar para `origin/main`, conforme decisão de Anders.
 
+### BUNDLE — Python Workspace (spec e plano prontos, implementação não iniciada)
+
+Desenho fechado em brainstorm com Anders em 2026-08-07: workspace Python contínuo em `/root/studio-projects/active/`, execução sandboxed via systemd com rede liberada, ciclo de vida por zip e step-up auth com token efêmero. Fontes: `docs/superpowers/specs/2026-08-07-gaucho-studio-python-workspace-design.md` (desenho) e `docs/superpowers/plans/2026-08-07-gaucho-studio-python-workspace.md` (8 tasks TDD). Aguardando revisão final de Anders para iniciar a Task 1 (provisionamento do host).
+
 Quando uma frente complexa for ativada, registrar aqui somente o pack ativo e seus bundles aprovados. As entradas abaixo são histórico de implementação, não fila atual.
 
 ### 2026-06-24 12:45 - Capturas locais mostram texto completo apos gravar
