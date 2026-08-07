@@ -376,7 +376,7 @@ export function registerStudioAutocompleteProvider(options: {
       disposeInlineCompletions() {},
     };
   const registration = monaco.languages.registerInlineCompletionsProvider(
-    ["typescript", "javascript"],
+    ["typescript", "javascript", "python"],
     provider
   );
 

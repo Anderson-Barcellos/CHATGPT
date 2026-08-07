@@ -58,11 +58,20 @@ describe("Studio autocomplete server contract", () => {
     ).toMatchObject({ ok: true });
   });
 
+  it("accepts python as an autocomplete language", () => {
+    expect(
+      parseStudioAutocompleteRequest({
+        ...validRequest,
+        language: "python",
+      })
+    ).toMatchObject({ ok: true, value: { language: "python" } });
+  });
+
   it.each([
     null,
     { ...validRequest, filePath: "" },
     { ...validRequest, filePath: "x".repeat(321) },
-    { ...validRequest, language: "python" },
+    { ...validRequest, language: "json" },
     { ...validRequest, prefix: 42 },
     { ...validRequest, suffix: null },
     { ...validRequest, prefix: "x".repeat(32_001) },

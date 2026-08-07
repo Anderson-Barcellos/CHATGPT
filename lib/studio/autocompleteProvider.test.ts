@@ -364,6 +364,7 @@ describe("Studio Monaco inline completion provider", () => {
     expect(harness.registeredLanguages).toEqual([
       "typescript",
       "javascript",
+      "python",
     ]);
     expect(harness.provider.debounceDelayMs).toBe(450);
     const result = await harness.provider.provideInlineCompletions(

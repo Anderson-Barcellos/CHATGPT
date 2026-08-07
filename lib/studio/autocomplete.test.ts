@@ -35,6 +35,7 @@ describe("Studio autocomplete rules", () => {
     [{ language: "json" }, false],
     [{ language: "typescript" }, true],
     [{ language: "javascript" }, true],
+    [{ language: "python" }, true],
   ])("evaluates eligibility for %o", (override, expected) => {
     expect(
       isStudioAutocompleteEligible({

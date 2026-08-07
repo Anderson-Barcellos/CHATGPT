@@ -50,7 +50,9 @@ export function parseStudioAutocompleteRequest(
     typeof filePath !== "string" ||
     filePath.trim().length === 0 ||
     filePath.length > 320 ||
-    (language !== "typescript" && language !== "javascript") ||
+    (language !== "typescript" &&
+      language !== "javascript" &&
+      language !== "python") ||
     typeof prefix !== "string" ||
     typeof suffix !== "string" ||
     prefix.length + suffix.length > 32_000

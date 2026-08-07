@@ -5,7 +5,10 @@ export const STUDIO_AUTOCOMPLETE_DEBOUNCE_MS = 450;
 export const STUDIO_AUTOCOMPLETE_TIMEOUT_MS = 8_000;
 export const STUDIO_AUTOCOMPLETE_COOLDOWN_MS = 30_000;
 
-export type StudioAutocompleteLanguage = "typescript" | "javascript";
+export type StudioAutocompleteLanguage =
+  | "typescript"
+  | "javascript"
+  | "python";
 export type StudioAutocompleteFinishReason =
   | "stop"
   | "length"
@@ -86,7 +89,9 @@ export function isStudioAutocompleteEligible(input: {
     input.focused &&
     input.selectionEmpty &&
     !input.composing &&
-    (input.language === "typescript" || input.language === "javascript")
+    (input.language === "typescript" ||
+      input.language === "javascript" ||
+      input.language === "python")
   );
 }
 
