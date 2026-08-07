@@ -7,6 +7,8 @@ const RATE_LIMITED_PATHS = [
   "/api/chat",
   "/api/studio/assist",
   "/api/studio/autocomplete",
+  "/api/studio/workspace/unlock",
+  "/api/studio/workspace/run",
   "/api/transcribe",
   "/api/auth/login",
   "/api/integrations/google/auth/start",

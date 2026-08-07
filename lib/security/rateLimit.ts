@@ -16,6 +16,17 @@ export const RATE_LIMITS = {
       10
     ),
   },
+  studioWorkspaceUnlock: {
+    windowMs: 60 * 1000,
+    max: parseInt(
+      process.env.RATE_LIMIT_STUDIO_WORKSPACE_UNLOCK_RPM || "10",
+      10
+    ),
+  },
+  studioWorkspaceRun: {
+    windowMs: 60 * 1000,
+    max: parseInt(process.env.RATE_LIMIT_STUDIO_WORKSPACE_RUN_RPM || "30", 10),
+  },
   transcribe: {
     windowMs: 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_TRANSCRIBE_RPM || "10", 10),
@@ -127,6 +138,14 @@ export function getRateLimitConfig(endpoint: string): { windowMs: number; max: n
 
   if (endpoint === "/api/studio/autocomplete") {
     return RATE_LIMITS.studioAutocomplete;
+  }
+
+  if (endpoint === "/api/studio/workspace/unlock") {
+    return RATE_LIMITS.studioWorkspaceUnlock;
+  }
+
+  if (endpoint === "/api/studio/workspace/run") {
+    return RATE_LIMITS.studioWorkspaceRun;
   }
 
   const normalizedEndpoint = endpoint.replace(/^\/api\//, "").split("/")[0];

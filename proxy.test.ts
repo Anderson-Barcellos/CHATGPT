@@ -33,6 +33,26 @@ describe("proxy rate limit routing", () => {
     });
   });
 
+  it("rate limits the workspace unlock tightly against brute force", () => {
+    expect(shouldRateLimitPath("/api/studio/workspace/unlock")).toBe(true);
+    expect(getRateLimitConfig("/api/studio/workspace/unlock")).toMatchObject({
+      windowMs: 60_000,
+      max: 10,
+    });
+  });
+
+  it("rate limits workspace runs independently from other studio routes", () => {
+    expect(shouldRateLimitPath("/api/studio/workspace/run")).toBe(true);
+    expect(getRateLimitConfig("/api/studio/workspace/run")).toMatchObject({
+      windowMs: 60_000,
+      max: 30,
+    });
+  });
+
+  it("does not rate limit plain workspace file routes via middleware", () => {
+    expect(shouldRateLimitPath("/api/studio/workspace/tree")).toBe(false);
+  });
+
   it("removes network access from the Studio runner response", () => {
     const csp = getSecurityContentSecurityPolicy("/api/studio/runner");
 
