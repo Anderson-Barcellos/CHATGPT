@@ -1,6 +1,7 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { CornerDownLeft, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { StudioConsoleEntry, StudioRunResult } from "@/lib/studio/types";
 import styles from "@/components/studio/GauchoStudioShell.module.css";
@@ -10,6 +11,7 @@ interface StudioConsoleProps {
   result: StudioRunResult | null;
   running: boolean;
   onClear: () => void;
+  onSendInput?: (text: string) => void;
   command?: string;
 }
 
@@ -29,10 +31,20 @@ export function StudioConsole({
   result,
   running,
   onClear,
+  onSendInput,
   command,
 }: StudioConsoleProps) {
+  const [inputValue, setInputValue] = useState("");
+
+  const submitInput = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!inputValue) return;
+    onSendInput?.(inputValue);
+    setInputValue("");
+  };
+
   return (
-    <section className={styles.consolePanel} aria-label="Saída da execução local">
+    <section className={styles.consolePanel} aria-label="Saída da execução">
       <div className={styles.consoleTabs}>
         <span>Problemas <small>0</small></span>
         <span className={styles.consoleTabActive}>Saída</span>
@@ -56,7 +68,7 @@ export function StudioConsole({
               entry={{
                 id: "studio-command",
                 level: "command",
-                text: command ?? `tsx ${filePath}`,
+                text: command ?? `python ${filePath}`,
               }}
             />
           </>
@@ -73,6 +85,24 @@ export function StudioConsole({
           </div>
         ) : null}
       </div>
+
+      {running && onSendInput ? (
+        <form className={styles.consoleInputRow} onSubmit={submitInput}>
+          <span className={styles.consolePrompt}>›</span>
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(event) => setInputValue(event.target.value)}
+            placeholder="Entrada para o programa (Enter envia)"
+            aria-label="Entrada para o programa"
+            autoComplete="off"
+            spellCheck={false}
+          />
+          <button type="submit" aria-label="Enviar entrada" disabled={!inputValue}>
+            <CornerDownLeft size={13} />
+          </button>
+        </form>
+      ) : null}
     </section>
   );
 }

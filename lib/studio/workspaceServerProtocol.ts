@@ -19,8 +19,39 @@ export interface StudioWorkspaceTreeEntry {
 }
 
 export type StudioWorkspaceRunEvent =
-  | { type: "console"; level: "log" | "error"; text: string }
+  | { type: "console"; level: "log" | "error" | "command"; text: string }
   | { type: "status"; status: StudioWorkspaceRunStatus; durationMs: number };
+
+export type StudioTerminalExitReason = "exited" | "closed" | "idle";
+
+export type StudioTerminalEvent =
+  | { type: "data"; data: string }
+  | { type: "exit"; reason: StudioTerminalExitReason };
+
+export type StudioNotebookKernelStatus = "starting" | "idle" | "busy";
+
+export type StudioNotebookKernelExitReason = "closed" | "idle" | "died";
+
+export type StudioNotebookOutput =
+  | { kind: "stream"; name: "stdout" | "stderr"; text: string }
+  | {
+      kind: "execute_result";
+      data: Record<string, string>;
+      executionCount: number | null;
+    }
+  | { kind: "display_data"; data: Record<string, string> }
+  | { kind: "error"; ename: string; evalue: string; traceback: string[] };
+
+export type StudioNotebookEvent =
+  | { type: "kernel_status"; status: StudioNotebookKernelStatus }
+  | { type: "cell_output"; cellId: string; output: StudioNotebookOutput }
+  | {
+      type: "cell_done";
+      cellId: string;
+      status: "ok" | "error";
+      executionCount: number | null;
+    }
+  | { type: "kernel_exit"; reason: StudioNotebookKernelExitReason };
 
 export interface StudioArchiveEntry {
   slug: string;

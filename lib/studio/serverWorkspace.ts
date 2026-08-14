@@ -43,9 +43,30 @@ export interface StudioServerWorkspaceState {
   errorMessage: string | null;
 }
 
+export interface StudioTokenStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
 export interface StudioServerWorkspaceControllerOptions {
   fetchImpl?: typeof fetch;
   autosaveDelayMs?: number;
+  tokenStorage?: StudioTokenStorage | null;
+}
+
+export const STUDIO_WORKSPACE_TOKEN_STORAGE_KEY =
+  "gaucho-studio:workspace-token:v1";
+
+// sessionStorage: o token sobrevive a reload/F5 na mesma aba, mas morre ao
+// fechá-la; o TTL de 60 min e a invalidação por restart do serviço seguem
+// valendo no servidor.
+function defaultTokenStorage(): StudioTokenStorage | null {
+  try {
+    return typeof window !== "undefined" ? window.sessionStorage : null;
+  } catch {
+    return null;
+  }
 }
 
 export interface StudioServerWorkspaceController {
@@ -62,6 +83,7 @@ export interface StudioServerWorkspaceController {
   editActiveFile(content: string): void;
   flushAutosave(): Promise<void>;
   run(): Promise<void>;
+  sendStdin(text: string): Promise<boolean>;
   stop(): Promise<void>;
   saveArchive(name: string): Promise<Blob | null>;
   loadArchives(): Promise<void>;
@@ -226,9 +248,32 @@ export function createServerWorkspaceController(
     options.fetchImpl ??
     ((input: RequestInfo | URL, init?: RequestInit) => fetch(input, init));
   const autosaveDelayMs = options.autosaveDelayMs ?? DEFAULT_AUTOSAVE_DELAY_MS;
+  const tokenStorage =
+    options.tokenStorage !== undefined
+      ? options.tokenStorage
+      : defaultTokenStorage();
+
+  const readStoredToken = (): string | null => {
+    try {
+      return tokenStorage?.getItem(STUDIO_WORKSPACE_TOKEN_STORAGE_KEY) ?? null;
+    } catch {
+      return null;
+    }
+  };
+  const writeStoredToken = (value: string | null): void => {
+    try {
+      if (value === null) {
+        tokenStorage?.removeItem(STUDIO_WORKSPACE_TOKEN_STORAGE_KEY);
+      } else {
+        tokenStorage?.setItem(STUDIO_WORKSPACE_TOKEN_STORAGE_KEY, value);
+      }
+    } catch {
+      // Storage indisponível: o token segue valendo só nesta instância.
+    }
+  };
 
   let state = createInitialState();
-  let token: string | null = null;
+  let token: string | null = readStoredToken();
   let disposed = false;
   let pendingReplays: PendingReplay[] = [];
   let autosaveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -259,6 +304,7 @@ export function createServerWorkspaceController(
     if (code !== "studio_workspace_locked") return response;
 
     token = null;
+    writeStoredToken(null);
     update({ unlocked: false, unlockPromptOpen: true });
     return new Promise<Response>((resolve, reject) => {
       pendingReplays.push({
@@ -452,6 +498,7 @@ export function createServerWorkspaceController(
           return false;
         }
         token = data.token;
+        writeStoredToken(token);
         update({
           unlocked: true,
           unlockPromptOpen: false,
@@ -542,6 +589,21 @@ export function createServerWorkspaceController(
     flushAutosave,
 
     run,
+
+    async sendStdin(text) {
+      if (!state.running) return false;
+      const data = await requestJson<{ sent: boolean }>(
+        "/api/studio/workspace/run/stdin",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          // O eco do que foi digitado volta pelo stream SSE como "command".
+          body: JSON.stringify({ data: `${text}\n` }),
+        },
+        "Não consegui enviar a entrada para a execução."
+      );
+      return data?.sent === true;
+    },
 
     async stop() {
       await requestJson<{ stopped: boolean }>(

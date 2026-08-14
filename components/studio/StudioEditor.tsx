@@ -36,13 +36,7 @@ const MonacoEditor = dynamic(
   }
 );
 
-export interface StudioCompileResult {
-  code: string;
-  diagnostics: string[];
-}
-
 export interface StudioEditorHandle {
-  compileActiveFile: () => Promise<StudioCompileResult>;
   focus: () => void;
 }
 
@@ -52,37 +46,11 @@ interface StudioEditorProps {
   onChange: (content: string) => void;
   onAutocompleteStatusChange?: (status: StudioAutocompleteStatus) => void;
   onReadyChange?: (ready: boolean) => void;
+  onRunShortcut?: () => void;
 }
 
 function configureMonaco(monaco: Monaco) {
   registerMonacoThemes(monaco);
-
-  const compilerOptions = {
-    target: monaco.languages.typescript.ScriptTarget.ES2022,
-    module: monaco.languages.typescript.ModuleKind.ESNext,
-    moduleResolution:
-      monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-    strict: true,
-    noEmitOnError: false,
-    allowNonTsExtensions: true,
-    allowJs: true,
-  };
-
-  monaco.languages.typescript.typescriptDefaults.setCompilerOptions(
-    compilerOptions
-  );
-  monaco.languages.typescript.javascriptDefaults.setCompilerOptions(
-    compilerOptions
-  );
-  monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-    noSemanticValidation: false,
-    noSyntaxValidation: false,
-  });
-}
-
-function markerMessage(marker: editor.IMarker): string {
-  const position = `L${marker.startLineNumber}:${marker.startColumn}`;
-  return `${position} ${marker.message}`;
 }
 
 export const StudioEditor = forwardRef<StudioEditorHandle, StudioEditorProps>(
@@ -93,6 +61,7 @@ export const StudioEditor = forwardRef<StudioEditorHandle, StudioEditorProps>(
       onChange,
       onAutocompleteStatusChange,
       onReadyChange,
+      onRunShortcut,
     },
     ref
   ) {
@@ -107,12 +76,14 @@ export const StudioEditor = forwardRef<StudioEditorHandle, StudioEditorProps>(
     const filePathRef = useRef(file.path);
     const autocompleteStatusRef = useRef(onAutocompleteStatusChange);
     const readyChangeRef = useRef(onReadyChange);
+    const runShortcutRef = useRef(onRunShortcut);
     const [ready, setReady] = useState(false);
 
     autocompleteEnabledRef.current = autocompleteEnabled;
     filePathRef.current = file.path;
     autocompleteStatusRef.current = onAutocompleteStatusChange;
     readyChangeRef.current = onReadyChange;
+    runShortcutRef.current = onRunShortcut;
 
     const handleMount = useCallback<OnMount>(
       (instance, monaco) => {
@@ -141,6 +112,11 @@ export const StudioEditor = forwardRef<StudioEditorHandle, StudioEditorProps>(
         autocompleteMediaCleanupRef.current = () => {
           desktopQuery.removeEventListener("change", syncDesktopCapability);
         };
+        // Sobrescreve o insertLineAfter padrão do Monaco: Ctrl/Cmd+Enter roda
+        // o arquivo, coerente com o atalho global do shell.
+        instance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+          runShortcutRef.current?.();
+        });
         setReady(true);
         onReadyChange?.(true);
         instance.focus();
@@ -170,46 +146,8 @@ export const StudioEditor = forwardRef<StudioEditorHandle, StudioEditorProps>(
         focus() {
           editorRef.current?.focus();
         },
-        async compileActiveFile() {
-          const instance = editorRef.current;
-          const monaco = monacoRef.current;
-          const model = instance?.getModel();
-          if (!instance || !monaco || !model) {
-            throw new Error("O editor ainda está carregando.");
-          }
-
-          if (file.language === "javascript") {
-            return { code: model.getValue(), diagnostics: [] };
-          }
-
-          if (file.language !== "typescript") {
-            throw new Error("A execução local está disponível para TypeScript e JavaScript.");
-          }
-
-          const workerFactory =
-            await monaco.languages.typescript.getTypeScriptWorker();
-          const worker = await workerFactory(model.uri);
-          const emit = await worker.getEmitOutput(model.uri.toString());
-          const output = emit.outputFiles.find((candidate: { name: string; text: string }) =>
-            candidate.name.endsWith(".js")
-          );
-          if (!output?.text) {
-            throw new Error("O TypeScript não produziu JavaScript executável.");
-          }
-
-          const diagnostics = monaco.editor
-            .getModelMarkers({ resource: model.uri })
-            .filter(
-              (marker: editor.IMarker) =>
-                marker.severity === monaco.MarkerSeverity.Error ||
-                marker.severity === monaco.MarkerSeverity.Warning
-            )
-            .map((marker: editor.IMarker) => markerMessage(marker));
-
-          return { code: output.text, diagnostics };
-        },
       }),
-      [file.language]
+      []
     );
 
     return (

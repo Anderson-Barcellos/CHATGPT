@@ -61,12 +61,12 @@ async function applyRateLimit(request: NextRequest, pathname: string) {
     );
 
     addRateLimitHeaders(response.headers, rateLimitResult, pathname);
-    return finalizeResponse(response, pathname);
+    return finalizeResponse(response);
   }
 
   const response = NextResponse.next();
   addRateLimitHeaders(response.headers, rateLimitResult, pathname);
-  return finalizeResponse(response, pathname);
+  return finalizeResponse(response);
 }
 
 function buildLoginUrl(request: NextRequest): URL {
@@ -90,27 +90,13 @@ const APP_CONTENT_SECURITY_POLICY = [
   "upgrade-insecure-requests",
 ].join("; ");
 
-const STUDIO_RUNNER_CONTENT_SECURITY_POLICY = [
-  "default-src 'none'",
-  "script-src blob:",
-  "connect-src 'none'",
-  "worker-src 'none'",
-  "object-src 'none'",
-  "base-uri 'none'",
-].join("; ");
-
-export function getSecurityContentSecurityPolicy(pathname: string): string {
-  return pathname === "/api/studio/runner"
-    ? STUDIO_RUNNER_CONTENT_SECURITY_POLICY
-    : APP_CONTENT_SECURITY_POLICY;
+export function getSecurityContentSecurityPolicy(): string {
+  return APP_CONTENT_SECURITY_POLICY;
 }
 
-function addSecurityHeaders(
-  response: NextResponse,
-  pathname: string
-): NextResponse {
+function addSecurityHeaders(response: NextResponse): NextResponse {
   const headers = response.headers;
-  const csp = getSecurityContentSecurityPolicy(pathname);
+  const csp = getSecurityContentSecurityPolicy();
 
   headers.set("Content-Security-Policy", csp);
   headers.set("X-DNS-Prefetch-Control", "on");
@@ -129,11 +115,8 @@ function addSecurityHeaders(
   return response;
 }
 
-function finalizeResponse(
-  response: NextResponse,
-  pathname: string
-): NextResponse {
-  return addSecurityHeaders(response, pathname);
+function finalizeResponse(response: NextResponse): NextResponse {
+  return addSecurityHeaders(response);
 }
 
 export async function proxy(request: NextRequest) {
@@ -144,7 +127,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isPublicPath(pathname)) {
-    return finalizeResponse(NextResponse.next(), pathname);
+    return finalizeResponse(NextResponse.next());
   }
 
   if (isAuthEnabled()) {
@@ -156,15 +139,11 @@ export async function proxy(request: NextRequest) {
           NextResponse.json(
             { error: "Unauthorized", message: "Faça login para continuar." },
             { status: 401 }
-          ),
-          pathname
+          )
         );
       }
 
-      return finalizeResponse(
-        NextResponse.redirect(buildLoginUrl(request)),
-        pathname
-      );
+      return finalizeResponse(NextResponse.redirect(buildLoginUrl(request)));
     }
   }
 
@@ -172,7 +151,7 @@ export async function proxy(request: NextRequest) {
     return applyRateLimit(request, pathname);
   }
 
-  return finalizeResponse(NextResponse.next(), pathname);
+  return finalizeResponse(NextResponse.next());
 }
 
 export const config = {

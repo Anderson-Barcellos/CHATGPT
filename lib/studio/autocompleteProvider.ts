@@ -231,6 +231,9 @@ export function registerStudioAutocompleteProvider(options: {
   isEnabled: () => boolean;
   isDesktop: () => boolean;
   getFilePath: () => string;
+  // Contexto extra prependido ao prefixo do FIM (ex.: células anteriores de
+  // um notebook); a truncagem padrão do contexto continua valendo.
+  getLeadingContext?: () => string;
   onStatusChange?: (status: StudioAutocompleteStatus) => void;
   fetchImpl?: StudioAutocompleteFetch;
 }): StudioAutocompleteProviderHandle {
@@ -284,9 +287,10 @@ export function registerStudioAutocompleteProvider(options: {
           return { items: [] };
         }
 
+        const leadingContext = options.getLeadingContext?.() ?? "";
         const context = buildStudioAutocompleteContext(
-          model.getValue(),
-          model.getOffsetAt(position)
+          leadingContext + model.getValue(),
+          leadingContext.length + model.getOffsetAt(position)
         );
         const key = createStudioAutocompleteRequestKey({
           uri: model.uri.toString(),

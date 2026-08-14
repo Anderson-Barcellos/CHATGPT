@@ -9,6 +9,7 @@ import {
 import type { StudioWorkspaceRunEvent } from "@/lib/studio/workspaceServerProtocol";
 
 class FakeProcess extends EventEmitter {
+  stdin = new PassThrough();
   stdout = new PassThrough();
   stderr = new PassThrough();
 }
@@ -183,6 +184,82 @@ describe("StudioWorkspaceRunnerManager", () => {
 
     calls[0].process.emit("close", null, "SIGTERM");
     expect(statusOf(await pending)).toBe("timeout");
+  });
+
+  it("forwards stdin to the active run and echoes it as a command event", async () => {
+    const { calls, spawnImpl } = createSpawnFake();
+    const manager = new StudioWorkspaceRunnerManager({ spawnImpl });
+
+    const started = manager.startRun({ filePath: "main.py", timeoutMs: 5_000 });
+    if (!started.ok) return;
+    const pending = collectEvents(started.events);
+    const run = calls[0].process;
+
+    const written: string[] = [];
+    run.stdin.on("data", (chunk: Buffer) => written.push(chunk.toString()));
+
+    expect(manager.writeStdin("Anders\n")).toBe(true);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+
+    run.stdout.write("Olá, Anders\n");
+    run.emit("close", 0, null);
+    const events = await pending;
+
+    expect(written).toEqual(["Anders\n"]);
+    expect(events).toContainEqual({
+      type: "console",
+      level: "command",
+      text: "Anders",
+    });
+    expect(statusOf(events)).toBe("completed");
+  });
+
+  it("flushes a prompt without newline after a short idle so input() is visible", async () => {
+    const { calls, spawnImpl } = createSpawnFake();
+    const manager = new StudioWorkspaceRunnerManager({ spawnImpl });
+
+    const started = manager.startRun({ filePath: "main.py", timeoutMs: 5_000 });
+    if (!started.ok) return;
+    const events: StudioWorkspaceRunEvent[] = [];
+    const consuming = (async () => {
+      for await (const event of started.events) events.push(event);
+    })();
+    const run = calls[0].process;
+
+    run.stdout.write("Qual teu nome? ");
+    await new Promise((resolve) => setTimeout(resolve, 400));
+
+    // O prompt precisa chegar com o processo ainda vivo, não no flush do close.
+    const firstEvent = events[0] ?? "sem-evento";
+
+    run.emit("close", 0, null);
+    await consuming;
+
+    expect(firstEvent).toEqual({
+      type: "console",
+      level: "log",
+      text: "Qual teu nome? ",
+    });
+  });
+
+  it("refuses stdin without an active run", () => {
+    const { spawnImpl } = createSpawnFake();
+    const manager = new StudioWorkspaceRunnerManager({ spawnImpl });
+
+    expect(manager.writeStdin("nada\n")).toBe(false);
+  });
+
+  it("refuses stdin after the run finished", async () => {
+    const { calls, spawnImpl } = createSpawnFake();
+    const manager = new StudioWorkspaceRunnerManager({ spawnImpl });
+
+    const started = manager.startRun({ filePath: "main.py", timeoutMs: 5_000 });
+    if (!started.ok) return;
+    const pending = collectEvents(started.events);
+    calls[0].process.emit("close", 0, null);
+    await pending;
+
+    expect(manager.writeStdin("tarde demais\n")).toBe(false);
   });
 
   it("truncates oversized entries and kills runs beyond the output budget", async () => {

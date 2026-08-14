@@ -10,7 +10,9 @@ import {
   Download,
   FileCode2,
   Folder,
+  FolderTree,
   MessageCircle,
+  RefreshCw,
   RotateCcw,
   Settings,
   Upload,
@@ -32,6 +34,8 @@ interface StudioServerExplorerProps {
   onRestoreProject: () => void;
   onImportProject: () => void;
   onResetProject: () => void;
+  onRefreshTree?: () => void;
+  onExpand?: () => void;
   onClose?: () => void;
 }
 
@@ -52,6 +56,8 @@ export function StudioServerExplorer({
   onRestoreProject,
   onImportProject,
   onResetProject,
+  onRefreshTree,
+  onExpand,
   onClose,
 }: StudioServerExplorerProps) {
   return (
@@ -84,10 +90,34 @@ export function StudioServerExplorer({
         </span>
       </nav>
 
+      {onExpand ? (
+        <button
+          type="button"
+          className={styles.railExpandButton}
+          onClick={onExpand}
+          aria-label="Abrir explorador"
+          title="Abrir explorador de arquivos"
+        >
+          <FolderTree size={17} />
+        </button>
+      ) : null}
+
       <div className={styles.explorerHeading}>Explorador</div>
       <div className={styles.projectRow}>
         <strong>workspace-python</strong>
         <ChevronDown size={14} />
+        {onRefreshTree ? (
+          <button
+            type="button"
+            className={styles.treeRefreshButton}
+            onClick={onRefreshTree}
+            disabled={busy}
+            aria-label="Atualizar arquivos"
+            title="Atualizar lista de arquivos"
+          >
+            <RefreshCw size={13} />
+          </button>
+        ) : null}
       </div>
 
       <div className={styles.fileTree}>

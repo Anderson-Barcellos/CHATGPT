@@ -24,7 +24,7 @@ Principais areas:
 
 - Modelo padrao atual do chat: `gpt-5.6-luna` com reasoning `low` e modo `standard`; `gpt-5.4-mini` permanece oculto para fluxos internos; `gemini-3.6-flash` e selecionavel como provider separado no chat padrao
 - Shell ativo: `GauchoChatShellV2` / `WorkspaceFrameV2` — redesign completo (S0-S12)
-- Página separada `/studio`: `GauchoStudioShell`, projeto local persistido no browser, execução isolada em Worker e assistente OpenAI sem tools ou aplicação automática
+- Página separada `/studio`: `GauchoStudioShell` Python-only sobre o workspace do servidor (sandbox systemd + step-up auth); console interativo com stdin (`run/stdin`, eco `command` no SSE, flush parcial de prompt em 150 ms); painéis redimensionáveis (`useStudioLayout`, `gaucho-studio:layout:v1`); preview de markdown em arquivos `.md` (`Código/Dividido/Preview`, `StudioMarkdownPreview` reusando o pipeline do chat, desde 2026-08-13); terminal PTY na jail (bash via `node-pty` + `systemd-run --pty`, xterm.js em view alternável do workbench com Ctrl+`, 1 sessão com idle-kill 30 min e reanexo com replay, desde 2026-08-13); notebook `.ipynb` (view de células no lugar do editor, ipykernel real na jail + helper `jupyter_client` fora dela, nbformat v4 com outputs texto+PNG persistidos, FIM ciente das células anteriores, 1 kernel com idle-kill 30 min, desde 2026-08-13); localStorage guarda só prefs/assistente (snapshot v2); modo Local TS/JS removido em 2026-08-12
 - Sistema visual padrão: Atmosphere Glass — Midnight Glass no dark e Daybreak no light
 - Tokens de cor Shadcn/`--gc-*` globais em `app/globals.css` para alcançar portals Radix; geometria e ambientação escopadas a `.gc-atmosphere-shell`
 - Preview de artefatos via `ArtifactPreviewSheet`; painel lateral focado em atividade e notas
@@ -1249,3 +1249,69 @@ Task 6 entregou o cliente do modo servidor com a lógica em lib pura (`lib/studi
 
 Notes:
 Validação: 462 testes, tsc, lint, build e `git diff --check` limpos; health local/público 200. Prova viva via API autenticada: run real com import local, log em arquivo (dono `studio`), OpenAI respondendo com a chave herdada do env (nunca em argv), `PermissionError`/`OSError` nas tentativas de escrita em `/root` e `/etc`, Stop matando loop infinito (`aborted` em 4 s), roundtrip salvar → resetar → restaurar byte a byte (sha256 idêntico), e negativos corretos (401 sem cookie, `studio_workspace_locked` sem token, senha errada rejeitada). Smoke Playwright em produção: unlock pela UI, árvore real, main.py aberto sozinho, run com console SSE ao vivo (268 ms), autosave UI→disco comprovado por mtime, ghost text FIM em python observado, zip salvo no archive e baixado pelo browser. Timeout do run segue coberto pela prova de `RuntimeMaxSec` da Task 1 + testes do runner (não re-provado ao vivo com env curto). `PRE_EXISTING_FAILURE`: advisory `pdfjs-dist` no `npm audit` (major 6.x, fora da frente). Commits locais sem push.
+
+### 2026-08-12 20:20 - Studio Python-only, splitters e console interativo
+
+Context:
+Anders aprovou o Studio Python e pediu a retomada do aperfeiçoamento: remover a aba TypeScript (modo Local), permitir redimensionar os painéis e destravar o terminal, que era só um visor de saída. Terminal decidido em fases: stdin interativo agora, PTY completo como frente futura.
+
+Details:
+Modo Local removido por inteiro: `StudioExplorer`, runner Web Worker (`lib/studio/runner*`, `runnerProtocol*`), rota `GET /api/studio/runner`, `lib/server/studioRunner*`, compile TS do `StudioEditor` e CSP especial no `proxy.ts`. `useStudioWorkspace` virou `useStudioPrefs` com snapshot `version: 2` (autocomplete, modelo, histórico do assistente; migração de v1 preserva esses campos e descarta arquivos TS). Shell ganhou estados explícitos para servidor desabilitado e workspace bloqueado (cancelar a senha não cai mais em modo Local). Splitters: `lib/studio/layout.ts` (clamps puros, editor ≥ 460 px) + `hooks/useStudioLayout.ts` (CSS vars, pointer capture, persistência em `gaucho-studio:layout:v1`, duplo clique reseta, setas como acessibilidade, gate ≥ 1121 px/pointer fine). Console interativo: `writeStdin` no runner manager, rota `POST /api/studio/workspace/run/stdin` (8 KiB, 409 sem run), `sendStdin` no controller, campo de entrada no `StudioConsole` durante o run, eco como evento `command` no SSE e flush de linha parcial após 150 ms para prompts de `input()` sem newline.
+
+Notes:
+TDD red→green em runner (stdin, eco, flush parcial com prova de vida pré-close), controller, layout e console. Validação: 466 testes/101 arquivos, tsc, lint e build limpos. Prova viva em build de produção (porta 3999, Playwright headless): unlock, splitters arrastados com persistência pós-reload e reset por duplo clique, e script `input()` real na jail systemd mostrando o prompt enquanto bloqueado em stdin, eco `$ Fable` e resposta — arquivo temporário de teste removido depois. Docs atualizadas: API.md, ARCHITECTURE.md, README.md, CLAUDE.md e Estado Atual. Fase 2 do terminal (PTY restrito com xterm.js) registrada como frente futura, não iniciada.
+
+### 2026-08-12 21:10 - Token do workspace em sessionStorage e Ctrl+Enter
+
+Context:
+Sequência imediata da entrega Python-only: Anders aceitou as sugestões pendentes — tirar o atrito do reload (senha de novo a cada F5) mantendo a senha como gate, e o atalho de execução.
+
+Details:
+`createServerWorkspaceController` ganhou `tokenStorage` injetável (default `window.sessionStorage`, chave `gaucho-studio:workspace-token:v1`): unlock persiste o token, 401 `studio_workspace_locked` limpa, e um controller novo restaura — reload na mesma aba não pede senha; fechar a aba, TTL de 60 min e restart do serviço seguem exigindo. Ctrl/Cmd+Enter executa o arquivo ativo: `addCommand` no Monaco (sobrescreve o insertLineAfter padrão) + listener global no shell, com guarda `runnable` e tooltip no botão Run.
+
+Notes:
+TDD red→green nos dois testes novos do controller (persistência/restauração e limpeza no locked); 468 testes, tsc, lint e build limpos. Smoke Playwright em build de produção: token gravado, reload sem modal com árvore carregada, Ctrl+Enter rodando de fora e de dentro do Monaco (run de teste interrompido via Stop). ARCHITECTURE.md atualizada; deploy com restart do chatgpt.service e health local/público 200.
+
+### 2026-08-13 09:15 - Markdown preview no Studio (bundle 2 do pack v2)
+
+Context:
+Primeiro bundle executado do PACK "Gaucho Studio v2" aprovado por Anders: renderizar `.md` do workspace reusando o pipeline de markdown do chat.
+
+Details:
+`components/studio/StudioMarkdownPreview.tsx` renderiza o arquivo com `chatMarkdownComponents` (Mermaid, KaTeX com import do CSS, syntax highlight, tabelas GFM), deliberadamente sem `normalizeChatMarkdown` e sem `remarkBreaks` — heurísticas para saída de LLM que alterariam a semântica de um arquivo real (teste cobre soft wrap e parágrafo único). No `GauchoStudioShell`, quando o arquivo ativo é markdown a linha de breadcrumbs ganha o seletor `Código / Dividido / Preview` (default Dividido; estado local da sessão); o split é grid 1fr/1fr que empilha ≤ 860 px, com o Monaco vivo e o preview atualizando a cada tecla.
+
+Notes:
+TDD red→green em `StudioMarkdownPreview.test.tsx` (3 casos); 471 testes, tsc, lint e build limpos. Smoke Playwright em build de produção (porta 3999, jail real): três modos alternando corretamente, tabela/Mermaid/KaTeX renderizados, live-update de heading digitado, toggle ausente em `.py`; arquivo de teste removido do workspace ao final. Deploy com restart do chatgpt.service e health local/público 200. Próximo bundle: Terminal PTY (exige rodada de desenho).
+
+### 2026-08-13 10:35 - Terminal PTY no Studio (bundle 1 do pack v2)
+
+Context:
+Desenho fechado com Anders na mesma manhã (SSE+POST; 1 sessão com idle-kill; painel próprio). Risco técnico nº 1 — `node-pty` encaminhando o PTY pra dentro da jail — foi eliminado por spike antes do plano: `systemd-run --pty` com as propriedades do runner passou 6/6 checks (uid studio, cwd /workspace, pip do venv, ProtectHome negando /root, TTY real, SIGWINCH propagado).
+
+Details:
+`lib/server/studioTerminal.ts` (TDD, 13 testes): `StudioTerminalManager` mantém uma sessão bash (`gaucho-studio-term-*`, `RuntimeMaxSec=8h` de backstop), idle-kill de 30 min resetado por input, buffer de replay de 200 KiB e um stream por vez; abort do SSE solta o stream sem matar a sessão (reanexo com replay — um `pip install` sobrevive a um toggle acidental da view). Rotas finas em `/api/studio/workspace/terminal/{stream,input,resize,close}` gated por `requireStudioWorkspaceAccess`. `lib/studio/terminalClient.ts` (TDD, 8 testes): parser SSE próprio, batch de teclas em 16 ms, resize com debounce de 150 ms, estados connecting/open/closed/error com `exitReason`. `components/studio/StudioTerminal.tsx` monta xterm.js + addon-fit (import dinâmico, client-only) com header de status e Encerrar/Nova sessão; no `GauchoStudioShell` a view toma a área editor/console (grid-row 1/-1), botão no topbar + Ctrl+` (via `event.code`, guardado por unlocked).
+
+Notes:
+495 testes (24 novos), tsc, lint e build limpos. Smoke Playwright em build de produção: unlock → terminal → `id` (uid studio), `pip --version` do venv, fechar/reabrir view com replay do buffer, Encerrar → "Sessão encerrada" → Nova sessão limpa, Ctrl+` alternando nos dois sentidos; zero units residuais no host ao final. Deploy com restart do chatgpt.service e health local/público 200. Dependências fixadas: `node-pty@1.1.0`, `@xterm/xterm@6.0.0`, `@xterm/addon-fit@0.11.0`. Decisão de paridade: o terminal herda `OPENAI_API_KEY` como o runner (mesmos scripts devem rodar via `python` no bash). Próximo bundle: aba notebook (exige rodada de desenho com Anders — kernel persistente).
+
+### 2026-08-13 12:45 - Aba Notebook no Studio (bundle 3 do pack v2 — pack concluído)
+
+Context:
+Desenho fechado com Anders: ipykernel real, formato `.ipynb` nbformat v4, saída texto+PNG na v1; plano A "leve" aprovado por ele (helper `jupyter_client` fora da jail em vez de gateway HTTP — a jail não tem `PrivateNetwork`, então o ZMQ do kernel atravessa pela loopback compartilhada e o browser nunca vê porta de kernel). Spike 7/7 e depois validação viva do helper protocolizado 8/8 antes do TDD.
+
+Details:
+`lib/server/studio-kernel-bridge.py`: helper `jupyter_client` (JSON por linha no stdin/stdout — execute/shutdown entram; ready/stream/execute_result/display_data/error/done/fatal saem), `allow_stdin=False` (célula com `input()` erra claro em vez de travar), execution_count via execute_reply do shell, heartbeat detecta kernel morto. `lib/server/studioNotebookKernel.ts` (TDD, 13 testes): unit `gaucho-studio-kernel-*` na mesma jail do runner (`MemoryMax=1G`, `RuntimeMaxSec=8h`, connection file `.gaucho-kernel-*.json` no workspace com varredura de órfãos no spawn), 1 kernel por vez, idle-kill 30 min rearmado por execução, interrupt via `systemctl kill -s SIGINT`, shutdown gracioso com stop forçado após 5 s. Rotas `/api/studio/workspace/notebook/{stream,execute,interrupt,shutdown}` gated. `lib/studio/notebookFormat.ts` (TDD, 11 testes): parse/serialize nbformat v4.5 tolerante + reducers puros. `lib/studio/notebookClient.ts` (TDD, 7 testes): SSE + POSTs com token. `components/studio/StudioNotebook.tsx` (+4 testes de helpers): células code em Monaco python compacto (auto-altura, Ctrl+Enter executa, autocomplete FIM com `getLeadingContext` novo no provider concatenando células de código anteriores), markdown renderizado com toggle de edição, outputs stream/result/traceback (ANSI removido)/PNG inline, add/remover célula, header com status + Interromper/Reiniciar; abrir `.ipynb` troca a superfície do editor no `GauchoStudioShell` (badge NB).
+
+Notes:
+530 testes/109 arquivos (41 novos), tsc, lint e build limpos. Smoke Playwright em build de produção: unlock → demo.ipynb → "Kernel pronto" → célula 1 (stdout), célula `x` → 42 (estado persistiu), matplotlib → `image/png` inline; outputs e execution_count gravados no arquivo em nbformat válido; Reiniciar kernel → `x` vira NameError (estado zerado, unit antiga morta, 1 unit viva); zero units e connection files ao final. Deploy com restart do chatgpt.service e health local/público 200. Dependências no venv (pinadas): `ipykernel==7.3.0`, `matplotlib==3.10.5`. Extensão útil: varredura de connection files órfãos no spawn (o caso apareceu no próprio smoke quando o node de teste morreu com kernel aberto). `demo.ipynb` ficou no workspace como exemplo funcional. Fechar a view solta só o stream — kernel sobrevive pra reanexo. PACK Gaucho Studio v2 concluído (bundles 2, 1 e 3).
+
+### 2026-08-14 11:05 - Correções pós-uso do Studio (explorer, faixa morta e chat mockup)
+
+Context:
+Feedback do Anders após usar terminal/scripts: explorer não refletia arquivos criados fora do Run, havia situação sem como selecionar arquivos, e o painel do assistente reabria sempre com uma conversa de mockup. Diagnóstico reproduzido em runtime (Playwright): (1) `loadTree()` só rodava no bootstrap e no finally do run — nada criado via terminal/kernel aparecia; a árvore ainda era inundada pelos dotfiles que a jail semeia no HOME (`.cache`, `.config`, `.ipython`, `.bash_history`, `.gaucho-kernel-*.json`); (2) faixa morta 600–1120 px: `.fileTree` era `display:none` no modo trilho e o overlay do explorador só existia ≤600 px (o botão "Arquivos" do mobile nav, 600–860, abria um overlay sem estilo); (3) a conversa demo semeada na era v1 (`studio-welcome-*`) era preservada pela migração v1→v2 e ficava eterna no localStorage.
+
+Details:
+`studioWorkspaceFs.ts`: `STUDIO_WORKSPACE_HIDDEN_DIRS` ganhou `.cache/.config/.ipython/.jupyter/.local` e novo `isHiddenWorkspaceFile()` (históricos de shell, `.bashrc`/`.profile`, `.gaucho-kernel-*.json`) aplicado na árvore e no zip de save (`studioWorkspaceZip.ts`); dotfile legítimo de projeto (`.env`) continua visível. `GauchoStudioShell.tsx`: re-sync da árvore no focus da janela, polling de 8 s enquanto o terminal está aberto e um refresh final ao fechá-lo; `StudioServerExplorer` ganhou botão "Atualizar arquivos" no projectRow e botão "Abrir explorador" no modo trilho. CSS: overlay do explorador movido para ≤1120 px como drawer (`min(100%, 21rem)`, serverActions visíveis), com overrides ≤860 (respeita mobile nav) e ≤600 (largura cheia). `workspace.ts`: `normalizeMessages` descarta ids `studio-welcome-*` em qualquer snapshot persistido.
+
+Notes:
+534 testes/109 arquivos (4 novos, red→green), tsc, lint e build limpos. Smoke Playwright em produção: árvore limpa sem runtime da jail; arquivo criado no filesystem apareceu via botão de refresh; em 1000 px o rail abre o drawer, arquivo novo abre no editor e o drawer fecha; localStorage com mockup injetado voltou ao estado vazio real do assistente. Deploy com restart do chatgpt.service e health local/público 200. Nota de comportamento: zips de "Salvar projeto" agora excluem o estado de runtime da jail (antes iam junto).

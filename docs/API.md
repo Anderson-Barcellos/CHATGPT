@@ -121,13 +121,6 @@ abrir, ao voltar para aba visível e ao carregar conversas com job pendente.
 
 ## Gaucho Studio
 
-### `GET /api/studio/runner`
-
-Entrega o módulo autenticado do Web Worker usado pelo runner local. A resposta
-não é cacheada e possui CSP própria com `connect-src 'none'`; o cliente também
-valida um token privado por execução e limita quantidade e volume das mensagens
-recebidas do Worker.
-
 ### `POST /api/studio/assist`
 
 Assistente contextual do editor em `/studio`. A rota usa a OpenAI Responses API com streaming SSE, `store=false`, reasoning baixo e `tools: []`. Ela não recebe autorização para editar arquivos, executar código, navegar na web, consultar memórias ou acionar o fluxo agente.
@@ -137,9 +130,9 @@ Assistente contextual do editor em `/studio`. A rota usa a OpenAI Responses API 
   "model": "gpt-5.6-luna",
   "prompt": "Sugira uma forma mais segura de validar estes parâmetros.",
   "file": {
-    "path": "src/utils/calculadora.ts",
-    "language": "typescript",
-    "content": "export function calcular(a: number, b: number) { return a + b }"
+    "path": "main.py",
+    "language": "python",
+    "content": "def calcular(a, b):\n    return a + b"
   },
   "history": []
 }
@@ -181,17 +174,26 @@ Todas as rotas exigem a sessão do app **e** (exceto `status`/`unlock`) o token 
 |---|---|---|
 | `status` | GET | `{ enabled, unlocked }` (só sessão do app) |
 | `unlock` | POST | `{ password }` → `{ token }`; rate limit próprio 10 RPM |
-| `tree` | GET | Árvore do workspace (até 2 000 entries; `editable` ≤ 1 MB e texto) |
+| `tree` | GET | Árvore do workspace (até 2 000 entries; `editable` ≤ 1 MB e texto; oculta runtime da jail — `__pycache__`, `.venv`, `.git`, `.cache`, `.config`, `.ipython`, `.jupyter`, `.local`, históricos de shell e `.gaucho-kernel-*.json` — mesma exclusão vale para o zip de `save`) |
 | `file` | GET/PUT/DELETE | Ler (`?path=`), gravar `{ path, content }`, apagar |
 | `rename` | POST | `{ from, to }` dentro da raiz |
 | `run` | POST | `{ filePath }` → stream SSE de `StudioWorkspaceRunEvent`; evento terminal `status` sempre presente; um run por vez (`409 studio_workspace_run_busy`); rate limit 30 RPM |
+| `run/stdin` | POST | `{ data }` (texto ≤ 8 KiB, com `\n` final) → escreve no stdin do run ativo; eco volta no SSE como `console` nível `command`; `409 studio_workspace_run_not_active` sem run |
 | `stop` | POST | `systemctl stop` da unit transient do run ativo |
 | `save` | POST | `{ name }` → grava `archive/<slug>.zip` e responde o zip como download |
 | `archive` | GET | Lista `{ slug, savedAt, sizeBytes }` |
 | `restore` / `reset` | POST | Substitui o ativo pelo zip salvo / template (swap atômico via temp dir) |
 | `import` | POST | Upload multipart de zip ≤ 50 MB |
+| `terminal/stream` | GET | `?cols=&rows=` → SSE de `StudioTerminalEvent` (`data`/`exit`); abre a sessão PTY (bash na jail via `systemd-run --pty`) se não existe, ou reanexa com replay (~200 KiB); um stream por vez (`409 studio_terminal_stream_busy`); abort do SSE solta o stream sem matar a sessão |
+| `terminal/input` | POST | `{ data }` (teclas cruas ≤ 16 KiB) → escreve no PTY; reseta o relógio de inatividade; `409 studio_terminal_not_active` sem sessão |
+| `terminal/resize` | POST | `{ cols, rows }` (inteiros 2–500) → SIGWINCH no PTY |
+| `terminal/close` | POST | Mata a sessão PTY (idempotente; `{ closed }`) |
+| `notebook/stream` | GET | SSE de `StudioNotebookEvent` (`kernel_status`/`cell_output`/`cell_done`/`kernel_exit`); abre o kernel ipykernel na jail (via helper `jupyter_client` fora dela) se não existe, ou reanexa informando o status atual; um stream por vez (`409 studio_notebook_stream_busy`); abort do SSE solta o stream sem matar o kernel |
+| `notebook/execute` | POST | `{ cellId, code }` (código ≤ 256 KiB) → executa a célula no kernel; execuções enfileiram em ordem; reseta o relógio de inatividade; `409 studio_notebook_not_active` sem kernel |
+| `notebook/interrupt` | POST | SIGINT na unit do kernel (KeyboardInterrupt na célula em curso) |
+| `notebook/shutdown` | POST | Encerra o kernel via protocolo Jupyter, com stop forçado da unit após 5 s (idempotente; `{ closed }`) |
 
-Limites e códigos: paths ≤ 320 chars com allowlist de caracteres e validação por `realpath` (`400 studio_workspace_invalid_path`); extração rejeita zip-slip, symlinks, > 2 000 entries ou > 200 MB (`400 studio_workspace_zip_invalid`, `413 studio_workspace_too_large`); token ausente/expirado responde `401 studio_workspace_locked` — o cliente reabre o modal de senha e repete a ação pendente após novo unlock. Console do run com orçamento de 2 000 eventos / 512 KiB (entry ≤ 16 KiB) e truncamento avisado; timeout do run em `STUDIO_RUN_TIMEOUT_MS` (default 120 s) com `RuntimeMaxSec` de backstop na unit.
+Limites e códigos: paths ≤ 320 chars com allowlist de caracteres e validação por `realpath` (`400 studio_workspace_invalid_path`); extração rejeita zip-slip, symlinks, > 2 000 entries ou > 200 MB (`400 studio_workspace_zip_invalid`, `413 studio_workspace_too_large`); token ausente/expirado responde `401 studio_workspace_locked` — o cliente reabre o modal de senha e repete a ação pendente após novo unlock. Console do run com orçamento de 2 000 eventos / 512 KiB (entry ≤ 16 KiB) e truncamento avisado; timeout do run em `STUDIO_RUN_TIMEOUT_MS` (default 120 s) com `RuntimeMaxSec` de backstop na unit. Terminal: uma sessão bash por vez na mesma jail do runner (unit `gaucho-studio-term-*`), idle-kill após 30 min sem input do usuário e `RuntimeMaxSec=8h` de backstop; `exit` no SSE informa `reason` (`exited`/`closed`/`idle`). Notebook: um kernel ipykernel por vez na mesma jail (unit `gaucho-studio-kernel-*`, connection file `.gaucho-kernel-*.json` no workspace, órfãos varridos no próximo spawn), idle-kill após 30 min sem execução e `RuntimeMaxSec=8h`; `kernel_exit` informa `reason` (`closed`/`idle`/`died`); saída rica limitada a `text/plain` + `image/png`.
 
 ## Auth
 

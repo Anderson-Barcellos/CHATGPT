@@ -109,6 +109,34 @@ describe("workspace file operations", () => {
     expect(byPath.get("main.py")?.size).toBeGreaterThan(0);
   });
 
+  it("hides jail runtime directories and files from the tree", async () => {
+    await writeWorkspaceFile(root, "main.py", "print('oi')\n");
+    await writeWorkspaceFile(root, ".env", "X=1\n");
+    await mkdir(path.join(root, ".cache", "matplotlib"), { recursive: true });
+    await writeFile(path.join(root, ".cache", "matplotlib", "fontlist.json"), "{}");
+    await mkdir(path.join(root, ".config"));
+    await mkdir(path.join(root, ".ipython"));
+    await mkdir(path.join(root, ".jupyter"));
+    await mkdir(path.join(root, ".local"));
+    await writeFile(path.join(root, ".bash_history"), "ls\n");
+    await writeFile(path.join(root, ".python_history"), "x = 1\n");
+    await writeFile(path.join(root, ".gaucho-kernel-b0bfa68a.json"), "{}");
+
+    const tree = await listWorkspaceTree(root);
+    const paths = tree.map((entry) => entry.path);
+
+    expect(paths).toContain("main.py");
+    expect(paths).toContain(".env");
+    expect(paths.some((candidate) => candidate.startsWith(".cache"))).toBe(false);
+    expect(paths).not.toContain(".config");
+    expect(paths).not.toContain(".ipython");
+    expect(paths).not.toContain(".jupyter");
+    expect(paths).not.toContain(".local");
+    expect(paths).not.toContain(".bash_history");
+    expect(paths).not.toContain(".python_history");
+    expect(paths).not.toContain(".gaucho-kernel-b0bfa68a.json");
+  });
+
   it("renames and deletes entries inside the workspace", async () => {
     await writeWorkspaceFile(root, "antigo.py", "x = 1\n");
 

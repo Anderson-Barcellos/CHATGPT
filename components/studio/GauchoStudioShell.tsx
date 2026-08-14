@@ -6,9 +6,11 @@ import {
   ChevronRight,
   Code2,
   FolderTree,
+  Lock,
   PanelRightOpen,
   Play,
   Square,
+  TerminalSquare,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -21,8 +23,10 @@ import {
   StudioEditor,
   type StudioEditorHandle,
 } from "@/components/studio/StudioEditor";
-import { StudioExplorer } from "@/components/studio/StudioExplorer";
+import { StudioMarkdownPreview } from "@/components/studio/StudioMarkdownPreview";
+import { StudioNotebook } from "@/components/studio/StudioNotebook";
 import { StudioServerExplorer } from "@/components/studio/StudioServerExplorer";
+import { StudioTerminal } from "@/components/studio/StudioTerminal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,41 +38,34 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useStudioWorkspace } from "@/hooks/useStudioWorkspace";
+import { useStudioLayout } from "@/hooks/useStudioLayout";
+import { useStudioPrefs } from "@/hooks/useStudioPrefs";
 import { useStudioServerWorkspace } from "@/hooks/useStudioServerWorkspace";
-import { runCompiledStudioModule } from "@/lib/studio/runner";
 import type { StudioAutocompleteStatus } from "@/lib/studio/autocomplete";
-import type {
-  StudioConsoleEntry,
-  StudioFile,
-  StudioRunResult,
-} from "@/lib/studio/types";
+import type { StudioFile } from "@/lib/studio/types";
 import { cn } from "@/lib/utils";
 import styles from "@/components/studio/GauchoStudioShell.module.css";
 
-type StudioMode = "local" | "server";
-
-interface StudioRunSession {
-  filePath: string;
-  result: StudioRunResult;
-}
-
 function fileBadge(name: string) {
+  if (name.endsWith(".py")) return "PY";
   if (name.endsWith(".ts") || name.endsWith(".tsx")) return "TS";
   if (name.endsWith(".js") || name.endsWith(".jsx")) return "JS";
-  if (name.endsWith(".py")) return "PY";
+  if (name.endsWith(".ipynb")) return "NB";
   if (name.endsWith(".json")) return "{}";
   if (name.endsWith(".md")) return "MD";
   return "TXT";
 }
 
-function errorEntry(message: string): StudioConsoleEntry {
-  return {
-    id: `studio-run-error-${Date.now()}`,
-    level: "error",
-    text: message,
-  };
-}
+type StudioMarkdownView = "code" | "split" | "preview";
+
+const MARKDOWN_VIEW_OPTIONS: Array<{
+  value: StudioMarkdownView;
+  label: string;
+}> = [
+  { value: "code", label: "Código" },
+  { value: "split", label: "Dividido" },
+  { value: "preview", label: "Preview" },
+];
 
 function defaultArchiveName(): string {
   return `projeto-${new Date().toISOString().slice(0, 10)}`;
@@ -76,35 +73,30 @@ function defaultArchiveName(): string {
 
 export function GauchoStudioShell() {
   const {
-    workspace,
-    activeFile: localActiveFile,
-    openFiles: localOpenFiles,
-    saveState: localSaveState,
+    prefs,
     hydrated,
-    openFile,
-    closeFile,
-    updateActiveFile,
     addAssistantMessage,
     updateAssistantMessage,
     clearAssistantMessages,
     setSelectedModelId,
     setAutocompleteEnabled,
-  } = useStudioWorkspace();
+  } = useStudioPrefs();
   const {
     state: server,
     controller: serverController,
     bootstrap: bootstrapServer,
   } = useStudioServerWorkspace();
   const editorRef = useRef<StudioEditorHandle | null>(null);
-  const runAbortRef = useRef<AbortController | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
-  const [mode, setMode] = useState<StudioMode>("local");
-  const [editorReady, setEditorReady] = useState(false);
+  const shellRef = useRef<HTMLDivElement | null>(null);
+  const workbenchRef = useRef<HTMLElement | null>(null);
+  const { startDrag, resetPanel, nudgePanel } = useStudioLayout({
+    shellRef,
+    workbenchRef,
+  });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(true);
   const [mobileExplorerOpen, setMobileExplorerOpen] = useState(false);
-  const [running, setRunning] = useState(false);
-  const [runSession, setRunSession] = useState<StudioRunSession | null>(null);
   const [unlockPassword, setUnlockPassword] = useState("");
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveName, setSaveName] = useState(defaultArchiveName);
@@ -116,15 +108,14 @@ export function GauchoStudioShell() {
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [autocompleteStatus, setAutocompleteStatus] =
     useState<StudioAutocompleteStatus>(
-      workspace.autocompleteEnabled ? "idle" : "off"
+      prefs.autocompleteEnabled ? "idle" : "off"
     );
 
-  const isServer = mode === "server";
-  const serverActiveFile: StudioFile | null =
+  const activeFile: StudioFile | null =
     server.activeFilePath !== null
       ? server.files[server.activeFilePath] ?? null
       : null;
-  const serverOpenFiles = useMemo(
+  const openFiles = useMemo(
     () =>
       server.openFilePaths
         .map((path) => server.files[path])
@@ -132,34 +123,24 @@ export function GauchoStudioShell() {
     [server.files, server.openFilePaths]
   );
 
-  const activeFile = isServer ? serverActiveFile : localActiveFile;
-  const openFiles = isServer ? serverOpenFiles : localOpenFiles;
-  const isRunning = isServer ? server.running : running;
-  const executable = isServer
-    ? serverActiveFile?.language === "python"
-    : localActiveFile?.language === "typescript" ||
-      localActiveFile?.language === "javascript";
-  const autocompleteEnabled = hydrated && workspace.autocompleteEnabled;
-  const saveLabel = isServer
-    ? server.saveState === "error"
+  const isRunning = server.running;
+  const executable = activeFile?.language === "python";
+  const isMarkdownFile = activeFile?.language === "markdown";
+  const isNotebookFile = Boolean(activeFile?.path.endsWith(".ipynb"));
+  const [markdownView, setMarkdownView] = useState<StudioMarkdownView>("split");
+  const [terminalOpen, setTerminalOpen] = useState(false);
+  const autocompleteEnabled = hydrated && prefs.autocompleteEnabled;
+  const saveLabel =
+    server.saveState === "error"
       ? "Erro ao salvar"
       : server.saveState === "saved"
       ? "Salvo"
-      : "Salvando"
-    : localSaveState === "saving"
-    ? "Salvando"
-    : localSaveState === "error"
-    ? "Erro ao salvar"
-    : "Salvo";
+      : "Salvando";
 
+  // Pede senha quando bloqueado e carrega a árvore + arquivo inicial quando
+  // desbloqueado.
   useEffect(() => {
-    return () => runAbortRef.current?.abort();
-  }, []);
-
-  // Entrada no modo servidor: pede senha quando bloqueado e carrega a
-  // árvore + arquivo inicial quando desbloqueado.
-  useEffect(() => {
-    if (!isServer || server.enabled !== true) return;
+    if (server.enabled !== true) return;
     if (!server.unlocked) {
       serverController.openUnlockPrompt();
       return;
@@ -168,7 +149,6 @@ export function GauchoStudioShell() {
       void bootstrapServer();
     }
   }, [
-    isServer,
     server.enabled,
     server.unlocked,
     server.tree.length,
@@ -177,65 +157,33 @@ export function GauchoStudioShell() {
     bootstrapServer,
   ]);
 
-  const handleLocalRun = useCallback(async () => {
-    if (!localActiveFile || !executable || running) return;
-    const runFilePath = localActiveFile.path;
-    const controller = new AbortController();
-    runAbortRef.current = controller;
-    setRunning(true);
-    setRunSession({
-      filePath: runFilePath,
-      result: { status: "completed", durationMs: 0, entries: [] },
-    });
+  const handleRefreshTree = useCallback(() => {
+    if (!server.unlocked) return;
+    void serverController.loadTree();
+  }, [server.unlocked, serverController]);
 
-    try {
-      const compiled = await editorRef.current?.compileActiveFile();
-      if (!compiled) throw new Error("O editor ainda está carregando.");
+  // Terminal e notebook criam arquivos que o cliente não vê acontecer: a
+  // árvore re-sincroniza quando a janela recupera foco, a cada 8 s enquanto o
+  // terminal está aberto e uma última vez quando ele fecha.
+  useEffect(() => {
+    if (!server.unlocked) return;
+    const onFocus = () => void serverController.loadTree();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [server.unlocked, serverController]);
 
-      const result = await runCompiledStudioModule(compiled.code, {
-        signal: controller.signal,
-      });
-      const diagnosticEntries: StudioConsoleEntry[] = compiled.diagnostics.map(
-        (diagnostic, index) => ({
-          id: `studio-diagnostic-${Date.now()}-${index}`,
-          level: "warn",
-          text: diagnostic,
-        })
-      );
-      setRunSession({
-        filePath: runFilePath,
-        result: {
-          ...result,
-          entries: [...diagnosticEntries, ...result.entries],
-        },
-      });
+  useEffect(() => {
+    if (!server.unlocked || !terminalOpen) return;
+    const interval = window.setInterval(() => {
+      void serverController.loadTree();
+    }, 8000);
+    return () => {
+      window.clearInterval(interval);
+      void serverController.loadTree();
+    };
+  }, [server.unlocked, serverController, terminalOpen]);
 
-      if (result.status === "completed") {
-        toast.success(`Execução concluída em ${result.durationMs} ms.`);
-      } else if (result.status === "aborted") {
-        toast.info("Execução interrompida.");
-      } else {
-        toast.error("A execução terminou com erro.");
-      }
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Falha ao executar o arquivo.";
-      setRunSession({
-        filePath: runFilePath,
-        result: {
-          status: "failed",
-          durationMs: 0,
-          entries: [errorEntry(message)],
-        },
-      });
-      toast.error(message);
-    } finally {
-      if (runAbortRef.current === controller) runAbortRef.current = null;
-      setRunning(false);
-    }
-  }, [localActiveFile, executable, running]);
-
-  const handleServerRun = useCallback(async () => {
+  const handleRun = useCallback(async () => {
     await serverController.run();
     const result = serverController.getState().runSession?.result;
     if (!result) return;
@@ -250,25 +198,35 @@ export function GauchoStudioShell() {
     }
   }, [serverController]);
 
-  const handleRun = useCallback(() => {
-    if (isServer) void handleServerRun();
-    else void handleLocalRun();
-  }, [handleLocalRun, handleServerRun, isServer]);
-
   const handleStop = useCallback(() => {
-    if (isServer) void serverController.stop();
-    else runAbortRef.current?.abort();
-  }, [isServer, serverController]);
+    void serverController.stop();
+  }, [serverController]);
+
+  const runnable = !isRunning && executable && server.unlocked;
+
+  const handleRunShortcut = useCallback(() => {
+    if (!runnable) return;
+    void handleRun();
+  }, [handleRun, runnable]);
+
+  // Ctrl/Cmd+Enter fora do editor (dentro dele o Monaco tem o próprio binding);
+  // Ctrl+` alterna o terminal (padrão VS Code, via code pra ignorar layout).
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey && !event.metaKey && event.code === "Backquote") {
+        event.preventDefault();
+        if (server.unlocked) setTerminalOpen((open) => !open);
+        return;
+      }
+      if (!(event.ctrlKey || event.metaKey) || event.key !== "Enter") return;
+      event.preventDefault();
+      handleRunShortcut();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [handleRunShortcut, server.unlocked]);
 
   const handleExplorerFileOpen = useCallback(
-    (path: string) => {
-      openFile(path);
-      setMobileExplorerOpen(false);
-    },
-    [openFile]
-  );
-
-  const handleServerExplorerFileOpen = useCallback(
     (path: string) => {
       void serverController.openFile(path);
       setMobileExplorerOpen(false);
@@ -278,10 +236,9 @@ export function GauchoStudioShell() {
 
   const handleEditorChange = useCallback(
     (content: string) => {
-      if (isServer) serverController.editActiveFile(content);
-      else updateActiveFile(content);
+      serverController.editActiveFile(content);
     },
-    [isServer, serverController, updateActiveFile]
+    [serverController]
   );
 
   const handleUnlockSubmit = useCallback(async () => {
@@ -297,7 +254,6 @@ export function GauchoStudioShell() {
   const handleUnlockCancel = useCallback(() => {
     serverController.cancelUnlock();
     setUnlockPassword("");
-    setMode("local");
   }, [serverController]);
 
   const handleSaveProject = useCallback(async () => {
@@ -365,26 +321,26 @@ export function GauchoStudioShell() {
       );
   }, [serverController]);
 
-  if (!isServer && !localActiveFile) {
+  if (server.enabled === false) {
     return (
       <div className={styles.fatalState}>
         <Code2 size={22} />
-        <p>Não consegui abrir o projeto local do Studio.</p>
+        <p>
+          O workspace Python não está habilitado no servidor. Configure
+          STUDIO_WORKSPACE_PASSWORD para ativar o Studio.
+        </p>
       </div>
     );
   }
 
   const breadcrumbs = activeFile ? activeFile.path.split("/") : [];
-  const consoleFilePath = isServer
-    ? server.runSession?.filePath ?? null
-    : runSession?.filePath ?? null;
-  const consoleResult = isServer
-    ? server.runSession?.result ?? null
-    : runSession?.result ?? null;
+  const consoleFilePath = server.runSession?.filePath ?? null;
+  const consoleResult = server.runSession?.result ?? null;
 
   return (
     <>
       <div
+        ref={shellRef}
         className={cn(
           styles.shell,
           !assistantOpen && styles.shellWithoutAssistant,
@@ -392,66 +348,30 @@ export function GauchoStudioShell() {
         )}
         data-visual-theme="atmosphere-glass"
       >
-        {isServer ? (
-          <StudioServerExplorer
-            tree={server.tree}
-            activeFilePath={server.activeFilePath}
-            busy={server.busy}
-            onOpenFile={handleServerExplorerFileOpen}
-            onOpenSettings={() => setSettingsOpen(true)}
-            onSaveProject={() => {
-              setSaveName(defaultArchiveName());
-              setSaveDialogOpen(true);
-            }}
-            onRestoreProject={handleOpenRestore}
-            onImportProject={() => importInputRef.current?.click()}
-            onResetProject={() => setResetConfirmOpen(true)}
-            onClose={() => setMobileExplorerOpen(false)}
-          />
-        ) : (
-          <StudioExplorer
-            files={workspace.files}
-            activeFilePath={workspace.activeFilePath}
-            onOpenFile={handleExplorerFileOpen}
-            onOpenSettings={() => setSettingsOpen(true)}
-            onClose={() => setMobileExplorerOpen(false)}
-          />
-        )}
+        <StudioServerExplorer
+          tree={server.tree}
+          activeFilePath={server.activeFilePath}
+          busy={server.busy}
+          onOpenFile={handleExplorerFileOpen}
+          onRefreshTree={handleRefreshTree}
+          onExpand={() => setMobileExplorerOpen(true)}
+          onOpenSettings={() => setSettingsOpen(true)}
+          onSaveProject={() => {
+            setSaveName(defaultArchiveName());
+            setSaveDialogOpen(true);
+          }}
+          onRestoreProject={handleOpenRestore}
+          onImportProject={() => importInputRef.current?.click()}
+          onResetProject={() => setResetConfirmOpen(true)}
+          onClose={() => setMobileExplorerOpen(false)}
+        />
 
         <header className={styles.topbar}>
           <div className={styles.executionStatus}>
-            {server.enabled ? (
-              <div
-                className={styles.modeToggle}
-                role="group"
-                aria-label="Modo de execução do Studio"
-              >
-                <button
-                  type="button"
-                  className={cn(!isServer && styles.modeToggleActive)}
-                  onClick={() => setMode("local")}
-                >
-                  Local
-                </button>
-                <button
-                  type="button"
-                  className={cn(isServer && styles.modeToggleActive)}
-                  onClick={() => setMode("server")}
-                >
-                  Python
-                </button>
-              </div>
-            ) : null}
             <span
               className={cn(styles.statusDot, isRunning && styles.statusDotRunning)}
             />
-            <span>
-              {isRunning
-                ? "Executando"
-                : isServer
-                ? "Execução no servidor"
-                : "Execução local"}
-            </span>
+            <span>{isRunning ? "Executando" : "Python no servidor"}</span>
             <span className={styles.topbarDivider} />
             <span className={styles.savedDot} />
             <span className={styles.saveLabel}>{saveLabel}</span>
@@ -465,6 +385,18 @@ export function GauchoStudioShell() {
           </div>
 
           <div className={styles.topbarActions}>
+            <button
+              type="button"
+              className={styles.iconButton}
+              data-active={terminalOpen}
+              onClick={() => setTerminalOpen((open) => !open)}
+              disabled={!server.unlocked}
+              aria-label={terminalOpen ? "Fechar terminal" : "Abrir terminal"}
+              aria-pressed={terminalOpen}
+              title="Terminal (Ctrl+`)"
+            >
+              <TerminalSquare size={17} />
+            </button>
             {!assistantOpen ? (
               <button
                 type="button"
@@ -479,14 +411,10 @@ export function GauchoStudioShell() {
               <button
                 type="button"
                 className={styles.runButton}
-                onClick={isRunning ? handleStop : handleRun}
-                disabled={
-                  !isRunning &&
-                  (isServer
-                    ? !executable || !server.unlocked
-                    : !editorReady || !executable)
-                }
+                onClick={isRunning ? handleStop : () => void handleRun()}
+                disabled={!isRunning && (!executable || !server.unlocked)}
                 aria-label={isRunning ? "Parar execução" : "Executar arquivo"}
+                title={isRunning ? "Parar execução" : "Executar arquivo (Ctrl+Enter)"}
               >
                 {isRunning ? (
                   <Square size={14} fill="currentColor" />
@@ -499,7 +427,47 @@ export function GauchoStudioShell() {
           </div>
         </header>
 
-        <main className={styles.workbench}>
+        <button
+          type="button"
+          className={cn(styles.splitter, styles.splitterExplorer)}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Redimensionar explorador"
+          onPointerDown={(event) => startDrag("explorer", event)}
+          onDoubleClick={() => resetPanel("explorer")}
+          onKeyDown={(event) => nudgePanel("explorer", event)}
+        />
+        {assistantOpen ? (
+          <button
+            type="button"
+            className={cn(styles.splitter, styles.splitterAssistant)}
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Redimensionar assistente"
+            onPointerDown={(event) => startDrag("assistant", event)}
+            onDoubleClick={() => resetPanel("assistant")}
+            onKeyDown={(event) => nudgePanel("assistant", event)}
+          />
+        ) : null}
+
+        <main ref={workbenchRef} className={styles.workbench}>
+          {terminalOpen && server.unlocked ? (
+            // O terminal toma a área editor/console inteira; o desmonte ao
+            // voltar solta só o stream — a sessão bash segue viva no servidor
+            // e o reabrir reanexa com replay.
+            <StudioTerminal />
+          ) : (
+            <>
+          <button
+            type="button"
+            className={cn(styles.splitter, styles.splitterConsole)}
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="Redimensionar console"
+            onPointerDown={(event) => startDrag("console", event)}
+            onDoubleClick={() => resetPanel("console")}
+            onKeyDown={(event) => nudgePanel("console", event)}
+          />
           <section className={styles.editorPanel} aria-label="Editor de código">
             <div className={styles.fileTabs}>
               {openFiles.map((file) => (
@@ -513,11 +481,7 @@ export function GauchoStudioShell() {
                   <button
                     type="button"
                     className={styles.fileTabSelect}
-                    onClick={() =>
-                      isServer
-                        ? serverController.selectFile(file.path)
-                        : openFile(file.path)
-                    }
+                    onClick={() => serverController.selectFile(file.path)}
                   >
                     <span className={styles.tabBadge}>{fileBadge(file.name)}</span>
                     <span>{file.name}</span>
@@ -526,11 +490,7 @@ export function GauchoStudioShell() {
                     type="button"
                     className={styles.tabClose}
                     aria-label={`Fechar ${file.name}`}
-                    onClick={() =>
-                      isServer
-                        ? serverController.closeFile(file.path)
-                        : closeFile(file.path)
-                    }
+                    onClick={() => serverController.closeFile(file.path)}
                   >
                     <X size={13} />
                   </button>
@@ -539,29 +499,83 @@ export function GauchoStudioShell() {
             </div>
 
             <div className={styles.breadcrumbs}>
-              {breadcrumbs.map((segment, index) => (
-                <span key={`${segment}-${index}`}>
-                  {index > 0 ? <ChevronRight size={12} /> : null}
-                  <span>{segment}</span>
-                </span>
-              ))}
-              {activeFile?.language === "typescript" ? (
-                <>
-                  <ChevronRight size={12} />
-                  <span className={styles.symbolCrumb}>◇ calcular</span>
-                </>
+              <div className={styles.breadcrumbTrail}>
+                {breadcrumbs.map((segment, index) => (
+                  <span key={`${segment}-${index}`}>
+                    {index > 0 ? <ChevronRight size={12} /> : null}
+                    <span>{segment}</span>
+                  </span>
+                ))}
+              </div>
+              {isMarkdownFile ? (
+                <div
+                  className={styles.viewToggle}
+                  role="group"
+                  aria-label="Modo de visualização do markdown"
+                >
+                  {MARKDOWN_VIEW_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={styles.viewToggleButton}
+                      data-active={markdownView === option.value}
+                      aria-pressed={markdownView === option.value}
+                      onClick={() => setMarkdownView(option.value)}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
               ) : null}
             </div>
 
-            {activeFile ? (
-              <StudioEditor
-                ref={editorRef}
-                file={activeFile}
-                autocompleteEnabled={autocompleteEnabled}
-                onAutocompleteStatusChange={setAutocompleteStatus}
-                onChange={handleEditorChange}
-                onReadyChange={setEditorReady}
-              />
+            {server.enabled === true && !server.unlocked ? (
+              <div className={styles.editorSurface}>
+                <div className={styles.lockedState}>
+                  <Lock size={20} />
+                  <p>O workspace Python está bloqueado.</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => serverController.openUnlockPrompt()}
+                  >
+                    Desbloquear
+                  </Button>
+                </div>
+              </div>
+            ) : activeFile ? (
+              isNotebookFile ? (
+                <StudioNotebook
+                  key={activeFile.path}
+                  file={activeFile}
+                  autocompleteEnabled={autocompleteEnabled}
+                  onAutocompleteStatusChange={setAutocompleteStatus}
+                  onChange={handleEditorChange}
+                />
+              ) : isMarkdownFile && markdownView === "preview" ? (
+                <StudioMarkdownPreview content={activeFile.content} />
+              ) : isMarkdownFile && markdownView === "split" ? (
+                <div className={styles.editorSplit}>
+                  <StudioEditor
+                    ref={editorRef}
+                    file={activeFile}
+                    autocompleteEnabled={autocompleteEnabled}
+                    onAutocompleteStatusChange={setAutocompleteStatus}
+                    onChange={handleEditorChange}
+                    onRunShortcut={handleRunShortcut}
+                  />
+                  <StudioMarkdownPreview content={activeFile.content} />
+                </div>
+              ) : (
+                <StudioEditor
+                  ref={editorRef}
+                  file={activeFile}
+                  autocompleteEnabled={autocompleteEnabled}
+                  onAutocompleteStatusChange={setAutocompleteStatus}
+                  onChange={handleEditorChange}
+                  onRunShortcut={handleRunShortcut}
+                />
+              )
             ) : (
               <div className={styles.editorSurface}>
                 <div className={styles.editorLoading} />
@@ -574,19 +588,20 @@ export function GauchoStudioShell() {
             result={consoleResult}
             running={isRunning}
             command={
-              isServer && consoleFilePath ? `python ${consoleFilePath}` : undefined
+              consoleFilePath ? `python ${consoleFilePath}` : undefined
             }
-            onClear={() =>
-              isServer ? serverController.clearRunSession() : setRunSession(null)
-            }
+            onClear={() => serverController.clearRunSession()}
+            onSendInput={(text) => void serverController.sendStdin(text)}
           />
+            </>
+          )}
         </main>
 
         {assistantOpen && activeFile ? (
           <StudioAssistantPanel
             file={activeFile}
-            messages={workspace.assistantMessages}
-            modelId={workspace.selectedModelId}
+            messages={prefs.assistantMessages}
+            modelId={prefs.selectedModelId}
             onModelChange={setSelectedModelId}
             onAddMessage={addAssistantMessage}
             onUpdateMessage={updateAssistantMessage}
@@ -624,7 +639,7 @@ export function GauchoStudioShell() {
       />
 
       <Dialog
-        open={isServer && server.unlockPromptOpen}
+        open={server.unlockPromptOpen}
         onOpenChange={(open) => {
           if (!open) handleUnlockCancel();
         }}

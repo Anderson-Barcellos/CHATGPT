@@ -69,6 +69,24 @@ describe("createWorkspaceArchive", () => {
     expect(names.some((name) => name.includes("__pycache__"))).toBe(false);
     expect(names.some((name) => name.includes(".venv"))).toBe(false);
   });
+
+  it("excludes jail runtime files and directories from the archive", async () => {
+    await writeFile(path.join(root, "main.py"), "print('oi')\n");
+    await writeFile(path.join(root, ".env"), "X=1\n");
+    await mkdir(path.join(root, ".ipython"));
+    await writeFile(path.join(root, ".ipython", "history.sqlite"), "lixo");
+    await writeFile(path.join(root, ".bash_history"), "ls\n");
+    await writeFile(path.join(root, ".gaucho-kernel-b0bfa68a.json"), "{}");
+
+    const buffer = await createWorkspaceArchive(root);
+    const names = new AdmZip(buffer).getEntries().map((entry) => entry.entryName);
+
+    expect(names).toContain("main.py");
+    expect(names).toContain(".env");
+    expect(names.some((name) => name.includes(".ipython"))).toBe(false);
+    expect(names).not.toContain(".bash_history");
+    expect(names.some((name) => name.startsWith(".gaucho-kernel-"))).toBe(false);
+  });
 });
 
 // O adm-zip sanitiza "../" no addFile, então o zip-slip real precisa ser

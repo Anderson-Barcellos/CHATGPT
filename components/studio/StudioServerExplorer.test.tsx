@@ -51,6 +51,27 @@ describe("StudioServerExplorer", () => {
     expect(markup).toContain('aria-current="page"');
   });
 
+  it("renders refresh and rail-expand controls wired to their handlers", () => {
+    const markup = renderToStaticMarkup(
+      <StudioServerExplorer
+        tree={buildWorkspaceTreeRows([treeEntry("main.py", "file")])}
+        activeFilePath="main.py"
+        busy={false}
+        onOpenFile={vi.fn()}
+        onOpenSettings={vi.fn()}
+        onSaveProject={vi.fn()}
+        onRestoreProject={vi.fn()}
+        onImportProject={vi.fn()}
+        onResetProject={vi.fn()}
+        onRefreshTree={vi.fn()}
+        onExpand={vi.fn()}
+      />
+    );
+
+    expect(markup).toContain('aria-label="Atualizar arquivos"');
+    expect(markup).toContain('aria-label="Abrir explorador"');
+  });
+
   it("shows an empty state when the workspace has no entries", () => {
     const markup = renderToStaticMarkup(
       <StudioServerExplorer

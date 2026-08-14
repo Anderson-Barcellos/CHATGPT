@@ -10,7 +10,7 @@ Este arquivo é a ponte compacta para Claude Code. A autoridade operacional é `
 - `docs/ARCHITECTURE.md`: fluxos e fronteiras.
 - `docs/INFRASTRUCTURE.md`: Apache, systemd, env e deploy.
 - `docs/MODELS.md`: catálogo e defaults.
-- `BACKLOG.md`: somente a frente ativa; hoje não há PACK/BUNDLE ativo.
+- `BACKLOG.md`: somente a frente ativa; PACK "Gaucho Studio v2 — evolução do IDE" CONCLUÍDO em 2026-08-13 (markdown preview ✅, terminal PTY ✅, aba notebook ✅) — sem frente pendente registrada.
 
 ## Estado atual
 
@@ -20,7 +20,7 @@ Este arquivo é a ponte compacta para Claude Code. A autoridade operacional é `
 - Chat principal via OpenAI Responses API; DeepSeek V4 Pro e Gemini 3.6 Flash usam adapters server-side apenas no chat padrão streaming.
 - Documento, Deepsearch e Quiz continuam em fluxos OpenAI forçados.
 - Pulse é a superfície visível de rotinas; Calendar/OAuth permanece backend legado operacional.
-- Studio tem dois modos: Local (v1, localStorage + Web Worker) e Python (workspace no servidor via `/api/studio/workspace/*`, sandbox systemd, step-up auth por `STUDIO_WORKSPACE_PASSWORD`).
+- Studio é Python-only (modo Local TS/JS removido em 2026-08-12): workspace no servidor via `/api/studio/workspace/*`, sandbox systemd, step-up auth por `STUDIO_WORKSPACE_PASSWORD`, console com stdin interativo, painéis redimensionáveis, preview de markdown (`Código/Dividido/Preview` em arquivos `.md`), terminal PTY (bash na jail via node-pty + xterm.js, view alternável com Ctrl+`, 1 sessão com idle-kill 30 min e reanexo com replay) e notebook `.ipynb` (view de células com ipykernel real na jail via helper jupyter_client, nbformat v4, outputs texto+PNG persistidos, 1 kernel com idle-kill 30 min); localStorage guarda só prefs/assistente (snapshot v2).
 - Persistência pessoal vive em `data/*.json`; esses arquivos não são fixtures e não devem ser alterados sem pedido explícito.
 
 ## Invariantes

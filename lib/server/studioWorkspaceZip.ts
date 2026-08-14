@@ -12,6 +12,7 @@ import {
 import path from "node:path";
 import {
   STUDIO_WORKSPACE_HIDDEN_DIRS,
+  isHiddenWorkspaceFile,
   resolveWorkspacePath,
 } from "@/lib/server/studioWorkspaceFs";
 import {
@@ -60,6 +61,7 @@ export async function createWorkspaceArchive(root: string): Promise<Buffer> {
         continue;
       }
       if (!child.isFile()) continue;
+      if (isHiddenWorkspaceFile(child.name)) continue;
 
       zip.addLocalFile(absolute, path.posix.dirname(relative) === "."
         ? ""

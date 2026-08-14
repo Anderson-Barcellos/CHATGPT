@@ -53,11 +53,9 @@ describe("proxy rate limit routing", () => {
     expect(shouldRateLimitPath("/api/studio/workspace/tree")).toBe(false);
   });
 
-  it("removes network access from the Studio runner response", () => {
-    const csp = getSecurityContentSecurityPolicy("/api/studio/runner");
+  it("applies the app content security policy to every route", () => {
+    const csp = getSecurityContentSecurityPolicy();
 
-    expect(csp).toContain("default-src 'none'");
-    expect(csp).toContain("script-src blob:");
-    expect(csp).toContain("connect-src 'none'");
+    expect(csp).toContain("default-src 'self'");
   });
 });

@@ -7,18 +7,14 @@ import {
   writeStudioWorkspaceToStorage,
 } from "@/lib/studio/workspace";
 
-describe("Studio workspace persistence", () => {
-  it("enables autocomplete by default in a new workspace", () => {
-    expect(createInitialStudioWorkspace().autocompleteEnabled).toBe(true);
-  });
+describe("Studio prefs persistence", () => {
+  it("enables autocomplete by default in a new snapshot", () => {
+    const workspace = createInitialStudioWorkspace();
 
-  it("normalizes legacy v1 snapshots without an autocomplete preference to enabled", () => {
-    const initial = createInitialStudioWorkspace();
-    const legacy = { ...initial, autocompleteEnabled: undefined };
-
-    expect(
-      parseStudioWorkspace(JSON.stringify(legacy)).autocompleteEnabled
-    ).toBe(true);
+    expect(workspace.version).toBe(2);
+    expect(workspace.autocompleteEnabled).toBe(true);
+    expect(workspace.assistantMessages).toEqual([]);
+    expect(workspace.selectedModelId).toBe("gpt-5.6-luna");
   });
 
   it("restores an explicitly disabled autocomplete preference", () => {
@@ -27,96 +23,100 @@ describe("Studio workspace persistence", () => {
       JSON.stringify({ ...initial, autocompleteEnabled: false })
     );
 
-    expect(restored.version).toBe(1);
+    expect(restored.version).toBe(2);
     expect(restored.autocompleteEnabled).toBe(false);
   });
 
-  it("creates the calculator project shown in the approved concept", () => {
-    const workspace = createInitialStudioWorkspace();
-
-    expect(workspace.activeFilePath).toBe("src/utils/calculadora.ts");
-    expect(workspace.openFilePaths).toHaveLength(3);
-    expect(workspace.files[workspace.activeFilePath].content).toContain(
-      'console.log("Resultado:", demo.resultado)'
-    );
-    expect(workspace.selectedModelId).toBe("gpt-5.6-luna");
-  });
-
-  it("recovers safely from invalid persisted JSON", () => {
-    expect(parseStudioWorkspace("{invalid").activeFilePath).toBe(
-      "src/utils/calculadora.ts"
-    );
-  });
-
-  it("drops invalid open paths without losing the active file", () => {
-    const initial = createInitialStudioWorkspace();
-    const parsed = parseStudioWorkspace(
-      JSON.stringify({
-        ...initial,
-        openFilePaths: ["missing.ts"],
-        activeFilePath: "src/index.ts",
-      })
-    );
-
-    expect(parsed.openFilePaths).toEqual(["src/index.ts"]);
-    expect(parsed.activeFilePath).toBe("src/index.ts");
-  });
-
-  it("restores edited files, open tabs, model and assistant history across sessions", () => {
-    const initial = createInitialStudioWorkspace();
-    const edited = {
-      ...initial,
-      activeFilePath: "src/index.ts",
-      openFilePaths: ["src/index.ts", "README.md"],
-      selectedModelId: "gpt-5.6-terra" as const,
+  it("migrates a legacy v1 snapshot keeping prefs and assistant history", () => {
+    const legacy = {
+      version: 1,
+      autocompleteEnabled: false,
       files: {
-        ...initial.files,
         "src/index.ts": {
-          ...initial.files["src/index.ts"],
-          content: 'console.log("sessao persistida")',
+          path: "src/index.ts",
+          name: "index.ts",
+          language: "typescript",
+          content: "console.log(1)",
         },
       },
+      openFilePaths: ["src/index.ts"],
+      activeFilePath: "src/index.ts",
+      selectedModelId: "gpt-5.6-terra",
       assistantMessages: [
-        ...initial.assistantMessages,
         {
-          id: "persisted-question",
-          role: "user" as const,
-          content: "Lembre desta pergunta no Studio.",
+          id: "legacy-question",
+          role: "user",
+          content: "Pergunta preservada da era TS.",
           createdAt: "2026-08-06T15:00:00.000Z",
-          status: "completed" as const,
+          status: "completed",
         },
       ],
     };
 
-    const restored = parseStudioWorkspace(JSON.stringify(edited));
+    const restored = parseStudioWorkspace(JSON.stringify(legacy));
 
-    expect(restored.activeFilePath).toBe("src/index.ts");
-    expect(restored.openFilePaths).toEqual(["src/index.ts", "README.md"]);
-    expect(restored.files["src/index.ts"].content).toContain("sessao persistida");
+    expect(restored.version).toBe(2);
+    expect(restored.autocompleteEnabled).toBe(false);
     expect(restored.selectedModelId).toBe("gpt-5.6-terra");
-    expect(restored.assistantMessages.at(-1)?.id).toBe("persisted-question");
+    expect(restored.assistantMessages).toEqual([
+      expect.objectContaining({ id: "legacy-question" }),
+    ]);
+    expect("files" in restored).toBe(false);
   });
 
-  it("migrates only the untouched legacy index that imported another file", () => {
-    const initial = createInitialStudioWorkspace();
+  it("drops the seeded v1 demo conversation while keeping real history", () => {
+    const persisted = {
+      version: 2,
+      autocompleteEnabled: true,
+      selectedModelId: "gpt-5.6-luna",
+      assistantMessages: [
+        {
+          id: "studio-welcome-user",
+          role: "user",
+          content: "Revise esta função e sugira uma versão mais segura.",
+          createdAt: "2026-08-06T17:22:00.000Z",
+          status: "completed",
+        },
+        {
+          id: "studio-welcome-assistant",
+          role: "assistant",
+          content: "Sua função já tem boas validações...",
+          createdAt: "2026-08-06T17:22:05.000Z",
+          status: "completed",
+        },
+        {
+          id: "studio-1755000000-real",
+          role: "user",
+          content: "Pergunta real do Anders.",
+          createdAt: "2026-08-13T10:00:00.000Z",
+          status: "completed",
+        },
+      ],
+    };
+
+    const restored = parseStudioWorkspace(JSON.stringify(persisted));
+
+    expect(restored.assistantMessages).toEqual([
+      expect.objectContaining({ id: "studio-1755000000-real" }),
+    ]);
+  });
+
+  it("recovers safely from invalid persisted JSON", () => {
+    const restored = parseStudioWorkspace("{invalid");
+
+    expect(restored.version).toBe(2);
+    expect(restored.autocompleteEnabled).toBe(true);
+  });
+
+  it("falls back to the default model for unknown model ids", () => {
     const restored = parseStudioWorkspace(
       JSON.stringify({
-        ...initial,
-        files: {
-          ...initial.files,
-          "src/index.ts": {
-            ...initial.files["src/index.ts"],
-            content:
-              'import { calcular } from "./utils/calculadora";\n\nconsole.log(calcular({ a: 20, b: 22, operacao: "soma" }));',
-          },
-        },
+        ...createInitialStudioWorkspace(),
+        selectedModelId: "modelo-que-nao-existe",
       })
     );
 
-    expect(restored.files["src/index.ts"].content).toContain(
-      "Gaucho Studio pronto"
-    );
-    expect(restored.files["src/index.ts"].content).not.toContain("import");
+    expect(restored.selectedModelId).toBe("gpt-5.6-luna");
   });
 
   it("restores an in-flight assistant response with an explicit interrupted status", () => {
@@ -181,14 +181,15 @@ describe("Studio workspace persistence", () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.workspace.activeFilePath).toBe("src/utils/calculadora.ts");
+    expect(result.workspace.version).toBe(2);
   });
 
-  it("retries quota failures without assistant history so code still persists", () => {
+  it("retries quota failures without assistant history so prefs still persist", () => {
     const writes: string[] = [];
     const initial = createInitialStudioWorkspace();
     const workspace = {
       ...initial,
+      autocompleteEnabled: false,
       assistantMessages: Array.from({ length: 50 }, (_, index) => ({
         id: `large-${index}`,
         role: "assistant" as const,
@@ -207,10 +208,10 @@ describe("Studio workspace persistence", () => {
 
     expect(writeStudioWorkspaceToStorage(storage, workspace)).toBe(true);
     const persisted = JSON.parse(writes[0] ?? "{}") as {
-      files?: Record<string, unknown>;
+      autocompleteEnabled?: boolean;
       assistantMessages?: unknown[];
     };
-    expect(persisted.files?.["src/utils/calculadora.ts"]).toBeTruthy();
+    expect(persisted.autocompleteEnabled).toBe(false);
     expect(persisted.assistantMessages).toEqual([]);
   });
 });

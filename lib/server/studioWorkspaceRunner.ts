@@ -10,6 +10,9 @@ export const RUNNER_MAX_EVENTS = 2_000;
 export const RUNNER_MAX_TOTAL_BYTES = 512 * 1024;
 export const RUNNER_MAX_ENTRY_BYTES = 16 * 1024;
 export const DEFAULT_RUN_TIMEOUT_MS = 120_000;
+// Prompt de input() não termina em \n; sem este flush o usuário não vê a
+// pergunta enquanto o processo espera stdin.
+export const RUNNER_PARTIAL_FLUSH_MS = 150;
 
 const RUNNER_PYTHON = "/opt/studio-venv/bin/python";
 const RUNNER_WORKSPACE = "/workspace";
@@ -72,6 +75,7 @@ export function buildRunnerCommand({
 }
 
 interface RunnerChildProcess {
+  stdin?: NodeJS.WritableStream;
   stdout: NodeJS.ReadableStream;
   stderr: NodeJS.ReadableStream;
   on(event: "close", listener: (code: number | null, signal: string | null) => void): unknown;
@@ -127,6 +131,7 @@ type StartRunResult =
 export class StudioWorkspaceRunnerManager {
   private readonly spawnImpl: RunnerSpawn;
   private activeUnitId: string | null = null;
+  private stdinWriter: ((data: string) => boolean) | null = null;
 
   constructor({ spawnImpl }: { spawnImpl?: RunnerSpawn } = {}) {
     this.spawnImpl = spawnImpl ?? (nodeSpawn as unknown as RunnerSpawn);
@@ -134,6 +139,12 @@ export class StudioWorkspaceRunnerManager {
 
   isBusy(): boolean {
     return this.activeUnitId !== null;
+  }
+
+  // Escreve no stdin da execução ativa (dados já com o "\n" final). O eco
+  // volta pelo próprio stream de eventos como nível "command".
+  writeStdin(data: string): boolean {
+    return this.stdinWriter?.(data) ?? false;
   }
 
   async stop(): Promise<boolean> {
@@ -177,7 +188,10 @@ export class StudioWorkspaceRunnerManager {
     let budgetExceeded = false;
     let settled = false;
 
-    const pushConsole = (level: "log" | "error", line: string): void => {
+    const pushConsole = (
+      level: "log" | "error" | "command",
+      line: string
+    ): void => {
       if (budgetExceeded) return;
 
       let text = line;
@@ -206,6 +220,7 @@ export class StudioWorkspaceRunnerManager {
       settled = true;
       clearTimeout(timeout);
       this.activeUnitId = null;
+      this.stdinWriter = null;
 
       let status: StudioWorkspaceRunStatus;
       if (budgetExceeded) status = "failed";
@@ -249,17 +264,33 @@ export class StudioWorkspaceRunnerManager {
     ): (() => void) => {
       const decoder = new StringDecoder("utf8");
       let pending = "";
+      let idleFlush: ReturnType<typeof setTimeout> | null = null;
+
+      const cancelIdleFlush = () => {
+        if (idleFlush !== null) clearTimeout(idleFlush);
+        idleFlush = null;
+      };
 
       stream.on("data", (chunk: Buffer) => {
+        cancelIdleFlush();
         pending += decoder.write(chunk);
         const lines = pending.split("\n");
         pending = lines.pop() ?? "";
         for (const line of lines) {
           pushConsole(level, line);
         }
+        if (pending.length > 0) {
+          idleFlush = setTimeout(() => {
+            idleFlush = null;
+            if (pending.length === 0) return;
+            pushConsole(level, pending);
+            pending = "";
+          }, RUNNER_PARTIAL_FLUSH_MS);
+        }
       });
 
       return () => {
+        cancelIdleFlush();
         pending += decoder.end();
         if (pending.length > 0) pushConsole(level, pending);
         pending = "";
@@ -268,6 +299,18 @@ export class StudioWorkspaceRunnerManager {
 
     const flushStdout = attachLineReader(child.stdout, "log");
     const flushStderr = attachLineReader(child.stderr, "error");
+
+    this.stdinWriter = (data: string): boolean => {
+      const stdin = child.stdin;
+      if (settled || !stdin || !stdin.writable) return false;
+      try {
+        stdin.write(data);
+      } catch {
+        return false;
+      }
+      pushConsole("command", data.endsWith("\n") ? data.slice(0, -1) : data);
+      return true;
+    };
 
     child.on("error", () => {
       pushConsole("error", "Falha no processo do runner.");

@@ -421,4 +421,114 @@ describe("createServerWorkspaceController", () => {
     const treeCalls = callsTo("/workspace/tree");
     expect(treeCalls).toHaveLength(2);
   });
+
+  it("sends stdin with a newline to the active run", async () => {
+    const fetchImpl = createFetchStub((url) => {
+      if (url.includes("/workspace/unlock")) {
+        return jsonResponse({ token: "tok" });
+      }
+      if (url.includes("/workspace/tree")) {
+        return jsonResponse(TREE_BODY);
+      }
+      if (url.includes("/workspace/file")) {
+        return jsonResponse({ content: "nome = input()\n" });
+      }
+      if (url.includes("/workspace/run/stdin")) {
+        return jsonResponse({ sent: true });
+      }
+      if (url.includes("/workspace/run")) {
+        return sseResponse([
+          frame(RUN_EVENTS.log("qual teu nome?")),
+          frame(RUN_EVENTS.status("completed", 40)),
+        ]);
+      }
+      throw new Error(`rota inesperada: ${url}`);
+    });
+    controller = createServerWorkspaceController({ fetchImpl });
+
+    await controller.unlock("segredo");
+    await controller.loadTree();
+    await controller.openFile("main.py");
+
+    const stdinResults: Promise<boolean>[] = [];
+    const unsubscribe = controller.subscribe(() => {
+      const current = controller?.getState();
+      if (current?.running && stdinResults.length === 0) {
+        stdinResults.push(controller!.sendStdin("Anders"));
+      }
+    });
+
+    await controller.run();
+    unsubscribe();
+
+    expect(stdinResults).toHaveLength(1);
+    expect(await stdinResults[0]).toBe(true);
+    const stdinCalls = callsTo("/workspace/run/stdin");
+    expect(stdinCalls).toHaveLength(1);
+    expect(JSON.parse(String(stdinCalls[0].init.body))).toEqual({
+      data: "Anders\n",
+    });
+  });
+
+  it("persists the unlock token in the provided storage and restores it in a fresh controller", async () => {
+    const store = new Map<string, string>();
+    const tokenStorage = {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => void store.set(key, value),
+      removeItem: (key: string) => void store.delete(key),
+    };
+    const fetchImpl = createFetchStub((url) => {
+      if (url.includes("/workspace/unlock")) {
+        return jsonResponse({ token: "tok-sessao" });
+      }
+      if (url.includes("/workspace/tree")) return jsonResponse(TREE_BODY);
+      throw new Error(`rota inesperada: ${url}`);
+    });
+
+    controller = createServerWorkspaceController({ fetchImpl, tokenStorage });
+    await controller.unlock("segredo");
+    expect([...store.values()]).toEqual(["tok-sessao"]);
+    controller.dispose();
+
+    // Um controller novo (reload da página) reaproveita o token guardado.
+    controller = createServerWorkspaceController({ fetchImpl, tokenStorage });
+    await controller.loadTree();
+    const treeCalls = callsTo("/workspace/tree");
+    expect(treeCalls).toHaveLength(1);
+    expect(tokenHeader(treeCalls[0].init)).toBe("tok-sessao");
+  });
+
+  it("drops the stored token when the server reports it locked", async () => {
+    const store = new Map<string, string>([
+      ["gaucho-studio:workspace-token:v1", "tok-vencido"],
+    ]);
+    const tokenStorage = {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => void store.set(key, value),
+      removeItem: (key: string) => void store.delete(key),
+    };
+    const fetchImpl = createFetchStub((url) => {
+      if (url.includes("/workspace/tree")) return lockedResponse();
+      throw new Error(`rota inesperada: ${url}`);
+    });
+
+    controller = createServerWorkspaceController({ fetchImpl, tokenStorage });
+    const pending = controller.loadTree();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(store.size).toBe(0);
+    expect(controller.getState().unlockPromptOpen).toBe(true);
+    controller.cancelUnlock();
+    await pending;
+  });
+
+  it("refuses stdin when nothing is running", async () => {
+    const fetchImpl = createFetchStub((url) => {
+      throw new Error(`rota inesperada: ${url}`);
+    });
+    controller = createServerWorkspaceController({ fetchImpl });
+
+    expect(await controller.sendStdin("nada")).toBe(false);
+    expect(callsTo("/workspace/run/stdin")).toHaveLength(0);
+  });
 });

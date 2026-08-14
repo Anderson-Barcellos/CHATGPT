@@ -29,11 +29,8 @@ export interface StudioAssistantMessage {
 }
 
 export interface StudioWorkspaceSnapshot {
-  version: 1;
+  version: 2;
   autocompleteEnabled: boolean;
-  files: Record<string, StudioFile>;
-  openFilePaths: string[];
-  activeFilePath: string;
   assistantMessages: StudioAssistantMessage[];
   selectedModelId: string;
 }

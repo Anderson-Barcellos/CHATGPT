@@ -20,12 +20,39 @@ import {
 export const STUDIO_WORKSPACE_ACTIVE_DIR = "/root/studio-projects/active";
 export const STUDIO_WORKSPACE_ARCHIVE_DIR = "/root/studio-projects/archive";
 
-// Pastas geradas por runtime que não interessam à edição nem ao zip.
+// Pastas geradas por runtime que não interessam à edição nem ao zip. O
+// workspace também é o HOME da jail, então bash/matplotlib/ipykernel semeiam
+// diretórios de estado que poluiriam o explorador.
 export const STUDIO_WORKSPACE_HIDDEN_DIRS = new Set([
   "__pycache__",
   ".venv",
   ".git",
+  ".cache",
+  ".config",
+  ".ipython",
+  ".jupyter",
+  ".local",
 ]);
+
+// Arquivos de estado da jail (históricos de shell e connection files do
+// kernel) igualmente fora da árvore e do zip; dotfiles de projeto como .env
+// continuam visíveis.
+export const STUDIO_WORKSPACE_HIDDEN_FILES = new Set([
+  ".bash_history",
+  ".python_history",
+  ".bash_logout",
+  ".bashrc",
+  ".profile",
+]);
+
+const HIDDEN_KERNEL_FILE_PATTERN = /^\.gaucho-kernel-[A-Za-z0-9-]+\.json$/;
+
+export function isHiddenWorkspaceFile(name: string): boolean {
+  return (
+    STUDIO_WORKSPACE_HIDDEN_FILES.has(name) ||
+    HIDDEN_KERNEL_FILE_PATTERN.test(name)
+  );
+}
 
 const SEGMENT_PATTERN = /^[A-Za-z0-9._][A-Za-z0-9 ._()-]*$/;
 
@@ -246,6 +273,7 @@ export async function listWorkspaceTree(
       }
 
       if (!child.isFile()) continue;
+      if (isHiddenWorkspaceFile(child.name)) continue;
 
       const info = await stat(absolute);
       let editable = info.size <= STUDIO_WORKSPACE_MAX_EDITABLE_FILE_BYTES;
