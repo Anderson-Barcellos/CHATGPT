@@ -14,7 +14,7 @@ Alguns artefatos internos antigos ainda usam o rótulo histórico `Celer`, mas o
 - Artefatos de documento/quiz com preview, download de fonte e PDF A4 server-side.
 - Auth simples do app por usuário/senha, sessão JWT e cookie `auth-token`.
 - Shell `workspace-v2` com o sistema visual **Atmosphere Glass** como padrão: Midnight Glass no escuro, Daybreak no claro e densidade mobile compacta por tokens, sem `zoom` ou escala global.
-- **Gaucho Studio** em `/studio`: página IDE separada com Monaco sobre o workspace Python do servidor (sandbox systemd, step-up auth), console interativo com stdin, painéis redimensionáveis, autocomplete FIM DeepSeek em desktop e assistente contextual somente leitura.
+- **Gaucho Studio** em `/studio`: IDE Python separada com Monaco sobre o workspace do servidor, Explorer com criação/exclusão e pastas recolhíveis, run sandboxed com stdin, terminal PTY, notebooks `.ipynb` com kernel persistente, preview Markdown, autocomplete FIM DeepSeek e assistente contextual somente leitura.
 
 ## Stack
 
@@ -34,17 +34,17 @@ app/
 components/
   chat/                 Balões, markdown, reasoning, ações rápidas e TTS
   settings/             Drawer de persona, memória, tuning e voz
-  studio/               Explorer, Monaco, console local e assistente contextual
+  studio/               Explorer, Monaco, console, terminal, notebook e assistente contextual
   workspace-v2/         Shell atual do Gaucho Chat
 hooks/
   useChat.ts            Orquestra streaming, persistência e anexos
-  useStudioWorkspace.ts Estado e autosave local do Studio
+  useStudioServerWorkspace.ts Ponte React para o workspace Python do servidor
 lib/
   chat/                 Reducer de stream, reasoning e helpers de estado
   models/               Catálogo de modelos
   pulse/                Rotinas recorrentes, runner, scheduling e persistência Pulse
-  server/               Auth, limites de body e helpers server-side
-  studio/               Contratos, projeto inicial e runner local isolado
+  server/               Auth, workspace/runner/terminal/kernel e helpers server-side
+  studio/               Controller cliente, protocolos SSE, layout e formatos do Studio
   storage/              Persistência JSON e beacon
   tts/                  Sanitização, chunking e áudio TTS
 data/

@@ -1,6 +1,6 @@
 # Arquitetura
 
-**Última atualização:** 2026-08-06
+**Última atualização:** 2026-08-17
 
 ## Visão Geral
 
@@ -19,7 +19,7 @@ Browser/PWA
 - `app/page.tsx` é a entrada autenticada e renderiza `GauchoChatShellV2`.
 - `app/studio/page.tsx` é uma página autenticada independente e renderiza `GauchoStudioShell`.
 - `components/workspace-v2/*` contém o shell ativo: rail de conversas, canvas central, composer, painel de atividade/notas e preview de artifacts.
-- `components/studio/*` contém a experiência IDE: explorer, Monaco, console local e chat contextual.
+- `components/studio/*` contém a experiência IDE Python: explorer, Monaco, console de execução, terminal PTY, notebook e chat contextual.
 - `components/chat/*` concentra rendering de mensagens, markdown, reasoning, quick actions, TTS e export.
 - `components/settings/*` concentra persona, prompt principal visível, memórias, sugestões/RAG, tuning e preferências de voz.
 
@@ -47,7 +47,7 @@ A rota pública é `/chat/studio` por causa do `basePath=/chat`. O retorno ao ch
 O editor funciona sobre o workspace do servidor quando `STUDIO_WORKSPACE_PASSWORD` está definida no serviço; sem a env, a página exibe estado desabilitado (não há mais fallback local). Os arquivos vivem em `/root/studio-projects/active/` no host, atrás de step-up auth (modal de senha → token efêmero de 60 min, guardado em `sessionStorage` — sobrevive a reload na mesma aba, morre ao fechá-la; restart do serviço invalida; cancelar o modal deixa o editor bloqueado com ação de reabrir). Ctrl/Cmd+Enter executa o arquivo ativo, dentro e fora do Monaco.
 
 - O núcleo server-side vive em `lib/server/studioWorkspace{Auth,Fs,Zip,Runner}.ts`, com rotas finas em `/api/studio/workspace/*` (contratos em `docs/API.md`).
-- O cliente segue o padrão de lógica pura testável: `lib/studio/serverWorkspace.ts` concentra parser SSE, árvore, autosave com debounce, máquina unlock/replay e o controller; `hooks/useStudioServerWorkspace.ts` é só a ponte React (`useSyncExternalStore`); `StudioServerExplorer` renderiza a árvore real e as ações de ciclo de vida (salvar/restaurar/importar/resetar, destrutivas com confirmação). A árvore re-sincroniza no fim de cada run, no focus da janela, a cada 8 s com o terminal aberto (arquivos criados no bash não geram evento no cliente) e por botão manual de refresh; o servidor oculta o runtime que a jail semeia no HOME (`.cache`, `.config`, `.ipython`, históricos de shell, connection files de kernel — lista em `studioWorkspaceFs.ts`, também aplicada ao zip de save). Em larguras ≤ 1120 px o sidebar colapsa em trilho e o explorador abre como drawer overlay (botão no trilho; ≤ 860 px também pelo item "Arquivos" da navegação móvel).
+- O cliente segue o padrão de lógica pura testável: `lib/studio/serverWorkspace.ts` concentra parser SSE, árvore, autosave com debounce, máquina unlock/replay e o controller; `hooks/useStudioServerWorkspace.ts` é só a ponte React (`useSyncExternalStore`). `StudioServerExplorer` renderiza a árvore real, permite recolher/expandir e selecionar pastas, criar arquivo ou pasta no destino selecionado, excluir arquivos/pastas com confirmação e executar o ciclo de vida do projeto (salvar/restaurar/importar/resetar). A árvore re-sincroniza no fim de cada run, no focus da janela, a cada 8 s com o terminal aberto (arquivos criados no bash não geram evento no cliente) e por botão manual de refresh; o servidor oculta o runtime que a jail semeia no HOME (`.cache`, `.config`, `.ipython`, históricos de shell, connection files de kernel — lista em `studioWorkspaceFs.ts`, também aplicada ao zip de save). Em larguras ≤ 1120 px o sidebar colapsa em trilho e o explorador abre como drawer overlay (botão no trilho; ≤ 860 px também pelo item "Arquivos" da navegação móvel). A rota de rename existe no backend, mas ainda não possui ação na UI.
 - O run é server-side: unit transient do systemd (`User=studio`, `BindPaths` do ativo → `/workspace`, `ProtectSystem=strict`, `MemoryMax=1G`, `CPUQuota=100%`, `RuntimeMaxSec` de backstop), com stdout/stderr convertidos em eventos SSE e Stop via `systemctl stop`.
 - O console é interativo: durante um run, `POST /api/studio/workspace/run/stdin` escreve no stdin do processo (o campo de entrada aparece no console enquanto executa); o eco do que foi digitado volta pelo próprio stream SSE como evento `console` nível `command`, e linhas parciais de stdout/stderr (ex.: prompt de `input()` sem `\n`) são emitidas após 150 ms de inatividade para o usuário ver a pergunta.
 - Rollback operacional: remover a env e reiniciar; sem ela a página do Studio fica desabilitada.

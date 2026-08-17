@@ -1,6 +1,6 @@
 # Infraestrutura
 
-**Última atualização:** 2026-08-06
+**Última atualização:** 2026-08-17
 **Produção:** `https://ultrassom.ai/chat`
 **Porta local:** `3040`
 
@@ -14,7 +14,7 @@ Internet
   -> OpenAI/DeepSeek/Gemini APIs + JSON store local
 ```
 
-O `<Location /chat>` mantém `ProxyPassReverseCookiePath / /chat` escopado ao serviço e alinha a CSP do Apache à política emitida pelo Next. `script-src blob:` e `worker-src 'self' blob:` são necessários para Monaco e para o runner local do Studio; não mover essas diretivas para o nível global do vhost. O script autenticado do runner em `/chat/api/studio/runner` acrescenta uma CSP mais restrita, com `connect-src 'none'`, que continua valendo pela interseção das políticas.
+O `<Location /chat>` mantém `ProxyPassReverseCookiePath / /chat` escopado ao serviço e alinha a CSP do Apache à política emitida pelo Next. `script-src blob:` e `worker-src 'self' blob:` continuam necessários para Monaco/Mermaid e seus workers; não mover essas diretivas para o nível global do vhost. O antigo runner local em `/chat/api/studio/runner` foi removido quando o Studio virou Python-only; execução, terminal e notebook passam pelas rotas autenticadas `/chat/api/studio/workspace/*` e por processos sandboxed no host.
 
 ## Fontes Canônicas
 
