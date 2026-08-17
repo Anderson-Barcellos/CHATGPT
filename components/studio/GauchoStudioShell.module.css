@@ -161,24 +161,49 @@
   font-size: 0.8rem;
 }
 
-.treeRefreshButton {
+.projectRootButton {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 0.34rem;
+  color: inherit;
+  transition: color 130ms ease;
+}
+
+.projectRootButton:hover {
+  color: var(--studio-accent);
+}
+
+.projectRootButton[aria-pressed="true"] strong {
+  text-decoration: underline;
+  text-decoration-color: var(--studio-accent);
+  text-underline-offset: 0.28em;
+}
+
+.treeActions {
+  display: flex;
+  gap: 0.12rem;
+  margin-left: auto;
+}
+
+.treeActionButton {
   display: flex;
   width: 1.5rem;
   height: 1.5rem;
   align-items: center;
   justify-content: center;
-  margin-left: auto;
   border-radius: 0.34rem;
   color: var(--studio-muted);
   transition: background 130ms ease, color 130ms ease;
 }
 
-.treeRefreshButton:hover {
+.treeActionButton:hover {
   background: var(--studio-hover);
   color: var(--studio-text);
 }
 
-.treeRefreshButton:disabled {
+.treeActionButton:disabled {
   cursor: default;
   opacity: 0.4;
 }
@@ -208,6 +233,45 @@
   padding: 0.15rem 0.35rem 0.8rem;
 }
 
+.treeRow {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.treeRow .folderRow,
+.treeRow .fileRow {
+  flex: 1;
+}
+
+.treeDeleteButton {
+  display: flex;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.34rem;
+  color: var(--studio-muted);
+  opacity: 0;
+  transition: background 130ms ease, color 130ms ease, opacity 130ms ease;
+}
+
+.treeRow:hover .treeDeleteButton,
+.treeDeleteButton:focus-visible {
+  opacity: 1;
+}
+
+.treeDeleteButton:hover {
+  background: var(--studio-hover);
+  color: #d47272;
+}
+
+.treeDeleteButton:disabled {
+  cursor: default;
+  opacity: 0.3;
+}
+
 .folderRow,
 .fileRow {
   display: flex;
@@ -223,15 +287,18 @@
   text-align: left;
 }
 
+.folderRow,
 .fileRow {
   transition: background 130ms ease, color 130ms ease;
 }
 
+.folderRow:hover,
 .fileRow:hover {
   background: var(--studio-hover);
   color: var(--studio-text);
 }
 
+.folderRowSelected,
 .fileRowActive {
   border-color: rgba(67, 156, 202, 0.1);
   background: var(--studio-accent-soft);

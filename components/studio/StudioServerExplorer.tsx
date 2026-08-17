@@ -9,18 +9,25 @@ import {
   Code2,
   Download,
   FileCode2,
+  FilePlus2,
   Folder,
+  FolderPlus,
   FolderTree,
   MessageCircle,
   RefreshCw,
   RotateCcw,
   Settings,
+  Trash2,
   Upload,
   X,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { GPTLogo } from "@/components/ui/gpt-logo";
 import { cn } from "@/lib/utils";
-import { languageForWorkspacePath } from "@/lib/studio/serverWorkspace";
+import {
+  filterVisibleTreeRows,
+  languageForWorkspacePath,
+} from "@/lib/studio/serverWorkspace";
 import type { StudioServerTreeRow } from "@/lib/studio/serverWorkspace";
 import styles from "@/components/studio/GauchoStudioShell.module.css";
 
@@ -28,7 +35,12 @@ interface StudioServerExplorerProps {
   tree: StudioServerTreeRow[];
   activeFilePath: string | null;
   busy: boolean;
+  selectedFolderPath?: string | null;
   onOpenFile: (path: string) => void;
+  onSelectFolder?: (path: string | null) => void;
+  onCreateFile?: () => void;
+  onCreateFolder?: () => void;
+  onDeleteEntry?: (path: string, kind: "file" | "directory") => void;
   onOpenSettings: () => void;
   onSaveProject: () => void;
   onRestoreProject: () => void;
@@ -46,11 +58,21 @@ function iconForPath(path: string) {
   return FileCode2;
 }
 
+function parentFolderOf(path: string): string | null {
+  const separator = path.lastIndexOf("/");
+  return separator === -1 ? null : path.slice(0, separator);
+}
+
 export function StudioServerExplorer({
   tree,
   activeFilePath,
   busy,
+  selectedFolderPath = null,
   onOpenFile,
+  onSelectFolder,
+  onCreateFile,
+  onCreateFolder,
+  onDeleteEntry,
   onOpenSettings,
   onSaveProject,
   onRestoreProject,
@@ -60,6 +82,24 @@ export function StudioServerExplorer({
   onExpand,
   onClose,
 }: StudioServerExplorerProps) {
+  const [collapsedPaths, setCollapsedPaths] = useState<ReadonlySet<string>>(
+    new Set()
+  );
+  const visibleRows = useMemo(
+    () => filterVisibleTreeRows(tree, collapsedPaths),
+    [tree, collapsedPaths]
+  );
+
+  const toggleFolder = (path: string) => {
+    setCollapsedPaths((current) => {
+      const next = new Set(current);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+    onSelectFolder?.(path);
+  };
+
   return (
     <aside className={styles.sidebar} aria-label="Navegação e arquivos do Studio">
       <div className={styles.brandRow}>
@@ -104,62 +144,147 @@ export function StudioServerExplorer({
 
       <div className={styles.explorerHeading}>Explorador</div>
       <div className={styles.projectRow}>
-        <strong>workspace-python</strong>
-        <ChevronDown size={14} />
-        {onRefreshTree ? (
-          <button
-            type="button"
-            className={styles.treeRefreshButton}
-            onClick={onRefreshTree}
-            disabled={busy}
-            aria-label="Atualizar arquivos"
-            title="Atualizar lista de arquivos"
-          >
-            <RefreshCw size={13} />
-          </button>
-        ) : null}
+        <button
+          type="button"
+          className={styles.projectRootButton}
+          onClick={() => onSelectFolder?.(null)}
+          aria-pressed={selectedFolderPath === null}
+          title="Criar na raiz do workspace"
+        >
+          <strong>workspace-python</strong>
+          <ChevronDown size={14} />
+        </button>
+        <div className={styles.treeActions}>
+          {onCreateFile ? (
+            <button
+              type="button"
+              className={styles.treeActionButton}
+              onClick={onCreateFile}
+              disabled={busy}
+              aria-label="Novo arquivo"
+              title={
+                selectedFolderPath
+                  ? `Novo arquivo em ${selectedFolderPath}/`
+                  : "Novo arquivo na raiz"
+              }
+            >
+              <FilePlus2 size={13} />
+            </button>
+          ) : null}
+          {onCreateFolder ? (
+            <button
+              type="button"
+              className={styles.treeActionButton}
+              onClick={onCreateFolder}
+              disabled={busy}
+              aria-label="Nova pasta"
+              title={
+                selectedFolderPath
+                  ? `Nova pasta em ${selectedFolderPath}/`
+                  : "Nova pasta na raiz"
+              }
+            >
+              <FolderPlus size={13} />
+            </button>
+          ) : null}
+          {onRefreshTree ? (
+            <button
+              type="button"
+              className={styles.treeActionButton}
+              onClick={onRefreshTree}
+              disabled={busy}
+              aria-label="Atualizar arquivos"
+              title="Atualizar lista de arquivos"
+            >
+              <RefreshCw size={13} />
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className={styles.fileTree}>
         {tree.length === 0 ? (
           <div className={styles.treeEmpty}>Workspace vazio.</div>
         ) : null}
-        {tree.map(({ entry, depth }) => {
+        {visibleRows.map(({ entry, depth }) => {
           if (entry.kind === "directory") {
+            const collapsed = collapsedPaths.has(entry.path);
             return (
-              <div
-                key={entry.path}
-                className={styles.folderRow}
-                style={{ paddingLeft: `${12 + depth * 17}px` }}
-              >
-                <ChevronDown className={styles.folderChevron} />
-                <Folder className={styles.folderIcon} />
-                <span>{entry.name}</span>
+              <div key={entry.path} className={styles.treeRow}>
+                <button
+                  type="button"
+                  className={cn(
+                    styles.folderRow,
+                    entry.path === selectedFolderPath &&
+                      styles.folderRowSelected
+                  )}
+                  style={{ paddingLeft: `${12 + depth * 17}px` }}
+                  onClick={() => toggleFolder(entry.path)}
+                  aria-expanded={!collapsed}
+                  aria-pressed={entry.path === selectedFolderPath}
+                >
+                  <ChevronDown
+                    className={cn(
+                      styles.folderChevron,
+                      collapsed && styles.folderChevronClosed
+                    )}
+                  />
+                  <Folder className={styles.folderIcon} />
+                  <span>{entry.name}</span>
+                </button>
+                {onDeleteEntry ? (
+                  <button
+                    type="button"
+                    className={styles.treeDeleteButton}
+                    onClick={() => onDeleteEntry(entry.path, "directory")}
+                    disabled={busy}
+                    aria-label={`Excluir ${entry.name}`}
+                    title={`Excluir a pasta ${entry.name}`}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                ) : null}
               </div>
             );
           }
           const Icon = iconForPath(entry.path);
           return (
-            <button
-              key={entry.path}
-              type="button"
-              onClick={() => onOpenFile(entry.path)}
-              disabled={!entry.editable}
-              aria-current={entry.path === activeFilePath ? "page" : undefined}
-              className={cn(
-                styles.fileRow,
-                entry.path === activeFilePath && styles.fileRowActive
-              )}
-              style={{ paddingLeft: `${14 + depth * 17}px` }}
-              title={
-                entry.editable
-                  ? undefined
-                  : "Arquivo binário ou grande demais para editar"
-              }
-            >
-              <Icon className={styles.fileIcon} aria-hidden="true" />
-              <span>{entry.name}</span>
-            </button>
+            <div key={entry.path} className={styles.treeRow}>
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenFile(entry.path);
+                  onSelectFolder?.(parentFolderOf(entry.path));
+                }}
+                disabled={!entry.editable}
+                aria-current={entry.path === activeFilePath ? "page" : undefined}
+                className={cn(
+                  styles.fileRow,
+                  entry.path === activeFilePath && styles.fileRowActive
+                )}
+                style={{ paddingLeft: `${14 + depth * 17}px` }}
+                title={
+                  entry.editable
+                    ? undefined
+                    : "Arquivo binário ou grande demais para editar"
+                }
+              >
+                <Icon className={styles.fileIcon} aria-hidden="true" />
+                <span>{entry.name}</span>
+              </button>
+              {onDeleteEntry ? (
+                <button
+                  type="button"
+                  className={styles.treeDeleteButton}
+                  onClick={() => onDeleteEntry(entry.path, "file")}
+                  disabled={busy}
+                  aria-label={`Excluir ${entry.name}`}
+                  title={`Excluir ${entry.name}`}
+                >
+                  <Trash2 size={13} />
+                </button>
+              ) : null}
+            </div>
           );
         })}
       </div>

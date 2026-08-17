@@ -72,6 +72,39 @@ describe("StudioServerExplorer", () => {
     expect(markup).toContain('aria-label="Abrir explorador"');
   });
 
+  it("renders folders as toggle buttons and per-row delete controls", () => {
+    const markup = renderToStaticMarkup(
+      <StudioServerExplorer
+        tree={buildWorkspaceTreeRows([
+          treeEntry("main.py", "file"),
+          treeEntry("utils", "directory"),
+          treeEntry("utils/helpers.py", "file"),
+        ])}
+        activeFilePath="main.py"
+        busy={false}
+        selectedFolderPath="utils"
+        onOpenFile={vi.fn()}
+        onSelectFolder={vi.fn()}
+        onCreateFile={vi.fn()}
+        onCreateFolder={vi.fn()}
+        onDeleteEntry={vi.fn()}
+        onOpenSettings={vi.fn()}
+        onSaveProject={vi.fn()}
+        onRestoreProject={vi.fn()}
+        onImportProject={vi.fn()}
+        onResetProject={vi.fn()}
+      />
+    );
+
+    expect(markup).toContain('aria-label="Novo arquivo"');
+    expect(markup).toContain('aria-label="Nova pasta"');
+    expect(markup).toContain('aria-expanded="true"');
+    expect(markup).toContain('aria-label="Excluir utils"');
+    expect(markup).toContain('aria-label="Excluir main.py"');
+    // Pasta selecionada como destino de criação fica marcada.
+    expect(markup).toContain('aria-pressed="true"');
+  });
+
   it("shows an empty state when the workspace has no entries", () => {
     const markup = renderToStaticMarkup(
       <StudioServerExplorer

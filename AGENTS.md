@@ -10,7 +10,7 @@ Principais areas:
 
 - `components/chat/*`: experiencia principal do chat, baloes, input, reasoning e export
 - `components/workspace-v2/*`: shell atual do Gaucho Chat, rail de conversas, canvas central, composer e painel operacional
-- `components/studio/*`: pagina Gaucho Studio com explorer, Monaco, runner local e chat contextual somente leitura
+- `components/studio/*`: pagina Gaucho Studio Python com explorer, Monaco, run sandboxed, terminal PTY, notebook e chat contextual somente leitura
 - `hooks/useChat.ts`: streaming, reasoning, citacoes, persistencia e fluxo de envio
 - `lib/chat/useStreamingTextBuffer.ts`: buffer STT-style do texto do assistente
 - `lib/models/modelConfig.ts`: catalogo de modelos e metadados usados no seletor
@@ -1315,3 +1315,14 @@ Details:
 
 Notes:
 534 testes/109 arquivos (4 novos, red→green), tsc, lint e build limpos. Smoke Playwright em produção: árvore limpa sem runtime da jail; arquivo criado no filesystem apareceu via botão de refresh; em 1000 px o rail abre o drawer, arquivo novo abre no editor e o drawer fecha; localStorage com mockup injetado voltou ao estado vazio real do assistente. Deploy com restart do chatgpt.service e health local/público 200. Nota de comportamento: zips de "Salvar projeto" agora excluem o estado de runtime da jail (antes iam junto).
+
+### 2026-08-14 19:01 - Explorer do Studio: criar arquivo/pasta, deletar e pastas interativas
+
+Context:
+Continuação do feedback do Anders sobre o explorer: a seleção de arquivos foi ajustada na entrega anterior, mas pastas continuavam `div`s inertes (sem clique, sem colapso, sem seleção) e não havia como criar nem excluir nada pela UI — as rotas de delete/rename existiam órfãs no servidor. Faltava também mkdir de pasta vazia no backend.
+
+Details:
+`studioWorkspaceFs.ts`: novo `createWorkspaceDirectory()` (mkdir recursivo com `resolveWorkspacePath`, `already_exists` se ocupado, ownership herdado da raiz) + rota `POST /api/studio/workspace/folder` gated. `serverWorkspace.ts`: controller ganhou `createFile(path)` (PUT vazio → loadTree → openFile), `createFolder(path)` (POST folder → loadTree) e `deleteEntry(path)` (DELETE → fecha abas do caminho e da subárvore, realoca aba ativa → loadTree); `openFile` virou função interna compartilhada; novo helper puro `filterVisibleTreeRows(rows, collapsedPaths)`. `StudioServerExplorer.tsx`: pasta virou botão com chevron rotativo (colapsa/expande via estado local + helper, `aria-expanded`) e seleção como destino de criação (`aria-pressed`, highlight); linha "workspace-python" seleciona a raiz; cluster de ações no projectRow (Novo arquivo/Nova pasta/Atualizar, `.treeActions`); toda linha (arquivo e pasta) tem botão Excluir revelado no hover (`.treeRow`/`.treeDeleteButton`). `GauchoStudioShell.tsx`: estado de pasta selecionada + dialog de criação (mostra o destino, guarda contra path já existente na árvore — PUT sobrescreveria) + ConfirmDialog de exclusão com aviso recursivo para pastas; clique em arquivo seleciona a pasta-mãe como destino.
+
+Notes:
+541 testes/109 arquivos (7 novos, red→green nas três camadas), tsc, lint e build limpos. Smoke Playwright em produção (1560 px): Nova pasta `validacao-ew` na raiz → apareceu selecionada; Novo arquivo `teste.py` com ela selecionada → criado aninhado, aba aberta, breadcrumb `validacao-ew › teste.py`; clique em `utils` colapsou os filhos e novo clique reabriu; Excluir do arquivo fechou a aba e devolveu o editor pro `main.py`; Excluir da pasta removeu do disco (conferido em `/root/studio-projects/active/`). Deploy com restart do chatgpt.service e health local/público 200. docs/API.md atualizado (rota `folder` + semântica de DELETE recursivo). Nota: rename segue só no backend, sem UI — candidato natural à próxima iteração se o Anders sentir falta.

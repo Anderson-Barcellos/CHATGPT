@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  createWorkspaceDirectory,
   deleteWorkspaceEntry,
   listWorkspaceTree,
   readWorkspaceFile,
@@ -148,6 +149,37 @@ describe("workspace file operations", () => {
     const deleted = await deleteWorkspaceEntry(root, "novo.py");
     expect(deleted.ok).toBe(true);
     expect((await readWorkspaceFile(root, "novo.py")).ok).toBe(false);
+  });
+
+  it("creates nested empty directories owned like the root", async () => {
+    const created = await createWorkspaceDirectory(root, "dados/brutos");
+    expect(created.ok).toBe(true);
+
+    const info = await stat(path.join(root, "dados/brutos"));
+    expect(info.isDirectory()).toBe(true);
+    const rootInfo = await stat(root);
+    expect(info.uid).toBe(rootInfo.uid);
+    expect(info.gid).toBe(rootInfo.gid);
+
+    const tree = await listWorkspaceTree(root);
+    expect(
+      tree.find((entry) => entry.path === "dados/brutos")?.kind
+    ).toBe("directory");
+  });
+
+  it("refuses directories over existing entries or invalid paths", async () => {
+    await writeWorkspaceFile(root, "ocupado.py", "x = 1\n");
+    const overFile = await createWorkspaceDirectory(root, "ocupado.py");
+    expect(overFile.ok).toBe(false);
+    if (!overFile.ok) expect(overFile.reason).toBe("already_exists");
+
+    await createWorkspaceDirectory(root, "repetida");
+    const duplicated = await createWorkspaceDirectory(root, "repetida");
+    expect(duplicated.ok).toBe(false);
+    if (!duplicated.ok) expect(duplicated.reason).toBe("already_exists");
+
+    const escaped = await createWorkspaceDirectory(root, "../fuga");
+    expect(escaped.ok).toBe(false);
   });
 
   it("refuses rename targets that escape the workspace", async () => {

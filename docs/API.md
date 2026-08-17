@@ -175,7 +175,8 @@ Todas as rotas exigem a sessão do app **e** (exceto `status`/`unlock`) o token 
 | `status` | GET | `{ enabled, unlocked }` (só sessão do app) |
 | `unlock` | POST | `{ password }` → `{ token }`; rate limit próprio 10 RPM |
 | `tree` | GET | Árvore do workspace (até 2 000 entries; `editable` ≤ 1 MB e texto; oculta runtime da jail — `__pycache__`, `.venv`, `.git`, `.cache`, `.config`, `.ipython`, `.jupyter`, `.local`, históricos de shell e `.gaucho-kernel-*.json` — mesma exclusão vale para o zip de `save`) |
-| `file` | GET/PUT/DELETE | Ler (`?path=`), gravar `{ path, content }`, apagar |
+| `file` | GET/PUT/DELETE | Ler (`?path=`), gravar `{ path, content }` (cria pais), apagar (`?path=`; pasta remove recursivo) |
+| `folder` | POST | `{ path }` → cria pasta vazia (pais incluídos); `409 studio_workspace_already_exists` se ocupado |
 | `rename` | POST | `{ from, to }` dentro da raiz |
 | `run` | POST | `{ filePath }` → stream SSE de `StudioWorkspaceRunEvent`; evento terminal `status` sempre presente; um run por vez (`409 studio_workspace_run_busy`); rate limit 30 RPM |
 | `run/stdin` | POST | `{ data }` (texto ≤ 8 KiB, com `\n` final) → escreve no stdin do run ativo; eco volta no SSE como `console` nível `command`; `409 studio_workspace_run_not_active` sem run |

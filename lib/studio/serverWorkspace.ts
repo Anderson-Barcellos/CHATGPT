@@ -78,6 +78,9 @@ export interface StudioServerWorkspaceController {
   unlock(password: string): Promise<boolean>;
   loadTree(): Promise<void>;
   openFile(path: string): Promise<void>;
+  createFile(path: string): Promise<boolean>;
+  createFolder(path: string): Promise<boolean>;
+  deleteEntry(path: string): Promise<boolean>;
   selectFile(path: string): void;
   closeFile(path: string): void;
   editActiveFile(content: string): void;
@@ -129,6 +132,25 @@ export function buildWorkspaceTreeRows(
   };
   emit("", 0);
   return rows;
+}
+
+export function filterVisibleTreeRows(
+  rows: StudioServerTreeRow[],
+  collapsedPaths: ReadonlySet<string>
+): StudioServerTreeRow[] {
+  if (collapsedPaths.size === 0) return rows;
+  return rows.filter((row) => {
+    for (const collapsed of collapsedPaths) {
+      if (
+        row.entry.path === collapsed ||
+        !row.entry.path.startsWith(`${collapsed}/`)
+      ) {
+        continue;
+      }
+      return false;
+    }
+    return true;
+  });
 }
 
 export function pickDefaultWorkspaceFile(
@@ -444,6 +466,38 @@ export function createServerWorkspaceController(
     }
   }
 
+  async function openFile(path: string): Promise<void> {
+    if (state.files[path]) {
+      update({
+        activeFilePath: path,
+        openFilePaths: state.openFilePaths.includes(path)
+          ? state.openFilePaths
+          : [...state.openFilePaths, path],
+      });
+      return;
+    }
+    const data = await requestJson<{ content: string }>(
+      `/api/studio/workspace/file?path=${encodeURIComponent(path)}`,
+      {},
+      "Não consegui abrir o arquivo do workspace."
+    );
+    if (!data) return;
+    const file: StudioFile = {
+      path,
+      name: path.split("/").at(-1) ?? path,
+      language: languageForWorkspacePath(path),
+      content: data.content,
+    };
+    update({
+      files: { ...state.files, [path]: file },
+      activeFilePath: path,
+      openFilePaths: state.openFilePaths.includes(path)
+        ? state.openFilePaths
+        : [...state.openFilePaths, path],
+      errorMessage: null,
+    });
+  }
+
   return {
     getState: () => state,
     subscribe(listener) {
@@ -519,36 +573,67 @@ export function createServerWorkspaceController(
 
     loadTree,
 
-    async openFile(path) {
-      if (state.files[path]) {
-        update({
-          activeFilePath: path,
-          openFilePaths: state.openFilePaths.includes(path)
-            ? state.openFilePaths
-            : [...state.openFilePaths, path],
-        });
-        return;
-      }
-      const data = await requestJson<{ content: string }>(
-        `/api/studio/workspace/file?path=${encodeURIComponent(path)}`,
-        {},
-        "Não consegui abrir o arquivo do workspace."
+    openFile,
+
+    async createFile(path) {
+      const data = await requestJson<{ saved: boolean }>(
+        "/api/studio/workspace/file",
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path, content: "" }),
+        },
+        "Não consegui criar o arquivo."
       );
-      if (!data) return;
-      const file: StudioFile = {
-        path,
-        name: path.split("/").at(-1) ?? path,
-        language: languageForWorkspacePath(path),
-        content: data.content,
-      };
+      if (!data) return false;
+      await loadTree();
+      await openFile(path);
+      return true;
+    },
+
+    async createFolder(path) {
+      const data = await requestJson<{ created: boolean }>(
+        "/api/studio/workspace/folder",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path }),
+        },
+        "Não consegui criar a pasta."
+      );
+      if (!data) return false;
+      await loadTree();
+      return true;
+    },
+
+    async deleteEntry(path) {
+      const data = await requestJson<{ deleted: boolean }>(
+        `/api/studio/workspace/file?path=${encodeURIComponent(path)}`,
+        { method: "DELETE" },
+        "Não consegui excluir do workspace."
+      );
+      if (!data) return false;
+
+      // Fecha as abas do próprio caminho e de tudo abaixo dele (pasta).
+      const affected = (candidate: string) =>
+        candidate === path || candidate.startsWith(`${path}/`);
+      const nextOpen = state.openFilePaths.filter(
+        (candidate) => !affected(candidate)
+      );
+      const nextFiles = { ...state.files };
+      for (const candidate of Object.keys(nextFiles)) {
+        if (affected(candidate)) delete nextFiles[candidate];
+      }
       update({
-        files: { ...state.files, [path]: file },
-        activeFilePath: path,
-        openFilePaths: state.openFilePaths.includes(path)
-          ? state.openFilePaths
-          : [...state.openFilePaths, path],
-        errorMessage: null,
+        openFilePaths: nextOpen,
+        files: nextFiles,
+        activeFilePath:
+          state.activeFilePath !== null && affected(state.activeFilePath)
+            ? nextOpen.at(-1) ?? null
+            : state.activeFilePath,
       });
+      await loadTree();
+      return true;
     },
 
     selectFile(path) {

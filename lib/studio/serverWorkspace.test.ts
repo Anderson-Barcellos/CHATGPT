@@ -5,6 +5,7 @@ import {
   createRunEventParser,
   createServerWorkspaceController,
   createInitialServerRunResult,
+  filterVisibleTreeRows,
   languageForWorkspacePath,
   pickDefaultWorkspaceFile,
   type StudioServerWorkspaceController,
@@ -115,6 +116,40 @@ describe("buildWorkspaceTreeRows", () => {
       "README.md",
     ]);
     expect(rows.map((row) => row.depth)).toEqual([0, 1, 1, 0, 0]);
+  });
+});
+
+describe("filterVisibleTreeRows", () => {
+  it("hides every row under a collapsed directory, including nested ones", () => {
+    const rows = buildWorkspaceTreeRows([
+      treeEntry("main.py", "file"),
+      treeEntry("utils", "directory"),
+      treeEntry("utils/helpers.py", "file"),
+      treeEntry("utils/interno", "directory"),
+      treeEntry("utils/interno/fundo.py", "file"),
+      treeEntry("docs", "directory"),
+      treeEntry("docs/nota.md", "file"),
+    ]);
+
+    const visible = filterVisibleTreeRows(rows, new Set(["utils"]));
+    expect(visible.map((row) => row.entry.path)).toEqual([
+      "docs",
+      "docs/nota.md",
+      "utils",
+      "main.py",
+    ]);
+
+    const nested = filterVisibleTreeRows(rows, new Set(["utils/interno"]));
+    expect(nested.map((row) => row.entry.path)).toEqual([
+      "docs",
+      "docs/nota.md",
+      "utils",
+      "utils/interno",
+      "utils/helpers.py",
+      "main.py",
+    ]);
+
+    expect(filterVisibleTreeRows(rows, new Set())).toEqual(rows);
   });
 });
 
@@ -520,6 +555,110 @@ describe("createServerWorkspaceController", () => {
     expect(controller.getState().unlockPromptOpen).toBe(true);
     controller.cancelUnlock();
     await pending;
+  });
+
+  it("creates an empty file, reloads the tree and opens it", async () => {
+    const fetchImpl = createFetchStub((url, init) => {
+      if (url.includes("/workspace/unlock")) {
+        return jsonResponse({ token: "tok" });
+      }
+      if (url.includes("/workspace/file") && init.method === "PUT") {
+        return jsonResponse({ saved: true });
+      }
+      if (url.includes("/workspace/file")) {
+        return jsonResponse({ content: "" });
+      }
+      if (url.includes("/workspace/tree")) {
+        return jsonResponse({
+          entries: [...TREE_BODY.entries, treeEntry("novo.py", "file")],
+        });
+      }
+      throw new Error(`rota inesperada: ${url}`);
+    });
+    controller = createServerWorkspaceController({ fetchImpl });
+
+    await controller.unlock("segredo");
+    const created = await controller.createFile("novo.py");
+
+    expect(created).toBe(true);
+    const putCalls = callsTo("/workspace/file").filter(
+      (call) => call.init.method === "PUT"
+    );
+    expect(putCalls).toHaveLength(1);
+    expect(JSON.parse(String(putCalls[0].init.body))).toEqual({
+      path: "novo.py",
+      content: "",
+    });
+    expect(callsTo("/workspace/tree")).toHaveLength(1);
+    expect(controller.getState().activeFilePath).toBe("novo.py");
+  });
+
+  it("creates a folder and reloads the tree", async () => {
+    const fetchImpl = createFetchStub((url, init) => {
+      if (url.includes("/workspace/unlock")) {
+        return jsonResponse({ token: "tok" });
+      }
+      if (url.includes("/workspace/folder") && init.method === "POST") {
+        return jsonResponse({ created: true });
+      }
+      if (url.includes("/workspace/tree")) {
+        return jsonResponse({
+          entries: [...TREE_BODY.entries, treeEntry("dados", "directory")],
+        });
+      }
+      throw new Error(`rota inesperada: ${url}`);
+    });
+    controller = createServerWorkspaceController({ fetchImpl });
+
+    await controller.unlock("segredo");
+    const created = await controller.createFolder("dados");
+
+    expect(created).toBe(true);
+    const folderCalls = callsTo("/workspace/folder");
+    expect(folderCalls).toHaveLength(1);
+    expect(JSON.parse(String(folderCalls[0].init.body))).toEqual({
+      path: "dados",
+    });
+    expect(callsTo("/workspace/tree")).toHaveLength(1);
+    expect(
+      controller.getState().tree.some((row) => row.entry.path === "dados")
+    ).toBe(true);
+  });
+
+  it("deletes an entry, closing tabs under it and reloading the tree", async () => {
+    const fetchImpl = createFetchStub((url, init) => {
+      if (url.includes("/workspace/unlock")) {
+        return jsonResponse({ token: "tok" });
+      }
+      if (url.includes("/workspace/file") && init.method === "DELETE") {
+        return jsonResponse({ deleted: true });
+      }
+      if (url.includes("/workspace/file")) {
+        return jsonResponse({ content: "x = 1\n" });
+      }
+      if (url.includes("/workspace/tree")) {
+        return jsonResponse(TREE_BODY);
+      }
+      throw new Error(`rota inesperada: ${url}`);
+    });
+    controller = createServerWorkspaceController({ fetchImpl });
+
+    await controller.unlock("segredo");
+    await controller.openFile("main.py");
+    await controller.openFile("utils/helpers.py");
+    expect(controller.getState().activeFilePath).toBe("utils/helpers.py");
+
+    const deleted = await controller.deleteEntry("utils");
+
+    expect(deleted).toBe(true);
+    const deleteCalls = callsTo("/workspace/file").filter(
+      (call) => call.init.method === "DELETE"
+    );
+    expect(deleteCalls).toHaveLength(1);
+    expect(deleteCalls[0].url).toContain("path=utils");
+    expect(controller.getState().openFilePaths).toEqual(["main.py"]);
+    expect(controller.getState().activeFilePath).toBe("main.py");
+    expect(callsTo("/workspace/tree")).toHaveLength(1);
   });
 
   it("refuses stdin when nothing is running", async () => {

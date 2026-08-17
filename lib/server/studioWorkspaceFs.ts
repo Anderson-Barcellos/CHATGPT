@@ -186,6 +186,42 @@ export async function writeWorkspaceFile(
   return { ok: true, absolutePath: resolved.absolutePath };
 }
 
+export async function createWorkspaceDirectory(
+  root: string,
+  relativePath: string
+): Promise<FsResult<{ absolutePath: string }>> {
+  const resolved = await resolveWorkspacePath(root, relativePath);
+  if (!resolved.ok) return resolved;
+
+  try {
+    await stat(resolved.absolutePath);
+    return { ok: false, reason: "already_exists" };
+  } catch {
+    // Destino livre: seguir.
+  }
+
+  const createdDirs: string[] = [];
+  let probe = resolved.absolutePath;
+  while (probe !== root && !probe.endsWith(path.sep)) {
+    try {
+      await stat(probe);
+      break;
+    } catch {
+      createdDirs.unshift(probe);
+      probe = path.dirname(probe);
+    }
+  }
+
+  try {
+    await mkdir(resolved.absolutePath, { recursive: true });
+  } catch {
+    return { ok: false, reason: "write_failed" };
+  }
+
+  await inheritRootOwnership(root, createdDirs);
+  return { ok: true, absolutePath: resolved.absolutePath };
+}
+
 export async function deleteWorkspaceEntry(
   root: string,
   relativePath: string

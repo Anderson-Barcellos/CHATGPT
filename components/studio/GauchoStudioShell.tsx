@@ -106,6 +106,15 @@ export function GauchoStudioShell() {
   );
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [selectedFolderPath, setSelectedFolderPath] = useState<string | null>(
+    null
+  );
+  const [createKind, setCreateKind] = useState<"file" | "folder" | null>(null);
+  const [createName, setCreateName] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<{
+    path: string;
+    kind: "file" | "directory";
+  } | null>(null);
   const [autocompleteStatus, setAutocompleteStatus] =
     useState<StudioAutocompleteStatus>(
       prefs.autocompleteEnabled ? "idle" : "off"
@@ -311,6 +320,62 @@ export function GauchoStudioShell() {
       );
   }, [pendingImportFile, serverController]);
 
+  const handleOpenCreate = useCallback((kind: "file" | "folder") => {
+    setCreateName("");
+    setCreateKind(kind);
+  }, []);
+
+  const handleCreateSubmit = useCallback(async () => {
+    if (!createKind) return;
+    const name = createName.trim().replace(/^\/+|\/+$/g, "");
+    if (!name) return;
+    const path = selectedFolderPath ? `${selectedFolderPath}/${name}` : name;
+
+    const state = serverController.getState();
+    if (state.tree.some((row) => row.entry.path === path)) {
+      toast.error(`Já existe "${path}" no workspace.`);
+      return;
+    }
+
+    const created =
+      createKind === "file"
+        ? await serverController.createFile(path)
+        : await serverController.createFolder(path);
+    if (!created) {
+      toast.error(
+        serverController.getState().errorMessage ??
+          (createKind === "file"
+            ? "Não consegui criar o arquivo."
+            : "Não consegui criar a pasta.")
+      );
+      return;
+    }
+    if (createKind === "folder") setSelectedFolderPath(path);
+    setCreateKind(null);
+    toast.success(
+      createKind === "file" ? `Arquivo ${path} criado.` : `Pasta ${path} criada.`
+    );
+  }, [createKind, createName, selectedFolderPath, serverController]);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!pendingDelete) return;
+    const { path } = pendingDelete;
+    const deleted = await serverController.deleteEntry(path);
+    if (!deleted) {
+      toast.error(
+        serverController.getState().errorMessage ??
+          "Não consegui excluir do workspace."
+      );
+      return;
+    }
+    setSelectedFolderPath((current) =>
+      current !== null && (current === path || current.startsWith(`${path}/`))
+        ? null
+        : current
+    );
+    toast.success(`"${path}" excluído.`);
+  }, [pendingDelete, serverController]);
+
   const handleReset = useCallback(async () => {
     const reset = await serverController.resetWorkspace();
     if (reset) toast.success("Workspace resetado para o template.");
@@ -352,7 +417,12 @@ export function GauchoStudioShell() {
           tree={server.tree}
           activeFilePath={server.activeFilePath}
           busy={server.busy}
+          selectedFolderPath={selectedFolderPath}
           onOpenFile={handleExplorerFileOpen}
+          onSelectFolder={setSelectedFolderPath}
+          onCreateFile={() => handleOpenCreate("file")}
+          onCreateFolder={() => handleOpenCreate("folder")}
+          onDeleteEntry={(path, kind) => setPendingDelete({ path, kind })}
           onRefreshTree={handleRefreshTree}
           onExpand={() => setMobileExplorerOpen(true)}
           onOpenSettings={() => setSettingsOpen(true)}
@@ -777,6 +847,74 @@ export function GauchoStudioShell() {
         description={`O workspace atual será substituído pelo conteúdo de "${pendingImportFile?.name ?? ""}".`}
         confirmLabel="Importar"
         onConfirm={handleImport}
+      />
+
+      <Dialog
+        open={createKind !== null}
+        onOpenChange={(open) => {
+          if (!open) setCreateKind(null);
+        }}
+      >
+        <DialogContent className="max-w-md rounded-2xl border-white/10 bg-background/95 p-6 shadow-2xl backdrop-blur-xl">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-base">
+              {createKind === "folder" ? "Nova pasta" : "Novo arquivo"}
+            </DialogTitle>
+            <DialogDescription className="leading-relaxed">
+              {createKind === "folder"
+                ? "A pasta será criada em "
+                : "O arquivo será criado em "}
+              <span className="font-mono">
+                {selectedFolderPath ? `${selectedFolderPath}/` : "raiz do workspace"}
+              </span>
+              . Clique numa pasta do explorador para mudar o destino.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void handleCreateSubmit();
+            }}
+            className="space-y-3"
+          >
+            <Input
+              autoFocus
+              value={createName}
+              onChange={(event) => setCreateName(event.target.value)}
+              placeholder={createKind === "folder" ? "dados" : "script.py"}
+              aria-label={
+                createKind === "folder" ? "Nome da pasta" : "Nome do arquivo"
+              }
+            />
+            <DialogFooter className="mt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCreateKind(null)}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={!createName.trim() || server.busy}>
+                Criar
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        title={`Excluir "${pendingDelete?.path ?? ""}"?`}
+        description={
+          pendingDelete?.kind === "directory"
+            ? "A pasta e todo o conteúdo dela serão removidos do servidor. Não dá para desfazer."
+            : "O arquivo será removido do servidor. Não dá para desfazer."
+        }
+        confirmLabel="Excluir"
+        onConfirm={handleDeleteConfirm}
       />
 
       <ConfirmDialog
