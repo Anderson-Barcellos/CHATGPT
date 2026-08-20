@@ -181,6 +181,47 @@ describe("createNotebookClientController", () => {
     ).toBe(true);
   });
 
+  it("repassa input_request e inputReply faz POST na rota de input", async () => {
+    const fake = createFetchFake();
+    const received: StudioNotebookEvent[] = [];
+    const controller = createNotebookClientController({
+      fetchImpl: fake.fetchImpl,
+      tokenProvider: () => "tok",
+    });
+    controller.connect({ onEvent: (event) => received.push(event) });
+    await flushMicrotasks();
+
+    fake.stream().emit(
+      sseFrame({
+        type: "input_request",
+        cellId: "cell-1",
+        prompt: "nome: ",
+        password: false,
+      })
+    );
+    fake.stream().emit(sseFrame({ type: "cell_started", cellId: "cell-1" }));
+    await flushMicrotasks();
+
+    expect(received).toEqual([
+      {
+        type: "input_request",
+        cellId: "cell-1",
+        prompt: "nome: ",
+        password: false,
+      },
+      { type: "cell_started", cellId: "cell-1" },
+    ]);
+
+    await controller.inputReply("Anders");
+    const inputCall = fake.calls.find(({ url }) =>
+      url.includes("/notebook/input")
+    );
+    expect(inputCall).toBeDefined();
+    expect(JSON.parse(String(inputCall?.init?.body))).toEqual({
+      value: "Anders",
+    });
+  });
+
   it("dispose aborta a conexão sem virar erro", async () => {
     const fake = createFetchFake();
     const controller = createNotebookClientController({

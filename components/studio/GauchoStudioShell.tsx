@@ -619,6 +619,7 @@ export function GauchoStudioShell() {
                   key={activeFile.path}
                   file={activeFile}
                   autocompleteEnabled={autocompleteEnabled}
+                  assistantModelId={prefs.selectedModelId}
                   onAutocompleteStatusChange={setAutocompleteStatus}
                   onChange={handleEditorChange}
                 />

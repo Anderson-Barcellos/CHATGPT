@@ -197,23 +197,51 @@ export function serializeNotebook(notebook: StudioNotebookDocument): string {
   )}\n`;
 }
 
-export function addNotebookCell(
-  notebook: StudioNotebookDocument,
-  kind: "code" | "markdown",
-  afterCellId?: string
-): StudioNotebookDocument {
-  const cell: StudioNotebookCell = {
+export function createNotebookCell(
+  kind: "code" | "markdown"
+): StudioNotebookCell {
+  return {
     id: generateCellId(),
     kind,
     source: "",
     executionCount: null,
     outputs: [],
   };
+}
+
+export function insertNotebookCell(
+  notebook: StudioNotebookDocument,
+  cell: StudioNotebookCell,
+  afterCellId?: string
+): StudioNotebookDocument {
   const anchor = afterCellId
     ? notebook.cells.findIndex(({ id }) => id === afterCellId)
     : -1;
   const cells = [...notebook.cells];
   cells.splice(anchor === -1 ? cells.length : anchor + 1, 0, cell);
+  return { cells };
+}
+
+export function addNotebookCell(
+  notebook: StudioNotebookDocument,
+  kind: "code" | "markdown",
+  afterCellId?: string
+): StudioNotebookDocument {
+  return insertNotebookCell(notebook, createNotebookCell(kind), afterCellId);
+}
+
+export function moveNotebookCell(
+  notebook: StudioNotebookDocument,
+  cellId: string,
+  direction: "up" | "down"
+): StudioNotebookDocument {
+  const index = notebook.cells.findIndex(({ id }) => id === cellId);
+  if (index === -1) return notebook;
+  const target = direction === "up" ? index - 1 : index + 1;
+  if (target < 0 || target >= notebook.cells.length) return notebook;
+  const cells = [...notebook.cells];
+  const [cell] = cells.splice(index, 1);
+  cells.splice(target, 0, cell as StudioNotebookCell);
   return { cells };
 }
 

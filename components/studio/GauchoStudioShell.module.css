@@ -935,6 +935,11 @@
   gap: 0.6rem;
 }
 
+.nbCellGroup {
+  display: flex;
+  flex-direction: column;
+}
+
 .nbCell {
   display: flex;
   gap: 0.5rem;
@@ -946,6 +951,81 @@
 
 .nbCell[data-running="true"] {
   border-color: var(--studio-accent, var(--studio-text));
+}
+
+.nbCell[data-queued="true"] {
+  border-style: dashed;
+}
+
+.nbInputRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.1rem;
+}
+
+.nbInputPrompt {
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  color: var(--studio-muted);
+  white-space: pre-wrap;
+}
+
+.nbInputField {
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 0.74rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--studio-accent, var(--studio-border));
+  background: var(--studio-editor);
+  color: var(--studio-text);
+}
+
+.nbAssist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border-top: 1px dashed var(--studio-border);
+  padding-top: 0.45rem;
+}
+
+.nbAssistPromptRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.nbAssistPreview {
+  margin: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--studio-text);
+  background: var(--studio-editor);
+  border-radius: 0.45rem;
+  padding: 0.45rem 0.55rem;
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+.nbAssistActions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.nbAssistError {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--studio-danger, #e5484d);
+}
+
+.nbCellGutterButton[data-active="true"] {
+  background: var(--studio-accent-soft);
+  color: var(--studio-text);
 }
 
 .nbCellGutter {
@@ -984,6 +1064,46 @@
   font-size: 0.62rem;
   color: var(--studio-muted);
   white-space: nowrap;
+}
+
+.nbCellDuration {
+  font-family: ui-monospace, monospace;
+  font-size: 0.58rem;
+  color: var(--studio-muted);
+  white-space: nowrap;
+}
+
+.nbInsertRow {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.1rem 0;
+  min-height: 0.6rem;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.nbCellGroup:hover .nbInsertRow,
+.nbInsertRow:focus-within {
+  opacity: 1;
+}
+
+.nbInsertButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.62rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  border: 1px dashed var(--studio-border);
+  color: var(--studio-muted);
+  background: var(--studio-panel);
+  transition: color 150ms ease, border-color 150ms ease;
+}
+
+.nbInsertButton:hover {
+  color: var(--studio-text);
+  border-color: var(--studio-accent, var(--studio-text));
 }
 
 .nbCellBody {
@@ -1046,6 +1166,44 @@
   height: auto;
   border-radius: 0.45rem;
   background: #fff;
+}
+
+.nbOutputHtml {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--studio-text);
+  max-height: 24rem;
+  overflow: auto;
+}
+
+.nbOutputHtml table {
+  border-collapse: collapse;
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+}
+
+.nbOutputHtml th,
+.nbOutputHtml td {
+  border: 1px solid var(--studio-border);
+  padding: 0.2rem 0.5rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.nbOutputHtml thead th {
+  background: var(--studio-editor);
+  font-weight: 600;
+}
+
+.nbOutputHtml tbody tr:nth-child(even) td,
+.nbOutputHtml tbody tr:nth-child(even) th {
+  background: color-mix(in srgb, var(--studio-editor) 55%, transparent);
+}
+
+.nbOutputRich {
+  font-size: 0.8rem;
+  max-height: 24rem;
+  overflow: auto;
 }
 
 .nbAddRow {

@@ -16,10 +16,18 @@ const MAX_PROMPT_LENGTH = 12_000;
 const MAX_FILE_CONTENT_LENGTH = 160_000;
 const MAX_HISTORY_MESSAGE_LENGTH = 24_000;
 const MAX_HISTORY_MESSAGES = 8;
+const MAX_CELL_SOURCE_LENGTH = 24_000;
+const MAX_CELL_ERROR_LENGTH = 24_000;
 
 export interface StudioAssistantHistoryItem {
   role: StudioAssistantRole;
   content: string;
+}
+
+export interface StudioAssistantCellContext {
+  intent: "fix" | "generate";
+  source: string;
+  error: string;
 }
 
 export interface StudioAssistantRequest {
@@ -31,6 +39,7 @@ export interface StudioAssistantRequest {
     content: string;
   };
   history: StudioAssistantHistoryItem[];
+  cell?: StudioAssistantCellContext;
 }
 
 export type StudioAssistantParseResult =
@@ -47,6 +56,15 @@ Contrato obrigatório:
 - Seja direto. Quando sugerir código, entregue um bloco Markdown completo e copiável com a linguagem correta.
 - Uma explicação curta pode vir antes ou depois do bloco, mas o usuário fará qualquer alteração manualmente.
 - Preserve o estilo do arquivo e avise claramente quando faltar contexto para uma conclusão segura.`;
+
+const STUDIO_CELL_INSTRUCTIONS = `Você é o assistente de células do notebook Python do Gaucho Studio.
+
+Contrato obrigatório:
+- Responda com UM único bloco de código Python (\`\`\`python) contendo o conteúdo completo da célula — sem texto antes ou depois do bloco.
+- O bloco substitui integralmente a célula atual; inclua tudo que ela precisa.
+- As células anteriores do notebook são contexto de leitura já executado; não as repita.
+- Não use tools, pesquisa web, memória, terminal, execução de código ou acesso ao filesystem.
+- Comentários no código em português, apenas onde agregarem.`;
 
 const ALLOWED_LANGUAGES = new Set<StudioFileLanguage>([
   "typescript",
@@ -138,7 +156,22 @@ export function parseStudioAssistantRequest(
         content,
       },
       history: normalizeHistory(input.history),
+      cell: normalizeCell(input.cell),
     },
+  };
+}
+
+function normalizeCell(
+  value: unknown
+): StudioAssistantCellContext | undefined {
+  if (!isRecord(value)) return undefined;
+  if (value.intent !== "fix" && value.intent !== "generate") return undefined;
+  if (typeof value.source !== "string") return undefined;
+  const error = typeof value.error === "string" ? value.error : "";
+  return {
+    intent: value.intent,
+    source: value.source.slice(0, MAX_CELL_SOURCE_LENGTH),
+    error: error.slice(0, MAX_CELL_ERROR_LENGTH),
   };
 }
 
@@ -150,7 +183,31 @@ export function buildStudioResponseParams(
     content: message.content,
   })) satisfies OpenAI.Responses.ResponseInput;
 
-  const activeFileContext = `ARQUIVO ATIVO (somente leitura)
+  const cellErrorContext = request.cell?.error
+    ? `
+
+ERRO DA ÚLTIMA EXECUÇÃO
+<erro>
+${request.cell.error}
+</erro>`
+    : "";
+
+  const activeFileContext = request.cell
+    ? `CÉLULAS ANTERIORES DO NOTEBOOK (contexto, já executadas)
+Notebook: ${request.file.path}
+
+<contexto>
+${request.file.content}
+</contexto>
+
+CÉLULA ATUAL
+<celula>
+${request.cell.source}
+</celula>${cellErrorContext}
+
+PEDIDO DO USUÁRIO
+${request.prompt}`
+    : `ARQUIVO ATIVO (somente leitura)
 Caminho: ${request.file.path}
 Linguagem: ${request.file.language}
 
@@ -166,7 +223,9 @@ ${request.prompt}`;
     "stream"
   > = {
     model: request.model,
-    instructions: STUDIO_ASSISTANT_INSTRUCTIONS,
+    instructions: request.cell
+      ? STUDIO_CELL_INSTRUCTIONS
+      : STUDIO_ASSISTANT_INSTRUCTIONS,
     input: [
       ...historyInput,
       { role: "user", content: activeFileContext },

@@ -1,3 +1,17 @@
+### 2026-08-20 - Adicionado Gemini 3.7 Flash no catalogo do chat (substituindo 3.6)
+
+Context:
+Atualizacao do modelo Gemini disponivel no chat padrao para o Gemini 3.7 Flash (`gemini-3.7-flash`), com default de reasoning em high.
+
+Details:
+- `lib/server/geminiChat.ts`: constante `GEMINI_MODEL` atualizada para `gemini-3.7-flash`.
+- `lib/models/modelConfig.ts`: catalogo `MODELS` atualizado para `gemini-3.7-flash` (Gemini 3.7 Flash, capabilities: chat/reasoning/vision, reasoning efforts `minimal`, `low`, `medium`, `high`).
+- `stores/settingsStore.ts`: selecao de `gemini-3.7-flash` inicializa com default `reasoningEffort: "high"`.
+- `app/api/chat/route.ts`: mensagens de validacao atualizadas para Gemini 3.7 Flash.
+- `docs/MODELS.md`, `docs/ARCHITECTURE.md`, `docs/API.md`: documentacao alinhada.
+- Testes Vitest (109 arquivos / 541 testes) passando 100%. Typecheck (`tsc --noEmit`) e `next build` concluidos sem erros.
+- `chatgpt.service` reiniciado e respondendo `healthy` em `/chat/api/health`.
+
 # AGENTS.md
 
 > ⚠️ **INFRA — cookies e Apache (2026-07-11):** a diretiva `ProxyPassReverseCookiePath / /chat` deste app vive DENTRO do bloco `<Location /chat>` em `/etc/apache2/sites-available/ultrassom.ai-optimized.conf`. Ela já esteve solta no nível do vhost e reescrevia o `Path` dos cookies de TODOS os serviços do ultrassom.ai (quebrou a autenticação de imagens do Sonaris — 401). **Nunca mover essa diretiva pra fora do `<Location /chat>`**, e qualquer ajuste de cookie no Apache deve ficar escopado ao `<Location>` do serviço. Detalhes: `/etc/apache2/APACHE.md`, seção Proxy Settings.
@@ -1326,3 +1340,14 @@ Details:
 
 Notes:
 541 testes/109 arquivos (7 novos, red→green nas três camadas), tsc, lint e build limpos. Smoke Playwright em produção (1560 px): Nova pasta `validacao-ew` na raiz → apareceu selecionada; Novo arquivo `teste.py` com ela selecionada → criado aninhado, aba aberta, breadcrumb `validacao-ew › teste.py`; clique em `utils` colapsou os filhos e novo clique reabriu; Excluir do arquivo fechou a aba e devolveu o editor pro `main.py`; Excluir da pasta removeu do disco (conferido em `/root/studio-projects/active/`). Deploy com restart do chatgpt.service e health local/público 200. docs/API.md atualizado (rota `folder` + semântica de DELETE recursivo). Nota: rename segue só no backend, sem UI — candidato natural à próxima iteração se o Anders sentir falta.
+
+### 2026-08-20 14:20 - Notebook modo Colab: rich outputs, UX de células, input() e assistente por célula
+
+Context:
+Anders quis aproximar o notebook do Studio de uma experiência Colab mantendo o Studio como está (notebook segue view, sem shell novo). Auditoria prévia do kernel concluiu que a fundação (ipykernel na jail + bridge ZMQ + nbformat) estava sólida; os limites da v1 viraram quatro frentes aprovadas: rich outputs, UX de células, kernel robusto e assistente nas células.
+
+Details:
+Bridge (`studio-kernel-bridge.py`): mimes ampliados para png/jpeg/svg/html/latex/markdown/plain com cap de 2 MB por mime (texto trunca com aviso, imagem descarta), evento `started` por célula, `allow_stdin` com repasse de `input_request` e `wait_for_input_reply` (executes recebidos durante o input vão para `pending_ops` e rodam depois). Manager (`studioNotebookKernel.ts`): eventos `cell_started`/`input_request`, método `inputReply`, `MemoryMax` 1G→2G. Rotas: nova `POST notebook/input`; `notebook/stream` ganhou ping SSE de 15 s + `cancel()` para soltar stream de aba morta (sem isso, aba fechada abruptamente deixava 409 stream_busy até o kernel morrer). Client (`notebookClient.ts`): eventos novos no parser e `inputReply`. UI (`StudioNotebook.tsx`): render de outputs por prioridade via `notebookOutputView.ts` (svg como data URI sem script; html sanitizado por `sanitizeNotebookHtml.ts` com DOMPurify sem `<style>`; latex/markdown via StudioMarkdownPreview; CSS para tabelas pandas), Shift+Enter/Alt+Enter, mover ↑/↓ (`moveNotebookCell`), divisores hover de inserção (`createNotebookCell`/`insertNotebookCell` extraídos para focar a célula nova), Executar tudo/acima com dispatches serializados, fila visível `[…]`, duração no gutter (`formatCellDuration`), campo inline de input() e assistente por célula (✦ no gutter; `POST /api/studio/assist` com `cell {intent, source, error}` e instrução dedicada de responder um único bloco python; preview streamado e "Aplicar na célula" via `extractPythonCodeBlock`). Deps: `dompurify@3.4.12` (mesma versão do override do monaco) e `jsdom@26.1.0` (dev, ambiente de teste; jsdom 30 exige Node > 20.19).
+
+Notes:
+568 testes/112 arquivos (27 novos, red→green por frente), tsc/lint/build limpos, deploy com restart e health local/público 200. Validação Playwright em produção 12/12 com notebook semeado: tabela pandas HTML, PNG matplotlib (exige `%matplotlib inline`), katex, traceback, input() respondido inline ("Buenas, Anders!"), fila, duração, mover célula e assistente corrigindo SyntaxError real. Bug pego na validação: os POSTs paralelos do run-all chegavam fora de ordem no servidor (a célula de input() bloqueou a fila na frente da célula de erro) — corrigido serializando os dispatches no client. pandas+matplotlib instalados no venv da jail. Achado lateral: três venvs acidentais na raiz do repo (`pip/`, `install/`, `selenium/`, criados 13:12 por um provável `python3 -m venv pip install selenium`) quebravam o Turbopack (symlink fora do project root); movidos para `/root/CHATGPT-quarentena-2026-08-20/` sem apagar. Notebook de validação `valida-colab.ipynb` permanece no workspace como demo.

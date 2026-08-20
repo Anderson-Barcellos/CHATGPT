@@ -10,7 +10,7 @@ Todas as rotas abaixo são implementadas como Route Handlers do Next em `app/api
 
 ### `POST /api/chat`
 
-Proxy server-side para chat com streaming. Modelos OpenAI usam a `Responses API`; `deepseek-v4-pro` usa o adapter DeepSeek e `gemini-3.6-flash` usa a Interactions API, ambos apenas no chat padrão streaming.
+Proxy server-side para chat com streaming. Modelos OpenAI usam a `Responses API`; `deepseek-v4-pro` usa o adapter DeepSeek e `gemini-3.7-flash` usa a Interactions API, ambos apenas no chat padrão streaming.
 
 **Arquivo:** `app/api/chat/route.ts`
 
@@ -62,7 +62,7 @@ Ferramentas injetadas pelo backend:
 
 Quando `model="deepseek-v4-pro"`, a rota aceita somente `responseMode="default"` com `stream=true`, exige `DEEPSEEK_API_KEY` e usa `fresh_web_context` como tool local. Essa tool consulta a OpenAI com `web_search_preview` quando o DeepSeek pede contexto fresco, mas Documento, Deepsearch e Quiz não usam o provider DeepSeek.
 
-Quando `model="gemini-3.6-flash"`, a rota aceita somente `responseMode="default"` com `stream=true`, exige `GEMINI_API_KEY` e chama a Interactions API com `store=false`, Google Search, URL Context e `thinking_summaries="auto"`. Os níveis aceitos são `minimal`, `low`, `medium` e `high`; Documento, Deepsearch e Quiz permanecem nos fluxos OpenAI.
+Quando `model="gemini-3.7-flash"`, a rota aceita somente `responseMode="default"` com `stream=true`, exige `GEMINI_API_KEY` e chama a Interactions API com `store=false`, Google Search, URL Context e `thinking_summaries="auto"`. Os níveis aceitos são `minimal`, `low`, `medium` e `high`; Documento, Deepsearch e Quiz permanecem nos fluxos OpenAI.
 
 Em `responseMode="quiz"`, as tools são removidas e o backend força:
 
@@ -189,12 +189,13 @@ Todas as rotas exigem a sessão do app **e** (exceto `status`/`unlock`) o token 
 | `terminal/input` | POST | `{ data }` (teclas cruas ≤ 16 KiB) → escreve no PTY; reseta o relógio de inatividade; `409 studio_terminal_not_active` sem sessão |
 | `terminal/resize` | POST | `{ cols, rows }` (inteiros 2–500) → SIGWINCH no PTY |
 | `terminal/close` | POST | Mata a sessão PTY (idempotente; `{ closed }`) |
-| `notebook/stream` | GET | SSE de `StudioNotebookEvent` (`kernel_status`/`cell_output`/`cell_done`/`kernel_exit`); abre o kernel ipykernel na jail (via helper `jupyter_client` fora dela) se não existe, ou reanexa informando o status atual; um stream por vez (`409 studio_notebook_stream_busy`); abort do SSE solta o stream sem matar o kernel |
-| `notebook/execute` | POST | `{ cellId, code }` (código ≤ 256 KiB) → executa a célula no kernel; execuções enfileiram em ordem; reseta o relógio de inatividade; `409 studio_notebook_not_active` sem kernel |
+| `notebook/stream` | GET | SSE de `StudioNotebookEvent` (`kernel_status`/`cell_started`/`cell_output`/`cell_done`/`input_request`/`kernel_exit`); abre o kernel ipykernel na jail (via helper `jupyter_client` fora dela) se não existe, ou reanexa informando o status atual; um stream por vez (`409 studio_notebook_stream_busy`); abort do SSE solta o stream sem matar o kernel, com ping periódico (15 s) para detectar cliente morto |
+| `notebook/execute` | POST | `{ cellId, code }` (código ≤ 256 KiB) → executa a célula no kernel; execuções enfileiram em ordem (o cliente serializa os POSTs do "Executar tudo"); reseta o relógio de inatividade; `409 studio_notebook_not_active` sem kernel |
+| `notebook/input` | POST | `{ value }` → responde o `input_request` pendente da célula (`input()` via canal stdin do protocolo Jupyter); `409 studio_notebook_not_active` sem kernel |
 | `notebook/interrupt` | POST | SIGINT na unit do kernel (KeyboardInterrupt na célula em curso) |
 | `notebook/shutdown` | POST | Encerra o kernel via protocolo Jupyter, com stop forçado da unit após 5 s (idempotente; `{ closed }`) |
 
-Limites e códigos: paths ≤ 320 chars com allowlist de caracteres e validação por `realpath` (`400 studio_workspace_invalid_path`); extração rejeita zip-slip, symlinks, > 2 000 entries ou > 200 MB (`400 studio_workspace_zip_invalid`, `413 studio_workspace_too_large`); token ausente/expirado responde `401 studio_workspace_locked` — o cliente reabre o modal de senha e repete a ação pendente após novo unlock. Console do run com orçamento de 2 000 eventos / 512 KiB (entry ≤ 16 KiB) e truncamento avisado; timeout do run em `STUDIO_RUN_TIMEOUT_MS` (default 120 s) com `RuntimeMaxSec` de backstop na unit. Terminal: uma sessão bash por vez na mesma jail do runner (unit `gaucho-studio-term-*`), idle-kill após 30 min sem input do usuário e `RuntimeMaxSec=8h` de backstop; `exit` no SSE informa `reason` (`exited`/`closed`/`idle`). Notebook: um kernel ipykernel por vez na mesma jail (unit `gaucho-studio-kernel-*`, connection file `.gaucho-kernel-*.json` no workspace, órfãos varridos no próximo spawn), idle-kill após 30 min sem execução e `RuntimeMaxSec=8h`; `kernel_exit` informa `reason` (`closed`/`idle`/`died`); saída rica limitada a `text/plain` + `image/png`.
+Limites e códigos: paths ≤ 320 chars com allowlist de caracteres e validação por `realpath` (`400 studio_workspace_invalid_path`); extração rejeita zip-slip, symlinks, > 2 000 entries ou > 200 MB (`400 studio_workspace_zip_invalid`, `413 studio_workspace_too_large`); token ausente/expirado responde `401 studio_workspace_locked` — o cliente reabre o modal de senha e repete a ação pendente após novo unlock. Console do run com orçamento de 2 000 eventos / 512 KiB (entry ≤ 16 KiB) e truncamento avisado; timeout do run em `STUDIO_RUN_TIMEOUT_MS` (default 120 s) com `RuntimeMaxSec` de backstop na unit. Terminal: uma sessão bash por vez na mesma jail do runner (unit `gaucho-studio-term-*`), idle-kill após 30 min sem input do usuário e `RuntimeMaxSec=8h` de backstop; `exit` no SSE informa `reason` (`exited`/`closed`/`idle`). Notebook: um kernel ipykernel por vez na mesma jail (unit `gaucho-studio-kernel-*`, `MemoryMax=2G`, connection file `.gaucho-kernel-*.json` no workspace, órfãos varridos no próximo spawn), idle-kill após 30 min sem execução e `RuntimeMaxSec=8h`; `kernel_exit` informa `reason` (`closed`/`idle`/`died`); mimes de saída em ordem de preferência `image/png`, `image/jpeg`, `image/svg+xml`, `text/html`, `text/latex`, `text/markdown`, `text/plain`, com cap de 2 MB por mime (texto truncado com aviso, imagem descartada) — HTML/SVG são sanitizados no client (DOMPurify, sem `<style>`) antes do render. O assist (`POST /api/studio/assist`) aceita `cell: { intent: "fix"|"generate", source, error }` para o modo célula do notebook: instrução dedicada que responde um único bloco ```python com o conteúdo completo da célula.
 
 ## Auth
 

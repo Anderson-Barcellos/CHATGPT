@@ -44,12 +44,19 @@ export type StudioNotebookOutput =
 
 export type StudioNotebookEvent =
   | { type: "kernel_status"; status: StudioNotebookKernelStatus }
+  | { type: "cell_started"; cellId: string }
   | { type: "cell_output"; cellId: string; output: StudioNotebookOutput }
   | {
       type: "cell_done";
       cellId: string;
       status: "ok" | "error";
       executionCount: number | null;
+    }
+  | {
+      type: "input_request";
+      cellId: string;
+      prompt: string;
+      password: boolean;
     }
   | { type: "kernel_exit"; reason: StudioNotebookKernelExitReason };
 

@@ -4,6 +4,7 @@ import {
   applyNotebookEventToDocument,
   clearNotebookCellOutputs,
   createEmptyNotebook,
+  moveNotebookCell,
   parseNotebook,
   removeNotebookCell,
   serializeNotebook,
@@ -169,6 +170,22 @@ describe("operações de documento", () => {
     expect(removeNotebookCell(document, "cell-b").cells).toHaveLength(1);
     const updated = updateNotebookCellSource(document, "cell-a", "y = 1");
     expect(updated.cells[0]!.source).toBe("y = 1");
+  });
+
+  it("moveNotebookCell troca a célula com a vizinha na direção pedida", () => {
+    const document = baseDocument();
+    const up = moveNotebookCell(document, "cell-b", "up");
+    expect(up.cells.map(({ id }) => id)).toEqual(["cell-b", "cell-a"]);
+    const down = moveNotebookCell(document, "cell-a", "down");
+    expect(down.cells.map(({ id }) => id)).toEqual(["cell-b", "cell-a"]);
+    expect(document.cells.map(({ id }) => id)).toEqual(["cell-a", "cell-b"]);
+  });
+
+  it("moveNotebookCell é no-op nas bordas e com id desconhecido", () => {
+    const document = baseDocument();
+    expect(moveNotebookCell(document, "cell-a", "up")).toBe(document);
+    expect(moveNotebookCell(document, "cell-b", "down")).toBe(document);
+    expect(moveNotebookCell(document, "cell-x", "up")).toBe(document);
   });
 
   it("clearNotebookCellOutputs limpa outputs preservando o resto", () => {

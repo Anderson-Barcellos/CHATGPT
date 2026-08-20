@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { StudioNotebookCell } from "@/lib/studio/notebookFormat";
 import {
   buildLeadingContext,
+  formatCellDuration,
   notebookKernelStatusLabel,
   stripAnsi,
 } from "./StudioNotebook";
@@ -80,6 +81,15 @@ describe("buildLeadingContext", () => {
     ];
     expect(buildLeadingContext(cells, "d")).toBe("import math\n\nx = 1\n\n");
     expect(buildLeadingContext(cells, "a")).toBe("");
+  });
+});
+
+describe("formatCellDuration", () => {
+  it("mostra segundos com uma casa até 1 min e min+s acima disso", () => {
+    expect(formatCellDuration(320)).toBe("0,3s");
+    expect(formatCellDuration(4500)).toBe("4,5s");
+    expect(formatCellDuration(59949)).toBe("59,9s");
+    expect(formatCellDuration(125000)).toBe("2min 5s");
   });
 });
 

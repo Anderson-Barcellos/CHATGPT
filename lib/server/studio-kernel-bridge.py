@@ -5,8 +5,11 @@ o protocolo Jupyter via ZMQ pelo loopback compartilhado. O contrato com o
 Node é JSON por linha:
 
   stdin  → {"op": "execute", "id": "<cellId>", "code": "..."}
+           {"op": "input_reply", "value": "..."}
            {"op": "shutdown"}
   stdout ← {"event": "ready"}
+           {"event": "started", "id"}
+           {"event": "input_request", "id", "prompt", "password"}
            {"event": "stream", "id", "name": "stdout"|"stderr", "text"}
            {"event": "execute_result", "id", "data": {mime: str}, "executionCount"}
            {"event": "display_data", "id", "data": {mime: str}}
@@ -19,6 +22,7 @@ Interrupt não passa por aqui: o Node manda SIGINT direto na unit do kernel
 (systemctl kill), e o efeito chega como error/done pelo iopub.
 """
 
+import collections
 import json
 import queue
 import sys
@@ -29,8 +33,20 @@ from jupyter_client import BlockingKernelClient
 
 CONNECTION_FILE_DEADLINE_S = 30
 HEARTBEAT_CHECK_INTERVAL_S = 5
-# Mimes que persistimos/exibimos na v1 (texto + PNG; sem HTML arbitrário).
-ALLOWED_MIMES = ("text/plain", "image/png")
+# Mimes que persistimos/exibimos, em ordem de preferência de render no client.
+# HTML/SVG passam por sanitização (DOMPurify) antes do render na UI.
+ALLOWED_MIMES = (
+    "image/png",
+    "image/jpeg",
+    "image/svg+xml",
+    "text/html",
+    "text/latex",
+    "text/markdown",
+    "text/plain",
+)
+# Cap por mime pra não estourar o SSE nem inchar o .ipynb persistido.
+MAX_MIME_BYTES = 2_000_000
+TRUNCATION_NOTICE = "\n… [saída truncada pelo Studio]"
 
 
 def emit(payload: dict) -> None:
@@ -57,16 +73,85 @@ def wait_for_connection_file(path: Path) -> None:
 
 
 def pick_data(bundle: dict) -> dict:
-    return {mime: bundle[mime] for mime in ALLOWED_MIMES if mime in bundle}
+    data = {}
+    for mime in ALLOWED_MIMES:
+        if mime not in bundle:
+            continue
+        value = bundle[mime]
+        if isinstance(value, list):
+            value = "".join(part for part in value if isinstance(part, str))
+        if not isinstance(value, str):
+            continue
+        if len(value) > MAX_MIME_BYTES:
+            if mime.startswith("image/"):
+                # Imagem truncada é irrecuperável; deixa o fallback textual.
+                continue
+            value = value[:MAX_MIME_BYTES] + TRUNCATION_NOTICE
+        data[mime] = value
+    return data
+
+
+# Ops de execução que chegam do Node enquanto uma célula espera input();
+# o loop principal drena esta fila antes de voltar a ler o stdin.
+pending_ops: collections.deque = collections.deque()
+
+
+def wait_for_input_reply(client: BlockingKernelClient) -> None:
+    """Bloqueia lendo o stdin do Node até chegar o input_reply da UI.
+
+    Executes enfileirados nesse meio-tempo vão para pending_ops; shutdown
+    é honrado na hora (o kernel parado em input() morre junto com a unit).
+    """
+    for raw_line in sys.stdin:
+        raw_line = raw_line.strip()
+        if not raw_line:
+            continue
+        try:
+            command = json.loads(raw_line)
+        except json.JSONDecodeError:
+            continue
+        op = command.get("op")
+        if op == "input_reply":
+            client.input(str(command.get("value", "")))
+            return
+        if op == "shutdown":
+            client.shutdown()
+            emit({"event": "shutdown_ok"})
+            sys.exit(0)
+        if op == "execute":
+            pending_ops.append(command)
+    fatal("stdin do Node fechou aguardando input_reply")
+
+
+def drain_input_requests(client: BlockingKernelClient, cell_id: str) -> None:
+    while client.stdin_channel.msg_ready():
+        try:
+            msg = client.stdin_channel.get_msg(timeout=0)
+        except queue.Empty:
+            return
+        if msg["msg_type"] != "input_request":
+            continue
+        content = msg["content"]
+        emit(
+            {
+                "event": "input_request",
+                "id": cell_id,
+                "prompt": content.get("prompt", ""),
+                "password": bool(content.get("password", False)),
+            }
+        )
+        wait_for_input_reply(client)
 
 
 def run_execute(client: BlockingKernelClient, cell_id: str, code: str) -> None:
-    msg_id = client.execute(code, allow_stdin=False, stop_on_error=False)
+    emit({"event": "started", "id": cell_id})
+    msg_id = client.execute(code, allow_stdin=True, stop_on_error=False)
     status = "ok"
     execution_count = None
     last_heartbeat = time.monotonic()
 
     while True:
+        drain_input_requests(client, cell_id)
         try:
             msg = client.get_iopub_msg(timeout=1)
         except queue.Empty:
@@ -163,19 +248,28 @@ def main() -> None:
 
     emit({"event": "ready"})
 
-    for raw_line in sys.stdin:
-        raw_line = raw_line.strip()
-        if not raw_line:
-            continue
-        try:
-            command = json.loads(raw_line)
-        except json.JSONDecodeError:
-            emit({"event": "fatal", "message": "comando inválido recebido do Node"})
-            continue
+    while True:
+        if pending_ops:
+            command = pending_ops.popleft()
+        else:
+            raw_line = sys.stdin.readline()
+            if not raw_line:
+                break
+            raw_line = raw_line.strip()
+            if not raw_line:
+                continue
+            try:
+                command = json.loads(raw_line)
+            except json.JSONDecodeError:
+                emit({"event": "fatal", "message": "comando inválido recebido do Node"})
+                continue
 
         op = command.get("op")
         if op == "execute":
             run_execute(client, str(command.get("id", "")), str(command.get("code", "")))
+        elif op == "input_reply":
+            # Reply tardio (a célula já saiu do input); descarta sem drama.
+            continue
         elif op == "shutdown":
             client.shutdown()
             emit({"event": "shutdown_ok"})

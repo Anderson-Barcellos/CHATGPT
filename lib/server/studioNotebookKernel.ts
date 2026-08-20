@@ -41,7 +41,7 @@ export function buildKernelCommand({
       "--property=ProtectHome=true",
       "--property=PrivateTmp=true",
       "--property=NoNewPrivileges=true",
-      "--property=MemoryMax=1G",
+      "--property=MemoryMax=2G",
       "--property=CPUQuota=100%",
       "--property=TasksMax=64",
       `--property=RuntimeMaxSec=${KERNEL_RUNTIME_MAX_SEC}`,
@@ -152,6 +152,8 @@ interface BridgeLine {
   ename?: string;
   evalue?: string;
   traceback?: string[];
+  prompt?: string;
+  password?: boolean;
 }
 
 export class StudioNotebookKernelManager {
@@ -265,6 +267,16 @@ export class StudioNotebookKernelManager {
     return true;
   }
 
+  inputReply(value: string): boolean {
+    const session = this.session;
+    if (!session) return false;
+    if (!this.writeToBridge(session, { op: "input_reply", value })) {
+      return false;
+    }
+    this.armIdleTimer(session);
+    return true;
+  }
+
   interrupt(): boolean {
     const session = this.session;
     if (!session) return false;
@@ -372,6 +384,17 @@ export class StudioNotebookKernelManager {
     switch (parsed.event) {
       case "ready":
         this.setStatus(session, "idle");
+        break;
+      case "started":
+        this.stream?.push({ type: "cell_started", cellId: parsed.id ?? "" });
+        break;
+      case "input_request":
+        this.stream?.push({
+          type: "input_request",
+          cellId: parsed.id ?? "",
+          prompt: parsed.prompt ?? "",
+          password: parsed.password === true,
+        });
         break;
       case "stream":
         this.stream?.push({

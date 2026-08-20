@@ -108,7 +108,7 @@ describe("buildKernelCommand", () => {
     expect(args).toContain(
       "--property=BindPaths=/root/studio-projects/active:/workspace"
     );
-    expect(args).toContain("--property=MemoryMax=1G");
+    expect(args).toContain("--property=MemoryMax=2G");
     expect(args).toContain("--property=NoNewPrivileges=true");
     expect(args).toContain(
       `--property=RuntimeMaxSec=${KERNEL_RUNTIME_MAX_SEC}`
@@ -219,6 +219,49 @@ describe("StudioNotebookKernelManager", () => {
       },
       { type: "cell_done", cellId: "c1", status: "ok", executionCount: 1 },
     ]);
+  });
+
+  it("traduz started em cell_started e input_request em evento com prompt", async () => {
+    const { manager, bridges } = createHarness();
+    const result = manager.openStream();
+    if (!result.ok) throw new Error("stream");
+    const bridge = bridges[0]!;
+    bridge.emitLine({ event: "ready" });
+    manager.execute({ cellId: "c1", code: "input('nome: ')" });
+
+    bridge.emitLine({ event: "started", id: "c1" });
+    bridge.emitLine({
+      event: "input_request",
+      id: "c1",
+      prompt: "nome: ",
+      password: false,
+    });
+
+    const events = await collect(result.events, 5);
+    expect(events.slice(3)).toEqual([
+      { type: "cell_started", cellId: "c1" },
+      { type: "input_request", cellId: "c1", prompt: "nome: ", password: false },
+    ]);
+  });
+
+  it("inputReply escreve op input_reply no stdin do bridge", async () => {
+    const { manager, bridges } = createHarness();
+    const result = manager.openStream();
+    if (!result.ok) throw new Error("stream");
+    const bridge = bridges[0]!;
+    bridge.emitLine({ event: "ready" });
+    manager.execute({ cellId: "c1", code: "input()" });
+
+    expect(manager.inputReply("Anders")).toBe(true);
+    expect(JSON.parse(bridge.stdinChunks[1] ?? "")).toEqual({
+      op: "input_reply",
+      value: "Anders",
+    });
+  });
+
+  it("recusa inputReply sem kernel ativo", () => {
+    const { manager } = createHarness();
+    expect(manager.inputReply("x")).toBe(false);
   });
 
   it("traduz erro do kernel em cell_output error + cell_done error", async () => {

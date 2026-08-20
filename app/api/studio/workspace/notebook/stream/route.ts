@@ -32,6 +32,16 @@ export async function GET(request: NextRequest) {
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      // SSE ocioso não percebe cliente morto sem escrita: o ping periódico
+      // força a detecção e solta o stream para reanexo de outra aba.
+      const ping = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(": ping\n\n"));
+        } catch {
+          clearInterval(ping);
+          studioNotebookKernel.detachStream();
+        }
+      }, 15_000);
       try {
         for await (const event of opened.events) {
           controller.enqueue(
@@ -39,12 +49,16 @@ export async function GET(request: NextRequest) {
           );
         }
       } finally {
+        clearInterval(ping);
         try {
           controller.close();
         } catch {
           // Stream já encerrado pelo cliente.
         }
       }
+    },
+    cancel() {
+      studioNotebookKernel.detachStream();
     },
   });
 

@@ -4,11 +4,22 @@
 
 ### Nenhum PACK ativo
 
-O Gaucho Studio atual é Python-only e está integrado em `main`: workspace contínuo no servidor com step-up auth, run sandboxed com stdin, terminal PTY, preview Markdown, notebook `.ipynb` com ipykernel persistente, autocomplete FIM e assistente contextual somente leitura. O PACK v2 foi implementado e validado em produção; as entradas abaixo permanecem como histórico e evidência, não como fila ativa.
+O Gaucho Studio atual é Python-only e está integrado em `main`: workspace contínuo no servidor com step-up auth, run sandboxed com stdin, terminal PTY, preview Markdown, notebook `.ipynb` estilo Colab com ipykernel persistente, autocomplete FIM e assistente contextual somente leitura. Os PACKs abaixo foram implementados e validados em produção; as entradas permanecem como histórico e evidência, não como fila ativa.
 
-Última extensão validada (2026-08-14): o Explorer ganhou criação de arquivo/pasta, seleção e colapso de pastas e exclusão recursiva com confirmação. Rename continua disponível somente no backend. Pendências técnicas conhecidas: dois warnings de fallback do Monaco language worker e o advisory `pdfjs-dist` GHSA-hq66-cqwq-w95j, cuja correção exige migração major.
+Última extensão validada (2026-08-20): PACK "Notebook modo Colab" concluído (ver seção histórica abaixo). Rename continua disponível somente no backend. Pendências técnicas conhecidas: dois warnings de fallback do Monaco language worker e o advisory `pdfjs-dist` GHSA-hq66-cqwq-w95j, cuja correção exige migração major. Fora de escopo registrado do notebook: múltiplos kernels simultâneos, inspetor de variáveis, completion jedi do kernel e modo tela-cheia.
 
 Próxima decisão de produto: Anders revisa a experiência atual e escolhe a próxima frente; nenhum bundle novo deve ser aberto automaticamente.
+
+### PACK HISTÓRICO — Notebook modo Colab (2026-08-20)
+
+Aprovado e concluído em 2026-08-20, quatro frentes num dia (plano em `/root/.claude/plans/pois-eu-tva-valiant-lovelace.md`):
+
+1. **Rich outputs** ✅ — bridge amplia mimes para png/jpeg/svg/html/latex/markdown/plain com cap de 2 MB por mime (texto trunca com aviso, imagem descarta); seleção de view pura em `notebookOutputView.ts`; HTML/SVG sanitizados (DOMPurify direto como dep, `<style>` proibido) com CSS próprio para tabelas pandas; latex/markdown via `StudioMarkdownPreview`.
+2. **UX de células** ✅ — Shift+Enter (executa e avança/cria), Alt+Enter (executa e insere abaixo), `moveNotebookCell` com botões ↑/↓, divisores hover de inserção, "Executar tudo"/"Executar acima" (dispatches serializados — POSTs paralelos chegavam fora de ordem, bug pego na validação), duração da última execução no gutter.
+3. **Kernel robusto** ✅ — `input()` de ponta a ponta (`allow_stdin` + canal stdin do jupyter_client → evento `input_request` → campo inline → `POST notebook/input`; executes que chegam durante o input ficam em `pending_ops`); fila visível via evento `cell_started` (`[…]` → `[*]`); `MemoryMax` 1G→2G; ping SSE de 15 s solta stream de aba morta.
+4. **Assistente nas células** ✅ — `POST /api/studio/assist` aceita `cell {intent fix|generate, source, error}` com instrução dedicada (responde um único bloco ```python); botão ✦ no gutter abre prompt inline com "Corrigir erro" quando há traceback; resposta streamada em preview e aplicada só com "Aplicar na célula" (`extractPythonCodeBlock`).
+
+Evidência: 568 testes/112 arquivos (27 novos, red→green por frente), tsc/lint/build limpos, deploy com restart e health local/público 200, validação Playwright em produção 12/12 (tabela pandas HTML, PNG matplotlib, katex, traceback, input() respondido, fila, duração, mover célula, assistente corrigiu SyntaxError real). pandas+matplotlib instalados no venv da jail.
 
 ### PACK HISTÓRICO — Gaucho Studio v2: evolução do IDE
 

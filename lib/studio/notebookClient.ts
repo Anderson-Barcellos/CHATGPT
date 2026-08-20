@@ -27,8 +27,10 @@ function isNotebookEvent(value: unknown): value is StudioNotebookEvent {
   const candidate = value as { type?: unknown };
   return (
     candidate.type === "kernel_status" ||
+    candidate.type === "cell_started" ||
     candidate.type === "cell_output" ||
     candidate.type === "cell_done" ||
+    candidate.type === "input_request" ||
     candidate.type === "kernel_exit"
   );
 }
@@ -90,6 +92,7 @@ export interface StudioNotebookClientController {
   subscribe(listener: () => void): () => void;
   connect(options: StudioNotebookClientConnectOptions): void;
   execute(cellId: string, code: string): Promise<boolean>;
+  inputReply(value: string): Promise<boolean>;
   interrupt(): Promise<void>;
   shutdown(): Promise<void>;
   dispose(): void;
@@ -227,6 +230,13 @@ export function createNotebookClientController(
       const response = await post("/api/studio/workspace/notebook/execute", {
         cellId,
         code,
+      });
+      return response?.ok ?? false;
+    },
+
+    async inputReply(value) {
+      const response = await post("/api/studio/workspace/notebook/input", {
+        value,
       });
       return response?.ok ?? false;
     },

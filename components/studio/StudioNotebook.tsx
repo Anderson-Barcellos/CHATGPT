@@ -1,7 +1,18 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Pencil, Play, Plus, RotateCcw, Square, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  FastForward,
+  Pencil,
+  Play,
+  Plus,
+  RotateCcw,
+  Sparkles,
+  Square,
+  Trash2,
+} from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -29,6 +40,9 @@ import {
   applyNotebookEventToDocument,
   clearNotebookCellOutputs,
   createEmptyNotebook,
+  createNotebookCell,
+  insertNotebookCell,
+  moveNotebookCell,
   parseNotebook,
   removeNotebookCell,
   serializeNotebook,
@@ -36,6 +50,18 @@ import {
   type StudioNotebookCell,
   type StudioNotebookDocument,
 } from "@/lib/studio/notebookFormat";
+import { parseApiErrorResponse } from "@/lib/api/errors";
+import {
+  consumeStudioAssistantStream,
+  StudioAssistantStreamInterruptedError,
+} from "@/lib/studio/assistantStream";
+import { extractPythonCodeBlock } from "@/lib/studio/notebookAssist";
+import {
+  latexToMarkdown,
+  selectNotebookOutputView,
+} from "@/lib/studio/notebookOutputView";
+import { sanitizeNotebookHtml } from "@/lib/studio/sanitizeNotebookHtml";
+import { apiUrl } from "@/lib/utils";
 import type {
   StudioFile,
 } from "@/lib/studio/types";
@@ -86,6 +112,17 @@ export function notebookKernelStatusLabel(
   return "Kernel pronto";
 }
 
+export function formatCellDuration(ms: number): string {
+  if (ms < 60_000) {
+    const seconds = Math.floor(ms / 100) / 10;
+    return `${seconds.toFixed(1).replace(".", ",")}s`;
+  }
+  const totalSeconds = Math.round(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}min ${seconds}s`;
+}
+
 export function buildLeadingContext(
   cells: StudioNotebookCell[],
   cellId: string
@@ -116,6 +153,10 @@ interface NotebookCellEditorProps {
   leadingContext: string;
   onChange: (source: string) => void;
   onRun?: () => void;
+  onRunAndAdvance?: () => void;
+  onRunAndInsertBelow?: () => void;
+  onFocus?: () => void;
+  focusToken?: number;
   onAutocompleteStatusChange?: (status: StudioAutocompleteStatus) => void;
   notebookPath: string;
 }
@@ -126,6 +167,10 @@ function NotebookCellEditor({
   leadingContext,
   onChange,
   onRun,
+  onRunAndAdvance,
+  onRunAndInsertBelow,
+  onFocus,
+  focusToken = 0,
   onAutocompleteStatusChange,
   notebookPath,
 }: NotebookCellEditorProps) {
@@ -135,19 +180,27 @@ function NotebookCellEditor({
   const autocompleteEnabledRef = useRef(autocompleteEnabled);
   const leadingContextRef = useRef(leadingContext);
   const runRef = useRef(onRun);
+  const advanceRef = useRef(onRunAndAdvance);
+  const insertBelowRef = useRef(onRunAndInsertBelow);
+  const focusRef = useRef(onFocus);
   const statusRef = useRef(onAutocompleteStatusChange);
   const pathRef = useRef(notebookPath);
+  const instanceRef = useRef<Parameters<OnMount>[0] | null>(null);
 
   useEffect(() => {
     autocompleteEnabledRef.current = autocompleteEnabled;
     leadingContextRef.current = leadingContext;
     runRef.current = onRun;
+    advanceRef.current = onRunAndAdvance;
+    insertBelowRef.current = onRunAndInsertBelow;
+    focusRef.current = onFocus;
     statusRef.current = onAutocompleteStatusChange;
     pathRef.current = notebookPath;
   });
 
   const handleMount = useCallback<OnMount>((instance, monaco) => {
     autocompleteRef.current?.dispose();
+    instanceRef.current = instance;
     const desktopQuery = window.matchMedia(
       "(min-width: 861px) and (pointer: fine)"
     );
@@ -163,6 +216,15 @@ function NotebookCellEditor({
     instance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
       runRef.current?.();
     });
+    instance.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Enter, () => {
+      advanceRef.current?.();
+    });
+    instance.addCommand(monaco.KeyMod.Alt | monaco.KeyCode.Enter, () => {
+      insertBelowRef.current?.();
+    });
+    instance.onDidFocusEditorText(() => {
+      focusRef.current?.();
+    });
     const syncHeight = () => {
       const contentHeight = Math.min(
         CELL_MAX_HEIGHT_PX,
@@ -177,6 +239,10 @@ function NotebookCellEditor({
   useEffect(() => {
     autocompleteRef.current?.setEnabled(autocompleteEnabled);
   }, [autocompleteEnabled]);
+
+  useEffect(() => {
+    if (focusToken > 0) instanceRef.current?.focus();
+  }, [focusToken]);
 
   useEffect(() => {
     return () => {
@@ -250,27 +316,47 @@ function NotebookOutput({ output }: { output: StudioNotebookOutput }) {
       </pre>
     );
   }
-  const png = output.data["image/png"];
-  if (png) {
+  const view = selectNotebookOutputView(output.data);
+  if (!view) return null;
+  if (view.kind === "image") {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         className={styles.nbOutputImage}
-        src={`data:image/png;base64,${png.replace(/\n/g, "")}`}
+        src={view.src}
         alt="Saída gráfica da célula"
       />
     );
   }
-  const text = output.data["text/plain"];
-  if (typeof text === "string" && text.length > 0) {
-    return <pre className={styles.nbOutputText}>{stripAnsi(text)}</pre>;
+  if (view.kind === "html") {
+    return (
+      <div
+        className={styles.nbOutputHtml}
+        dangerouslySetInnerHTML={{ __html: sanitizeNotebookHtml(view.html) }}
+      />
+    );
   }
-  return null;
+  if (view.kind === "latex") {
+    return (
+      <div className={styles.nbOutputRich}>
+        <StudioMarkdownPreview content={latexToMarkdown(view.source)} />
+      </div>
+    );
+  }
+  if (view.kind === "markdown") {
+    return (
+      <div className={styles.nbOutputRich}>
+        <StudioMarkdownPreview content={view.source} />
+      </div>
+    );
+  }
+  return <pre className={styles.nbOutputText}>{stripAnsi(view.text)}</pre>;
 }
 
 interface StudioNotebookProps {
   file: StudioFile;
   autocompleteEnabled: boolean;
+  assistantModelId: string;
   onChange: (content: string) => void;
   onAutocompleteStatusChange?: (status: StudioAutocompleteStatus) => void;
 }
@@ -278,6 +364,7 @@ interface StudioNotebookProps {
 export function StudioNotebook({
   file,
   autocompleteEnabled,
+  assistantModelId,
   onChange,
   onAutocompleteStatusChange,
 }: StudioNotebookProps) {
@@ -285,9 +372,33 @@ export function StudioNotebook({
     parseOrCreate(file.content)
   );
   const [runningCells, setRunningCells] = useState<Set<string>>(new Set());
+  const [queuedCells, setQueuedCells] = useState<Set<string>>(new Set());
+  const [pendingInput, setPendingInput] = useState<{
+    cellId: string;
+    prompt: string;
+    password: boolean;
+  } | null>(null);
+  const [inputValue, setInputValue] = useState("");
   const [editingMarkdownId, setEditingMarkdownId] = useState<string | null>(
     null
   );
+  const [assist, setAssist] = useState<{
+    cellId: string;
+    phase: "prompt" | "streaming" | "preview" | "error";
+    promptText: string;
+    responseText: string;
+    errorMessage?: string;
+  } | null>(null);
+  const assistAbortRef = useRef<AbortController | null>(null);
+  const [cellDurations, setCellDurations] = useState<Map<string, number>>(
+    () => new Map()
+  );
+  const [focusedCellId, setFocusedCellId] = useState<string | null>(null);
+  const [focusRequest, setFocusRequest] = useState<{
+    cellId: string;
+    token: number;
+  } | null>(null);
+  const runStartsRef = useRef<Map<string, number>>(new Map());
   const onChangeRef = useRef(onChange);
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -311,9 +422,22 @@ export function StudioNotebook({
       pathRef.current = file.path;
       setDocument(parseOrCreate(file.content));
       setRunningCells(new Set());
+      setQueuedCells(new Set());
+      setPendingInput(null);
+      setInputValue("");
       setEditingMarkdownId(null);
+      assistAbortRef.current?.abort();
+      setAssist(null);
+      setCellDurations(new Map());
+      setFocusedCellId(null);
+      setFocusRequest(null);
+      runStartsRef.current.clear();
     }
   }, [file.path, file.content]);
+
+  useEffect(() => {
+    return () => assistAbortRef.current?.abort();
+  }, []);
 
   const mutate = useCallback(
     (patch: (previous: StudioNotebookDocument) => StudioNotebookDocument) => {
@@ -331,8 +455,45 @@ export function StudioNotebook({
   const connect = useCallback(() => {
     controller.connect({
       onEvent: (event) => {
+        if (event.type === "cell_started") {
+          runStartsRef.current.set(event.cellId, Date.now());
+          setQueuedCells((previous) => {
+            if (!previous.has(event.cellId)) return previous;
+            const next = new Set(previous);
+            next.delete(event.cellId);
+            return next;
+          });
+          setRunningCells((previous) => new Set(previous).add(event.cellId));
+        }
+        if (event.type === "input_request") {
+          setPendingInput({
+            cellId: event.cellId,
+            prompt: event.prompt,
+            password: event.password,
+          });
+          setInputValue("");
+        }
         if (event.type === "cell_done") {
+          const startedAt = runStartsRef.current.get(event.cellId);
+          if (startedAt !== undefined) {
+            runStartsRef.current.delete(event.cellId);
+            const elapsedMs = Date.now() - startedAt;
+            setCellDurations((previous) => {
+              const next = new Map(previous);
+              next.set(event.cellId, elapsedMs);
+              return next;
+            });
+          }
+          setPendingInput((previous) =>
+            previous?.cellId === event.cellId ? null : previous
+          );
           setRunningCells((previous) => {
+            if (!previous.has(event.cellId)) return previous;
+            const next = new Set(previous);
+            next.delete(event.cellId);
+            return next;
+          });
+          setQueuedCells((previous) => {
             if (!previous.has(event.cellId)) return previous;
             const next = new Set(previous);
             next.delete(event.cellId);
@@ -341,6 +502,9 @@ export function StudioNotebook({
         }
         if (event.type === "kernel_exit") {
           setRunningCells(new Set());
+          setQueuedCells(new Set());
+          setPendingInput(null);
+          runStartsRef.current.clear();
         }
         mutate((previous) => applyNotebookEventToDocument(previous, event));
       },
@@ -361,13 +525,202 @@ export function StudioNotebook({
     kernelState.status === "open" && kernelState.kernelStatus !== "starting";
 
   const handleRunCell = useCallback(
-    (cell: StudioNotebookCell) => {
-      if (cell.kind !== "code" || !kernelReady) return;
-      setRunningCells((previous) => new Set(previous).add(cell.id));
+    (cell: StudioNotebookCell): Promise<boolean> => {
+      if (cell.kind !== "code" || !kernelReady) return Promise.resolve(false);
+      setCellDurations((previous) => {
+        if (!previous.has(cell.id)) return previous;
+        const next = new Map(previous);
+        next.delete(cell.id);
+        return next;
+      });
+      setQueuedCells((previous) => new Set(previous).add(cell.id));
       mutate((previous) => clearNotebookCellOutputs(previous, cell.id));
-      void controller.execute(cell.id, cell.source);
+      return controller.execute(cell.id, cell.source);
     },
     [controller, kernelReady, mutate]
+  );
+
+  const requestFocus = useCallback((cellId: string) => {
+    setFocusRequest((previous) => ({
+      cellId,
+      token: (previous?.token ?? 0) + 1,
+    }));
+  }, []);
+
+  const insertCodeCellAfter = useCallback(
+    (afterCellId: string | undefined, kind: "code" | "markdown") => {
+      const cell = createNotebookCell(kind);
+      mutate((previous) => insertNotebookCell(previous, cell, afterCellId));
+      if (kind === "markdown") {
+        setEditingMarkdownId(cell.id);
+      } else {
+        requestFocus(cell.id);
+      }
+    },
+    [mutate, requestFocus]
+  );
+
+  const handleRunAndAdvance = useCallback(
+    (cell: StudioNotebookCell) => {
+      void handleRunCell(cell);
+      const index = document.cells.findIndex(({ id }) => id === cell.id);
+      const next = document.cells[index + 1];
+      if (next) {
+        if (next.kind === "code") requestFocus(next.id);
+        return;
+      }
+      insertCodeCellAfter(cell.id, "code");
+    },
+    [document.cells, handleRunCell, insertCodeCellAfter, requestFocus]
+  );
+
+  const handleRunAndInsertBelow = useCallback(
+    (cell: StudioNotebookCell) => {
+      void handleRunCell(cell);
+      insertCodeCellAfter(cell.id, "code");
+    },
+    [handleRunCell, insertCodeCellAfter]
+  );
+
+  const runCellsInOrder = useCallback(
+    (cells: StudioNotebookCell[]) => {
+      // Os POSTs precisam ser serializados: em paralelo eles podem chegar
+      // fora de ordem no servidor e a fila do kernel inverter as células.
+      void (async () => {
+        for (const cell of cells) {
+          if (cell.kind === "code" && cell.source.trim().length > 0) {
+            await handleRunCell(cell);
+          }
+        }
+      })();
+    },
+    [handleRunCell]
+  );
+
+  const handleRunAll = useCallback(() => {
+    runCellsInOrder(document.cells);
+  }, [document.cells, runCellsInOrder]);
+
+  const handleRunAbove = useCallback(() => {
+    if (!focusedCellId) return;
+    const index = document.cells.findIndex(({ id }) => id === focusedCellId);
+    if (index <= 0) return;
+    runCellsInOrder(document.cells.slice(0, index));
+  }, [document.cells, focusedCellId, runCellsInOrder]);
+
+  const toggleAssist = useCallback((cellId: string) => {
+    assistAbortRef.current?.abort();
+    setAssist((previous) =>
+      previous?.cellId === cellId
+        ? null
+        : { cellId, phase: "prompt", promptText: "", responseText: "" }
+    );
+  }, []);
+
+  const runCellAssist = useCallback(
+    async (
+      cell: StudioNotebookCell,
+      intent: "fix" | "generate",
+      promptText: string
+    ) => {
+      const errorOutput = cell.outputs.find(
+        (output) => output.kind === "error"
+      );
+      const errorText =
+        errorOutput?.kind === "error"
+          ? stripAnsi(errorOutput.traceback.join("\n")) ||
+            `${errorOutput.ename}: ${errorOutput.evalue}`
+          : "";
+      assistAbortRef.current?.abort();
+      const abort = new AbortController();
+      assistAbortRef.current = abort;
+      setAssist({
+        cellId: cell.id,
+        phase: "streaming",
+        promptText,
+        responseText: "",
+      });
+
+      try {
+        const response = await fetch(apiUrl("/api/studio/assist"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: promptText,
+            model: assistantModelId,
+            file: {
+              path: file.path,
+              language: "python",
+              content: buildLeadingContext(document.cells, cell.id),
+            },
+            history: [],
+            cell: { intent, source: cell.source, error: errorText },
+          }),
+          signal: abort.signal,
+        });
+        if (!response.ok) throw await parseApiErrorResponse(response);
+        if (!response.body) throw new Error("Stream indisponível.");
+
+        const accumulated = await consumeStudioAssistantStream(
+          response.body,
+          (content) => {
+            setAssist((previous) =>
+              previous?.cellId === cell.id
+                ? { ...previous, responseText: content }
+                : previous
+            );
+          }
+        );
+        if (!accumulated.trim()) {
+          throw new Error("O modelo não retornou conteúdo.");
+        }
+        setAssist((previous) =>
+          previous?.cellId === cell.id
+            ? { ...previous, phase: "preview", responseText: accumulated }
+            : previous
+        );
+      } catch (error) {
+        const aborted =
+          error instanceof DOMException && error.name === "AbortError";
+        if (aborted) {
+          setAssist((previous) =>
+            previous?.cellId === cell.id ? null : previous
+          );
+          return;
+        }
+        const partial =
+          error instanceof StudioAssistantStreamInterruptedError
+            ? error.partialContent
+            : "";
+        setAssist((previous) => {
+          if (previous?.cellId !== cell.id) return previous;
+          if (partial.trim()) {
+            return { ...previous, phase: "preview", responseText: partial };
+          }
+          return {
+            ...previous,
+            phase: "error",
+            errorMessage:
+              error instanceof Error
+                ? error.message
+                : "Falha ao consultar o assistente.",
+          };
+        });
+      } finally {
+        if (assistAbortRef.current === abort) assistAbortRef.current = null;
+      }
+    },
+    [assistantModelId, document.cells, file.path]
+  );
+
+  const applyAssist = useCallback(
+    (cellId: string) => {
+      if (assist?.cellId !== cellId || assist.phase !== "preview") return;
+      const code = extractPythonCodeBlock(assist.responseText);
+      mutate((current) => updateNotebookCellSource(current, cellId, code));
+      setAssist(null);
+    },
+    [assist, mutate]
   );
 
   const handleRestartKernel = useCallback(() => {
@@ -427,6 +780,26 @@ export function StudioNotebook({
           <button
             type="button"
             className={styles.notebookActionButton}
+            onClick={handleRunAll}
+            disabled={!kernelReady}
+            title="Executar todas as células de código em ordem"
+          >
+            <FastForward size={13} />
+            Executar tudo
+          </button>
+          <button
+            type="button"
+            className={styles.notebookActionButton}
+            onClick={handleRunAbove}
+            disabled={!kernelReady || !focusedCellId}
+            title="Executar as células acima da célula em foco"
+          >
+            <Play size={13} />
+            Executar acima
+          </button>
+          <button
+            type="button"
+            className={styles.notebookActionButton}
             onClick={handleRestartKernel}
           >
             <RotateCcw size={13} />
@@ -436,106 +809,349 @@ export function StudioNotebook({
       </header>
 
       <div className={styles.notebookCells}>
-        {document.cells.map((cell) => {
+        {document.cells.map((cell, cellIndex) => {
           const running = runningCells.has(cell.id);
+          const queued = queuedCells.has(cell.id);
           const isMarkdown = cell.kind === "markdown";
           const editingMarkdown = editingMarkdownId === cell.id;
+          const duration = cellDurations.get(cell.id);
 
           return (
-            <article
-              key={cell.id}
-              className={styles.nbCell}
-              data-kind={cell.kind}
-              data-running={running}
-            >
-              <div className={styles.nbCellGutter}>
-                {isMarkdown ? (
+            <div key={cell.id} className={styles.nbCellGroup}>
+              <article
+                className={styles.nbCell}
+                data-kind={cell.kind}
+                data-running={running}
+                data-queued={queued}
+              >
+                <div className={styles.nbCellGutter}>
+                  {isMarkdown ? (
+                    <button
+                      type="button"
+                      className={styles.nbCellGutterButton}
+                      onClick={() =>
+                        setEditingMarkdownId(editingMarkdown ? null : cell.id)
+                      }
+                      aria-label={
+                        editingMarkdown
+                          ? "Concluir edição da célula"
+                          : "Editar célula de markdown"
+                      }
+                      title={editingMarkdown ? "Concluir" : "Editar"}
+                    >
+                      <Pencil size={13} />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.nbCellGutterButton}
+                      onClick={() => void handleRunCell(cell)}
+                      disabled={!kernelReady || running || queued}
+                      aria-label="Executar célula"
+                      title="Executar (Ctrl+Enter na célula)"
+                    >
+                      <Play size={13} />
+                    </button>
+                  )}
+                  <span
+                    className={styles.nbCellCount}
+                    title={queued ? "Na fila de execução" : undefined}
+                  >
+                    {isMarkdown
+                      ? "md"
+                      : running
+                        ? "[*]"
+                        : queued
+                          ? "[…]"
+                          : `[${cell.executionCount ?? " "}]`}
+                  </span>
+                  {!isMarkdown && duration !== undefined && !running ? (
+                    <span
+                      className={styles.nbCellDuration}
+                      title="Duração da última execução"
+                    >
+                      {formatCellDuration(duration)}
+                    </span>
+                  ) : null}
+                  {!isMarkdown ? (
+                    <button
+                      type="button"
+                      className={styles.nbCellGutterButton}
+                      onClick={() => toggleAssist(cell.id)}
+                      data-active={assist?.cellId === cell.id}
+                      aria-label="Assistente da célula"
+                      title="Assistente (gerar ou corrigir a célula)"
+                    >
+                      <Sparkles size={13} />
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className={styles.nbCellGutterButton}
                     onClick={() =>
-                      setEditingMarkdownId(editingMarkdown ? null : cell.id)
+                      mutate((previous) =>
+                        moveNotebookCell(previous, cell.id, "up")
+                      )
                     }
-                    aria-label={
-                      editingMarkdown
-                        ? "Concluir edição da célula"
-                        : "Editar célula de markdown"
-                    }
-                    title={editingMarkdown ? "Concluir" : "Editar"}
+                    disabled={cellIndex === 0}
+                    aria-label="Mover célula para cima"
+                    title="Mover para cima"
                   >
-                    <Pencil size={13} />
+                    <ChevronUp size={13} />
                   </button>
-                ) : (
                   <button
                     type="button"
                     className={styles.nbCellGutterButton}
-                    onClick={() => handleRunCell(cell)}
-                    disabled={!kernelReady || running}
-                    aria-label="Executar célula"
-                    title="Executar (Ctrl+Enter na célula)"
-                  >
-                    <Play size={13} />
-                  </button>
-                )}
-                <span className={styles.nbCellCount}>
-                  {isMarkdown
-                    ? "md"
-                    : running
-                      ? "[*]"
-                      : `[${cell.executionCount ?? " "}]`}
-                </span>
-                <button
-                  type="button"
-                  className={styles.nbCellGutterButton}
-                  onClick={() =>
-                    mutate((previous) => removeNotebookCell(previous, cell.id))
-                  }
-                  aria-label="Remover célula"
-                  title="Remover célula"
-                >
-                  <Trash2 size={13} />
-                </button>
-              </div>
-
-              <div className={styles.nbCellBody}>
-                {isMarkdown && !editingMarkdown ? (
-                  <div
-                    className={styles.nbMarkdownRendered}
-                    onDoubleClick={() => setEditingMarkdownId(cell.id)}
-                  >
-                    <StudioMarkdownPreview
-                      content={
-                        cell.source.trim().length > 0
-                          ? cell.source
-                          : "*Célula de markdown vazia — clique no lápis para editar.*"
-                      }
-                    />
-                  </div>
-                ) : (
-                  <NotebookCellEditor
-                    cell={cell}
-                    notebookPath={file.path}
-                    autocompleteEnabled={autocompleteEnabled && !isMarkdown}
-                    leadingContext={leadingContexts.get(cell.id) ?? ""}
-                    onChange={(source) =>
+                    onClick={() =>
                       mutate((previous) =>
-                        updateNotebookCellSource(previous, cell.id, source)
+                        moveNotebookCell(previous, cell.id, "down")
                       )
                     }
-                    onRun={isMarkdown ? undefined : () => handleRunCell(cell)}
-                    onAutocompleteStatusChange={onAutocompleteStatusChange}
-                  />
-                )}
+                    disabled={cellIndex === document.cells.length - 1}
+                    aria-label="Mover célula para baixo"
+                    title="Mover para baixo"
+                  >
+                    <ChevronDown size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.nbCellGutterButton}
+                    onClick={() =>
+                      mutate((previous) =>
+                        removeNotebookCell(previous, cell.id)
+                      )
+                    }
+                    aria-label="Remover célula"
+                    title="Remover célula"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
 
-                {cell.outputs.length > 0 ? (
-                  <div className={styles.nbOutputs}>
-                    {cell.outputs.map((output, index) => (
-                      <NotebookOutput key={index} output={output} />
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            </article>
+                <div className={styles.nbCellBody}>
+                  {isMarkdown && !editingMarkdown ? (
+                    <div
+                      className={styles.nbMarkdownRendered}
+                      onDoubleClick={() => setEditingMarkdownId(cell.id)}
+                    >
+                      <StudioMarkdownPreview
+                        content={
+                          cell.source.trim().length > 0
+                            ? cell.source
+                            : "*Célula de markdown vazia — clique no lápis para editar.*"
+                        }
+                      />
+                    </div>
+                  ) : (
+                    <NotebookCellEditor
+                      cell={cell}
+                      notebookPath={file.path}
+                      autocompleteEnabled={autocompleteEnabled && !isMarkdown}
+                      leadingContext={leadingContexts.get(cell.id) ?? ""}
+                      onChange={(source) =>
+                        mutate((previous) =>
+                          updateNotebookCellSource(previous, cell.id, source)
+                        )
+                      }
+                      onRun={isMarkdown ? undefined : () => void handleRunCell(cell)}
+                      onRunAndAdvance={
+                        isMarkdown
+                          ? () => setEditingMarkdownId(null)
+                          : () => handleRunAndAdvance(cell)
+                      }
+                      onRunAndInsertBelow={
+                        isMarkdown
+                          ? undefined
+                          : () => handleRunAndInsertBelow(cell)
+                      }
+                      onFocus={() => setFocusedCellId(cell.id)}
+                      focusToken={
+                        focusRequest?.cellId === cell.id
+                          ? focusRequest.token
+                          : 0
+                      }
+                      onAutocompleteStatusChange={onAutocompleteStatusChange}
+                    />
+                  )}
+
+                  {cell.outputs.length > 0 ? (
+                    <div className={styles.nbOutputs}>
+                      {cell.outputs.map((output, index) => (
+                        <NotebookOutput key={index} output={output} />
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {pendingInput?.cellId === cell.id ? (
+                    <form
+                      className={styles.nbInputRow}
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        void controller.inputReply(inputValue);
+                        setPendingInput(null);
+                        setInputValue("");
+                      }}
+                    >
+                      <label className={styles.nbInputPrompt}>
+                        {pendingInput.prompt || "input()"}
+                      </label>
+                      <input
+                        autoFocus
+                        className={styles.nbInputField}
+                        type={pendingInput.password ? "password" : "text"}
+                        value={inputValue}
+                        onChange={(event) => setInputValue(event.target.value)}
+                        aria-label="Resposta para o input() da célula"
+                      />
+                      <button
+                        type="submit"
+                        className={styles.notebookActionButton}
+                      >
+                        Enviar
+                      </button>
+                    </form>
+                  ) : null}
+
+                  {assist?.cellId === cell.id ? (
+                    <div className={styles.nbAssist}>
+                      {assist.phase === "prompt" ? (
+                        <form
+                          className={styles.nbAssistPromptRow}
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            const text = assist.promptText.trim();
+                            if (text) void runCellAssist(cell, "generate", text);
+                          }}
+                        >
+                          <input
+                            autoFocus
+                            className={styles.nbInputField}
+                            placeholder="O que gerar ou mudar nesta célula?"
+                            value={assist.promptText}
+                            onChange={(event) =>
+                              setAssist((previous) =>
+                                previous?.cellId === cell.id
+                                  ? {
+                                      ...previous,
+                                      promptText: event.target.value,
+                                    }
+                                  : previous
+                              )
+                            }
+                            aria-label="Pedido para o assistente da célula"
+                          />
+                          {cell.outputs.some(
+                            (output) => output.kind === "error"
+                          ) ? (
+                            <button
+                              type="button"
+                              className={styles.notebookActionButton}
+                              onClick={() =>
+                                void runCellAssist(
+                                  cell,
+                                  "fix",
+                                  "Corrija o erro desta célula."
+                                )
+                              }
+                            >
+                              Corrigir erro
+                            </button>
+                          ) : null}
+                          <button
+                            type="submit"
+                            className={styles.notebookActionButton}
+                            disabled={assist.promptText.trim().length === 0}
+                          >
+                            Gerar
+                          </button>
+                        </form>
+                      ) : null}
+
+                      {assist.phase === "streaming" ? (
+                        <>
+                          <pre className={styles.nbAssistPreview}>
+                            {assist.responseText || "Consultando o assistente…"}
+                          </pre>
+                          <div className={styles.nbAssistActions}>
+                            <button
+                              type="button"
+                              className={styles.notebookActionButton}
+                              onClick={() => assistAbortRef.current?.abort()}
+                            >
+                              <Square size={13} />
+                              Cancelar
+                            </button>
+                          </div>
+                        </>
+                      ) : null}
+
+                      {assist.phase === "preview" ? (
+                        <>
+                          <pre className={styles.nbAssistPreview}>
+                            {extractPythonCodeBlock(assist.responseText)}
+                          </pre>
+                          <div className={styles.nbAssistActions}>
+                            <button
+                              type="button"
+                              className={styles.notebookActionButton}
+                              onClick={() => applyAssist(cell.id)}
+                            >
+                              Aplicar na célula
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.notebookActionButton}
+                              onClick={() => setAssist(null)}
+                            >
+                              Descartar
+                            </button>
+                          </div>
+                        </>
+                      ) : null}
+
+                      {assist.phase === "error" ? (
+                        <>
+                          <p className={styles.nbAssistError}>
+                            {assist.errorMessage ??
+                              "Falha ao consultar o assistente."}
+                          </p>
+                          <div className={styles.nbAssistActions}>
+                            <button
+                              type="button"
+                              className={styles.notebookActionButton}
+                              onClick={() => setAssist(null)}
+                            >
+                              Fechar
+                            </button>
+                          </div>
+                        </>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              </article>
+
+              {cellIndex < document.cells.length - 1 ? (
+                <div className={styles.nbInsertRow}>
+                  <button
+                    type="button"
+                    className={styles.nbInsertButton}
+                    onClick={() => insertCodeCellAfter(cell.id, "code")}
+                  >
+                    <Plus size={11} />
+                    Código
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.nbInsertButton}
+                    onClick={() => insertCodeCellAfter(cell.id, "markdown")}
+                  >
+                    <Plus size={11} />
+                    Markdown
+                  </button>
+                </div>
+              ) : null}
+            </div>
           );
         })}
 
