@@ -138,6 +138,13 @@ describe("memory v2 database", () => {
 
     expect(
       reopened.raw.prepare("SELECT version FROM schema_migrations ORDER BY version").all()
-    ).toEqual([{ version: 1 }]);
+    ).toEqual([{ version: 1 }, { version: 2 }]);
+    expect(
+      reopened.raw.prepare("PRAGMA table_info(conversations)").all()
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "workspace_json", notnull: 1 }),
+      ])
+    );
   });
 });

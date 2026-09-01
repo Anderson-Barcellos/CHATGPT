@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 const SCHEMA_V1 = `
 CREATE TABLE conversations (
@@ -159,6 +159,11 @@ CREATE INDEX memory_audit_entity_created
   ON memory_audit_log(entity_type, entity_id, created_at DESC);
 `;
 
+const SCHEMA_V2 = `
+ALTER TABLE conversations
+  ADD COLUMN workspace_json TEXT NOT NULL DEFAULT '{}';
+`;
+
 export function migrateMemorySchema(raw: Database.Database): void {
   raw.exec(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -174,9 +179,17 @@ export function migrateMemorySchema(raw: Database.Database): void {
   if (currentVersion.version >= SCHEMA_VERSION) return;
 
   raw.transaction(() => {
-    raw.exec(SCHEMA_V1);
-    raw
-      .prepare("INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)")
-      .run(SCHEMA_VERSION, new Date().toISOString());
+    if (currentVersion.version < 1) {
+      raw.exec(SCHEMA_V1);
+      raw
+        .prepare("INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)")
+        .run(1, new Date().toISOString());
+    }
+    if (currentVersion.version < 2) {
+      raw.exec(SCHEMA_V2);
+      raw
+        .prepare("INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)")
+        .run(2, new Date().toISOString());
+    }
   })();
 }

@@ -124,9 +124,20 @@ export function importLegacySnapshot(
       } else {
         database.raw
           .prepare(
-            "INSERT INTO conversations (id, title, lifecycle, created_at, updated_at, content_hash) VALUES (?, ?, 'active', ?, ?, ?)"
+            "INSERT INTO conversations (id, title, lifecycle, created_at, updated_at, content_hash, workspace_json) VALUES (?, ?, 'active', ?, ?, ?, ?)"
           )
-          .run(id, title, createdAt, updatedAt, incomingHash);
+          .run(
+            id,
+            title,
+            createdAt,
+            updatedAt,
+            incomingHash,
+            JSON.stringify(
+              conversation.workspace && typeof conversation.workspace === "object"
+                ? conversation.workspace
+                : {}
+            )
+          );
         report.conversations += 1;
       }
 
@@ -147,6 +158,16 @@ export function importLegacySnapshot(
           }
           report.skipped += 1;
         } else {
+          const {
+            id: _messageId,
+            role: _role,
+            content: _content,
+            timestamp: _timestamp,
+            streamStatus: _streamStatus,
+            responseMode: _responseMode,
+            attachments: _attachments,
+            ...messageMetadata
+          } = message;
           database.raw
             .prepare(
               "INSERT INTO conversation_messages (id, conversation_id, role, content, stream_status, response_mode, timestamp, ordinal, metadata_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
@@ -160,7 +181,7 @@ export function importLegacySnapshot(
               typeof message.responseMode === "string" ? message.responseMode : null,
               timestamp,
               ordinal,
-              JSON.stringify({ legacyHash: messageHash })
+              JSON.stringify({ ...messageMetadata, legacyHash: messageHash })
             );
           report.messages += 1;
         }

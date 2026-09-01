@@ -8,6 +8,9 @@ import {
   reconcileLegacySnapshot,
   type LegacySnapshot,
 } from "./importLegacy";
+import { getConversation } from "./conversationRepository";
+import { deserializeConversation } from "@/lib/storage/serializers";
+import type { SerializedConversation } from "@/types";
 
 vi.mock("server-only", () => ({}));
 
@@ -63,6 +66,12 @@ describe("legacy memory importer", () => {
     expect(database.raw.prepare("SELECT id, message_id FROM conversation_attachments").get()).toEqual({
       id: "attachment-legacy-1",
       message_id: "msg-legacy-1",
+    });
+    expect(getConversation(database, "conv-legacy-1")).toEqual({
+      ...deserializeConversation(
+        fixture.conversations[0] as SerializedConversation
+      ),
+      lifecycle: "active",
     });
     expect(database.raw.prepare("SELECT id, state, legacy_priority FROM memory_facts ORDER BY id").all()).toEqual([
       { id: "memory-legacy-1", state: "current", legacy_priority: 12 },

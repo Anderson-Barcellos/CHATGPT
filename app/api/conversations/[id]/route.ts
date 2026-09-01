@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   getConversation,
   updateConversation,
-  deleteConversation,
+  archiveConversation,
+  permanentlyDeleteConversation,
 } from "../data";
 import { jsonError } from "@/lib/api/errors";
 import { isAuthEnabled, isAuthenticatedRequest } from "@/lib/server/auth";
-import { deleteConversationFromMemoryIndex } from "@/lib/server/memory/indexStore";
 import { deserializeMessage, serializeConversation } from "@/lib/storage/serializers";
 import { ConversationWorkspace } from "@/types";
 
@@ -167,15 +167,19 @@ export async function DELETE(
       });
     }
 
-    await deleteConversationFromMemoryIndex(id);
-    const ok = await deleteConversation(id);
-    if (!ok) {
+    if (request.nextUrl.searchParams.get("permanent") === "true") {
+      const report = await permanentlyDeleteConversation(id);
+      return NextResponse.json({ success: true, permanent: true, report });
+    }
+
+    const archived = await archiveConversation(id);
+    if (!archived) {
       return jsonError(404, "Not found", {
         message: "Conversa nao encontrada.",
         code: "conversation_not_found",
       });
     }
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, archived: true });
   } catch (err) {
     console.error("[conversations] DELETE error", err);
     return jsonError(500, "Failed to delete conversation", {

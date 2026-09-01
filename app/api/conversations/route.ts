@@ -21,7 +21,9 @@ export async function GET(request: NextRequest) {
     return unauthorized();
   }
 
-  const conversations = await listConversations();
+  const requestedLifecycle = request.nextUrl.searchParams.get("lifecycle");
+  const lifecycle = requestedLifecycle === "archived" ? "archived" : "active";
+  const conversations = await listConversations({ lifecycle });
   return NextResponse.json(
     conversations.map((conversation) => serializeConversation(conversation))
   );
