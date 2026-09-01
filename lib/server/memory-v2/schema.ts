@@ -54,6 +54,7 @@ CREATE TABLE memory_facts (
   fact_type TEXT NOT NULL,
   sensitivity TEXT NOT NULL CHECK (sensitivity IN ('standard', 'personal', 'sensitive')),
   confidence REAL NOT NULL CHECK (confidence >= 0 AND confidence <= 1),
+  legacy_priority INTEGER,
   state TEXT NOT NULL CHECK (state IN ('current', 'superseded', 'conflicted', 'archived', 'removed')),
   is_core INTEGER NOT NULL DEFAULT 0 CHECK (is_core IN (0, 1)),
   valid_from TEXT,

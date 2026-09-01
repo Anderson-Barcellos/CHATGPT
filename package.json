@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "memory:migrate": "tsx scripts/memory-v2-migrate.ts",
     "test": "vitest --run",
     "test:watch": "vitest"
   },
