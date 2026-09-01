@@ -36,6 +36,8 @@
 /data/pulse-runs.json
 /data/memory-index/
 /data/memory-suggestions.json
+/data/memory-v2.sqlite*
+/data/memory-topics/
 
 # debug artifacts (screenshots, browser MCP output)
 /.playwright-mcp/
