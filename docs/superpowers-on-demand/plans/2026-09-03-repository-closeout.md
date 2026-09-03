@@ -491,7 +491,7 @@ Update docs/API.md with archive-by-default, restore and ?permanent=true semantic
 
 - [ ] **Step 3: Reconciliar BACKLOG e diário**
 
-Set layout L1 in BACKLOG.md to pronta para revisão integrada, record Memory V2 E1/E2 as an integrated disabled foundation rather than an active cutover, and keep Nenhuma FRENTE ativa until Anders closes or activates a delivery. Append one dated entry to AGENTS.md covering commits, quarantine path, lint/audit results, merge boundaries, deploy and push evidence.
+Set layout L1 in BACKLOG.md to pronta para revisão integrada, record Memory V2 E1/E2 as an integrated disabled foundation rather than an active cutover, and keep Nenhuma FRENTE ativa until Anders closes or activates a delivery. Append one dated entry to AGENTS.md covering the evidence already produced in Tasks 1–5, explicitly leaving deploy and push pending until Task 7 proves them.
 
 - [ ] **Step 4: Validar consistência documental**
 
@@ -609,4 +609,4 @@ Expected: antes do push, origin/main não tem commits exclusivos; depois, contag
 
 - [ ] **Step 7: Fechamento Superpowers com evidência fresca**
 
-Record final commit IDs, test count, lint/audit/build status, smoke viewports, health status, remaining worktrees, remote divergence 0 0, quarantine path and any intentionally retained warning. Mark this delivery pronta para revisão; only Anders marks it fechada.
+Update the dated AGENTS.md closeout entry with final commit IDs, test count, lint/audit/build status, smoke viewports, health status, remaining worktrees, remote divergence 0 0, quarantine path and any intentionally retained warning, then commit that evidence before pushing. Mark this delivery pronta para revisão; only Anders marks it fechada.

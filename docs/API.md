@@ -1,6 +1,6 @@
 # API
 
-**Última atualização:** 2026-08-06
+**Última atualização:** 2026-09-03
 **Base URL pública:** `https://ultrassom.ai/chat`
 **Base path interno:** `NEXT_PUBLIC_BASE_PATH=/chat`
 
@@ -233,14 +233,18 @@ Limpa o cookie de autenticação.
 
 | Método | Rota | Função |
 |---|---|---|
-| `GET` | `/api/conversations` | Lista conversas |
+| `GET` | `/api/conversations?lifecycle=active|archived` | Lista conversas; `active` é o padrão |
 | `POST` | `/api/conversations` | Cria conversa |
 | `GET` | `/api/conversations/[id]` | Lê conversa |
 | `PUT` | `/api/conversations/[id]` | Atualiza conversa |
 | `POST` | `/api/conversations/[id]` | Alias de update para `navigator.sendBeacon` |
-| `DELETE` | `/api/conversations/[id]` | Remove conversa |
+| `DELETE` | `/api/conversations/[id]` | Arquiva a conversa por padrão |
+| `DELETE` | `/api/conversations/[id]?permanent=true` | Exclui permanentemente e retorna relatório de remoção |
+| `POST` | `/api/conversations/[id]/restore` | Restaura uma conversa arquivada |
 
-**Arquivos:** `app/api/conversations/*`, `lib/storage/conversations.ts`
+**Arquivos:** `app/api/conversations/*`, `lib/storage/conversations.ts`, `lib/server/memory-v2/*`
+
+As semânticas de ciclo de vida valem nas duas autoridades. Por padrão, produção continua usando JSON. Se `MEMORY_V2_ENABLED=true`, as mesmas rotas usam exclusivamente SQLite em `data/memory-v2.sqlite` ou `MEMORY_V2_DATABASE_PATH`; não há dual-write. A fundação E1/E2 está integrada, mas a flag segue desligada e nenhum dado real foi migrado. O CLI `npm run memory:migrate` é dry-run por padrão e só persiste com `--apply`.
 
 ## Memórias
 

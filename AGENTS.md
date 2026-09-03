@@ -36,7 +36,7 @@ Principais areas:
 
 ## Estado Atual Do Projeto
 
-- Modelo padrao atual do chat: `gpt-5.6-luna` com reasoning `low` e modo `standard`; `gpt-5.4-mini` permanece oculto para fluxos internos; `gemini-3.6-flash` e selecionavel como provider separado no chat padrao
+- Modelo padrao atual do chat: `gpt-5.6-luna` com reasoning `low` e modo `standard`; `gpt-5.4-mini` permanece oculto para fluxos internos; `gemini-3.7-flash` e selecionavel como provider separado no chat padrao
 - Shell ativo: `GauchoChatShellV2` / `WorkspaceFrameV2` — redesign completo (S0-S12)
 - Página separada `/studio`: `GauchoStudioShell` Python-only sobre o workspace do servidor (sandbox systemd + step-up auth); console interativo com stdin (`run/stdin`, eco `command` no SSE, flush parcial de prompt em 150 ms); painéis redimensionáveis (`useStudioLayout`, `gaucho-studio:layout:v1`); preview de markdown em arquivos `.md` (`Código/Dividido/Preview`, `StudioMarkdownPreview` reusando o pipeline do chat, desde 2026-08-13); terminal PTY na jail (bash via `node-pty` + `systemd-run --pty`, xterm.js em view alternável do workbench com Ctrl+`, 1 sessão com idle-kill 30 min e reanexo com replay, desde 2026-08-13); notebook `.ipynb` (view de células no lugar do editor, ipykernel real na jail + helper `jupyter_client` fora dela, nbformat v4 com outputs texto+PNG persistidos, FIM ciente das células anteriores, 1 kernel com idle-kill 30 min, desde 2026-08-13); localStorage guarda só prefs/assistente (snapshot v2); modo Local TS/JS removido em 2026-08-12
 - Sistema visual padrão: Atmosphere Glass — Midnight Glass no dark e Daybreak no light
@@ -52,7 +52,7 @@ Principais areas:
 - Chips do header conectados ao estado real (model, reasoning, responseMode)
 - Aba Persona mostra prévia somente-leitura do prompt principal (`BASE_SYSTEM_PROMPT` + `FIXED_PERSONA_PROMPT`) e edita `contextAboutUser`, `customSystemInstructions` e `responsePreferences`
 - Memory tools (`remember_memory`, `search_memory`) ativas apenas em `responseMode="default"`; document/deepsearch/quiz seguem sem essas tools
-- Gemini 3.6 Flash usa Interactions API stateless com thinking `minimal|low|medium|high`, Google Search e URL Context; Documento/Deepsearch/Quiz continuam nos fluxos OpenAI
+- Gemini 3.7 Flash usa Interactions API stateless com thinking `low|medium|high`, Google Search e URL Context; Documento/Deepsearch/Quiz continuam nos fluxos OpenAI
 - Deepsearch/Documento devem seguir o protocolo de pesquisa profunda com neuro-storytelling estruturado: plano validado quando o pedido for aberto, fontes autoritativas, citacoes inline e prosa narrativa clara, sem tom gauchesco em conteudo de pesquisa
 - `image_generation` ativa apenas no modo default; `web_search_preview` entra em modos não-quiz; `code_interpreter` é opt-in
 - Breakpoints: `md=768`, `lg=1024 (sidebar)`, `xl=1280 (painel contextual)`
@@ -1417,3 +1417,14 @@ A branch `codex/soundcase` (34 commits, 83 arquivos) foi mergeada em `main` via 
 
 Notes:
 Bug real de integração pego na validação: a rota `POST /api/soundcase/worker/run-next` tem bearer próprio (`SOUNDCASE_WORKER_TOKEN` + `timingSafeEqual`), mas o middleware `proxy.ts` exigia JWT antes de chegar nela (retornava 401 "Faça login"), porque o branch não tinha adicionado a rota ao `PUBLIC_PATHS` — corrigido em `2b568d7` seguindo o padrão de `/api/pulse/run-due`. Validação: 712 testes/138 arquivos, `tsc --noEmit`, build Next com `NEXT_PUBLIC_BASE_PATH=/chat`, restart do `chatgpt.service`, health local/público 200, `/chat/soundcase` sem cookie → 307 login, `/chat/api/soundcase/projects` sem cookie → 401, e worker com token certo → 204 (fila vazia) e token errado → 401. Pendente: smoke pago (~15 min) e QA visual, bloqueados enquanto OpenAI/Luna/TTS/Realtime estiverem down. Apache intocado (nenhuma ProxyPass nova necessária).
+
+### 2026-09-03 15:12 - Fechamento do repositório em execução
+
+Context:
+Anders autorizou o fechamento completo pelo Superpowers em execução inline: consolidar o lote L1, integrar a fundação Memory V2 E1/E2 sem cutover, remover artefatos locais, corrigir lint do SoundCase, zerar avisos de segurança do runtime e reconciliar a documentação antes de validar/deployar/publicar.
+
+Details:
+L1 foi auditado na worktree, commitado em `80ee904` e integrado por `ad285eb`; Memory V2 E1/E2 foi integrada por `ea9eda7`, mantendo `MEMORY_V2_ENABLED` desligada, autoridades JSON/SQLite exclusivas e sem migração real. Artefatos locais não versionados foram movidos recuperavelmente para `/root/CHATGPT-quarentena-2026-09-03/closeout/`; `.gitignore` passou a bloquear caches Python em `ad655ed`. Os erros React do SoundCase foram reproduzidos por testes e corrigidos em `5d6233a`. DOMPurify, PDF.js e overrides de fflate/nanoid foram atualizados em `46f0437`; a auditoria com `--omit=dev` retornou zero vulnerabilidades, os testes focados de PDF/sanitização, TypeScript e build passaram.
+
+Notes:
+Este registro ainda não afirma deploy, smoke final, limpeza de worktrees ou push: essas evidências pertencem à etapa final e serão anexadas somente depois de executadas. A build mantém o warning conhecido de NFT tracing do workspace Studio.

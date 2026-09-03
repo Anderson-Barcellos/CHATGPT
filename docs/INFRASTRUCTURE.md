@@ -1,6 +1,6 @@
 # Infraestrutura
 
-**Última atualização:** 2026-08-17
+**Última atualização:** 2026-09-03
 **Produção:** `https://ultrassom.ai/chat`
 **Porta local:** `3040`
 
@@ -11,7 +11,7 @@ Internet
   -> Apache2 HTTPS :443
   -> /chat, /chat/studio e /chat/api/* proxy para http://localhost:3040/chat
   -> Next.js 16 via chatgpt.service
-  -> OpenAI/DeepSeek/Gemini APIs + JSON store local
+  -> OpenAI/DeepSeek/Gemini APIs + store local selecionado no servidor
 ```
 
 O `<Location /chat>` mantém `ProxyPassReverseCookiePath / /chat` escopado ao serviço e alinha a CSP do Apache à política emitida pelo Next. `script-src blob:` e `worker-src 'self' blob:` continuam necessários para Monaco/Mermaid e seus workers; não mover essas diretivas para o nível global do vhost. O antigo runner local em `/chat/api/studio/runner` foi removido quando o Studio virou Python-only; execução, terminal e notebook passam pelas rotas autenticadas `/chat/api/studio/workspace/*` e por processos sandboxed no host.
@@ -31,7 +31,9 @@ O `<Location /chat>` mantém `ProxyPassReverseCookiePath / /chat` escopado ao se
 Não transcreva segredos de `.env.production` ou `.env.local` em docs, issues ou commits.
 O nome público do app é `Gaucho Chat`; a descrição `Celer - Cliente IA Multi-Modal` na unit systemd é apenas um rótulo histórico interno.
 O repositório nao usa mais stack de deploy por Docker/Nginx; o runtime valido aqui e Apache + `chatgpt.service`.
-OpenAI, DeepSeek V4 Pro e Gemini 3.6 Flash são acessados apenas server-side; suas chaves não devem aparecer no cliente nem em logs.
+OpenAI, DeepSeek V4 Pro e Gemini 3.7 Flash são acessados apenas server-side; suas chaves não devem aparecer no cliente nem em logs.
+
+A fundação Memory V2 E1/E2 está instalada no código, mas não ativa em produção. Sem `MEMORY_V2_ENABLED=true`, JSON continua como autoridade exclusiva. Com a flag, SQLite passa a ser a autoridade exclusiva; não existe dual-write. O CLI de migração é dry-run por padrão, nenhum dado real foi migrado e qualquer cutover exige uma entrega operacional própria.
 
 ## Apache
 
@@ -110,7 +112,7 @@ Obrigatórias em produção:
 |---|---|
 | `OPENAI_API_KEY` | Chave server-side da OpenAI |
 | `DEEPSEEK_API_KEY` | Chave server-side do DeepSeek V4 Pro para chat padrão e autocomplete FIM do Studio |
-| `GEMINI_API_KEY` | Chave server-side do Gemini 3.6 Flash para chat padrão |
+| `GEMINI_API_KEY` | Chave server-side do Gemini 3.7 Flash para chat padrão |
 | `NEXT_PUBLIC_BASE_PATH` | Deve ser `/chat` |
 | `NEXT_PUBLIC_APP_URL` | URL pública completa |
 | `PORT` | Deve ser `3040` |
@@ -122,6 +124,8 @@ Overrides opcionais:
 | Variável | Propósito |
 |---|---|
 | `DEEPSEEK_WEB_CONTEXT_MODEL` | Modelo OpenAI usado pelo helper `fresh_web_context`; fallback `gpt-5.6-luna` |
+| `MEMORY_V2_ENABLED` | Ativa SQLite como autoridade exclusiva de conversas; permanece desligada em produção |
+| `MEMORY_V2_DATABASE_PATH` | Caminho opcional do banco SQLite; default `data/memory-v2.sqlite` |
 
 Integração Google Calendar:
 

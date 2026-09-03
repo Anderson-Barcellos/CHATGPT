@@ -1,6 +1,6 @@
 # Arquitetura
 
-**Última atualização:** 2026-08-17
+**Última atualização:** 2026-09-03
 
 ## Visão Geral
 
@@ -11,7 +11,7 @@ Browser/PWA
   -> Next.js UI em /chat
   -> proxy.ts: auth, rate limit e headers
   -> app/api/*: BFF server-side
-  -> OpenAI/DeepSeek/Gemini APIs e JSON store local
+  -> OpenAI/DeepSeek/Gemini APIs e autoridade de persistência selecionada no servidor
 ```
 
 ## Entrada e Shell
@@ -172,7 +172,13 @@ Camadas principais:
 - `app/api/memory/*` e `lib/server/memory/*`: indexação semântica com `text-embedding-3-small`, busca RAG, sugestões e execução das memory tools.
 - `lib/storage/conversationPersistence.ts`: retry/normalização de writes.
 
-O cliente também usa stores Zustand e cache local, mas o estado canônico compartilhável fica no servidor JSON.
+O cliente também usa stores Zustand e cache local. Em produção, `MEMORY_V2_ENABLED` permanece desligada e o estado canônico continua no servidor JSON.
+
+### Fundação Memory V2 E1/E2
+
+A fundação SQLite está integrada em `lib/server/memory-v2/*` e ligada às rotas de conversas por `app/api/conversations/data.ts`. A seleção de autoridade é exclusiva: com `MEMORY_V2_ENABLED=true`, o CRUD de conversas usa somente `data/memory-v2.sqlite` (ou `MEMORY_V2_DATABASE_PATH`); sem a flag, usa somente os arquivos JSON atuais. Não há dual-write nem fallback silencioso entre autoridades.
+
+O CLI `npm run memory:migrate -- --source <diretório> --database <arquivo>` importa e reconcilia conversas, anexos, memórias e sugestões. Ele usa banco em memória por padrão e só grava o destino com `--apply`. A integração de E1/E2 foi validada apenas com fixtures; nenhum dado real foi migrado e o cutover de produção continua fora do escopo atual.
 
 ## SoundCase
 

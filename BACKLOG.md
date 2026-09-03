@@ -2,17 +2,23 @@
 
 ## Estado operacional
 
-### FRENTE ATIVA — Homogeneização funcional e fluidez do Gaucho Chat
+### Nenhuma FRENTE ativa
 
-#### ENTREGA L1 — Layout confiável, acessível e consistente (`pronta para revisão`)
+Anders ainda precisa fechar a ENTREGA L1 integrada ou ativar outra frente. As candidatas abaixo não estão automaticamente autorizadas.
+
+#### ENTREGA L1 — Layout confiável, acessível e consistente (`pronta para revisão integrada`)
 
 Resultado esperado: preservar o Atmosphere Glass enquanto a home mobile passa a usar conversas reais, os atalhos abrem a aba correta, o Canvas funciona como modal acessível e os estados visuais deixam de prometer informações sem fonte real.
 
 Escopo incluído: home e navegação mobile, painel contextual centralizado, contraste e nomes acessíveis, hit areas touch, Canvas Radix, welcome determinístico, movimento reduzido e animação de mensagens durante streaming.
 
-Limites explícitos: não alterar rotas, providers, dados persistidos, o WIP Gemini 3.7 em `main`, bundle splitting amplo, dependências, Studio/Pulse ou runtime público. Implementação isolada em `codex/layout-homogenization`; sem merge, push ou deploy antes da revisão de Anders.
+Limites explícitos cumpridos na implementação: não alterou rotas, providers, dados persistidos, bundle splitting amplo, dependências, Studio/Pulse ou runtime público. O lote isolado em `codex/layout-homogenization` foi auditado e integrado ao `main` em `ad285eb` durante o fechamento autorizado de 2026-09-03.
 
-Evidência de conclusão: 113 arquivos/574 testes, TypeScript, lint, build prefixada em `/chat` e `git diff --check` limpos. QA autenticado no Google Chrome passou 32/32 em 320/375/430/768/1024/1490 px, Daybreak/Midnight, ausência de overflow/erros de console, navegação real, painel/abas, alvo de envio 44×44, Settings, Canvas com foco inicial/Escape e movimento reduzido; uma sonda adicional confirmou o retorno explícito do foco ao gatilho. A build mantém o warning preexistente de NFT tracing do Studio; sem restart, merge, push ou deploy.
+Evidência de conclusão: 113 arquivos/574 testes, TypeScript, lint, build prefixada em `/chat` e `git diff --check` limpos. QA autenticado no Google Chrome passou 32/32 em 320/375/430/768/1024/1490 px, Daybreak/Midnight, ausência de overflow/erros de console, navegação real, painel/abas, alvo de envio 44×44, Settings, Canvas com foco inicial/Escape e movimento reduzido; uma sonda adicional confirmou o retorno explícito do foco ao gatilho. A integração repetiu 18 testes focados e TypeScript com sucesso. A build mantém o warning preexistente de NFT tracing do Studio.
+
+#### Fundação Memory V2 E1/E2 — integrada e desativada
+
+SQLite, schema, repositório de conversas, ciclo arquivar/restaurar/excluir permanentemente e CLI de migração estão integrados em `ea9eda7`. `MEMORY_V2_ENABLED` permanece desligada em produção, JSON e SQLite nunca operam como autoridades simultâneas, e nenhum dado real foi migrado. O dry-run em fixtures reconciliou contagens e hashes sem criar o banco de destino. Ativação/cutover é uma futura ENTREGA, não uma frente ativa.
 
 Próxima candidata prioritária, sem ativação automática: blindagem do symlink final do Studio e autenticação/claim/recovery do Pulse descobertos na auditoria de 2026-08-22.
 

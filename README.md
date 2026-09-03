@@ -7,7 +7,7 @@ Alguns artefatos internos antigos ainda usam o rótulo histórico `Celer`, mas o
 
 ## O que o projeto faz
 
-- Chat com streaming, reasoning visível por summary/tokens, web search, geração de imagens, DeepSeek V4 Pro e Gemini 3.6 Flash no chat padrão, memory tools e code interpreter opcional.
+- Chat com streaming, reasoning visível por summary/tokens, web search, geração de imagens, DeepSeek V4 Pro e Gemini 3.7 Flash no chat padrão, memory tools e code interpreter opcional.
 - Histórico de conversas com persistência incremental durante streaming e recuperação de respostas interrompidas.
 - Memórias, RAG local de conversas, persona, prompt principal visível, instruções customizadas e preferências de TTS persistidas server-side.
 - Mini-player de áudio compartilhado entre respostas do chat e gerações Pulse, com TTS padrão em FLAC/turbo e Realtime 2.1 mini selecionável.
@@ -22,7 +22,7 @@ Alguns artefatos internos antigos ainda usam o rótulo histórico `Celer`, mas o
 - `React 19.2.3`, `TypeScript`, `Tailwind CSS 4`.
 - `Zustand`, `TanStack Query`, `Radix UI`, `framer-motion`, `cmdk`.
 - `OpenAI Node SDK 6.46.0`, Google GenAI SDK 2.13.0, `jose`, `Vitest`, `Playwright`.
-- Persistência simples em JSON local sob `data/*.json`.
+- Persistência de produção em JSON local sob `data/*.json`; a fundação SQLite Memory V2 está integrada atrás de `MEMORY_V2_ENABLED`, ainda desativada e sem migração de dados reais.
 
 ## Estrutura principal
 
