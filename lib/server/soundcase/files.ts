@@ -6,7 +6,8 @@ export type SoundCaseFileErrorCode =
   | "soundcase_path_invalid"
   | "soundcase_symlink_rejected"
   | "soundcase_file_invalid"
-  | "soundcase_json_invalid";
+  | "soundcase_json_invalid"
+  | "soundcase_root_untrusted";
 
 export class SoundCaseFileError extends Error {
   readonly code: SoundCaseFileErrorCode;
@@ -63,9 +64,34 @@ function isMissing(error: unknown): error is NodeJS.ErrnoException {
   );
 }
 
+function isSymlinkLoop(error: unknown): error is NodeJS.ErrnoException {
+  return (
+    error instanceof Error &&
+    "code" in error &&
+    (error as NodeJS.ErrnoException).code === "ELOOP"
+  );
+}
+
+async function ensureTrustedRoot(create: boolean): Promise<void> {
+  const root = getSoundCaseRoot();
+  if (create) await fs.mkdir(root, { recursive: true, mode: 0o700 });
+
+  const info = await fs.lstat(root);
+  const effectiveUid = process.geteuid?.();
+  if (
+    info.isSymbolicLink() ||
+    !info.isDirectory() ||
+    (effectiveUid !== undefined && info.uid !== effectiveUid) ||
+    (info.mode & 0o022) !== 0
+  ) {
+    throw new SoundCaseFileError("soundcase_root_untrusted");
+  }
+}
+
 async function assertNoSymlinkAncestors(targetPath: string): Promise<void> {
   const root = getSoundCaseRoot();
   const target = assertInsideRoot(targetPath);
+  await ensureTrustedRoot(false);
   const relative = path.relative(root, target);
   const parts = relative ? relative.split(path.sep) : [];
   let current = root;
@@ -119,6 +145,7 @@ export async function writeTextDurable(
 ): Promise<void> {
   const target = assertInsideRoot(filePath);
   const parent = path.dirname(target);
+  await ensureTrustedRoot(true);
   await assertNoSymlinkAncestors(parent);
   await fs.mkdir(parent, { recursive: true, mode: 0o700 });
   await assertNoSymlinkAncestors(parent);
@@ -140,6 +167,7 @@ export async function writeTextDurable(
     `.${path.basename(target)}.${process.pid}.${randomUUID()}.tmp`
   );
   let handle: Awaited<ReturnType<typeof fs.open>> | null = null;
+  let operationError: unknown;
   try {
     handle = await fs.open(
       temporary,
@@ -157,9 +185,24 @@ export async function writeTextDurable(
     await assertNoSymlinkAncestors(parent);
     await fs.rename(temporary, target);
     await syncDirectory(parent);
+  } catch (error) {
+    operationError = error;
+    throw error;
   } finally {
-    if (handle) await handle.close();
-    await fs.rm(temporary, { force: true });
+    let cleanupError: unknown;
+    if (handle) {
+      try {
+        await handle.close();
+      } catch (error) {
+        if (!operationError) cleanupError = error;
+      }
+    }
+    try {
+      await fs.rm(temporary, { force: true });
+    } catch (error) {
+      if (!operationError && !cleanupError) cleanupError = error;
+    }
+    if (cleanupError) throw cleanupError;
   }
 }
 
@@ -179,7 +222,27 @@ export async function readJsonSafe<T>(filePath: string): Promise<T | null> {
     throw error;
   }
 
-  const raw = await fs.readFile(target, "utf8");
+  let handle: Awaited<ReturnType<typeof fs.open>>;
+  try {
+    handle = await fs.open(target, constants.O_RDONLY | constants.O_NOFOLLOW);
+  } catch (error) {
+    if (isMissing(error)) return null;
+    if (isSymlinkLoop(error)) {
+      throw new SoundCaseFileError("soundcase_symlink_rejected");
+    }
+    throw error;
+  }
+
+  let raw: string;
+  try {
+    const info = await handle.stat();
+    if (!info.isFile()) {
+      throw new SoundCaseFileError("soundcase_file_invalid");
+    }
+    raw = await handle.readFile({ encoding: "utf8" });
+  } finally {
+    await handle.close();
+  }
   try {
     return JSON.parse(raw) as T;
   } catch {

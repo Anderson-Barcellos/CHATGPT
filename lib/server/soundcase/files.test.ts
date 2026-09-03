@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   assertRegularSoundCaseFile,
   getSoundCaseRoot,
@@ -63,6 +63,39 @@ describe("SoundCase private files", () => {
       writeTextDurable(path.join(ancestorLink, "escaped.txt"), "nope")
     ).rejects.toThrowError(
       expect.objectContaining({ code: "soundcase_symlink_rejected" })
+    );
+  });
+
+  it("rejects a target swapped to a symlink after lstat", async () => {
+    const target = resolveSoundCasePath("projects.json");
+    const outsideFile = path.join(outside, "outside.json");
+    await fs.writeFile(target, '{"inside":true}', "utf8");
+    await fs.writeFile(outsideFile, '{"outside":true}', "utf8");
+    const realLstat = fs.lstat.bind(fs);
+    let swapped = false;
+    const lstatSpy = vi.spyOn(fs, "lstat").mockImplementation(async (candidate) => {
+      const info = await realLstat(candidate);
+      if (!swapped && candidate.toString() === target) {
+        swapped = true;
+        await fs.rm(target);
+        await fs.symlink(outsideFile, target);
+      }
+      return info;
+    });
+
+    await expect(readJsonSafe(target)).rejects.toThrowError(
+      expect.objectContaining({ code: "soundcase_symlink_rejected" })
+    );
+    lstatSpy.mockRestore();
+  });
+
+  it("rejects a root writable by group or others", async () => {
+    await fs.chmod(root, 0o770);
+
+    await expect(
+      writeTextDurable(path.join(root, "projects.json"), "{}")
+    ).rejects.toThrowError(
+      expect.objectContaining({ code: "soundcase_root_untrusted" })
     );
   });
 
