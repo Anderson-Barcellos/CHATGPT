@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto";
+import { spawn } from "node:child_process";
+import { once } from "node:events";
 import { promises as fs } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -9,6 +11,7 @@ import {
   cancelSoundCaseVersion,
   claimNextSoundCaseJob,
   createSoundCaseVersion,
+  acquireSoundCaseQueueLock,
   finishSoundCaseJob,
   getSoundCaseVersion,
   renewSoundCaseLease,
@@ -191,20 +194,17 @@ describe("SoundCase version queue", () => {
     expect(blocked).toBeNull();
   });
 
-  it("recovers an abandoned interprocess queue lock", async () => {
-    const project = await createSoundCaseProject({ text: "Depois do lock." });
+  it("excludes a second process with a kernel-backed queue lock", async () => {
     const lockPath = path.join(root, "jobs.lock");
-    await fs.writeFile(
-      lockPath,
-      JSON.stringify({ pid: 2_147_483_647, token: "abandoned" })
-    );
-    const stale = new Date(Date.now() - 60_000);
-    await fs.utimes(lockPath, stale, stale);
+    const release = await acquireSoundCaseQueueLock();
+    const blocked = spawn("/usr/bin/flock", ["--nonblock", lockPath, "/bin/true"]);
+    const [blockedCode] = (await once(blocked, "exit")) as [number];
+    expect(blockedCode).toBe(1);
 
-    await expect(createSoundCaseVersion(project.id, settings)).resolves.toMatchObject({
-      created: true,
-    });
-    await expect(fs.stat(lockPath)).rejects.toMatchObject({ code: "ENOENT" });
+    await release();
+    const admitted = spawn("/usr/bin/flock", ["--nonblock", lockPath, "/bin/true"]);
+    const [admittedCode] = (await once(admitted, "exit")) as [number];
+    expect(admittedCode).toBe(0);
   });
 
   it("rejects a stale lease guard after renewal", async () => {

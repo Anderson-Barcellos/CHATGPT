@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { constants, promises as fs } from "node:fs";
 import {
   SOUNDCASE_DEFAULT_AUDIO_FORMAT,
@@ -39,9 +40,9 @@ import {
 const LEASE_DURATION_MS = 90_000;
 const queueLocks = new Map<string, Promise<void>>();
 const QUEUE_LOCK_KEY = "soundcase-jobs";
-const QUEUE_FILE_LOCK_TIMEOUT_MS = 10_000;
-const QUEUE_FILE_LOCK_RETRY_MS = 20;
-const QUEUE_FILE_LOCK_STALE_MS = 30_000;
+const FLOCK_PATH = "/usr/bin/flock";
+const FLOCK_WAIT_SECONDS = "10";
+const FLOCK_ACQUIRED_MARKER = "soundcase-lock-acquired";
 
 export class SoundCaseJobError extends Error {
   readonly code: string;
@@ -59,80 +60,77 @@ function queueFileLockPath(): string {
   return resolveSoundCasePath("jobs.lock");
 }
 
-function processIsAlive(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    return (error as NodeJS.ErrnoException).code !== "ESRCH";
-  }
+async function waitForFlock(
+  child: ChildProcessWithoutNullStreams
+): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    let output = "";
+    let settled = false;
+    const finish = (error?: Error) => {
+      if (settled) return;
+      settled = true;
+      child.stdout.off("data", onData);
+      child.off("error", onError);
+      child.off("exit", onExit);
+      if (error) reject(error);
+      else resolve();
+    };
+    const onData = (data: Buffer) => {
+      output += data.toString("utf8");
+      if (output.includes(`${FLOCK_ACQUIRED_MARKER}\n`)) finish();
+    };
+    const onError = () => finish(new SoundCaseJobError("soundcase_queue_lock_failed", 503));
+    const onExit = () => finish(new SoundCaseJobError("soundcase_queue_lock_timeout", 503));
+    child.stdout.on("data", onData);
+    child.once("error", onError);
+    child.once("exit", onExit);
+  });
 }
 
-async function removeStaleQueueFileLock(lockPath: string): Promise<boolean> {
-  let info;
-  try {
-    info = await fs.lstat(lockPath);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return true;
-    throw error;
-  }
-  if (info.isSymbolicLink() || !info.isFile()) {
-    throw new SoundCaseJobError("soundcase_queue_lock_invalid", 500);
-  }
-
-  const lock = await readJsonSafe<{ pid?: unknown; token?: unknown }>(lockPath).catch(
-    () => null
-  );
-  const ownerAlive =
-    typeof lock?.pid === "number" && Number.isInteger(lock.pid)
-      ? processIsAlive(lock.pid)
-      : false;
-  if (ownerAlive || Date.now() - info.mtimeMs < QUEUE_FILE_LOCK_STALE_MS) {
-    return false;
-  }
-  await fs.rm(lockPath, { force: true });
-  return true;
+async function releaseFlock(child: ChildProcessWithoutNullStreams): Promise<void> {
+  if (child.exitCode !== null) return;
+  await new Promise<void>((resolve) => {
+    child.once("exit", () => resolve());
+    child.once("error", () => resolve());
+    child.stdin.end();
+  });
 }
 
-async function acquireQueueFileLock(): Promise<() => Promise<void>> {
+export async function acquireSoundCaseQueueLock(): Promise<() => Promise<void>> {
   await ensureSoundCaseRoot();
   const lockPath = queueFileLockPath();
-  const token = crypto.randomUUID();
-  const startedAt = Date.now();
+  const handle = await fs.open(
+    lockPath,
+    constants.O_RDWR | constants.O_CREAT | constants.O_NOFOLLOW,
+    0o600
+  );
+  await handle.close();
+  await assertRegularSoundCaseFile(lockPath);
 
-  while (true) {
-    try {
-      const handle = await fs.open(
-        lockPath,
-        constants.O_WRONLY |
-          constants.O_CREAT |
-          constants.O_EXCL |
-          constants.O_NOFOLLOW,
-        0o600
-      );
-      try {
-        await handle.writeFile(
-          `${JSON.stringify({ pid: process.pid, token, createdAt: new Date().toISOString() })}\n`
-        );
-        await handle.sync();
-      } finally {
-        await handle.close();
-      }
-      return async () => {
-        const current = await readJsonSafe<{ token?: unknown }>(lockPath).catch(
-          () => null
-        );
-        if (current?.token === token) await fs.rm(lockPath, { force: true });
-      };
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
-      if (await removeStaleQueueFileLock(lockPath)) continue;
-      if (Date.now() - startedAt >= QUEUE_FILE_LOCK_TIMEOUT_MS) {
-        throw new SoundCaseJobError("soundcase_queue_lock_timeout", 503);
-      }
-      await new Promise((resolve) => setTimeout(resolve, QUEUE_FILE_LOCK_RETRY_MS));
-    }
+  const holderScript =
+    `process.stdout.write(${JSON.stringify(`${FLOCK_ACQUIRED_MARKER}\n`)});` +
+    "process.stdin.resume();";
+  const child = spawn(
+    FLOCK_PATH,
+    [
+      "--exclusive",
+      "--wait",
+      FLOCK_WAIT_SECONDS,
+      lockPath,
+      process.execPath,
+      "-e",
+      holderScript,
+    ],
+    { stdio: ["pipe", "pipe", "pipe"] }
+  );
+  try {
+    await waitForFlock(child);
+  } catch (error) {
+    child.stdin.destroy();
+    child.kill();
+    throw error;
   }
+  return () => releaseFlock(child);
 }
 
 async function withQueueLock<T>(fn: () => Promise<T>): Promise<T> {
@@ -146,7 +144,7 @@ async function withQueueLock<T>(fn: () => Promise<T>): Promise<T> {
   await previous;
   let releaseFileLock: (() => Promise<void>) | null = null;
   try {
-    releaseFileLock = await acquireQueueFileLock();
+    releaseFileLock = await acquireSoundCaseQueueLock();
     return await fn();
   } finally {
     try {
