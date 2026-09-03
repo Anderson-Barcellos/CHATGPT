@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { SoundCaseProjectDetail } from "@/lib/soundcase/types";
-import { buildSoundCaseDraftConflict, reconcileSoundCaseDraftRecovery } from "@/hooks/useSoundCase";
+import {
+  buildSoundCaseDraftConflict,
+  isSoundCaseDraftDirty,
+  reconcileSoundCaseDraftRecovery,
+} from "@/hooks/useSoundCase";
 
 const serverProject: SoundCaseProjectDetail = {
   id: "p", title: "Servidor", draftRevision: 8, activeVersionId: null,
@@ -9,6 +13,11 @@ const serverProject: SoundCaseProjectDetail = {
 };
 
 describe("SoundCase project reconciliation", () => {
+  it("marks a draft dirty only when it differs from the persisted snapshot", () => {
+    expect(isSoundCaseDraftDirty("rascunho", "salvo")).toBe(true);
+    expect(isSoundCaseDraftDirty("salvo", "salvo")).toBe(false);
+  });
+
   it("preserves local text beside the reloaded server revision on CAS conflict", () => {
     const conflict = buildSoundCaseDraftConflict("texto local ainda não salvo", serverProject);
     expect(conflict.localText).toBe("texto local ainda não salvo");

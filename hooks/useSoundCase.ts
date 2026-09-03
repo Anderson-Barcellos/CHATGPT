@@ -44,6 +44,13 @@ export function reconcileSoundCaseDraftRecovery(
   };
 }
 
+export function isSoundCaseDraftDirty(
+  draftText: string,
+  persistedText: string
+): boolean {
+  return draftText !== persistedText;
+}
+
 export function useSoundCase() {
   const [projects, setProjects] = useState<SoundCaseProject[]>([]);
   const [activeProjectId, setActiveProjectIdState] = useState<string | null>(null);
@@ -54,6 +61,7 @@ export function useSoundCase() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [persistedText, setPersistedText] = useState("");
   const persistedTextRef = useRef("");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const projectRef = useRef<SoundCaseProjectDetail | null>(null);
@@ -75,6 +83,7 @@ export function useSoundCase() {
       draftRef.current = next.draftText;
     }
     persistedTextRef.current = next.draftText;
+    setPersistedText(next.draftText);
     if (draftRef.current === next.draftText) clearSoundCaseDraftRecovery(next.id);
   }, []);
 
@@ -110,15 +119,16 @@ export function useSoundCase() {
 
   useEffect(() => {
     let cancelled = false;
-    void refreshProjects().then(async (items) => {
+    void soundCaseApi.listProjects().then(async (items) => {
       if (cancelled) return;
+      setProjects(items);
       const first = [...items].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
       if (first) await loadProject(first.id);
     }).catch((cause) => {
       if (!cancelled) setError(readableSoundCaseError(cause, "Não foi possível carregar o SoundCase."));
     }).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [loadProject, refreshProjects]);
+  }, [loadProject]);
 
   const persistDraft = useCallback(async (text: string, revision?: number) => {
     const task = saveChainRef.current.then(async () => {
@@ -334,6 +344,7 @@ export function useSoundCase() {
       setDraftTextState("");
       draftRef.current = "";
       persistedTextRef.current = "";
+      setPersistedText("");
       setSelectedVersion(null);
     }
   }, [loadProject, refreshProjects]);
@@ -355,7 +366,7 @@ export function useSoundCase() {
     projects, activeProjectId, project, selectedVersion, draftText,
     unsavedText: conflict?.localText ?? null,
     conflict, loading, saving, error,
-    isDirty: draftText !== persistedTextRef.current,
+    isDirty: isSoundCaseDraftDirty(draftText, persistedText),
     setDraftText, setActiveProjectId, createProject, importText, generate,
     selectVersion, cancelVersion, resumeVersion, deleteVersion, deleteProject,
     resolveConflict, flushDraft, refreshProjects,

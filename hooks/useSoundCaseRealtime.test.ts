@@ -1,8 +1,10 @@
+// @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 import type { SoundCaseSegment } from "@/lib/soundcase/types";
 import {
   hasInboundRealtimeAudio,
   buildSoundCaseRealtimeSegments,
+  createSoundCaseAudioElement,
   SoundCaseRealtimeQueue,
   SoundCaseRealtimeSessionFence,
 } from "@/hooks/useSoundCaseRealtime";
@@ -13,6 +15,13 @@ const segments: SoundCaseSegment[] = [
 ];
 
 describe("SoundCase Realtime segmented queue", () => {
+  it("creates an audio element prepared for inline playback", () => {
+    const audio = createSoundCaseAudioElement(document);
+    expect(audio.autoplay).toBe(true);
+    expect(audio.hidden).toBe(true);
+    expect(audio.getAttribute("playsinline")).toBe("true");
+  });
+
   it("sends exact segment text and advances only for matching done metadata", () => {
     const send = vi.fn();
     const indexes: number[] = [];

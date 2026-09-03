@@ -172,6 +172,14 @@ export class SoundCaseRealtimeQueue {
   }
 }
 
+export function createSoundCaseAudioElement(documentRef: Document): HTMLAudioElement {
+  const audio = documentRef.createElement("audio");
+  audio.autoplay = true;
+  audio.hidden = true;
+  audio.setAttribute("playsinline", "true");
+  return audio;
+}
+
 export function useSoundCaseRealtime() {
   const [status, setStatus] = useState<SoundCaseRealtimeStatus>("idle");
   const [activeSegmentIndex, setActiveSegmentIndex] = useState(0);
@@ -185,7 +193,7 @@ export function useSoundCaseRealtime() {
   const startedAtRef = useRef(0);
   const queueRef = useRef<SoundCaseRealtimeQueue | null>(null);
   const fenceRef = useRef<SoundCaseRealtimeSessionFence | null>(null);
-  if (!fenceRef.current) fenceRef.current = new SoundCaseRealtimeSessionFence();
+  if (fenceRef.current === null) fenceRef.current = new SoundCaseRealtimeSessionFence();
   const statsTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const preparedAudioRef = useRef(false);
 
@@ -223,10 +231,7 @@ export function useSoundCaseRealtime() {
 
   const prime = useCallback(() => {
     if (audioRef.current) return;
-    const audio = document.createElement("audio");
-    audio.autoplay = true;
-    audio.hidden = true;
-    audio.setAttribute("playsinline", "true");
+    const audio = createSoundCaseAudioElement(document);
     document.body.appendChild(audio);
     audioRef.current = audio;
     preparedAudioRef.current = true;
@@ -241,11 +246,8 @@ export function useSoundCaseRealtime() {
       setError("O texto não possui segmentos para leitura.");
       return;
     }
-    const audio = preparedAudio ?? document.createElement("audio");
+    const audio = preparedAudio ?? createSoundCaseAudioElement(document);
     if (!preparedAudio) {
-      audio.autoplay = true;
-      audio.hidden = true;
-      audio.setAttribute("playsinline", "true");
       document.body.appendChild(audio);
       audioRef.current = audio;
       primeBrowserAudio(audio, unlockedRef);
