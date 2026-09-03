@@ -213,7 +213,7 @@ export async function writeJsonDurable<T>(
   await writeTextDurable(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }
 
-export async function readJsonSafe<T>(filePath: string): Promise<T | null> {
+export async function readTextSafe(filePath: string): Promise<string | null> {
   const target = assertInsideRoot(filePath);
   try {
     await assertRegularSoundCaseFile(target);
@@ -233,16 +233,20 @@ export async function readJsonSafe<T>(filePath: string): Promise<T | null> {
     throw error;
   }
 
-  let raw: string;
   try {
     const info = await handle.stat();
     if (!info.isFile()) {
       throw new SoundCaseFileError("soundcase_file_invalid");
     }
-    raw = await handle.readFile({ encoding: "utf8" });
+    return await handle.readFile({ encoding: "utf8" });
   } finally {
     await handle.close();
   }
+}
+
+export async function readJsonSafe<T>(filePath: string): Promise<T | null> {
+  const raw = await readTextSafe(filePath);
+  if (raw === null) return null;
   try {
     return JSON.parse(raw) as T;
   } catch {
@@ -250,16 +254,7 @@ export async function readJsonSafe<T>(filePath: string): Promise<T | null> {
   }
 }
 
-export async function removeVersionTree(
-  projectId: string,
-  versionId: string
-): Promise<void> {
-  const target = resolveSoundCasePath(
-    "projects",
-    projectId,
-    "versions",
-    versionId
-  );
+async function removeResolvedTree(target: string): Promise<void> {
   await assertNoSymlinkAncestors(path.dirname(target));
 
   let info;
@@ -278,4 +273,17 @@ export async function removeVersionTree(
 
   await fs.rm(target, { recursive: true, force: true });
   await syncDirectory(path.dirname(target));
+}
+
+export async function removeProjectTree(projectId: string): Promise<void> {
+  await removeResolvedTree(resolveSoundCasePath("projects", projectId));
+}
+
+export async function removeVersionTree(
+  projectId: string,
+  versionId: string
+): Promise<void> {
+  await removeResolvedTree(
+    resolveSoundCasePath("projects", projectId, "versions", versionId)
+  );
 }
