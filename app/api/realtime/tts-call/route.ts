@@ -4,6 +4,7 @@ import {
   buildRealtimeCallMultipartBody as buildSharedMultipart,
   buildRealtimeSession,
   createRealtimeCallResponse,
+  readRealtimeSdp,
 } from "@/lib/server/realtimeCall";
 
 export const runtime = "nodejs";
@@ -17,16 +18,28 @@ export function buildRealtimeCallMultipartBody(sdp: string, voice: unknown) {
 }
 
 export async function POST(request: NextRequest) {
-  if (isAuthEnabled() && !(await isAuthenticatedRequest(request))) {
-    return Response.json(
-      { error: "Unauthorized", message: "Faça login para continuar." },
-      { status: 401 }
-    );
+  const diagnosticId = crypto.randomUUID();
+  try {
+    if (isAuthEnabled() && !(await isAuthenticatedRequest(request))) {
+      return Response.json(
+        { error: "Unauthorized", message: "Faça login para continuar." },
+        { status: 401 }
+      );
+    }
+    if (!process.env.OPENAI_API_KEY?.trim()) {
+      return Response.json({ error: "OPENAI_API_KEY não configurada." }, { status: 500 });
+    }
+    return createRealtimeCallResponse({
+      request,
+      sdp: await readRealtimeSdp(request),
+      session: buildRealtimeTtsSessionConfig(request.nextUrl.searchParams.get("voice")),
+      safetyIdentifier: "gaucho-chat-tts-lab",
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      return Response.json({ error: "Sessão Realtime interrompida.", diagnosticId }, { status: 499 });
+    }
+    console.error("Realtime TTS request error", { diagnosticId });
+    return Response.json({ error: "Falha interna ao iniciar Realtime TTS.", diagnosticId }, { status: 500 });
   }
-  return createRealtimeCallResponse({
-    request,
-    sdp: await request.text(),
-    session: buildRealtimeTtsSessionConfig(request.nextUrl.searchParams.get("voice")),
-    safetyIdentifier: "gaucho-chat-tts-lab",
-  });
 }

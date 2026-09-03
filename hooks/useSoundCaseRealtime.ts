@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { SoundCaseSegment } from "@/lib/soundcase/types";
 import { apiUrl } from "@/lib/utils";
 import {
@@ -18,7 +18,7 @@ export interface SoundCaseRealtimeInput {
   segments: SoundCaseSegment[];
 }
 
-interface QueueMetadata { generation: number; segmentIndex: number }
+interface QueueMetadata { generation: string; segmentIndex: string }
 interface QueueResponse {
   id?: string;
   status?: string;
@@ -56,7 +56,10 @@ export class SoundCaseRealtimeQueue {
       this.onComplete();
       return;
     }
-    const metadata: QueueMetadata = { generation: this.generation, segmentIndex: this.index };
+    const metadata: QueueMetadata = {
+      generation: String(this.generation),
+      segmentIndex: String(this.index),
+    };
     this.send(JSON.stringify({
       type: "response.create",
       response: {
@@ -74,7 +77,7 @@ export class SoundCaseRealtimeQueue {
 
   handleCreated(response: QueueResponse): void {
     const metadata = response.metadata;
-    if (metadata?.generation !== this.generation || metadata.segmentIndex !== this.index) {
+    if (metadata?.generation !== String(this.generation) || metadata.segmentIndex !== String(this.index)) {
       if (response.id) this.send(JSON.stringify({ type: "response.cancel", response_id: response.id }));
       return;
     }
@@ -83,7 +86,7 @@ export class SoundCaseRealtimeQueue {
 
   handleDone(response: QueueResponse): "advanced" | "ignored" | "failed" {
     const metadata = response.metadata;
-    if (metadata?.generation !== this.generation || metadata.segmentIndex !== this.index) return "ignored";
+    if (metadata?.generation !== String(this.generation) || metadata.segmentIndex !== String(this.index)) return "ignored";
     this.activeResponseId = null;
     if (response.status && response.status !== "completed") return "failed";
     this.index += 1;
@@ -120,8 +123,16 @@ export function useSoundCaseRealtime() {
   const unlockedRef = useRef(false);
   const startedAtRef = useRef(0);
   const queueRef = useRef<SoundCaseRealtimeQueue | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const sessionRef = useRef(0);
+  const statsTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const cleanup = useCallback(() => {
+    sessionRef.current += 1;
+    abortRef.current?.abort();
+    abortRef.current = null;
+    if (statsTimerRef.current) clearInterval(statsTimerRef.current);
+    statsTimerRef.current = null;
     queueRef.current?.invalidate();
     queueRef.current = null;
     channelRef.current?.close();
@@ -165,42 +176,66 @@ export function useSoundCaseRealtime() {
     setFirstAudioMs(null);
     setError(null);
     setStatus("connecting");
+    const session = sessionRef.current;
+    const abort = new AbortController();
+    abortRef.current = abort;
 
     try {
       const peer = new RTCPeerConnection();
       peerRef.current = peer;
       peer.addTransceiver("audio", { direction: "recvonly" });
       peer.ontrack = (event) => {
+        if (session !== sessionRef.current) return;
         const stream = event.streams[0];
         if (!stream) return;
         audio.srcObject = stream;
         const markPlayback = () => {
+          if (session !== sessionRef.current) return;
+          if (statsTimerRef.current) clearInterval(statsTimerRef.current);
+          statsTimerRef.current = null;
           setFirstAudioMs((current) => current ?? Math.round(performance.now() - startedAtRef.current));
           setStatus("speaking");
         };
+        audio.addEventListener("playing", markPlayback, { once: true });
+        statsTimerRef.current = setInterval(() => {
+          void peer.getStats(event.track).then((reports) => {
+            reports.forEach((report) => {
+              if (
+                report.type === "inbound-rtp" &&
+                (report.kind === "audio" || report.mediaType === "audio") &&
+                Number(report.bytesReceived) > 0
+              ) {
+                markPlayback();
+              }
+            });
+          }).catch(() => undefined);
+        }, 50);
         const playWithElement = () => {
+          if (session !== sessionRef.current) return;
           audio.muted = false;
           void audio.play().then(markPlayback).catch((playError) => {
+            if (session !== sessionRef.current) return;
             setStatus("error");
             setError(describeAudioPlayError(playError, "Não consegui iniciar o áudio Realtime."));
           });
         };
         void resumeBrowserAudio().then((context) => {
-          if (!peerRef.current) return;
+          if (session !== sessionRef.current || peerRef.current !== peer) return;
           if (context) {
             audio.muted = true;
             void audio.play().catch(() => undefined);
             const source = context.createMediaStreamSource(stream);
             source.connect(context.destination);
             sourceRef.current = source;
-            markPlayback();
           } else {
             playWithElement();
           }
         }).catch(playWithElement);
       };
       peer.onconnectionstatechange = () => {
+        if (session !== sessionRef.current) return;
         if (peer.connectionState === "failed") {
+          cleanup();
           setStatus("error");
           setError("A conexão Realtime falhou.");
         }
@@ -215,10 +250,12 @@ export function useSoundCaseRealtime() {
       queue.reset(input.segments);
       queueRef.current = queue;
       channel.addEventListener("open", () => {
+        if (session !== sessionRef.current) return;
         setStatus("ready");
         queue.sendCurrent();
       });
       channel.addEventListener("message", (event) => {
+        if (session !== sessionRef.current) return;
         try {
           const serverEvent = JSON.parse(String(event.data)) as {
             type?: string;
@@ -230,11 +267,13 @@ export function useSoundCaseRealtime() {
           }
           if (serverEvent.type === "response.done" && serverEvent.response) {
             if (queue.handleDone(serverEvent.response) === "failed") {
+              cleanup();
               setStatus("error");
               setError("A leitura Realtime não conseguiu concluir este trecho.");
             }
           }
           if (serverEvent.type === "error") {
+            cleanup();
             setStatus("error");
             setError(serverEvent.error?.message ?? "Erro na leitura Realtime.");
           }
@@ -249,15 +288,23 @@ export function useSoundCaseRealtime() {
       if (!sdp.trim()) throw new Error("SDP vazio.");
       const response = await fetch(apiUrl(
         `/api/soundcase/realtime-call?projectId=${encodeURIComponent(input.projectId)}&versionId=${encodeURIComponent(input.versionId)}`
-      ), { method: "POST", headers: { "Content-Type": "application/sdp" }, body: sdp });
+      ), {
+        method: "POST",
+        headers: { "Content-Type": "application/sdp" },
+        body: sdp,
+        signal: abort.signal,
+      });
       if (!response.ok) throw new Error("Não foi possível iniciar a leitura Realtime.");
       await peer.setRemoteDescription({ type: "answer", sdp: await response.text() });
     } catch (cause) {
+      if (session !== sessionRef.current) return;
       cleanup();
       setStatus("error");
       setError(cause instanceof Error ? cause.message : "Falha na leitura Realtime.");
     }
   }, [cleanup]);
+
+  useEffect(() => cleanup, [cleanup]);
 
   const skipToSegment = useCallback(async (index: number) => {
     const channel = channelRef.current;

@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { buildRealtimeSession, createRealtimeCallResponse } from "@/lib/server/realtimeCall";
+import {
+  buildRealtimeSession,
+  createRealtimeCallResponse,
+  readRealtimeSdp,
+} from "@/lib/server/realtimeCall";
 
 const previousKey = process.env.OPENAI_API_KEY;
 beforeEach(() => {
@@ -41,5 +45,33 @@ describe("shared Realtime call", () => {
       headers: expect.objectContaining({ "OpenAI-Safety-Identifier": "test-realtime" }),
       body: expect.stringContaining('name="session"'),
     }));
+  });
+
+  it("stops reading a streamed SDP as soon as the byte limit is crossed", async () => {
+    const cancel = vi.fn();
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode("1234"));
+        controller.enqueue(new TextEncoder().encode("5678"));
+      },
+      cancel,
+    });
+    const request = new Request("http://local", { method: "POST", body: stream, duplex: "half" } as RequestInit);
+    await expect(readRealtimeSdp(request, 5)).rejects.toMatchObject({ code: "too_large" });
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+
+  it("never returns or logs a raw provider error body", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(
+      JSON.stringify({ error: { message: "private persisted direction" } }),
+      { status: 400, headers: { "x-request-id": "req-safe" } }
+    ));
+    const response = await createRealtimeCallResponse({
+      request: new Request("http://local"), sdp: "v=0", session: {}, safetyIdentifier: "safe",
+    });
+    expect(await response.text()).not.toContain("private persisted direction");
+    expect(JSON.stringify(log.mock.calls)).not.toContain("private persisted direction");
+    log.mockRestore();
   });
 });

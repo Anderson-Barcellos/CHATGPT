@@ -2,7 +2,6 @@ import { normalizeRealtimeTtsVoice } from "@/lib/tts/speechText";
 
 const REALTIME_CALLS_URL = "https://api.openai.com/v1/realtime/calls";
 const REALTIME_MODEL = "gpt-realtime-2.1-mini";
-const MAX_UPSTREAM_ERROR_LOG_CHARS = 2_500;
 
 const CHAT_STYLE_INSTRUCTIONS = [
   "You are a text-to-speech renderer for Codex in Gaucho Chat.",
@@ -59,12 +58,37 @@ export function buildRealtimeCallMultipartBody(sdp: string, session: object) {
   return { body, contentType: `multipart/form-data; boundary=${boundary}` };
 }
 
-function normalizeUpstreamErrorMessage(raw: string): string {
+export class RealtimeSdpError extends Error {
+  constructor(public readonly code: "too_large") {
+    super(`realtime_sdp_${code}`);
+  }
+}
+
+export async function readRealtimeSdp(request: Request, maxBytes?: number): Promise<string> {
+  const declaredLength = Number(request.headers.get("content-length"));
+  if (maxBytes && Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+    throw new RealtimeSdpError("too_large");
+  }
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const decoder = new TextDecoder();
+  let byteLength = 0;
+  let text = "";
   try {
-    const parsed = JSON.parse(raw) as { error?: { message?: string } };
-    if (parsed.error?.message?.trim()) return parsed.error.message.trim();
-  } catch {}
-  return raw.trim() || "Falha ao iniciar sessão Realtime.";
+    while (true) {
+      const result = await reader.read();
+      if (result.done) break;
+      byteLength += result.value.byteLength;
+      if (maxBytes && byteLength > maxBytes) {
+        await reader.cancel().catch(() => undefined);
+        throw new RealtimeSdpError("too_large");
+      }
+      text += decoder.decode(result.value, { stream: true });
+    }
+    return text + decoder.decode();
+  } finally {
+    reader.releaseLock();
+  }
 }
 
 export async function createRealtimeCallResponse(input: {
@@ -92,13 +116,12 @@ export async function createRealtimeCallResponse(input: {
     const answerSdp = await upstream.text();
     if (!upstream.ok) {
       const openaiRequestId = upstream.headers.get("x-request-id");
-      const message = normalizeUpstreamErrorMessage(answerSdp);
       console.error("Realtime TTS upstream error", {
         diagnosticId, status: upstream.status, openaiRequestId,
-        message: message.slice(0, MAX_UPSTREAM_ERROR_LOG_CHARS),
       });
       return Response.json({
-        error: message, diagnosticId, upstreamStatus: upstream.status, openaiRequestId,
+        error: "Não foi possível iniciar a sessão Realtime.",
+        diagnosticId, upstreamStatus: upstream.status, openaiRequestId,
       }, { status: upstream.status });
     }
     return new Response(answerSdp, { status: upstream.status, headers: {
