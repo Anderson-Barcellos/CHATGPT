@@ -22,6 +22,7 @@ const PUBLIC_PATHS = [
   "/api/auth/check",
   "/api/health",
   "/api/pulse/run-due",
+  "/api/soundcase/worker/run-next",
   "/_next",
   "/favicon.ico",
   "/manifest.webmanifest",
