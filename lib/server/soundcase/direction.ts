@@ -18,6 +18,21 @@ const DEFAULT_COVER_PROMPT =
   "Composição editorial abstrata inspirada em áudio e narrativa, atmosfera azul profunda, sem palavras, letras, números, legendas ou tipografia legível.";
 const COVER_NO_TEXT_CONSTRAINT =
   "Obrigatório: produza somente imagem; não inclua palavras, letras, números, títulos, legendas, logotipos ou qualquer tipografia legível.";
+const SAFE_COVER_DESCRIPTORS = new Set([
+  "abstrato", "abstrata", "abstract", "editorial", "cinematográfico", "cinematográfica",
+  "cinematic", "geométrico", "geométrica", "geometric", "orgânico", "orgânica", "organic",
+  "minimalista", "minimalist", "azul", "azuis", "blue", "ciano", "cyan", "índigo", "indigo",
+  "dourado", "dourada", "golden", "âmbar", "amber", "verde", "green", "vermelho", "red",
+  "violeta", "violet", "preto", "black", "branco", "white", "luz", "light", "sombra",
+  "shadow", "textura", "texture", "gradiente", "gradient", "ondas", "waves", "som", "sound",
+  "neural", "neurais", "cérebro", "brain", "natureza", "nature", "urbano", "urban", "cósmico",
+  "cósmica", "cosmic", "científico", "científica", "scientific", "médico", "médica", "medical",
+  "literário", "literária", "literary", "histórico", "histórica", "historical", "tecnológico",
+  "tecnológica", "technological", "humano", "humana", "human", "retrato", "portrait", "paisagem",
+  "landscape", "arquitetura", "architecture", "formas", "shapes", "linhas", "lines", "partículas",
+  "particles", "composição", "composition", "profundo", "profunda", "deep", "sereno", "serena",
+  "serene", "dramático", "dramática", "dramatic", "contemplativo", "contemplativa", "contemplative",
+]);
 
 export const soundCaseDirectionSchema = {
   type: "json_schema" as const,
@@ -147,6 +162,7 @@ function normalizeSegmentDirections(
 ): SoundCaseSegmentDirection[] {
   const supplied = new Map<string, string>();
   const knownIds = new Set(segments.map((segment) => segment.id));
+  const defaultSegmentInstruction = fitProtectedInstruction(globalInstructions, 500);
   if (!Array.isArray(value)) throw new Error("soundcase_segment_directions_invalid");
 
   for (const item of value) {
@@ -166,14 +182,14 @@ function normalizeSegmentDirections(
       protectNarrationInstruction(
         (item as { instructions?: unknown }).instructions,
         500,
-        globalInstructions
+        defaultSegmentInstruction
       )
     );
   }
 
   return segments.map((segment) => ({
     segmentId: segment.id,
-    instructions: supplied.get(segment.id) ?? globalInstructions,
+    instructions: supplied.get(segment.id) ?? defaultSegmentInstruction,
   }));
 }
 
@@ -208,7 +224,7 @@ function normalizeAutomaticDirection(
       input.segments,
       globalInstructions
     ),
-    coverPrompt: normalizeCoverPrompt(raw.coverPrompt, input.sourceText),
+    coverPrompt: normalizeCoverPrompt(raw.coverPrompt),
   };
 }
 
@@ -224,33 +240,23 @@ function protectNarrationInstruction(
   return `${artistic.slice(0, available)}${separator}${DEFAULT_TTS_INSTRUCTIONS}`;
 }
 
-function containsSourceExcerpt(prompt: string, sourceText: string): boolean {
-  const normalize = (value: string) =>
-    value.toLocaleLowerCase("pt-BR").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
-  const promptWords = normalize(prompt).split(" ").filter(Boolean);
-  const sourceWords = normalize(sourceText).split(" ").filter(Boolean);
-  if (sourceWords.length === 0) return false;
-  const windows = sourceWords.length < 3 ? [sourceWords.join(" ")] : sourceWords
-    .slice(0, -2)
-    .map((_, index) => sourceWords.slice(index, index + 3).join(" "));
-  const normalizedPrompt = promptWords.join(" ");
-  return windows.some((window) => window.length >= 12 && normalizedPrompt.includes(window));
+function fitProtectedInstruction(value: string, limit: number): string {
+  const suffixIndex = value.lastIndexOf(DEFAULT_TTS_INSTRUCTIONS);
+  const artistic = suffixIndex >= 0 ? value.slice(0, suffixIndex).trim() : value;
+  return protectNarrationInstruction(artistic, limit, DEFAULT_TTS_INSTRUCTIONS);
 }
 
-function normalizeCoverPrompt(value: unknown, sourceText: string): string {
+function normalizeCoverPrompt(value: unknown): string {
   const rawPrompt = boundedString(value, 1_200);
-  if (!rawPrompt || containsSourceExcerpt(rawPrompt, sourceText)) {
-    return DEFAULT_COVER_PROMPT;
-  }
-  const unsafeProbe = rawPrompt
-    .replace(/\b(?:sem|without|no)\s+(?:texto|text|palavras?|words?|letras?|letters?|t[ií]tulos?|titles?|legendas?|captions?|tipografia|typography)\b/giu, "")
-    .toLocaleLowerCase("pt-BR");
-  if (/\b(?:escrev\p{L}*|write|spell|texto|text|palavras?|words?|letras?|letters?|t[ií]tulos?|titles?|legendas?|captions?|tipografia|typography)\b/iu.test(unsafeProbe)) {
-    return DEFAULT_COVER_PROMPT;
-  }
-  const separator = "\n\n";
-  const available = 1_200 - COVER_NO_TEXT_CONSTRAINT.length - separator.length;
-  return `${rawPrompt.slice(0, available)}${separator}${COVER_NO_TEXT_CONSTRAINT}`;
+  const descriptors = Array.from(
+    new Set(
+      (rawPrompt.toLocaleLowerCase("pt-BR").match(/\p{L}+/gu) ?? []).filter((word) =>
+        SAFE_COVER_DESCRIPTORS.has(word)
+      )
+    )
+  ).slice(0, 24);
+  if (descriptors.length < 2) return DEFAULT_COVER_PROMPT;
+  return `Composição editorial abstrata com estes elementos visuais: ${descriptors.join(", ")}. ${COVER_NO_TEXT_CONSTRAINT}`;
 }
 
 function fallbackTitle(sourceText: string): string {
@@ -294,7 +300,7 @@ Regras obrigatórias:
 - Escolhe uma voz exclusivamente da enum fornecida pelo schema.
 - globalInstructions e instruções de segmento descrevem interpretação, tom, energia, ritmo e pausas.
 - pronunciations contém somente termos realmente difíceis e uma orientação clara de pronúncia.
-- coverPrompt descreve arte abstrata coerente com o conteúdo, sem palavras, letras, números, legendas ou tipografia legível.
+- coverPrompt usa somente descritores visuais de cor, forma, atmosfera e estilo; não inclui nomes, frases, citações, comandos, palavras a renderizar ou tipografia.
 - Preserva integralmente a intenção e o idioma do autor.`;
 }
 
