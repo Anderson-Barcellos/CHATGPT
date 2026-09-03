@@ -3,24 +3,21 @@ import { NextRequest } from "next/server";
 
 const getConversationMock = vi.fn();
 const updateConversationMock = vi.fn();
-const deleteConversationMock = vi.fn();
-const deleteConversationFromMemoryIndexMock = vi.fn();
+const archiveConversationMock = vi.fn();
+const permanentlyDeleteConversationMock = vi.fn();
 const isAuthEnabledMock = vi.fn();
 const isAuthenticatedRequestMock = vi.fn();
 
 vi.mock("../data", () => ({
   getConversation: getConversationMock,
   updateConversation: updateConversationMock,
-  deleteConversation: deleteConversationMock,
+  archiveConversation: archiveConversationMock,
+  permanentlyDeleteConversation: permanentlyDeleteConversationMock,
 }));
 
 vi.mock("@/lib/server/auth", () => ({
   isAuthEnabled: isAuthEnabledMock,
   isAuthenticatedRequest: isAuthenticatedRequestMock,
-}));
-
-vi.mock("@/lib/server/memory/indexStore", () => ({
-  deleteConversationFromMemoryIndex: deleteConversationFromMemoryIndexMock,
 }));
 
 describe("/api/conversations/[id] route", () => {
@@ -118,10 +115,12 @@ describe("/api/conversations/[id] route", () => {
     expect(updateConversationMock).not.toHaveBeenCalled();
   });
 
-  it("removes RAG chunks before deleting the canonical conversation", async () => {
+  it("archives by default without invoking permanent deletion", async () => {
     getConversationMock.mockResolvedValueOnce({ id: "conv-1" });
-    deleteConversationFromMemoryIndexMock.mockResolvedValueOnce(2);
-    deleteConversationMock.mockResolvedValueOnce(true);
+    archiveConversationMock.mockResolvedValueOnce({
+      id: "conv-1",
+      lifecycle: "archived",
+    });
 
     const { DELETE } = await import("./route");
     const response = await DELETE(
@@ -132,10 +131,40 @@ describe("/api/conversations/[id] route", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(deleteConversationFromMemoryIndexMock).toHaveBeenCalledWith("conv-1");
-    expect(deleteConversationMock).toHaveBeenCalledWith("conv-1");
-    expect(
-      deleteConversationFromMemoryIndexMock.mock.invocationCallOrder[0]
-    ).toBeLessThan(deleteConversationMock.mock.invocationCallOrder[0]);
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      archived: true,
+    });
+    expect(archiveConversationMock).toHaveBeenCalledWith("conv-1");
+    expect(permanentlyDeleteConversationMock).not.toHaveBeenCalled();
+  });
+
+  it("uses the canonical permanent deletion transaction when requested", async () => {
+    getConversationMock.mockResolvedValueOnce({ id: "conv-1" });
+    permanentlyDeleteConversationMock.mockResolvedValueOnce({
+      conversations: 1,
+      messages: 2,
+      attachments: 1,
+      evidence: 3,
+      facts: 1,
+    });
+
+    const { DELETE } = await import("./route");
+    const response = await DELETE(
+      new NextRequest(
+        "http://localhost/api/conversations/conv-1?permanent=true",
+        { method: "DELETE" }
+      ),
+      { params: Promise.resolve({ id: "conv-1" }) }
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      permanent: true,
+      report: { conversations: 1, messages: 2, attachments: 1 },
+    });
+    expect(permanentlyDeleteConversationMock).toHaveBeenCalledWith("conv-1");
+    expect(archiveConversationMock).not.toHaveBeenCalled();
   });
 });

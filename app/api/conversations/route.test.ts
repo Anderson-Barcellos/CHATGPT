@@ -23,6 +23,18 @@ describe("/api/conversations route", () => {
     isAuthenticatedRequestMock.mockResolvedValue(true);
   });
 
+  it("lists archived conversations only when explicitly requested", async () => {
+    listConversationsMock.mockResolvedValueOnce([]);
+    const { GET } = await import("./route");
+
+    const response = await GET(
+      new NextRequest("http://localhost/api/conversations?lifecycle=archived")
+    );
+
+    expect(response.status).toBe(200);
+    expect(listConversationsMock).toHaveBeenCalledWith({ lifecycle: "archived" });
+  });
+
   it("returns the standardized error payload when POST fails", async () => {
     createConversationMock.mockRejectedValueOnce(new Error("boom"));
     const { POST } = await import("./route");

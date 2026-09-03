@@ -37,6 +37,8 @@
 /data/memory-index/
 /data/memory-suggestions.json
 /data/soundcase/
+/data/memory-v2.sqlite*
+/data/memory-topics/
 
 # debug artifacts (screenshots, browser MCP output)
 /.playwright-mcp/

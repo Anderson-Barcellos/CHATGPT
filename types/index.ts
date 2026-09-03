@@ -159,15 +159,19 @@ export interface Conversation {
   title: string;
   messages: Message[];
   workspace?: ConversationWorkspace;
+  lifecycle?: "active" | "archived";
+  archivedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface SerializedConversation {
+export interface SerializedConversation
+  extends Omit<Conversation, "messages" | "workspace" | "archivedAt" | "createdAt" | "updatedAt"> {
   id: string;
   title: string;
   messages: SerializedMessage[];
   workspace?: SerializedConversationWorkspace;
+  archivedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

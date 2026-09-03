@@ -1,0 +1,13 @@
+[
+  {
+    "id": "suggestion-legacy-1",
+    "content": "Aurora usa um banco local.",
+    "category": "technical",
+    "confidence": 0.72,
+    "sourceConversationId": "conv-legacy-1",
+    "sourceMessageIds": ["msg-legacy-1"],
+    "status": "pending",
+    "createdAt": "2026-08-20T12:06:00.000Z",
+    "updatedAt": "2026-08-20T12:06:00.000Z"
+  }
+]

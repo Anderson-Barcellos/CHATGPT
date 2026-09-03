@@ -1,0 +1,20 @@
+[
+  {
+    "id": "memory-legacy-1",
+    "content": "O projeto favorito é Aurora.",
+    "category": "projects",
+    "isActive": true,
+    "priority": 12,
+    "createdAt": "2026-08-20T12:05:00.000Z",
+    "updatedAt": "2026-08-20T12:05:00.000Z"
+  },
+  {
+    "id": "memory-legacy-2",
+    "content": "Preferia respostas extremamente curtas.",
+    "category": "preferences",
+    "isActive": false,
+    "priority": 4,
+    "createdAt": "2026-08-19T12:05:00.000Z",
+    "updatedAt": "2026-08-21T12:05:00.000Z"
+  }
+]

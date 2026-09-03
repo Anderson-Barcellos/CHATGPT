@@ -63,6 +63,7 @@ export function serializeConversation(
     ...conversation,
     messages: conversation.messages.map(serializeMessage),
     workspace: serializeConversationWorkspace(conversation.workspace),
+    archivedAt: conversation.archivedAt?.toISOString(),
     createdAt: normalizeDate(conversation.createdAt).toISOString(),
     updatedAt: normalizeDate(conversation.updatedAt).toISOString(),
   };
@@ -79,6 +80,9 @@ export function deserializeConversation(
     workspace: deserializeConversationWorkspace(
       conversation.workspace as SerializedConversationWorkspace | ConversationWorkspace | undefined
     ),
+    archivedAt: conversation.archivedAt
+      ? normalizeDate(conversation.archivedAt)
+      : undefined,
     createdAt: normalizeDate(conversation.createdAt),
     updatedAt: normalizeDate(conversation.updatedAt),
   };

@@ -1,0 +1,52 @@
+[
+  {
+    "id": "conv-legacy-1",
+    "title": "Projeto Aurora",
+    "messages": [
+      {
+        "id": "msg-legacy-1",
+        "role": "user",
+        "content": "Meu projeto favorito é Aurora.",
+        "timestamp": "2026-08-20T12:00:00.000Z",
+        "responseMode": "document",
+        "attachments": [
+          {
+            "id": "attachment-legacy-1",
+            "name": "aurora.txt",
+            "type": "text",
+            "mimeType": "text/plain",
+            "size": 18,
+            "extractedText": "Resumo sintético."
+          }
+        ]
+      },
+      {
+        "id": "msg-legacy-2",
+        "role": "assistant",
+        "content": "Vou manter o contexto do Aurora.",
+        "timestamp": "2026-08-20T12:00:01.000Z",
+        "streamStatus": "completed",
+        "reasoningSummary": "Preservar o contexto do projeto.",
+        "reasoningStatus": "complete",
+        "citations": [
+          {
+            "title": "Aurora",
+            "url": "https://example.com/aurora"
+          }
+        ],
+        "inputTokens": 12,
+        "outputTokens": 24
+      }
+    ],
+    "workspace": {
+      "notes": {
+        "objective": "Continuar o Projeto Aurora",
+        "body": "Contexto legado completo",
+        "nextSteps": ["Revisar"],
+        "updatedAt": "2026-08-20T12:00:01.000Z"
+      }
+    },
+    "createdAt": "2026-08-20T12:00:00.000Z",
+    "updatedAt": "2026-08-20T12:00:01.000Z"
+  }
+]
