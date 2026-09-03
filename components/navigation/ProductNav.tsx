@@ -18,7 +18,13 @@ export function ProductNav({ active, compact = false, className }: {
   return (
     <nav className={cn("gc-product-nav", compact && "gc-product-nav-compact", className)} aria-label="Produtos Gaucho">
       {PRODUCTS.map(({ id, href, label, icon: Icon }) => (
-        <Link key={id} href={href} aria-current={active === id ? "page" : undefined} title={label}>
+        <Link
+          key={id}
+          href={href}
+          aria-current={active === id ? "page" : undefined}
+          className={id === "studio" ? "gc-product-nav-desktop-only" : undefined}
+          title={label}
+        >
           {compact ? <Icon aria-hidden="true" /> : null}<span>{label}</span>
         </Link>
       ))}
