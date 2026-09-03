@@ -8,7 +8,7 @@ import {
 } from "./modelConfig";
 
 describe("GPT-5.6 model capabilities", () => {
-  it("shows Gemini 3.6 Flash alongside the current selectable chat models", () => {
+  it("shows Gemini 3.7 Flash alongside the current selectable chat models", () => {
     const ids = getChatModels().map((model) => model.id);
 
     expect(ids).toEqual([
@@ -17,7 +17,7 @@ describe("GPT-5.6 model capabilities", () => {
       "gpt-5.6-luna",
       "gpt-5.4-mini",
       "deepseek-v4-pro",
-      "gemini-3.6-flash",
+      "gemini-3.7-flash",
     ]);
   });
 
@@ -39,15 +39,14 @@ describe("GPT-5.6 model capabilities", () => {
     expect(modelSupportsVerbosity("chat-latest")).toBe(false);
   });
 
-  it("offers only Gemini thinking levels to Gemini 3.6 Flash", () => {
-    expect(getSupportedReasoningEfforts("gemini-3.6-flash")).toEqual([
-      "minimal",
+  it("offers only Gemini thinking levels to Gemini 3.7 Flash", () => {
+    expect(getSupportedReasoningEfforts("gemini-3.7-flash")).toEqual([
       "low",
       "medium",
       "high",
     ]);
-    expect(modelSupportsVerbosity("gemini-3.6-flash")).toBe(false);
-    expect(modelSupportsReasoningMode("gemini-3.6-flash", "pro")).toBe(false);
-    expect(isGeminiModel("gemini-3.6-flash")).toBe(true);
+    expect(modelSupportsVerbosity("gemini-3.7-flash")).toBe(false);
+    expect(modelSupportsReasoningMode("gemini-3.7-flash", "pro")).toBe(false);
+    expect(isGeminiModel("gemini-3.7-flash")).toBe(true);
   });
 });

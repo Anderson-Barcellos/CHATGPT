@@ -47,11 +47,21 @@ export const REALTIME_TTS_VOICES = SHARED_AUDIO_VOICES;
 export type TtsVoice = (typeof TTS_VOICES)[number];
 export type RealtimeTtsVoice = (typeof REALTIME_TTS_VOICES)[number];
 
+// Leitura recomendada (PT-BR) compartilhada por gpt-4o-mini-tts e Realtime.
+// Mantida abaixo do teto de 1200 caracteres do normalizador.
+export const DEFAULT_TTS_INSTRUCTIONS = [
+  "Voz: nítida e natural, com sotaque gaúcho brasileiro leve; prosódia e entonação agradáveis e confortáveis, sem caricatura regional.",
+  "Tom: caloroso, atento e seguro, como quem explica com calma a um colega; sem dramatizar nem soar robótico.",
+  "Ritmo: constante e fluido; pausas curtas nas vírgulas, um pouco maiores nos pontos finais e entre parágrafos; entonação descendente ao fechar cada frase.",
+  "Pronúncia: números, datas e unidades falados naturalmente por extenso; siglas ditas como se fala no dia a dia; nomes de medicamentos e termos técnicos com dicção clara; palavras em inglês com pronúncia inglesa natural, sem forçar sotaque.",
+  "Fidelidade: ler exatamente o que está escrito, sem comentar, resumir ou acrescentar palavras.",
+].join("\n");
+
 export const DEFAULT_TTS_PREFERENCES: TtsPreferences = {
   model: TTS_MODEL,
   voice: "marin",
   speed: 1,
-  instructions: "",
+  instructions: DEFAULT_TTS_INSTRUCTIONS,
   mode: "turbo",
   format: "flac",
 };

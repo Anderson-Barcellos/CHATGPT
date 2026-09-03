@@ -62,7 +62,7 @@ describe("buildGeminiInteractionParams", () => {
     });
   });
 
-  it.each(["minimal", "low", "medium", "high"] as const)(
+  it.each(["low", "medium", "high"] as const)(
     "maps %s reasoning directly to Gemini thinking",
     (effort) => {
       const params = buildGeminiInteractionParams({
@@ -74,14 +74,17 @@ describe("buildGeminiInteractionParams", () => {
     }
   );
 
-  it("defaults unsupported or absent reasoning to medium", () => {
+  it.each(["minimal", "max"] as const)(
+    "defaults unsupported %s reasoning to medium",
+    (effort) => {
     expect(
       buildGeminiInteractionParams({
         input: [{ role: "user", content: "Teste" }],
-        reasoning: { effort: "max" },
+        reasoning: { effort },
       }).generation_config?.thinking_level
     ).toBe("medium");
-  });
+    }
+  );
 });
 
 describe("geminiEventToAssistantStreamEvents", () => {
@@ -156,7 +159,7 @@ describe("geminiEventToAssistantStreamEvents", () => {
           step: {
             type: "google_search_call",
             id: "search-1",
-            arguments: { queries: ["Gemini 3.6 Flash"] },
+            arguments: { queries: ["Gemini 3.7 Flash"] },
           },
         },
         activeSteps

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { resolvePulseExecutionProfile } from "./config";
 import type { PulseTask } from "./types";
 
-const task = { model: "gpt-5.6-terra" } as PulseTask;
+const task = { model: "gpt-5.6-sol" } as PulseTask;
 const originalModel = process.env.PULSE_RUN_MODEL;
 const originalEffort = process.env.PULSE_REASONING_EFFORT;
 
@@ -19,7 +19,7 @@ describe("Pulse execution profile", () => {
     delete process.env.PULSE_REASONING_EFFORT;
 
     expect(resolvePulseExecutionProfile(task)).toEqual({
-      model: "gpt-5.6-terra",
+      model: "gpt-5.6-sol",
       reasoningEffort: "medium",
     });
   });

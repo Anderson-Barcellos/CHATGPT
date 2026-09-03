@@ -100,19 +100,22 @@ describe("settings store model defaults", () => {
     expect(useSettingsStore.getState().parameters.verbosity).toBe("high");
   });
 
-  it("defaults Gemini 3.6 Flash to medium thinking and remembers its level", () => {
-    useSettingsStore.getState().updateParameters({ model: "gemini-3.6-flash" });
+  it("defaults Gemini 3.7 Flash to high, remembers valid levels and rejects minimal", () => {
+    useSettingsStore.getState().updateParameters({ model: "gemini-3.7-flash" });
 
-    expect(useSettingsStore.getState().parameters.model).toBe("gemini-3.6-flash");
-    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("medium");
+    expect(useSettingsStore.getState().parameters.model).toBe("gemini-3.7-flash");
+    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("high");
     expect(useSettingsStore.getState().parameters.reasoningMode).toBe("standard");
     expect(useSettingsStore.getState().parameters.maxOutputTokens).toBe(65_536);
 
-    useSettingsStore.getState().updateParameters({ reasoningEffort: "minimal" });
+    useSettingsStore.getState().updateParameters({ reasoningEffort: "low" });
     useSettingsStore.getState().updateParameters({ model: "gpt-5.6-luna" });
-    useSettingsStore.getState().updateParameters({ model: "gemini-3.6-flash" });
+    useSettingsStore.getState().updateParameters({ model: "gemini-3.7-flash" });
 
-    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("minimal");
+    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("low");
+
+    useSettingsStore.getState().updateParameters({ reasoningEffort: "minimal" });
+    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("high");
   });
 
   it("remembers Pro mode independently for each GPT-5.6 model", () => {

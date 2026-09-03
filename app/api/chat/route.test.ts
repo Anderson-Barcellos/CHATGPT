@@ -12,7 +12,7 @@ vi.mock("@/lib/server/auth", () => ({
 }));
 
 vi.mock("@/lib/server/geminiChat", () => ({
-  GEMINI_MODEL: "gemini-3.6-flash",
+  GEMINI_MODEL: "gemini-3.7-flash",
   createGeminiClient: geminiMocks.createClient,
   createGeminiEventStream: geminiMocks.createEventStream,
 }));
@@ -30,7 +30,7 @@ function requestFor(body: Record<string, unknown>) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       input: [{ role: "user", content: "Oi" }],
-      model: "gemini-3.6-flash",
+      model: "gemini-3.7-flash",
       stream: true,
       responseMode: "default",
       ...body,
@@ -69,7 +69,7 @@ describe("Gemini chat route", () => {
     expect(response.headers.get("Content-Type")).toContain("text/event-stream");
     expect(geminiMocks.createEventStream).toHaveBeenCalledWith(
       client,
-      expect.objectContaining({ model: "gemini-3.6-flash" }),
+      expect.objectContaining({ model: "gemini-3.7-flash" }),
       expect.any(AbortSignal)
     );
   });

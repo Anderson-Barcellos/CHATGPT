@@ -5,7 +5,11 @@ export const PULSE_TIME_ZONE = "America/Sao_Paulo";
 export type PulseRecurrenceType = "daily" | "weekly" | "monthly";
 export type PulseTaskStatus = "active" | "paused";
 export type PulseRunStatus = "queued" | "running" | "completed" | "failed";
-export const PULSE_MODELS = ["gpt-5.4-mini", "gpt-5.6-terra"] as const;
+export const PULSE_MODELS = [
+  "gpt-5.4-mini",
+  "gpt-5.6-sol",
+  "gpt-5.6-terra",
+] as const;
 export type PulseModel = (typeof PULSE_MODELS)[number];
 export const DEFAULT_PULSE_MODEL: PulseModel = "gpt-5.4-mini";
 export type PulseExecutionReasoningEffort = "low" | "medium" | "high";

@@ -134,7 +134,7 @@ Pulse:
 | `PULSE_RUNNER_TOKEN` | Token opcional para proteger `/api/pulse/run-due`; usado por `chatgpt-pulse.service` |
 | `PULSE_RUNNER_URL` | Override opcional do endpoint local do runner |
 | `PULSE_EXTRACT_MODEL` | Modelo opcional para interpretar prompts de rotina |
-| `PULSE_RUN_MODEL` | Override opcional global; sem ele, cada rotina escolhe Mini (default) ou Terra |
+| `PULSE_RUN_MODEL` | Override opcional global; sem ele, cada rotina escolhe Mini (default), Sol ou Terra |
 | `PULSE_MAX_OUTPUT_TOKENS` | Orçamento de saída do runner; default `25000`, limitado entre 8k e 32k |
 | `PULSE_REASONING_EFFORT` | Override opcional de effort; default `medium`, com `none`/`minimal` coeridos para `low` |
 

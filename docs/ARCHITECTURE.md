@@ -31,7 +31,7 @@ O Studio é uma mudança de página, não um modo interno da conversa. Chat e St
 
 - o Studio é Python-only desde 2026-08-12: o antigo modo Local (TS/JS transpilado no Monaco + Web Worker em `/api/studio/runner`) foi removido; a fonte de verdade dos arquivos é sempre o workspace no servidor;
 - o `localStorage` sob `gaucho-studio:workspace:v1` guarda apenas preferências e histórico do assistente (snapshot `version: 2` — autocomplete on/off, modelo selecionado, mensagens); snapshots v1 antigos migram preservando esses campos e descartando os arquivos TS locais;
-- `lib/studio/autocompleteProvider.ts` registra o inline completion provider nativo do Monaco em desktop, coordena debounce, cancelamento, deduplicação, descarte de respostas obsoletas e recuperação silenciosa; `/api/studio/autocomplete` limita e encaminha somente prefix/suffix ao endpoint FIM do DeepSeek;
+- `lib/studio/autocompleteProvider.ts` registra o inline completion provider nativo do Monaco em desktop, coordena debounce, cancelamento, deduplicação, descarte de respostas obsoletas e recuperação silenciosa; `/api/studio/autocomplete` limita e encaminha somente prefix/suffix ao endpoint FIM do provider ativo (Codestral via Mistral por padrão, DeepSeek como fallback legado — ver docs/API.md);
 - `/api/studio/assist` recebe somente arquivo ativo, pergunta e histórico curto, usa `store=false` e não expõe tools;
 - a resposta do modelo permanece no painel lateral para cópia manual, sem edição automática, aplicação de patch ou modo agente; streams sem marcador terminal são preservados como interrompidos, não concluídos;
 - o autocomplete insere ghost text apenas após aceitação explícita pelo usuário e não concede ao chat contextual autorização para editar; o toggle persiste nas prefs locais e o recurso não faz chamadas em viewport móvel ou ponteiro coarse;
@@ -106,7 +106,7 @@ O adapter expõe uma tool local `fresh_web_context`. Quando o DeepSeek chama ess
 
 `gemini-3.7-flash` é um provider separado para chat padrão streaming. `lib/server/geminiChat.ts` converte o histórico e imagens para turns da Interactions API, envia `store=false`, Google Search, URL Context e summaries de pensamento, e traduz o stream Gemini para o mesmo contrato SSE usado pelo reducer do chat.
 
-O adapter exige `GEMINI_API_KEY`, aceita thinking `minimal`, `low`, `medium` e `high`, não envia os parâmetros depreciados `temperature`, `top_p` ou `top_k` e rejeita Documento, Deepsearch e Quiz. Esses modos continuam usando seus modelos OpenAI forçados.
+O adapter exige `GEMINI_API_KEY`, aceita thinking `low`, `medium` e `high`, não envia os parâmetros depreciados `temperature`, `top_p` ou `top_k` e rejeita Documento, Deepsearch e Quiz. Esses modos continuam usando seus modelos OpenAI forçados.
 
 ## Reasoning
 

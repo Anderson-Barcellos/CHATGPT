@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_TTS_INSTRUCTIONS,
   DEFAULT_TTS_PREFERENCES,
   REALTIME_TTS_VOICES,
   TTS_VOICES,
@@ -69,6 +70,19 @@ describe("speech text helpers", () => {
 
     expect(chunks.length).toBeGreaterThan(1);
     expect(chunks.every((chunk) => chunk.length <= 50)).toBe(true);
+  });
+
+  it("ships non-empty default reading instructions within the 1200-char limit", () => {
+    expect(DEFAULT_TTS_INSTRUCTIONS.trim().length).toBeGreaterThan(0);
+    expect(DEFAULT_TTS_INSTRUCTIONS.length).toBeLessThanOrEqual(1200);
+    expect(DEFAULT_TTS_PREFERENCES.instructions).toBe(DEFAULT_TTS_INSTRUCTIONS);
+    expect(normalizeTtsPreferences(undefined).instructions).toBe(
+      DEFAULT_TTS_INSTRUCTIONS
+    );
+    expect(normalizeTtsPreferences({ instructions: "" }).instructions).toBe("");
+    expect(
+      normalizeTtsPreferences({ instructions: "Leitura neutra." }).instructions
+    ).toBe("Leitura neutra.");
   });
 
   it("normalizes invalid preferences to safe defaults", () => {

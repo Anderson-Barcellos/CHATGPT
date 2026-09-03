@@ -2,10 +2,10 @@ import { GoogleGenAI } from "@google/genai";
 import type { ChatRequestBody } from "@/lib/server/chatRequest";
 import type { AssistantStreamEvent } from "@/lib/chat/streamMachine";
 
-export const GEMINI_MODEL = "gemini-3.6-flash";
+export const GEMINI_MODEL = "gemini-3.7-flash";
 const GEMINI_MAX_OUTPUT_TOKENS = 65_536;
 
-type GeminiThinkingLevel = "minimal" | "low" | "medium" | "high";
+type GeminiThinkingLevel = "low" | "medium" | "high";
 
 type OpenAIInputPart =
   | { type: "input_text"; text: string }
@@ -120,7 +120,6 @@ function resolveGeminiThinkingLevel(
 ): GeminiThinkingLevel {
   const effort = body.reasoning?.effort;
   if (
-    effort === "minimal" ||
     effort === "low" ||
     effort === "medium" ||
     effort === "high"

@@ -38,6 +38,21 @@ function serializeErrorForLog(error: unknown) {
   return { value: String(error) };
 }
 
+// iOS (qualquer browser) e Safari desktop rodam WebKit, onde um
+// MediaStreamAudioSourceNode alimentado por stream WebRTC remoto sai mudo ou
+// com volume ínfimo, e o Web Audio ainda respeita a chave de silêncio do
+// iPhone. Nesses casos o playback canônico é o <audio> primado no clique.
+function prefersMediaElementForRemoteStream(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  const isIosDevice =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isSafariEngine =
+    /AppleWebKit/.test(ua) && !/Chrome|Chromium|CriOS|Edg|OPR/.test(ua);
+  return isIosDevice || isSafariEngine;
+}
+
 async function reportRealtimeClientLog(
   level: ClientRealtimeLogLevel,
   event: string,
@@ -205,7 +220,16 @@ export function useRealtimeTtsLab(content: string) {
         }
       };
 
-      const playRemoteStreamWithElement = (stream: MediaStream) => {
+      const playRemoteStreamWithElement = (
+        stream: MediaStream,
+        reason: "webkit" | "no-audio-context" | "web-audio-failed"
+      ) => {
+        void reportRealtimeClientLog(
+          "info",
+          "audio.output_path",
+          "Saída Realtime pelo elemento <audio>.",
+          { path: "element", reason }
+        );
         audio.pause();
         audio.removeAttribute("src");
         audio.load();
@@ -263,12 +287,17 @@ export function useRealtimeTtsLab(content: string) {
           };
         }
 
+        if (prefersMediaElementForRemoteStream()) {
+          playRemoteStreamWithElement(stream, "webkit");
+          return;
+        }
+
         void resumeBrowserAudio()
           .then((context) => {
             if (!peerRef.current) return;
 
             if (!context) {
-              playRemoteStreamWithElement(stream);
+              playRemoteStreamWithElement(stream, "no-audio-context");
               return;
             }
 
@@ -284,11 +313,17 @@ export function useRealtimeTtsLab(content: string) {
             const source = context.createMediaStreamSource(stream);
             source.connect(context.destination);
             streamAudioSourceRef.current = source;
+            void reportRealtimeClientLog(
+              "info",
+              "audio.output_path",
+              "Saída Realtime por Web Audio (MediaStreamAudioSourceNode).",
+              { path: "web-audio" }
+            );
             markAudioStarted();
           })
           .catch((playError) => {
             console.warn("Realtime Web Audio playback failed:", playError);
-            playRemoteStreamWithElement(stream);
+            playRemoteStreamWithElement(stream, "web-audio-failed");
           });
       };
 
@@ -429,10 +464,14 @@ export function useRealtimeTtsLab(content: string) {
         throw new Error(message);
       }
 
-      await peer.setRemoteDescription({
-        type: "answer",
-        sdp: await response.text(),
-      });
+      const answerSdp = await response.text();
+      if (peerRef.current !== peer || peer.signalingState === "closed") {
+        // Sessão cancelada (stop/troca de engine) durante o handshake:
+        // sair em silêncio em vez de estourar InvalidStateError no catch.
+        return;
+      }
+
+      await peer.setRemoteDescription({ type: "answer", sdp: answerSdp });
     } catch (err) {
       cleanup();
       const message =

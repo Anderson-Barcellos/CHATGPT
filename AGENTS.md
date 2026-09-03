@@ -256,7 +256,7 @@ Rodar, quando fizer sentido:
 - Evitar sobrescrever mudancas locais nao relacionadas sem confirmar antes
 - O painel operacional usa a aba principal `Pulse` para o feed de geracoes e a aba `Rotinas` para criar/pausar/executar/excluir recorrencias. Google Calendar pode permanecer no codigo como legado, mas novos fluxos recorrentes devem usar `/api/pulse/*`, `data/pulse-tasks.json`, `data/pulse-runs.json` e `chatgpt-pulse.timer`.
 - Chat e Pulse usam o mesmo `MiniAudioPlayer`, aberto por um unico alto-falante e iniciado em `/api/tts` via `useAssistantTts` (`gpt-4o-mini-tts`). `Realtime 2.1 mini` (`gpt-realtime-2.1-mini`) e uma selecao manual dentro do player, sem `max_output_tokens` explicito; abrir o player nao inicia nem cobra nenhuma engine.
-- Execucoes do Pulse usam contexto pessoal enxuto, nao o prompt global completo. Cada rotina escolhe `gpt-5.4-mini` (default) ou `gpt-5.6-terra`, ambos com reasoning `medium` e verbosity `high`; modelo/effort efetivos ficam gravados no run. `PULSE_RUN_MODEL`, `PULSE_MAX_OUTPUT_TOKENS` e `PULSE_REASONING_EFFORT` permanecem overrides operacionais. Com tools, `none` e `minimal` sobem para `low`. Se a resposta principal nao trouxer imagem, o runner tenta fallback curto com o mesmo modelo efetivo.
+- Execucoes do Pulse usam contexto pessoal enxuto, nao o prompt global completo. Cada rotina escolhe `gpt-5.4-mini` (default), `gpt-5.6-sol` ou `gpt-5.6-terra`, todos com reasoning `medium` e verbosity `high`; modelo/effort efetivos ficam gravados no run. `PULSE_RUN_MODEL`, `PULSE_MAX_OUTPUT_TOKENS` e `PULSE_REASONING_EFFORT` permanecem overrides operacionais. Com tools, `none` e `minimal` sobem para `low`. Se a resposta principal nao trouxer imagem, o runner tenta fallback curto com o mesmo modelo efetivo.
 
 ## Preferencia De Comunicacao
 
@@ -1351,6 +1351,39 @@ Bridge (`studio-kernel-bridge.py`): mimes ampliados para png/jpeg/svg/html/latex
 
 Notes:
 568 testes/112 arquivos (27 novos, red→green por frente), tsc/lint/build limpos, deploy com restart e health local/público 200. Validação Playwright em produção 12/12 com notebook semeado: tabela pandas HTML, PNG matplotlib (exige `%matplotlib inline`), katex, traceback, input() respondido inline ("Buenas, Anders!"), fila, duração, mover célula e assistente corrigindo SyntaxError real. Bug pego na validação: os POSTs paralelos do run-all chegavam fora de ordem no servidor (a célula de input() bloqueou a fila na frente da célula de erro) — corrigido serializando os dispatches no client. pandas+matplotlib instalados no venv da jail. Achado lateral: três venvs acidentais na raiz do repo (`pip/`, `install/`, `selenium/`, criados 13:12 por um provável `python3 -m venv pip install selenium`) quebravam o Turbopack (symlink fora do project root); movidos para `/root/CHATGPT-quarentena-2026-08-20/` sem apagar. Notebook de validação `valida-colab.ipynb` permanece no workspace como demo.
+
+### 2026-08-22 18:10 - Autocomplete do Studio migrado para Codestral (Mistral FIM)
+
+Context:
+Anders pediu pesquisa de compatibilidade do Codestral com o autocomplete FIM do Studio e a adoção da API key Mistral dele (encontrada no `config.fish`). Pesquisa confirmou: Codestral 25.08 (`codestral-latest`) segue referência em autocomplete (latência e RepoBench), com FIM nativo em `POST /v1/fim/completions` — request quase idêntico ao do DeepSeek, mas resposta em formato chat (`choices[0].message.content`) e `finish_reason` extra `model_length`.
+
+Details:
+`lib/server/studioAutocomplete.ts` ganhou tabela `STUDIO_FIM_PROVIDERS` com prioridade `CODESTRAL_API_KEY` (codestral.mistral.ai, plano dedicado) → `MISTRAL_API_KEY` (api.mistral.ai, pay-as-you-go, em uso) → `DEEPSEEK_API_KEY` (fallback legado). `createStudioFimClient` agora retorna `{ client, provider }`; a rota Mistral usa `client.post("/fim/completions")` do SDK OpenAI (rota não existe no SDK; o post cru preserva `OpenAI.APIError` e o tratamento 429/timeout da route, que não mudou). `model_length` normaliza para `length`; parâmetros mantidos (256 tokens, temp 0.1, timeout 8 s). Contrato do browser intacto — client não mudou. `MISTRAL_API_KEY` adicionada ao `.env.production`; `.env.example`, docs/API.md, docs/ARCHITECTURE.md e docs/MODELS.md atualizados.
+
+Notes:
+TDD red→green (7 falhas → 27 testes verdes no módulo+rota); suíte completa 571 testes, tsc/lint/build limpos. Deploy: restart `chatgpt.service`, health local/público 200, validação live autenticada: FIM respondeu `fib(n)` completo via Codestral (`finishReason: stop`). Rota de login para testes autenticados é `/api/auth/login` (não `/api/login`). Preço Codestral: $0.30/M in, $0.90/M out. Se quiser o plano gratuito dedicado, basta criar key em codestral.mistral.ai e definir `CODESTRAL_API_KEY` — a prioridade troca sozinha.
+
+### 2026-08-28 11:28 - Realtime TTS mudo no iPhone: saída pelo elemento `<audio>` no WebKit
+
+Context:
+Anders relatou que só o TTS padrão produzia som; o Realtime 2.1 mini ficava mudo. Logs de `/var/log/chatgpt/error.log` e `ultrassom_ssl_access.log` mostraram 16 sessões Realtime hoje pelo iPhone (iOS 18.7/Safari) com `201` na rota, `peer.connection_state: connected`, `track.unmuted` e `audio.started` em 322–1915 ms — o áudio chegava ao navegador. O ramo de playback em `peer.ontrack` tocava o stream remoto por `createMediaStreamSource → AudioContext.destination` com o `<audio>` mudo; no WebKit esse nó com stream WebRTC remoto sai mudo/ínfimo (WebKit 230902, web-audio-api#1722) e Web Audio ainda respeita a chave de silêncio do iPhone. O TTS padrão usa `createBufferSource` (buffer decodificado), que funciona ali — por isso só ele soava.
+
+Details:
+`hooks/useRealtimeTtsLab.ts`: nova `prefersMediaElementForRemoteStream()` (iOS de qualquer browser + Safari desktop) faz `ontrack` ir direto para `playRemoteStreamWithElement` (elemento `<audio>` primado no clique, desmutado); Chromium mantém o caminho Web Audio inalterado. `playRemoteStreamWithElement` ganhou `reason` e o evento de telemetria `audio.output_path` (`element`/`web-audio`) passa a registrar qual saída rodou — antes `audio.started` era disparado incondicionalmente no ramo Web Audio e não provava som. Guarda após o fetch (`peerRef.current !== peer || signalingState === "closed"`) evita o `InvalidStateError` em `setRemoteDescription` visto nos logs quando o usuário parava/trocava de engine durante o handshake. Validação: `tsc`, `vitest` (player + rota, 6/6), `eslint` no arquivo, `npm run build`, restart `chatgpt.service`, health local/público 200, rota Realtime 401 sem cookie.
+
+Notes:
+Falta o smoke auditivo real no iPhone por Anders; se o elemento estourar `NotAllowedError`, a telemetria mostrará `audio.playback_failed` e o próximo passo é manter o `<audio>` vivo entre sessões em vez de recriá-lo no `cleanup()`. Logs de runtime do serviço vivem em `/var/log/chatgpt/{app,error}.log` (unit usa `StandardOutput=append`), não no journald.
+
+### 2026-08-28 11:45 - Instruções de leitura padrão para TTS e Realtime + botão Restaurar padrão
+
+Context:
+Depois do fix do Realtime no iPhone, Anders pediu instruções de leitura boas para deixar como padrão. O default do app era `instructions: ""` e a preferência persistida dele (97 caracteres) sobrepõe qualquer default, então mudar só a constante não chegaria ao uso real.
+
+Details:
+`lib/tts/speechText.ts` ganhou `DEFAULT_TTS_INSTRUCTIONS` (PT-BR, 725 caracteres, abaixo do teto de 1200 do normalizador) cobrindo voz, tom, ritmo/pausas, pronúncia de números/siglas/medicamentos/inglês e fidelidade ao texto; `DEFAULT_TTS_PREFERENCES.instructions` aponta para ela, então persona nova e `normalizeTtsPreferences(undefined)` recebem o padrão, enquanto `""` explícito continua significando "sem instruções". `components/settings/SettingsDrawer.tsx` (aba Tuning → Voz) ganhou o botão `Restaurar padrão` ao lado do rótulo, que grava a constante via `updateTtsPreferences` (autosave persiste em `data/persona.json`), desabilitado quando já é o padrão; textarea com `id` + `label htmlFor`, `rows=5` e placeholder explicando o vazio. As instruções valem para `/api/tts` (`gpt-4o-mini-tts`) e são anexadas ao `response.create` do Realtime como `Voice style instructions`. TDD red→green em `lib/tts/speechText.test.ts`; `data/persona.json` não foi tocado.
+
+Notes:
+Validação: vitest focado 16/16, `tsc`, eslint nos arquivos, `npm run build`, restart `chatgpt.service`, health local/público 200. Para adotar o padrão, Anders abre Configurações → Tuning → Voz e toca `Restaurar padrão`; a preferência dele (`echo`, 1.1x, balanced) permanece até isso.
 
 ### 2026-09-03 01:48 - SoundCase pronto para revisão local
 

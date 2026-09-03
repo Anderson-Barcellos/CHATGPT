@@ -14,8 +14,8 @@ const GPT_56_REASONING_MODES: ReasoningMode[] = ["standard", "pro"];
 const STANDARD_REASONING_EFFORTS: ReasoningEffort[] = [
   "none", "low", "medium", "high", "xhigh",
 ];
-const GEMINI_36_REASONING_EFFORTS: ReasoningEffort[] = [
-  "minimal", "low", "medium", "high",
+const GEMINI_37_REASONING_EFFORTS: ReasoningEffort[] = [
+  "low", "medium", "high",
 ];
 
 export const MODELS: Record<string, ModelInfo> = {
@@ -179,9 +179,9 @@ export const MODELS: Record<string, ModelInfo> = {
     recommendedFor: ["Chat longo", "Raciocinio profundo", "Analise economica"],
     badge: "DeepSeek",
   },
-  "gemini-3.6-flash": {
-    id: "gemini-3.6-flash",
-    name: "Gemini 3.6 Flash",
+  "gemini-3.7-flash": {
+    id: "gemini-3.7-flash",
+    name: "Gemini 3.7 Flash",
     family: "gemini",
     description: "Modelo Gemini rapido para tarefas agenticas, multimodais e pesquisa web",
     contextWindow: 1_048_576,
@@ -192,7 +192,7 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsTemperature: false,
     supportsVerbosity: false,
     supportsCodeInterpreter: false,
-    supportedReasoningEfforts: GEMINI_36_REASONING_EFFORTS,
+    supportedReasoningEfforts: GEMINI_37_REASONING_EFFORTS,
     recommendedFor: ["Chat rapido", "Pesquisa web", "Analise multimodal"],
     badge: "Gemini",
   },
@@ -241,7 +241,7 @@ export function isDeepSeekModel(modelId: string): boolean {
 }
 
 export function isGeminiModel(modelId: string): boolean {
-  return modelId === "gemini-3.6-flash";
+  return modelId === "gemini-3.7-flash";
 }
 
 const REASONING_LABELS: Record<string, string> = {

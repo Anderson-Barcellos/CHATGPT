@@ -62,7 +62,7 @@ Ferramentas injetadas pelo backend:
 
 Quando `model="deepseek-v4-pro"`, a rota aceita somente `responseMode="default"` com `stream=true`, exige `DEEPSEEK_API_KEY` e usa `fresh_web_context` como tool local. Essa tool consulta a OpenAI com `web_search_preview` quando o DeepSeek pede contexto fresco, mas Documento, Deepsearch e Quiz não usam o provider DeepSeek.
 
-Quando `model="gemini-3.7-flash"`, a rota aceita somente `responseMode="default"` com `stream=true`, exige `GEMINI_API_KEY` e chama a Interactions API com `store=false`, Google Search, URL Context e `thinking_summaries="auto"`. Os níveis aceitos são `minimal`, `low`, `medium` e `high`; Documento, Deepsearch e Quiz permanecem nos fluxos OpenAI.
+Quando `model="gemini-3.7-flash"`, a rota aceita somente `responseMode="default"` com `stream=true`, exige `GEMINI_API_KEY` e chama a Interactions API com `store=false`, Google Search, URL Context e `thinking_summaries="auto"`. Os níveis aceitos são `low`, `medium` e `high`; Documento, Deepsearch e Quiz permanecem nos fluxos OpenAI.
 
 Em `responseMode="quiz"`, as tools são removidas e o backend força:
 
@@ -142,7 +142,7 @@ Os modelos aceitos ficam em `lib/studio/models.ts`. O body é limitado a 512 KiB
 
 ### `POST /api/studio/autocomplete`
 
-Autocomplete FIM não streaming do Monaco, restrito a TypeScript, JavaScript e Python em desktop. A rota exige a mesma sessão do app, usa `DEEPSEEK_API_KEY` apenas no servidor e aceita somente estes quatro campos:
+Autocomplete FIM não streaming do Monaco, restrito a TypeScript, JavaScript e Python em desktop. A rota exige a mesma sessão do app e resolve o provider apenas no servidor, na ordem `CODESTRAL_API_KEY` (codestral.mistral.ai) → `MISTRAL_API_KEY` (api.mistral.ai) → `DEEPSEEK_API_KEY` (fallback legado). Aceita somente estes quatro campos:
 
 ```json
 {
@@ -153,7 +153,7 @@ Autocomplete FIM não streaming do Monaco, restrito a TypeScript, JavaScript e P
 }
 ```
 
-`prefix + suffix` aceita no máximo 32 mil caracteres e `filePath`, 320. Quando o arquivo inteiro cabe, o cliente o envia; acima disso, preserva até 24 mil caracteres antes e 8 mil depois do cursor. O body HTTP é limitado a 256 KiB. O provider usa `deepseek-v4-pro`, até 256 tokens, `temperature=0.1`, timeout de 8 segundos, sem retries automáticos do SDK, e não envia histórico, reasoning ou tools.
+`prefix + suffix` aceita no máximo 32 mil caracteres e `filePath`, 320. Quando o arquivo inteiro cabe, o cliente o envia; acima disso, preserva até 24 mil caracteres antes e 8 mil depois do cursor. O body HTTP é limitado a 256 KiB. Os providers Mistral usam `codestral-latest` via `POST /v1/fim/completions` (resposta em formato chat, `choices[0].message.content`; `model_length` normaliza para `length`); o fallback DeepSeek usa `deepseek-v4-pro` via Completions clássico. Em todos: até 256 tokens, `temperature=0.1`, timeout de 8 segundos, sem retries automáticos do SDK, e sem histórico, reasoning ou tools.
 
 ```json
 {

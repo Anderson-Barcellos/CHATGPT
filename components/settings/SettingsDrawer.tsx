@@ -45,7 +45,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { isTtsAudioFormat, TTS_AUDIO_FORMATS, TTS_VOICES } from "@/lib/tts/speechText";
+import { isTtsAudioFormat, TTS_AUDIO_FORMATS, TTS_VOICES, DEFAULT_TTS_INSTRUCTIONS } from "@/lib/tts/speechText";
 import { indexRecentConversationMemories } from "@/lib/storage/memoryRag";
 import { BASE_SYSTEM_PROMPT } from "@/lib/prompts/systemPrompt";
 import { FIXED_PERSONA_PROMPT } from "@/lib/prompts/personaPrompt";
@@ -710,20 +710,40 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                           />
                         </div>
 
-                        <label className="flex flex-col gap-1 text-xs">
-                          <span className="text-muted-foreground">
-                            Instruções da voz — TTS + Realtime
-                          </span>
+                        <div className="flex flex-col gap-1 text-xs">
+                          <div className="flex items-center justify-between gap-2">
+                            <label
+                              htmlFor="tts-voice-instructions"
+                              className="text-muted-foreground"
+                            >
+                              Instruções da voz — TTS + Realtime
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateTtsPreferences({
+                                  instructions: DEFAULT_TTS_INSTRUCTIONS,
+                                })
+                              }
+                              disabled={
+                                ttsPreferences.instructions === DEFAULT_TTS_INSTRUCTIONS
+                              }
+                              className="text-micro font-medium text-primary hover:underline disabled:cursor-default disabled:opacity-50 disabled:no-underline"
+                            >
+                              Restaurar padrão
+                            </button>
+                          </div>
                           <textarea
+                            id="tts-voice-instructions"
                             value={ttsPreferences.instructions}
                             onChange={(e) =>
                               updateTtsPreferences({ instructions: e.target.value })
                             }
-                            placeholder="Ex: Fale com tom calmo, natural e levemente gaúcho."
-                            rows={3}
+                            placeholder="Vazio = sem instruções. Use “Restaurar padrão” para carregar a leitura recomendada."
+                            rows={5}
                             className="gc-refined-soft-surface min-h-[68px] resize-none rounded-xl border px-3 py-2 text-xs outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/15 sm:min-h-[78px]"
                           />
-                        </label>
+                        </div>
                       </div>
                     </div>
                   </>

@@ -18,7 +18,7 @@
 | `gpt-5.4-mini` | GPT-5.4 mini | `gpt-5` | Sim | 128K | 16K | Eficiente |
 | `gpt-5.2` | GPT-5.2 | `gpt-5` | Sim | 400K | 128K | Reasoning |
 | `deepseek-v4-pro` | DeepSeek V4 Pro | `deepseek` | Sim (máximo fixo) | 1M | 384K | DeepSeek |
-| `gemini-3.6-flash` | Gemini 3.6 Flash | `gemini` | Sim (`minimal` a `high`) | 1.048M | 65.536 | Gemini |
+| `gemini-3.7-flash` | Gemini 3.7 Flash | `gemini` | Sim (`low` a `high`) | 1.048M | 65.536 | Gemini |
 
 ### Imagem
 
@@ -40,11 +40,12 @@
 - Modelo de imagem usado pela tool: `gpt-image-2`.
 - Quiz força `gpt-5.4` com reasoning `high`.
 - Deepsearch Medium usa `gpt-5.4-mini` com reasoning `high`; Deepsearch High usa `gpt-5.4` com reasoning `high`.
-- O Pulse usa `gpt-5.4-mini` + `medium` por padrão e permite `gpt-5.6-terra` + `medium` por rotina.
+- O Pulse usa `gpt-5.4-mini` + `medium` por padrão e permite `gpt-5.6-sol` ou `gpt-5.6-terra` por rotina; todos usam verbosity `high`.
 - O `fresh_web_context` do DeepSeek usa `gpt-5.6-luna` + `low`; a resposta final continua no DeepSeek V4 Pro com reasoning máximo.
 - `deepseek-v4-pro` é permitido apenas no chat padrão streaming, não usa `code_interpreter` e depende de `DEEPSEEK_API_KEY`.
-- `gemini-3.6-flash` inicia em thinking `medium`, permite `minimal`, `low`, `medium` e `high`, e depende de `GEMINI_API_KEY`.
+- `gemini-3.7-flash` inicia em thinking `high`, permite `low`, `medium` e `high`, e depende de `GEMINI_API_KEY`.
 - Gemini usa Interactions API stateless (`store=false`) com Google Search e URL Context nativos; Documento, Deepsearch e Quiz continuam nos modelos OpenAI forçados.
+- Autocomplete FIM do Studio usa `codestral-latest` (Codestral 25.08, Mistral) via `/v1/fim/completions`; a key vem de `CODESTRAL_API_KEY` ou `MISTRAL_API_KEY`, com `deepseek-v4-pro` como fallback legado via `DEEPSEEK_API_KEY`.
 - TTS usa `gpt-4o-mini-tts` em `lib/tts/speechText.ts`.
 - Realtime TTS opcional usa `gpt-realtime-2.1-mini`, sem `max_output_tokens` explícito.
 - Transcrição usa `gpt-4o-transcribe`.
@@ -61,7 +62,7 @@
 - só envia `verbosity` quando `modelSupportsVerbosity()` permite;
 - só adiciona `code_interpreter` quando o usuário habilita e o modelo suporta.
 - faz enforcement rígido apenas para `responseMode="quiz"`; presets `document` e `deepsearch_*` são montados no app por `hooks/useChat.ts`.
-- roteia `gemini-3.6-flash` para o adapter Interactions API apenas em chat padrão streaming.
+- roteia `gemini-3.7-flash` para o adapter Interactions API apenas em chat padrão streaming.
 
 `lib/chat/reasoningConfig.ts`:
 

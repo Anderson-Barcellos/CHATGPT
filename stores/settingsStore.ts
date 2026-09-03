@@ -59,8 +59,8 @@ function buildDefaultModelSettings(modelId: string): ModelScopedParameters {
   const defaultReasoningEffort =
     isDeepSeekModel(resolvedModelId)
       ? "xhigh"
-      : resolvedModelId === "gemini-3.6-flash"
-      ? "medium"
+      : resolvedModelId === "gemini-3.7-flash"
+      ? "high"
       : resolvedModelId === "gpt-5.6-luna"
       ? "low"
       : usesNoReasoningByDefault(resolvedModelId)
