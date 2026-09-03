@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { SoundCaseSegment } from "@/lib/soundcase/types";
 import {
   hasInboundRealtimeAudio,
+  buildSoundCaseRealtimeSegments,
   SoundCaseRealtimeQueue,
   SoundCaseRealtimeSessionFence,
 } from "@/hooks/useSoundCaseRealtime";
@@ -75,5 +76,13 @@ describe("SoundCase Realtime segmented queue", () => {
     expect(hasInboundRealtimeAudio({ type: "inbound-rtp", kind: "audio", bytesReceived: 0 })).toBe(false);
     expect(hasInboundRealtimeAudio({ type: "inbound-rtp", kind: "audio", bytesReceived: 64 })).toBe(true);
     expect(hasInboundRealtimeAudio({ type: "candidate-pair", bytesReceived: 64 })).toBe(false);
+  });
+
+  it("segments long draft text without changing narrated characters", () => {
+    const text = `${"Frase longa. ".repeat(350)}Fim.`;
+    const result = buildSoundCaseRealtimeSegments(text);
+    expect(result.length).toBeGreaterThan(1);
+    expect(result.map((segment) => segment.text).join(" ")).toBe(text);
+    expect(result.every((segment) => segment.text.length <= 3_200)).toBe(true);
   });
 });

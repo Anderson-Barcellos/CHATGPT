@@ -18,6 +18,38 @@ export interface SoundCaseRealtimeInput {
   segments: SoundCaseSegment[];
 }
 
+export function buildSoundCaseRealtimeSegments(text: string): SoundCaseSegment[] {
+  const normalized = text.replace(/\r\n?/gu, "\n");
+  const segments: SoundCaseSegment[] = [];
+  let cursor = 0;
+  while (cursor < normalized.length) {
+    while (cursor < normalized.length && /\s/u.test(normalized[cursor])) cursor += 1;
+    if (cursor >= normalized.length) break;
+    const hardEnd = Math.min(normalized.length, cursor + 3_200);
+    let end = hardEnd;
+    if (hardEnd < normalized.length) {
+      const window = normalized.slice(cursor, hardEnd);
+      const paragraph = window.lastIndexOf("\n\n");
+      const sentence = Math.max(window.lastIndexOf(". "), window.lastIndexOf("! "), window.lastIndexOf("? "));
+      const whitespace = window.search(/\s+\S*$/u);
+      const preferred = paragraph > 0 ? paragraph : sentence > 0 ? sentence + 1 : whitespace > 0 ? whitespace : window.length;
+      end = cursor + preferred;
+    }
+    while (end > cursor && /\s/u.test(normalized[end - 1])) end -= 1;
+    const segmentText = normalized.slice(cursor, end);
+    segments.push({
+      id: `realtime-${segments.length}`,
+      index: segments.length,
+      start: cursor,
+      end,
+      text: segmentText,
+      textHash: "realtime-only",
+    });
+    cursor = Math.max(end, cursor + 1);
+  }
+  return segments;
+}
+
 interface QueueMetadata { generation: string; segmentIndex: string }
 interface QueueResponse {
   id?: string;
@@ -155,8 +187,9 @@ export function useSoundCaseRealtime() {
   const fenceRef = useRef<SoundCaseRealtimeSessionFence | null>(null);
   if (!fenceRef.current) fenceRef.current = new SoundCaseRealtimeSessionFence();
   const statsTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const preparedAudioRef = useRef(false);
 
-  const cleanup = useCallback(() => {
+  const cleanup = useCallback((preservePreparedAudio = false) => {
     fenceRef.current?.invalidate();
     if (statsTimerRef.current) clearInterval(statsTimerRef.current);
     statsTimerRef.current = null;
@@ -171,34 +204,53 @@ export function useSoundCaseRealtime() {
     peerRef.current = null;
     sourceRef.current?.disconnect();
     sourceRef.current = null;
-    if (audioRef.current) {
+    if (audioRef.current && !preservePreparedAudio) {
       audioRef.current.pause();
       audioRef.current.srcObject = null;
       audioRef.current.remove();
       audioRef.current = null;
     }
-    unlockedRef.current = false;
+    if (!preservePreparedAudio) {
+      unlockedRef.current = false;
+      preparedAudioRef.current = false;
+    }
   }, []);
 
   const stop = useCallback(() => {
-    cleanup();
+    cleanup(false);
     setStatus("idle");
   }, [cleanup]);
 
-  const start = useCallback(async (input: SoundCaseRealtimeInput) => {
-    cleanup();
-    if (!input.segments.length) {
-      setStatus("error");
-      setError("O texto não possui segmentos para leitura.");
-      return;
-    }
+  const prime = useCallback(() => {
+    if (audioRef.current) return;
     const audio = document.createElement("audio");
     audio.autoplay = true;
     audio.hidden = true;
     audio.setAttribute("playsinline", "true");
     document.body.appendChild(audio);
     audioRef.current = audio;
+    preparedAudioRef.current = true;
     primeBrowserAudio(audio, unlockedRef);
+  }, []);
+
+  const start = useCallback(async (input: SoundCaseRealtimeInput) => {
+    const preparedAudio = preparedAudioRef.current ? audioRef.current : null;
+    cleanup(Boolean(preparedAudio));
+    if (!input.segments.length) {
+      setStatus("error");
+      setError("O texto não possui segmentos para leitura.");
+      return;
+    }
+    const audio = preparedAudio ?? document.createElement("audio");
+    if (!preparedAudio) {
+      audio.autoplay = true;
+      audio.hidden = true;
+      audio.setAttribute("playsinline", "true");
+      document.body.appendChild(audio);
+      audioRef.current = audio;
+      primeBrowserAudio(audio, unlockedRef);
+    }
+    preparedAudioRef.current = false;
     startedAtRef.current = performance.now();
     setFirstAudioMs(null);
     setError(null);
@@ -317,13 +369,13 @@ export function useSoundCaseRealtime() {
       await peer.setRemoteDescription({ type: "answer", sdp: await response.text() });
     } catch (cause) {
       if (!fenceRef.current?.isCurrent(session.id)) return;
-      cleanup();
+      cleanup(false);
       setStatus("error");
       setError(cause instanceof Error ? cause.message : "Falha na leitura Realtime.");
     }
   }, [cleanup]);
 
-  useEffect(() => cleanup, [cleanup]);
+  useEffect(() => () => cleanup(false), [cleanup]);
 
   const skipToSegment = useCallback(async (index: number) => {
     const channel = channelRef.current;
@@ -337,6 +389,6 @@ export function useSoundCaseRealtime() {
   return {
     status, activeSegmentIndex, firstAudioMs, error,
     isActive: status === "connecting" || status === "ready" || status === "speaking" || status === "paused",
-    start, stop, skipToSegment,
+    prime, start, stop, skipToSegment,
   };
 }
