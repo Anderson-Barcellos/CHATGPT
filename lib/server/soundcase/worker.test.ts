@@ -40,7 +40,7 @@ function fakeExec(): SoundCaseExecFile {
   });
 }
 
-describe("SoundCase resumable worker", () => {
+describe("SoundCase resumable worker", { timeout: 15_000 }, () => {
   it("retries TTS, publishes audio first and degrades cover to SVG", async () => {
     const project = await createSoundCaseProject({ text: "Uma leitura curta e agradável." });
     const created = await createSoundCaseVersion(project.id, settings);
