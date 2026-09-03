@@ -5,9 +5,11 @@ import {
   buildRealtimeSession,
   createRealtimeCallResponse,
   readRealtimeSdp,
+  RealtimeSdpError,
 } from "@/lib/server/realtimeCall";
 
 export const runtime = "nodejs";
+const MAX_SDP_BYTES = 256 * 1024;
 
 export function buildRealtimeTtsSessionConfig(voice: unknown) {
   return buildRealtimeSession({ product: "chat", voice });
@@ -31,11 +33,14 @@ export async function POST(request: NextRequest) {
     }
     return createRealtimeCallResponse({
       request,
-      sdp: await readRealtimeSdp(request),
+      sdp: await readRealtimeSdp(request, MAX_SDP_BYTES),
       session: buildRealtimeTtsSessionConfig(request.nextUrl.searchParams.get("voice")),
       safetyIdentifier: "gaucho-chat-tts-lab",
     });
   } catch (error) {
+    if (error instanceof RealtimeSdpError) {
+      return Response.json({ error: "SDP muito grande." }, { status: 413 });
+    }
     if (error instanceof DOMException && error.name === "AbortError") {
       return Response.json({ error: "Sessão Realtime interrompida.", diagnosticId }, { status: 499 });
     }

@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { SoundCaseSegment } from "@/lib/soundcase/types";
-import { SoundCaseRealtimeQueue } from "@/hooks/useSoundCaseRealtime";
+import {
+  hasInboundRealtimeAudio,
+  SoundCaseRealtimeQueue,
+  SoundCaseRealtimeSessionFence,
+} from "@/hooks/useSoundCaseRealtime";
 
 const segments: SoundCaseSegment[] = [
   { id: "a", index: 0, start: 0, end: 5, text: "Texto um.", textHash: "h1" },
@@ -54,5 +58,22 @@ describe("SoundCase Realtime segmented queue", () => {
     expect(JSON.parse(send.mock.lastCall![0])).toEqual({
       type: "response.cancel", response_id: "late-response",
     });
+  });
+
+  it("aborts the old negotiation and rejects stale lifecycle callbacks", () => {
+    const fence = new SoundCaseRealtimeSessionFence();
+    const first = fence.start();
+    const second = fence.start();
+    expect(first.signal.aborted).toBe(true);
+    expect(fence.isCurrent(first.id)).toBe(false);
+    expect(fence.isCurrent(second.id)).toBe(true);
+    fence.invalidate();
+    expect(second.signal.aborted).toBe(true);
+  });
+
+  it("marks first audio only after inbound audio bytes exist", () => {
+    expect(hasInboundRealtimeAudio({ type: "inbound-rtp", kind: "audio", bytesReceived: 0 })).toBe(false);
+    expect(hasInboundRealtimeAudio({ type: "inbound-rtp", kind: "audio", bytesReceived: 64 })).toBe(true);
+    expect(hasInboundRealtimeAudio({ type: "candidate-pair", bytesReceived: 64 })).toBe(false);
   });
 });

@@ -25,6 +25,35 @@ interface QueueResponse {
   metadata?: Partial<QueueMetadata>;
 }
 
+export class SoundCaseRealtimeSessionFence {
+  private generation = 0;
+  private controller: AbortController | null = null;
+
+  start(): { id: number; signal: AbortSignal } {
+    this.invalidate();
+    this.controller = new AbortController();
+    return { id: this.generation, signal: this.controller.signal };
+  }
+
+  invalidate(): void {
+    this.generation += 1;
+    this.controller?.abort();
+    this.controller = null;
+  }
+
+  isCurrent(id: number): boolean {
+    return id === this.generation && Boolean(this.controller && !this.controller.signal.aborted);
+  }
+}
+
+export function hasInboundRealtimeAudio(report: unknown): boolean {
+  if (!report || typeof report !== "object") return false;
+  const value = report as { type?: unknown; kind?: unknown; mediaType?: unknown; bytesReceived?: unknown };
+  return value.type === "inbound-rtp" &&
+    (value.kind === "audio" || value.mediaType === "audio") &&
+    Number(value.bytesReceived) > 0;
+}
+
 export class SoundCaseRealtimeQueue {
   private segments: SoundCaseSegment[] = [];
   private generation = 0;
@@ -123,14 +152,12 @@ export function useSoundCaseRealtime() {
   const unlockedRef = useRef(false);
   const startedAtRef = useRef(0);
   const queueRef = useRef<SoundCaseRealtimeQueue | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
-  const sessionRef = useRef(0);
+  const fenceRef = useRef<SoundCaseRealtimeSessionFence | null>(null);
+  if (!fenceRef.current) fenceRef.current = new SoundCaseRealtimeSessionFence();
   const statsTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const cleanup = useCallback(() => {
-    sessionRef.current += 1;
-    abortRef.current?.abort();
-    abortRef.current = null;
+    fenceRef.current?.invalidate();
     if (statsTimerRef.current) clearInterval(statsTimerRef.current);
     statsTimerRef.current = null;
     queueRef.current?.invalidate();
@@ -176,51 +203,43 @@ export function useSoundCaseRealtime() {
     setFirstAudioMs(null);
     setError(null);
     setStatus("connecting");
-    const session = sessionRef.current;
-    const abort = new AbortController();
-    abortRef.current = abort;
+    const session = fenceRef.current!.start();
 
     try {
       const peer = new RTCPeerConnection();
       peerRef.current = peer;
       peer.addTransceiver("audio", { direction: "recvonly" });
       peer.ontrack = (event) => {
-        if (session !== sessionRef.current) return;
+        if (!fenceRef.current?.isCurrent(session.id)) return;
         const stream = event.streams[0];
         if (!stream) return;
         audio.srcObject = stream;
         const markPlayback = () => {
-          if (session !== sessionRef.current) return;
+          if (!fenceRef.current?.isCurrent(session.id)) return;
           if (statsTimerRef.current) clearInterval(statsTimerRef.current);
           statsTimerRef.current = null;
           setFirstAudioMs((current) => current ?? Math.round(performance.now() - startedAtRef.current));
           setStatus("speaking");
         };
-        audio.addEventListener("playing", markPlayback, { once: true });
+        event.track.addEventListener("unmute", markPlayback, { once: true });
         statsTimerRef.current = setInterval(() => {
           void peer.getStats(event.track).then((reports) => {
             reports.forEach((report) => {
-              if (
-                report.type === "inbound-rtp" &&
-                (report.kind === "audio" || report.mediaType === "audio") &&
-                Number(report.bytesReceived) > 0
-              ) {
-                markPlayback();
-              }
+              if (hasInboundRealtimeAudio(report)) markPlayback();
             });
           }).catch(() => undefined);
         }, 50);
         const playWithElement = () => {
-          if (session !== sessionRef.current) return;
+          if (!fenceRef.current?.isCurrent(session.id)) return;
           audio.muted = false;
-          void audio.play().then(markPlayback).catch((playError) => {
-            if (session !== sessionRef.current) return;
+          void audio.play().catch((playError) => {
+            if (!fenceRef.current?.isCurrent(session.id)) return;
             setStatus("error");
             setError(describeAudioPlayError(playError, "Não consegui iniciar o áudio Realtime."));
           });
         };
         void resumeBrowserAudio().then((context) => {
-          if (session !== sessionRef.current || peerRef.current !== peer) return;
+          if (!fenceRef.current?.isCurrent(session.id) || peerRef.current !== peer) return;
           if (context) {
             audio.muted = true;
             void audio.play().catch(() => undefined);
@@ -233,7 +252,7 @@ export function useSoundCaseRealtime() {
         }).catch(playWithElement);
       };
       peer.onconnectionstatechange = () => {
-        if (session !== sessionRef.current) return;
+        if (!fenceRef.current?.isCurrent(session.id)) return;
         if (peer.connectionState === "failed") {
           cleanup();
           setStatus("error");
@@ -250,12 +269,12 @@ export function useSoundCaseRealtime() {
       queue.reset(input.segments);
       queueRef.current = queue;
       channel.addEventListener("open", () => {
-        if (session !== sessionRef.current) return;
+        if (!fenceRef.current?.isCurrent(session.id)) return;
         setStatus("ready");
         queue.sendCurrent();
       });
       channel.addEventListener("message", (event) => {
-        if (session !== sessionRef.current) return;
+        if (!fenceRef.current?.isCurrent(session.id)) return;
         try {
           const serverEvent = JSON.parse(String(event.data)) as {
             type?: string;
@@ -292,12 +311,12 @@ export function useSoundCaseRealtime() {
         method: "POST",
         headers: { "Content-Type": "application/sdp" },
         body: sdp,
-        signal: abort.signal,
+        signal: session.signal,
       });
       if (!response.ok) throw new Error("Não foi possível iniciar a leitura Realtime.");
       await peer.setRemoteDescription({ type: "answer", sdp: await response.text() });
     } catch (cause) {
-      if (session !== sessionRef.current) return;
+      if (!fenceRef.current?.isCurrent(session.id)) return;
       cleanup();
       setStatus("error");
       setError(cause instanceof Error ? cause.message : "Falha na leitura Realtime.");
