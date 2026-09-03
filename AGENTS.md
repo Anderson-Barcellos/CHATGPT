@@ -1395,3 +1395,14 @@ Details:
 
 Notes:
 Validação local final: 707 testes/138 arquivos, `npx tsc --noEmit`, build Next com `NEXT_PUBLIC_BASE_PATH=/chat` e `git diff --check` limpos; Chrome de produção em 1440x980, 900x980 e 390x844 sem erros de console, incluindo texto longo, resize/rotação, Acervo em tablet e navegação intermediária de Chat/Studio. Branch/worktree: `codex/soundcase` em `.worktrees/soundcase`. Não houve merge, push, instalação das units, alteração do Apache, restart público nem smoke pago; essas ações ficam para o gate de integração, pois as units apontam para `/root/CHATGPT` e o código ainda está isolado na worktree.
+
+### 2026-09-03 12:45 - SoundCase integrado ao main e deployado no host
+
+Context:
+Com os demais providers fora do ar, Anders pediu situar o nível da implementação SoundCase e deployar o que já estava pronto (merge + units + token), sem depender de smoke pago.
+
+Details:
+A branch `codex/soundcase` (34 commits, 83 arquivos) foi mergeada em `main` via fast-forward, preservando o WIP não-commitado do Gemini 3.7 (que foi commitado à parte em `ee2b328`). Conflito só em `AGENTS.md`, resolvido mantendo os dois lados em ordem cronológica. Dois testes do worker (`worker.test.ts`) estouravam o timeout de 5s por usarem `sleep` real de backoff no 2º run; corrigido mockando `sleep: async () => undefined` (`f7176e1`). `SOUNDCASE_*` adicionados ao `.env.production` (token `openssl rand -hex 32`, backup `20260903-123113`) e as três units `chatgpt-soundcase.{service,path,timer}` instaladas/`enabled` em `/etc/systemd/system/`.
+
+Notes:
+Bug real de integração pego na validação: a rota `POST /api/soundcase/worker/run-next` tem bearer próprio (`SOUNDCASE_WORKER_TOKEN` + `timingSafeEqual`), mas o middleware `proxy.ts` exigia JWT antes de chegar nela (retornava 401 "Faça login"), porque o branch não tinha adicionado a rota ao `PUBLIC_PATHS` — corrigido em `2b568d7` seguindo o padrão de `/api/pulse/run-due`. Validação: 712 testes/138 arquivos, `tsc --noEmit`, build Next com `NEXT_PUBLIC_BASE_PATH=/chat`, restart do `chatgpt.service`, health local/público 200, `/chat/soundcase` sem cookie → 307 login, `/chat/api/soundcase/projects` sem cookie → 401, e worker com token certo → 204 (fila vazia) e token errado → 401. Pendente: smoke pago (~15 min) e QA visual, bloqueados enquanto OpenAI/Luna/TTS/Realtime estiverem down. Apache intocado (nenhuma ProxyPass nova necessária).
