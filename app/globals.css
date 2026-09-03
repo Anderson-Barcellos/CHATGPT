@@ -84,6 +84,42 @@ body {
   overscroll-behavior: none;
 }
 
+.gc-product-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  min-width: max-content;
+}
+
+.gc-product-nav a {
+  display: inline-flex;
+  min-height: 2.25rem;
+  align-items: center;
+  gap: 0.35rem;
+  border-bottom: 2px solid transparent;
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transition: color 150ms ease, border-color 150ms ease;
+}
+
+.gc-product-nav a:hover,
+.gc-product-nav a[aria-current="page"] {
+  color: var(--foreground);
+}
+
+.gc-product-nav a[aria-current="page"] {
+  border-color: var(--primary);
+}
+
+.gc-product-nav-compact { gap: 0.25rem; }
+.gc-product-nav-compact a { min-width: 2.75rem; min-height: 2.75rem; justify-content: center; border: 0; border-radius: 0.7rem; letter-spacing: 0; }
+.gc-product-nav-compact a[aria-current="page"] { background: color-mix(in srgb, var(--primary) 12%, transparent); color: var(--primary); }
+.gc-product-nav-compact svg { width: 1rem; height: 1rem; }
+.gc-product-nav-compact span { display: none; }
+
 :root {
   --radius: 0.72rem;
   --font-geist-sans: "Space Grotesk", "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;

@@ -1351,3 +1351,14 @@ Bridge (`studio-kernel-bridge.py`): mimes ampliados para png/jpeg/svg/html/latex
 
 Notes:
 568 testes/112 arquivos (27 novos, red→green por frente), tsc/lint/build limpos, deploy com restart e health local/público 200. Validação Playwright em produção 12/12 com notebook semeado: tabela pandas HTML, PNG matplotlib (exige `%matplotlib inline`), katex, traceback, input() respondido inline ("Buenas, Anders!"), fila, duração, mover célula e assistente corrigindo SyntaxError real. Bug pego na validação: os POSTs paralelos do run-all chegavam fora de ordem no servidor (a célula de input() bloqueou a fila na frente da célula de erro) — corrigido serializando os dispatches no client. pandas+matplotlib instalados no venv da jail. Achado lateral: três venvs acidentais na raiz do repo (`pip/`, `install/`, `selenium/`, criados 13:12 por um provável `python3 -m venv pip install selenium`) quebravam o Turbopack (symlink fora do project root); movidos para `/root/CHATGPT-quarentena-2026-08-20/` sem apagar. Notebook de validação `valida-colab.ipynb` permanece no workspace como demo.
+
+### 2026-09-03 01:48 - SoundCase pronto para revisão local
+
+Context:
+Nova terceira superfície Gaucho para transformar textos longos em leitura imediata por Realtime e arquivo final durável, com direção automática por Luna, capa, resumo, acervo privado e composição editorial responsiva. Anders escolheu reutilizar a mesma JWT/cookie do Chat e manter automático como padrão com overrides explícitos.
+
+Details:
+`/soundcase`, `components/soundcase/*` e `hooks/useSoundCase*` entregam folha autoexpansível, importação `.txt/.md`, direção, onda de progresso confirmado, Realtime segmentado, player/baixar, projetos e versões. `lib/server/soundcase/*` e `/api/soundcase/*` implementam storage privado atômico, revisão CAS com flush de saída, snapshots imutáveis, fila/lease/retomada, chunks FLAC concorrência 2, montagem MP3/FLAC/WAV, capa e assets autenticados com Range. A navegação Chat/Studio/SoundCase foi integrada; a JWT protege todas as rotas de usuário, `OPENAI_API_KEY` fica exclusivamente no servidor e o worker usa bearer próprio.
+
+Notes:
+Validação local final: 702 testes/136 arquivos, `npx tsc --noEmit`, build Next com `NEXT_PUBLIC_BASE_PATH=/chat` e `git diff --check` limpos; Chrome de produção em 1440x980, 900x980 e 390x844 sem erros de console, incluindo texto longo e Acervo em tablet. Branch/worktree: `codex/soundcase` em `.worktrees/soundcase`. Não houve merge, push, instalação das units, alteração do Apache, restart público nem smoke pago; essas ações ficam para o gate de integração, pois as units apontam para `/root/CHATGPT` e o código ainda está isolado na worktree.

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { Command } from "cmdk";
 import {
@@ -14,6 +15,7 @@ import {
   Settings,
   Sparkles,
   StickyNote,
+  AudioLines,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useCommandPaletteContext } from "@/components/command/CommandPaletteProvider";
@@ -41,6 +43,7 @@ const RESPONSE_MODES = [
 ] as const;
 
 export function CommandPalette() {
+  const router = useRouter();
   const { open, setOpen } = useCommandPaletteContext();
   const { parameters, updateParameters } = useSettingsStore();
   const { setActivePanelTab } = useUIStore();
@@ -95,6 +98,14 @@ export function CommandPalette() {
                 <Plus className="size-4 shrink-0 text-muted-foreground" />
                 <span className="flex-1">Nova conversa</span>
                 <kbd className="text-nano text-muted-foreground">⌘⇧N</kbd>
+              </Command.Item>
+              <Command.Item
+                value="abrir soundcase áudio narração"
+                onSelect={() => run(() => router.push("/soundcase"))}
+                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm aria-selected:bg-accent"
+              >
+                <AudioLines className="size-4 shrink-0 text-muted-foreground" />
+                <span className="flex-1">Abrir SoundCase</span>
               </Command.Item>
             </Command.Group>
 

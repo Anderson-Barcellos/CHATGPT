@@ -12,10 +12,6 @@ import {
 
 export const runtime = "nodejs";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 function jsonError(error: string, status: number) {
   return Response.json({ error }, { status });
 }
@@ -28,6 +24,10 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    const apiKey = process.env.OPENAI_API_KEY?.trim();
+    if (!apiKey) return jsonError("OPENAI_API_KEY não configurada.", 503);
+    const openai = new OpenAI({ apiKey });
 
     const body = await request.json();
     const input = typeof body.input === "string" ? body.input.trim() : "";

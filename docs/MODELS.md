@@ -48,6 +48,8 @@
 - TTS usa `gpt-4o-mini-tts` em `lib/tts/speechText.ts`.
 - Realtime TTS opcional usa `gpt-realtime-2.1-mini`, sem `max_output_tokens` explícito.
 - Transcrição usa `gpt-4o-transcribe`.
+- SoundCase usa `gpt-5.6-luna` com reasoning `low` para direção estruturada, `gpt-4o-mini-tts` para chunks do arquivo final, `gpt-realtime-2.1-mini` para escuta imediata e `gpt-image-2` para capa. Texto narrado nunca é reescrito pela etapa de direção.
+- O arquivo SoundCase usa MP3 por padrão, com FLAC/WAV por override; o Realtime é transitório e não substitui a versão durável para download.
 
 ## Regras de Runtime
 

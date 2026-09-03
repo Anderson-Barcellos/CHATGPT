@@ -144,6 +144,17 @@ Transcrição:
 |---|---|
 | `TRANSCRIPTION_STREAMING_ENABLED` | `true` por padrão; `false` força resposta final `{ text }` sem NDJSON |
 
+SoundCase:
+
+| Variável | Propósito |
+|---|---|
+| `SOUNDCASE_DATA_DIR` | Raiz privada de projetos, fila, chunks e assets; default `data/soundcase` |
+| `SOUNDCASE_WORKER_TOKEN` | Bearer obrigatório e exclusivo do runner interno |
+| `SOUNDCASE_WORKER_URL` | Endpoint loopback do worker; default inclui o base path `/chat` |
+| `SOUNDCASE_TTS_CONCURRENCY` | Chamadas TTS simultâneas; default e teto operacional inicial `2` |
+
+As units versionadas `chatgpt-soundcase.service`, `.path` e `.timer` executam o worker durável sem porta nova. A `.path` reage a `data/soundcase/jobs.json`; o timer reabre a fila a cada minuto após falha/reboot. O token entra no `curl` por stdin e não aparece no argv. Instalação no host só deve ocorrer junto do build que já contenha `/chat/api/soundcase/*`.
+
 | Variável | Propósito |
 |---|---|
 | `GOOGLE_CLIENT_ID` | OAuth client ID do Google |
@@ -162,6 +173,7 @@ Arquivos runtime privados novos:
 | `data/workspace-notes.json` | Notas locais globais/capturas |
 | `data/pulse-tasks.json` | Rotinas Pulse recorrentes |
 | `data/pulse-runs.json` | Histórico de execuções Pulse |
+| `data/soundcase/` | Projetos, drafts, manifestos, chunks, áudio e capas privados do SoundCase |
 
 Auth do app:
 

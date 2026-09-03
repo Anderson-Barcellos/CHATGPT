@@ -12,10 +12,12 @@ import {
   Square,
   TerminalSquare,
   X,
+  AudioLines,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { SettingsDrawer } from "@/components/settings/SettingsDrawer";
+import { ProductNav } from "@/components/navigation/ProductNav";
 import { StudioAssistantPanel } from "@/components/studio/StudioAssistantPanel";
 import { StudioAutocompleteControl } from "@/components/studio/StudioAutocompleteControl";
 import { StudioConsole } from "@/components/studio/StudioConsole";
@@ -437,6 +439,7 @@ export function GauchoStudioShell() {
         />
 
         <header className={styles.topbar}>
+          <ProductNav active="studio" className={styles.topProductNav} />
           <div className={styles.executionStatus}>
             <span
               className={cn(styles.statusDot, isRunning && styles.statusDotRunning)}
@@ -685,6 +688,10 @@ export function GauchoStudioShell() {
           <Link href="/">
             <Code2 size={16} />
             Chat
+          </Link>
+          <Link href="/soundcase">
+            <AudioLines size={16} />
+            Som
           </Link>
           <button type="button" onClick={() => setMobileExplorerOpen(true)}>
             <FolderTree size={16} />

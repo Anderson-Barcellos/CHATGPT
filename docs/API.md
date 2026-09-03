@@ -300,6 +300,24 @@ Notas do PDF:
 - O renderer usa Playwright/Chrome em modo server-side com JavaScript desativado.
 - O painel A4 não oferece ação de imprimir; o caminho suportado é exportar PDF ou baixar o arquivo fonte.
 
+## SoundCase
+
+`/soundcase` reutiliza o mesmo cookie JWT do Chat. O texto e os assets ficam privados no servidor; o browser recebe apenas projeções autenticadas e URLs protegidas. O modo Realtime usa `gpt-realtime-2.1-mini` para ouvir enquanto o arquivo final é produzido, e o pipeline durável usa Luna para direção, `gpt-4o-mini-tts` para áudio e `gpt-image-2` para capa.
+
+| Método | Rota | Função |
+|---|---|---|
+| `GET/POST` | `/api/soundcase/projects` | Lista ou cria projetos |
+| `GET/PATCH/POST/DELETE` | `/api/soundcase/projects/[projectId]` | Lê, salva draft com revisão CAS (PATCH/POST de saída) ou exclui projeto |
+| `POST` | `/api/soundcase/projects/[projectId]/import` | Importa `.txt`/`.md` até 1 MB |
+| `GET/POST` | `/api/soundcase/projects/[projectId]/versions` | Lista ou cria uma geração idempotente |
+| `GET/DELETE` | `/api/soundcase/projects/[projectId]/versions/[versionId]` | Lê projeção pública ou exclui versão |
+| `POST` | `.../[versionId]/cancel` / `resume` | Cancela ou retoma geração durável |
+| `GET` | `.../[versionId]/audio` / `cover` | Serve asset privado; áudio aceita Range |
+| `POST` | `/api/soundcase/realtime-call` | Handshake SDP autenticado com voz/direção persistidas |
+| `POST` | `/api/soundcase/worker/run-next` | Runner interno protegido por bearer dedicado |
+
+O limite editorial inicial é 90 minutos estimados. O default de saída é MP3; FLAC e WAV são overrides. A chegada do arquivo final não interrompe Realtime: a troca de fonte é sempre explícita no player.
+
 ## Google Calendar e Notas Locais
 
 Nota atual: a aba visível do produto usa **Pulse nativo** para rotinas recorrentes. As rotas Google/Calendar abaixo ficam como legado operacional até limpeza futura.

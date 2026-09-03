@@ -399,6 +399,11 @@
   backdrop-filter: blur(18px);
 }
 
+.topProductNav {
+  position: absolute;
+  left: 1rem;
+}
+
 .executionStatus {
   position: absolute;
   left: 50%;
@@ -1646,6 +1651,10 @@
 }
 
 @media (max-width: 1120px) {
+  .topProductNav {
+    display: none;
+  }
+
   .shell {
     grid-template-columns: 3.6rem minmax(30rem, 1fr) minmax(19.5rem, 22rem);
   }
@@ -1788,7 +1797,7 @@
     grid-column: 2;
     grid-row: 3;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     border-top: 1px solid var(--studio-border);
     background: var(--studio-panel);
   }
@@ -1834,6 +1843,10 @@
 
   .topbar {
     padding-left: 0.7rem;
+  }
+
+  .topProductNav {
+    display: none;
   }
 
   .executionStatus {
