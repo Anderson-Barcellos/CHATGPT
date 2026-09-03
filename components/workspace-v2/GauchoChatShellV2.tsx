@@ -17,7 +17,7 @@ import { ConversationRailV2 } from "@/components/workspace-v2/ConversationRailV2
 import { WorkspaceFrameV2 } from "@/components/workspace-v2/WorkspaceLayoutV2";
 import { ExportDropdown } from "@/components/workspace-v2/ExportDropdown";
 import { getReasoningLabel, isReasoningModel } from "@/lib/models/modelConfig";
-import type { ResponseMode } from "@/types";
+import type { Conversation, ResponseMode } from "@/types";
 import { useChat } from "@/hooks/useChat";
 import { NotesProvider } from "@/components/workspace-v2/NotesProvider";
 import { SelectionToolbar } from "@/components/chat/SelectionToolbar";
@@ -29,12 +29,12 @@ import { useComponentPreloader } from "@/lib/performance/lazy";
 import { MODELS } from "@/lib/models/modelConfig";
 import { useChatStore } from "@/stores/chatStore";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { useUIStore } from "@/stores/uiStore";
 import { toast } from "sonner";
 
 export function GauchoChatShellV2() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [splashDismissed, setSplashDismissed] = useState(false);
-  const [mobileContextOpen, setMobileContextOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [responseMode, setResponseMode] = useState<ResponseMode>("default");
   const isHydrated = useSyncExternalStore(
@@ -51,6 +51,11 @@ export function GauchoChatShellV2() {
   const { activeConversationId, messages, isStreaming, setActiveConversationId } = useChatStore();
   const { conversations, createConversation } = useConversations();
   const { parameters } = useSettingsStore();
+  const {
+    contextPanelOpen,
+    setContextPanelOpen,
+    closeContextPanel,
+  } = useUIStore();
   const textSelection = useTextSelection();
   const {
     messages: chatMessages,
@@ -84,10 +89,18 @@ export function GauchoChatShellV2() {
     ? getReasoningLabel(parameters.reasoningEffort)
     : "";
   const artifactCount = chatMessages.filter((m) => m.artifact).length;
+  const recentConversations = useMemo<
+    Pick<Conversation, "id" | "title" | "updatedAt">[]
+  >(
+    () =>
+      [...conversations]
+        .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+        .slice(0, 4)
+        .map(({ id, title, updatedAt }) => ({ id, title, updatedAt })),
+    [conversations]
+  );
   const shouldShowRecoveryState =
     Boolean(recoveryError) || isRecovering || !activeConversationId;
-  const effectiveMobileContextOpen = mobileContextOpen;
-
   const handleSplashComplete = useCallback(() => {
     sessionStorage.setItem("gpt-splash-shown", "1");
     setSplashDismissed(true);
@@ -99,25 +112,6 @@ export function GauchoChatShellV2() {
     return () => window.removeEventListener("gaucho:open-settings", handler);
   }, []);
 
-  useEffect(() => {
-    const handler = () => setMobileContextOpen(false);
-    window.addEventListener("gaucho:close-context-panel", handler);
-    return () => window.removeEventListener("gaucho:close-context-panel", handler);
-  }, []);
-
-  useEffect(() => {
-    const handler = () => setMobileContextOpen(true);
-    window.addEventListener("gaucho:open-context-panel", handler);
-    return () => window.removeEventListener("gaucho:open-context-panel", handler);
-  }, []);
-
-  const handleMobileContextOpenChange = useCallback(
-    (open: boolean) => {
-      setMobileContextOpen(open);
-    },
-    []
-  );
-
   const handleNewConversation = useCallback(async () => {
     if (isStreaming) {
       toast.info("Aguarde a resposta terminar para abrir uma nova conversa.");
@@ -128,12 +122,29 @@ export function GauchoChatShellV2() {
       const id = await createConversation("Nova conversa");
       setActiveConversationId(id);
       setMobileSidebarOpen(false);
-      setMobileContextOpen(false);
+      closeContextPanel();
     } catch (creationError) {
       console.error("[GauchoChatShellV2] Falha ao criar conversa:", creationError);
       toast.error("Nao consegui abrir uma nova conversa agora.");
     }
-  }, [createConversation, isStreaming, setActiveConversationId]);
+  }, [closeContextPanel, createConversation, isStreaming, setActiveConversationId]);
+
+  const handleSelectConversation = useCallback(
+    (id: string) => {
+      if (id === activeConversationId) {
+        setMobileSidebarOpen(false);
+        return;
+      }
+      if (isStreaming) {
+        toast.info("Aguarde a resposta terminar para trocar de conversa.");
+        return;
+      }
+      setActiveConversationId(id);
+      setMobileSidebarOpen(false);
+      closeContextPanel();
+    },
+    [activeConversationId, closeContextPanel, isStreaming, setActiveConversationId]
+  );
 
   return (
     <>
@@ -181,6 +192,10 @@ export function GauchoChatShellV2() {
                 isLoading={isChatLoading}
                 editAndResend={editAndResend}
                 deleteMessage={deleteMessage}
+                recentConversations={recentConversations}
+                activeConversationId={activeConversationId}
+                onSelectConversation={handleSelectConversation}
+                onOpenConversations={() => setMobileSidebarOpen(true)}
               />
             )
           }
@@ -198,8 +213,8 @@ export function GauchoChatShellV2() {
           }
           contextPanel={<ContextPanelV2 />}
           mobileContextPanel={<ContextPanelV2 />}
-          mobileContextOpen={effectiveMobileContextOpen}
-          onMobileContextOpenChange={handleMobileContextOpenChange}
+          mobileContextOpen={contextPanelOpen}
+          onMobileContextOpenChange={setContextPanelOpen}
           onOpenSettings={() => setSettingsOpen(true)}
           exportControl={<ExportDropdown />}
         />

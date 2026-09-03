@@ -1351,3 +1351,14 @@ Bridge (`studio-kernel-bridge.py`): mimes ampliados para png/jpeg/svg/html/latex
 
 Notes:
 568 testes/112 arquivos (27 novos, red→green por frente), tsc/lint/build limpos, deploy com restart e health local/público 200. Validação Playwright em produção 12/12 com notebook semeado: tabela pandas HTML, PNG matplotlib (exige `%matplotlib inline`), katex, traceback, input() respondido inline ("Buenas, Anders!"), fila, duração, mover célula e assistente corrigindo SyntaxError real. Bug pego na validação: os POSTs paralelos do run-all chegavam fora de ordem no servidor (a célula de input() bloqueou a fila na frente da célula de erro) — corrigido serializando os dispatches no client. pandas+matplotlib instalados no venv da jail. Achado lateral: três venvs acidentais na raiz do repo (`pip/`, `install/`, `selenium/`, criados 13:12 por um provável `python3 -m venv pip install selenium`) quebravam o Turbopack (symlink fora do project root); movidos para `/root/CHATGPT-quarentena-2026-08-20/` sem apagar. Notebook de validação `valida-colab.ipynb` permanece no workspace como demo.
+
+### 2026-08-22 13:27 - Homogeneização funcional e fluidez do Gaucho Chat
+
+Context:
+Auditoria geral autorizada por Anders encontrou inconsistências visuais reais; ele escolheu iniciar pelo layout, preservando o Atmosphere Glass. A entrega foi isolada em `codex/layout-homogenization` para não misturar nem publicar o WIP Gemini 3.7 presente em `main`.
+
+Details:
+Home mobile passou de conversas clínicas fictícias para conversas reais com estado vazio, seleção e rail funcionais. `uiStore` centraliza abertura + aba do painel contextual; Pulse, Notas, Rotinas, quick actions, seleção e paleta usam o mesmo comando. Status estáticos “Salvo/online” foram removidos; avisos ganharam contraste light/dark; Settings recebeu semântica de tabs, labels e nomes acessíveis; controles touch usam 44 px. O Canvas custom foi substituído pelo Sheet Radix com título, foco inicial, trap, Escape e retorno de foco. Welcome agora é determinístico; animação de bolhas desliga `layout` durante streaming e respeita movimento reduzido.
+
+Notes:
+Validação: 574 testes/113 arquivos, TypeScript, lint, build `/chat` e `git diff --check` limpos. QA autenticado em Google Chrome local passou 32/32 nos viewports 320/375/430/768/1024/1490, Daybreak/Midnight, navegação, foco inicial, Escape, 44×44, reduced-motion, overflow e console; uma sonda adicional confirmou o retorno explícito do foco ao gatilho. A build ainda mostra o warning preexistente de NFT tracing em `studioWorkspaceFs`; sem chave real, `/api/tts` também exige placeholder só na avaliação de módulo. Fixtures e screenshots temporários foram removidos; nenhum dado real, serviço público, merge, push ou deploy foi tocado. ENTREGA L1 pronta para revisão.

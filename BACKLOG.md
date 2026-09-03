@@ -2,13 +2,19 @@
 
 ## Estado operacional
 
-### Nenhum PACK ativo
+### FRENTE ATIVA — Homogeneização funcional e fluidez do Gaucho Chat
 
-O Gaucho Studio atual é Python-only e está integrado em `main`: workspace contínuo no servidor com step-up auth, run sandboxed com stdin, terminal PTY, preview Markdown, notebook `.ipynb` estilo Colab com ipykernel persistente, autocomplete FIM e assistente contextual somente leitura. Os PACKs abaixo foram implementados e validados em produção; as entradas permanecem como histórico e evidência, não como fila ativa.
+#### ENTREGA L1 — Layout confiável, acessível e consistente (`pronta para revisão`)
 
-Última extensão validada (2026-08-20): PACK "Notebook modo Colab" concluído (ver seção histórica abaixo). Rename continua disponível somente no backend. Pendências técnicas conhecidas: dois warnings de fallback do Monaco language worker e o advisory `pdfjs-dist` GHSA-hq66-cqwq-w95j, cuja correção exige migração major. Fora de escopo registrado do notebook: múltiplos kernels simultâneos, inspetor de variáveis, completion jedi do kernel e modo tela-cheia.
+Resultado esperado: preservar o Atmosphere Glass enquanto a home mobile passa a usar conversas reais, os atalhos abrem a aba correta, o Canvas funciona como modal acessível e os estados visuais deixam de prometer informações sem fonte real.
 
-Próxima decisão de produto: Anders revisa a experiência atual e escolhe a próxima frente; nenhum bundle novo deve ser aberto automaticamente.
+Escopo incluído: home e navegação mobile, painel contextual centralizado, contraste e nomes acessíveis, hit areas touch, Canvas Radix, welcome determinístico, movimento reduzido e animação de mensagens durante streaming.
+
+Limites explícitos: não alterar rotas, providers, dados persistidos, o WIP Gemini 3.7 em `main`, bundle splitting amplo, dependências, Studio/Pulse ou runtime público. Implementação isolada em `codex/layout-homogenization`; sem merge, push ou deploy antes da revisão de Anders.
+
+Evidência de conclusão: 113 arquivos/574 testes, TypeScript, lint, build prefixada em `/chat` e `git diff --check` limpos. QA autenticado no Google Chrome passou 32/32 em 320/375/430/768/1024/1490 px, Daybreak/Midnight, ausência de overflow/erros de console, navegação real, painel/abas, alvo de envio 44×44, Settings, Canvas com foco inicial/Escape e movimento reduzido; uma sonda adicional confirmou o retorno explícito do foco ao gatilho. A build mantém o warning preexistente de NFT tracing do Studio; sem restart, merge, push ou deploy.
+
+Próxima candidata prioritária, sem ativação automática: blindagem do symlink final do Studio e autenticação/claim/recovery do Pulse descobertos na auditoria de 2026-08-22.
 
 ### PACK HISTÓRICO — Notebook modo Colab (2026-08-20)
 

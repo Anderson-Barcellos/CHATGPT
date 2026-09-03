@@ -17,6 +17,7 @@ export function ContextPanelV2() {
   const {
     activePanelTab,
     setActivePanelTab,
+    closeContextPanel,
   } = useUIStore();
   const { activeConversationId } = useChatStore();
 
@@ -32,10 +33,9 @@ export function ContextPanelV2() {
         <Button
           variant="ghost"
           size="icon"
+          aria-label="Fechar painel contextual"
           className="size-[var(--gc-mobile-icon-button-size)] md:size-8"
-          onClick={() => {
-            window.dispatchEvent(new CustomEvent("gaucho:close-context-panel"));
-          }}
+          onClick={closeContextPanel}
         >
           <PanelRightClose className="size-4" />
         </Button>

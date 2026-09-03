@@ -18,7 +18,7 @@ export function SelectionToolbar({ selection }: SelectionToolbarProps) {
   const isMobile = useIsMobile();
   const [copied, setCopied] = useState(false);
   const { appendToNotes } = useNotes();
-  const { setActivePanelTab } = useUIStore();
+  const { openContextPanel } = useUIStore();
 
   const handleQuote = useCallback(() => {
     if (!selection) return;
@@ -30,8 +30,8 @@ export function SelectionToolbar({ selection }: SelectionToolbarProps) {
   const handleNote = useCallback(() => {
     if (!selection) return;
     appendToNotes(selection.text, selection.messageId);
-    setActivePanelTab("notes");
-  }, [selection, appendToNotes, setActivePanelTab]);
+    openContextPanel("notes");
+  }, [selection, appendToNotes, openContextPanel]);
 
   const handleCopy = useCallback(async () => {
     if (!selection) return;
@@ -64,28 +64,31 @@ export function SelectionToolbar({ selection }: SelectionToolbarProps) {
         <div className="flex items-center gap-0.5 rounded-lg border border-white/12 bg-popover px-1 py-1 shadow-lg">
           <button
             type="button"
-            className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+            className="gc-touch-target flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
             onMouseDown={(e) => e.preventDefault()}
             onClick={handleQuote}
             title="Citar no composer"
+            aria-label="Citar no composer"
           >
             <MessageSquareQuote className="size-3.5" />
           </button>
           <button
             type="button"
-            className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+            className="gc-touch-target flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
             onMouseDown={(e) => e.preventDefault()}
             onClick={handleNote}
             title="Adicionar à nota"
+            aria-label="Adicionar à nota"
           >
             <StickyNote className="size-3.5" />
           </button>
           <button
             type="button"
-            className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+            className="gc-touch-target flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
             onMouseDown={(e) => e.preventDefault()}
             onClick={handleCopy}
             title="Copiar"
+            aria-label="Copiar"
           >
             {copied ? (
               <Check className="size-3.5 text-emerald-400" />

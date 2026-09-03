@@ -214,7 +214,11 @@ function MemoryCard({ memory, onDelete, onUpdate }: MemoryCardProps) {
     >
       <div className="mb-2 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Switch checked={memory.isActive} onCheckedChange={handleToggle} />
+          <Switch
+            checked={memory.isActive}
+            onCheckedChange={handleToggle}
+            aria-label={`${memory.isActive ? "Pausar" : "Ativar"} memória`}
+          />
           <span className="text-micro font-medium uppercase tracking-eyebrow text-muted-foreground/75">
             {memory.isActive ? "Ativa" : "Pausada"}
           </span>
@@ -223,6 +227,8 @@ function MemoryCard({ memory, onDelete, onUpdate }: MemoryCardProps) {
       </div>
 
       <textarea
+        id={`memory-${memory.id}`}
+        aria-label="Conteúdo da memória"
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
         onBlur={() => {
@@ -244,6 +250,7 @@ function MemoryCard({ memory, onDelete, onUpdate }: MemoryCardProps) {
           size="sm"
           onClick={handleDelete}
           disabled={isDeleting}
+          aria-label="Excluir memória"
           className="h-8 rounded-xl px-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
         >
           <Trash2 className="h-3.5 w-3.5" />
@@ -277,6 +284,8 @@ function MemorySuggestionCard({
       </div>
 
       <textarea
+        id={`memory-suggestion-${suggestion.id}`}
+        aria-label="Conteúdo sugerido para memória"
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
         rows={3}
@@ -290,6 +299,7 @@ function MemorySuggestionCard({
           size="sm"
           onClick={() => void onReject(suggestion.id)}
           disabled={isUpdating}
+          aria-label="Rejeitar sugestão de memória"
           className="h-8 rounded-xl px-2 text-muted-foreground hover:text-destructive"
         >
           <XCircle className="h-3.5 w-3.5" />
@@ -299,6 +309,7 @@ function MemorySuggestionCard({
           size="sm"
           onClick={() => void onAccept(suggestion.id, draft.trim())}
           disabled={isUpdating || !draft.trim()}
+          aria-label="Aceitar sugestão de memória"
           className="h-8 rounded-xl px-2"
         >
           <Check className="h-3.5 w-3.5" />
@@ -464,14 +475,20 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
               </div>
             </div>
 
-            <div className="mt-[var(--gc-mobile-context-header-y)] grid grid-cols-3 gap-1 rounded-xl border border-[color:var(--gc-border-soft)] bg-background/72 p-1 sm:rounded-2xl">
+            <div
+              role="tablist"
+              aria-label="Seções das configurações"
+              className="mt-[var(--gc-mobile-context-header-y)] grid grid-cols-3 gap-1 rounded-xl border border-[color:var(--gc-border-soft)] bg-background/72 p-1 sm:rounded-2xl"
+            >
               {SETTINGS_TABS.map(({ key, label, icon: Icon }) => (
                 <button
                   key={key}
                   type="button"
+                  role="tab"
+                  aria-selected={activeTab === key}
                   onClick={() => setActiveTab(key)}
                   className={cn(
-                    "flex min-w-0 items-center justify-center gap-1 rounded-lg px-1.5 py-1.5 text-[length:var(--gc-mobile-tab-font-size)] font-semibold transition-all sm:rounded-xl sm:py-2 sm:text-micro",
+                    "gc-settings-tab flex min-w-0 items-center justify-center gap-1 rounded-lg px-1.5 py-1.5 text-[length:var(--gc-mobile-tab-font-size)] font-semibold transition-all sm:rounded-xl sm:py-2 sm:text-micro",
                     activeTab === key
                       ? "bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(15,118,110,0.18)]"
                       : "text-muted-foreground hover:text-foreground"
@@ -607,6 +624,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                           </div>
                           <Switch
                             checked={parameters.codeInterpreterEnabled}
+                            aria-label="Ativar Code Interpreter"
                             onCheckedChange={(checked) =>
                               updateParameters({ codeInterpreterEnabled: checked })
                             }
@@ -850,6 +868,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
 
                 <div className="flex gap-2">
                   <textarea
+                    aria-label="Nova memória"
                     value={newMemory}
                     onChange={(e) => setNewMemory(e.target.value)}
                     placeholder="Ex: Sempre explique código em detalhe..."
@@ -864,6 +883,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                   />
                   <Button
                     type="button"
+                    aria-label="Adicionar memória"
                     onClick={() => void handleAddMemory()}
                     disabled={isCreatingMemory || !newMemory.trim()}
                     className="h-auto min-h-[72px] rounded-2xl bg-primary px-3 text-primary-foreground hover:opacity-90"
@@ -909,11 +929,12 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                  <label htmlFor="main-prompt-preview" className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                     <Sparkles className="h-3.5 w-3.5" />
                     Prompt principal
                   </label>
                   <textarea
+                    id="main-prompt-preview"
                     value={mainPromptPreview}
                     readOnly
                     rows={8}
@@ -927,7 +948,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                    <label htmlFor="context-about-user" className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                       <User className="h-3.5 w-3.5" />
                       Sobre Você
                     </label>
@@ -937,6 +958,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                     />
                   </div>
                   <textarea
+                    id="context-about-user"
                     value={contextAboutUser}
                     onChange={(e) => updateContextAboutUser(e.target.value)}
                     placeholder="Contexto adicional sobre você..."
@@ -946,11 +968,12 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <label htmlFor="custom-system-instructions" className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <Sliders className="h-3.5 w-3.5" />
                     Regras customizadas
                   </label>
                   <textarea
+                    id="custom-system-instructions"
                     value={customSystemInstructions}
                     onChange={(e) => updateCustomSystemInstructions(e.target.value)}
                     placeholder="Regras adicionais que entram no prompt do sistema..."
@@ -960,11 +983,12 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <label htmlFor="response-preferences" className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <Sparkles className="h-3.5 w-3.5" />
                     Preferências de Resposta
                   </label>
                   <textarea
+                    id="response-preferences"
                     value={responsePreferences}
                     onChange={(e) => updateResponsePreferences(e.target.value)}
                     placeholder="Como tu prefere que a IA responda..."

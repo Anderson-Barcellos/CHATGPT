@@ -43,7 +43,7 @@ const RESPONSE_MODES = [
 export function CommandPalette() {
   const { open, setOpen } = useCommandPaletteContext();
   const { parameters, updateParameters } = useSettingsStore();
-  const { setActivePanelTab } = useUIStore();
+  const { openContextPanel } = useUIStore();
   const { setActiveConversationId } = useChatStore();
 
   const chatModels = getChatModels();
@@ -157,7 +157,7 @@ export function CommandPalette() {
             <Command.Group heading="Painel">
               <Command.Item
                 value="painel pulse atividade geracoes ultimas"
-                onSelect={() => run(() => setActivePanelTab("activity"))}
+                onSelect={() => run(() => openContextPanel("activity"))}
                 className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm aria-selected:bg-accent"
               >
                 <Activity className="size-4 shrink-0 text-muted-foreground" />
@@ -165,7 +165,7 @@ export function CommandPalette() {
               </Command.Item>
               <Command.Item
                 value="painel notas capturas locais workspace"
-                onSelect={() => run(() => setActivePanelTab("notes"))}
+                onSelect={() => run(() => openContextPanel("notes"))}
                 className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm aria-selected:bg-accent"
               >
                 <StickyNote className="size-4 shrink-0 text-muted-foreground" />
@@ -173,7 +173,7 @@ export function CommandPalette() {
               </Command.Item>
               <Command.Item
                 value="painel pulse rotinas agendamentos recorrentes"
-                onSelect={() => run(() => setActivePanelTab("pulse"))}
+                onSelect={() => run(() => openContextPanel("pulse"))}
                 className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm aria-selected:bg-accent"
               >
                 <Sparkles className="size-4 shrink-0 text-muted-foreground" />

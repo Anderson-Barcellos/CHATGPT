@@ -49,7 +49,7 @@ vi.mock("@/hooks/useIsMobile", () => ({
 }));
 
 vi.mock("@/stores/uiStore", () => ({
-  useUIStore: () => ({ setActivePanelTab: vi.fn() }),
+  useUIStore: () => ({ openContextPanel: vi.fn() }),
 }));
 
 describe("QuickActionsBar audio entry point", () => {
