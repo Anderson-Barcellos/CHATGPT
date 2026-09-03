@@ -609,4 +609,4 @@ Expected: antes do push, origin/main não tem commits exclusivos; depois, contag
 
 - [ ] **Step 7: Fechamento Superpowers com evidência fresca**
 
-Update the dated AGENTS.md closeout entry with final commit IDs, test count, lint/audit/build status, smoke viewports, health status, remaining worktrees, remote divergence 0 0, quarantine path and any intentionally retained warning, then commit that evidence before pushing. Mark this delivery pronta para revisão; only Anders marks it fechada.
+After the first push proves remote divergence 0 0, update the dated AGENTS.md closeout entry with final commit IDs, test count, lint/audit/build status, smoke viewports, health status, remaining worktrees, quarantine path and the known NFT warning. Commit and push that evidence entry, then prove remote divergence 0 0 again. Mark this delivery pronta para revisão; only Anders marks it fechada.
