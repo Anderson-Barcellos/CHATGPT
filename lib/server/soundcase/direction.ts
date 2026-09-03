@@ -16,6 +16,8 @@ export const DEFAULT_TTS_INSTRUCTIONS =
 const SOUNDCASE_DIRECTION_MODEL = "gpt-5.6-luna" as const;
 const DEFAULT_COVER_PROMPT =
   "Composição editorial abstrata inspirada em áudio e narrativa, atmosfera azul profunda, sem palavras, letras, números, legendas ou tipografia legível.";
+const COVER_NO_TEXT_CONSTRAINT =
+  "Obrigatório: produza somente imagem; não inclua palavras, letras, números, títulos, legendas, logotipos ou qualquer tipografia legível.";
 
 export const soundCaseDirectionSchema = {
   type: "json_schema" as const,
@@ -161,7 +163,7 @@ function normalizeSegmentDirections(
     }
     supplied.set(
       segmentId,
-      boundedString(
+      protectNarrationInstruction(
         (item as { instructions?: unknown }).instructions,
         500,
         globalInstructions
@@ -180,7 +182,7 @@ function normalizeAutomaticDirection(
   input: SoundCaseDirectionInput
 ): SoundCaseDirection {
   if (!isTtsVoice(raw.voice)) throw new Error("soundcase_voice_invalid");
-  const globalInstructions = boundedString(
+  const globalInstructions = protectNarrationInstruction(
     raw.globalInstructions,
     1_200,
     DEFAULT_TTS_INSTRUCTIONS
@@ -210,12 +212,45 @@ function normalizeAutomaticDirection(
   };
 }
 
+function protectNarrationInstruction(
+  value: unknown,
+  limit: number,
+  fallback: string
+): string {
+  const artistic = boundedString(value, limit);
+  if (!artistic || artistic === DEFAULT_TTS_INSTRUCTIONS) return fallback;
+  const separator = "\n\n";
+  const available = Math.max(0, limit - DEFAULT_TTS_INSTRUCTIONS.length - separator.length);
+  return `${artistic.slice(0, available)}${separator}${DEFAULT_TTS_INSTRUCTIONS}`;
+}
+
+function containsSourceExcerpt(prompt: string, sourceText: string): boolean {
+  const normalize = (value: string) =>
+    value.toLocaleLowerCase("pt-BR").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  const promptWords = normalize(prompt).split(" ").filter(Boolean);
+  const sourceWords = normalize(sourceText).split(" ").filter(Boolean);
+  if (sourceWords.length === 0) return false;
+  const windows = sourceWords.length < 3 ? [sourceWords.join(" ")] : sourceWords
+    .slice(0, -2)
+    .map((_, index) => sourceWords.slice(index, index + 3).join(" "));
+  const normalizedPrompt = promptWords.join(" ");
+  return windows.some((window) => window.length >= 12 && normalizedPrompt.includes(window));
+}
+
 function normalizeCoverPrompt(value: unknown, sourceText: string): string {
-  const prompt = boundedString(value, 1_200, DEFAULT_COVER_PROMPT);
-  const normalizedSource = sourceText.trim();
-  return normalizedSource && prompt.includes(normalizedSource)
-    ? DEFAULT_COVER_PROMPT
-    : prompt;
+  const rawPrompt = boundedString(value, 1_200);
+  if (!rawPrompt || containsSourceExcerpt(rawPrompt, sourceText)) {
+    return DEFAULT_COVER_PROMPT;
+  }
+  const unsafeProbe = rawPrompt
+    .replace(/\b(?:sem|without|no)\s+(?:texto|text|palavras?|words?|letras?|letters?|t[ií]tulos?|titles?|legendas?|captions?|tipografia|typography)\b/giu, "")
+    .toLocaleLowerCase("pt-BR");
+  if (/\b(?:escrev\p{L}*|write|spell|texto|text|palavras?|words?|letras?|letters?|t[ií]tulos?|titles?|legendas?|captions?|tipografia|typography)\b/iu.test(unsafeProbe)) {
+    return DEFAULT_COVER_PROMPT;
+  }
+  const separator = "\n\n";
+  const available = 1_200 - COVER_NO_TEXT_CONSTRAINT.length - separator.length;
+  return `${rawPrompt.slice(0, available)}${separator}${COVER_NO_TEXT_CONSTRAINT}`;
 }
 
 function fallbackTitle(sourceText: string): string {
