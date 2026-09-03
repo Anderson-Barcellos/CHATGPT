@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch Gaucho Chat SoundCase queue
+
+[Path]
+PathChanged=/root/CHATGPT/data/soundcase/jobs.json
+Unit=chatgpt-soundcase.service
+
+[Install]
+WantedBy=multi-user.target

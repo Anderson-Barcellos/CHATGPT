@@ -1,0 +1,11 @@
+[Unit]
+Description=Recover Gaucho Chat SoundCase queue
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+Persistent=true
+Unit=chatgpt-soundcase.service
+
+[Install]
+WantedBy=timers.target
