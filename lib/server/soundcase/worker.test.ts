@@ -123,7 +123,7 @@ describe("SoundCase resumable worker", () => {
     await resumeSoundCaseVersion(project.id, created.version.id);
     const completed = await runNextSoundCaseJob({
       workerId: "worker-new", openai: secondClient, execFile: fakeExec(),
-      now: () => new Date("2030-01-01T00:00:10.000Z"),
+      now: () => new Date("2030-01-01T00:00:10.000Z"), sleep: async () => undefined,
     });
 
     expect(completed.status).toBe("completed");
@@ -151,6 +151,7 @@ describe("SoundCase resumable worker", () => {
     expect(speech).toHaveBeenCalledTimes(4);
     await expect(runNextSoundCaseJob({
       workerId: "worker-next", openai: client, execFile: fakeExec(),
+      sleep: async () => undefined,
     })).resolves.toEqual({ status: "empty" });
     expect(speech).toHaveBeenCalledTimes(4);
     expect((await getSoundCaseVersion(project.id, created.version.id)).manifest.chunks[0].attempts).toBe(4);
