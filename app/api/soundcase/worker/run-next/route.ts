@@ -21,10 +21,12 @@ export async function POST(request: NextRequest) {
     const result = await runNextSoundCaseJob({ workerId: `http-${process.pid}-${crypto.randomUUID()}` });
     return result.status === "empty" ? new Response(null, { status: 204 }) : NextResponse.json(result);
   } catch {
+    const diagnosticId = crypto.randomUUID();
+    console.error("[soundcase-worker] run failed", { diagnosticId });
     return Response.json({
       error: "SoundCase worker failed",
       code: "soundcase_worker_failed",
-      diagnosticId: crypto.randomUUID(),
+      diagnosticId,
     }, { status: 500 });
   }
 }

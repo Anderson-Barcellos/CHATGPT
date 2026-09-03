@@ -1,13 +1,13 @@
-import { constants, promises as fs } from "node:fs";
 import { Readable } from "node:stream";
 import type { SoundCaseVersion } from "@/lib/soundcase/types";
-import { resolveSoundCasePath } from "@/lib/server/soundcase/files";
+import { openSoundCaseFileSafe, resolveSoundCasePath } from "@/lib/server/soundcase/files";
 
 export type SoundCaseAssetKind = "audio" | "cover";
 
 function assetMetadata(version: SoundCaseVersion, kind: SoundCaseAssetKind) {
   if (kind === "audio") {
     if (version.audio.status !== "ready") return null;
+    if (version.audio.format !== "mp3" && version.audio.format !== "flac" && version.audio.format !== "wav") return null;
     const expectedName = `final.${version.audio.format}`;
     if (version.audio.fileName !== expectedName) return null;
     const expectedType = version.audio.format === "mp3"
@@ -16,7 +16,7 @@ function assetMetadata(version: SoundCaseVersion, kind: SoundCaseAssetKind) {
     if (version.audio.contentType !== expectedType) return null;
     return { fileName: expectedName, contentType: expectedType };
   }
-  if (version.cover.status === "pending") return null;
+  if (version.cover.status !== "ready" && version.cover.status !== "fallback") return null;
   const expected = version.cover.status === "ready"
     ? { fileName: "cover.png", contentType: "image/png" }
     : { fileName: "cover.svg", contentType: "image/svg+xml" };
@@ -53,14 +53,14 @@ export async function streamSoundCaseAsset(input: {
   const filePath = resolveSoundCasePath(
     "projects", input.version.projectId, "versions", input.version.id, metadata.fileName
   );
-  let handle: Awaited<ReturnType<typeof fs.open>>;
+  let opened: Awaited<ReturnType<typeof openSoundCaseFileSafe>>;
   try {
-    handle = await fs.open(filePath, constants.O_RDONLY | constants.O_NOFOLLOW);
+    opened = await openSoundCaseFileSafe(filePath);
   } catch {
     return Response.json({ error: "SoundCase asset not found", code: "soundcase_asset_not_found" }, { status: 404 });
   }
   try {
-    const info = await handle.stat();
+    const { handle, info } = opened;
     if (!info.isFile() || info.size <= 0) {
       await handle.close();
       return Response.json({ error: "SoundCase asset not found", code: "soundcase_asset_not_found" }, { status: 404 });
@@ -92,7 +92,7 @@ export async function streamSoundCaseAsset(input: {
       headers,
     });
   } catch (error) {
-    await handle.close().catch(() => undefined);
+    await opened.handle.close().catch(() => undefined);
     throw error;
   }
 }

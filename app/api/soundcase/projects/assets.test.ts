@@ -85,6 +85,35 @@ describe("SoundCase private assets", () => {
     expect(response.status).toBe(404);
   });
 
+  it("rejects runtime-invalid metadata and cross-project redirection", async () => {
+    mocks.getSoundCaseVersion.mockResolvedValue({
+      ...version(), projectId: "33333333-3333-4333-8333-333333333333",
+      audio: { ...version().audio, format: "opus", fileName: "final.opus" },
+    });
+    const response = await GET_AUDIO(new NextRequest("http://local/audio"), context);
+    expect(response.status).toBe(404);
+  });
+
+  it("rejects a symlinked ancestor instead of following it", async () => {
+    const versionDirectory = path.join(root, "projects", PROJECT_ID, "versions", VERSION_ID);
+    const outside = path.join(root, "outside");
+    await fs.rename(versionDirectory, outside);
+    await fs.symlink(outside, versionDirectory);
+    const response = await GET_AUDIO(new NextRequest("http://local/audio"), context);
+    expect(response.status).toBe(404);
+  });
+
+  it("streams the inode opened before a later path replacement", async () => {
+    const request = new NextRequest("http://local/audio");
+    const response = await GET_AUDIO(request, context);
+    const filePath = path.join(root, "projects", PROJECT_ID, "versions", VERSION_ID, "final.mp3");
+    await fs.rename(filePath, `${filePath}.old`);
+    await fs.writeFile(filePath, Buffer.alloc(100, 255));
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    expect(bytes[0]).toBe(0);
+    expect(bytes[99]).toBe(99);
+  });
+
   it("authenticates before resolving metadata or opening a file", async () => {
     mocks.requireAppAuth.mockResolvedValue(new Response(null, { status: 401 }));
     const response = await GET_AUDIO(new NextRequest("http://local/audio"), context);

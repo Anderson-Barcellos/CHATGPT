@@ -15,6 +15,9 @@ export async function GET(request: NextRequest, context: Context) {
   if (!isSoundCaseId(projectId) || !isSoundCaseId(versionId)) return invalidSoundCaseIdResponse();
   try {
     const version = await getSoundCaseVersion(projectId, versionId);
+    if (version.projectId !== projectId || version.id !== versionId) {
+      return Response.json({ error: "SoundCase asset not found", code: "soundcase_asset_not_found" }, { status: 404 });
+    }
     return streamSoundCaseAsset({ request, version, kind: "audio" });
   } catch (error) { return soundCaseErrorResponse(error); }
 }

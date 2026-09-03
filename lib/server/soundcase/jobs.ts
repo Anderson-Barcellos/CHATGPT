@@ -311,7 +311,10 @@ export async function getSoundCaseVersion(
     readJsonSafe<SoundCaseVersionMetadata>(versionPath(projectId, versionId)),
     readJsonSafe<SoundCaseManifest>(manifestPath(projectId, versionId)),
   ]);
-  if (!metadata || !manifest || metadata.id !== versionId || manifest.versionId !== versionId) {
+  if (
+    !metadata || !manifest || metadata.id !== versionId ||
+    metadata.projectId !== projectId || manifest.versionId !== versionId
+  ) {
     throw new SoundCaseJobError("soundcase_version_not_found", 404);
   }
   return { ...metadata, manifest };

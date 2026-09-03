@@ -154,6 +154,26 @@ export async function assertRegularSoundCaseFile(
   }
 }
 
+export async function openSoundCaseFileSafe(filePath: string) {
+  const target = assertInsideRoot(filePath);
+  await assertNoSymlinkAncestors(path.dirname(target));
+  let handle: Awaited<ReturnType<typeof fs.open>>;
+  try {
+    handle = await fs.open(target, constants.O_RDONLY | constants.O_NOFOLLOW);
+  } catch (error) {
+    if (isSymlinkLoop(error)) {
+      throw new SoundCaseFileError("soundcase_symlink_rejected");
+    }
+    throw error;
+  }
+  const info = await handle.stat();
+  if (!info.isFile()) {
+    await handle.close();
+    throw new SoundCaseFileError("soundcase_file_invalid");
+  }
+  return { handle, info };
+}
+
 async function syncDirectory(directory: string): Promise<void> {
   const handle = await fs.open(
     directory,
@@ -346,7 +366,7 @@ export async function readBufferSafe(filePath: string): Promise<Buffer | null> {
 
   let handle: Awaited<ReturnType<typeof fs.open>>;
   try {
-    handle = await fs.open(target, constants.O_RDONLY | constants.O_NOFOLLOW);
+    ({ handle } = await openSoundCaseFileSafe(target));
   } catch (error) {
     if (isMissing(error)) return null;
     if (isSymlinkLoop(error)) {
@@ -356,10 +376,6 @@ export async function readBufferSafe(filePath: string): Promise<Buffer | null> {
   }
 
   try {
-    const info = await handle.stat();
-    if (!info.isFile()) {
-      throw new SoundCaseFileError("soundcase_file_invalid");
-    }
     return await handle.readFile();
   } finally {
     await handle.close();

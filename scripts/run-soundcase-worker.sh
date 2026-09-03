@@ -14,6 +14,6 @@ while true; do
   case "${soundcase_http_status}" in
     204) exit 0 ;;
     200) ;;
-    *) exit 1 ;;
+    *) printf 'SoundCase worker HTTP %s\n' "${soundcase_http_status}" >&2; exit 1 ;;
   esac
 done

@@ -13,6 +13,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   if (previousToken === undefined) delete process.env.SOUNDCASE_WORKER_TOKEN;
   else process.env.SOUNDCASE_WORKER_TOKEN = previousToken;
 });
@@ -49,6 +50,7 @@ describe("SoundCase worker route", () => {
   });
 
   it("sanitizes unexpected worker failures with a diagnostic id", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     mocks.runNextSoundCaseJob.mockRejectedValue(new Error("provider secret"));
     const response = await POST(new NextRequest("http://127.0.0.1/api/soundcase/worker/run-next", {
       method: "POST", headers: { authorization: "Bearer worker-secret" },
@@ -57,6 +59,10 @@ describe("SoundCase worker route", () => {
     expect(response.status).toBe(500);
     expect(body.diagnosticId).toEqual(expect.any(String));
     expect(JSON.stringify(body)).not.toContain("provider secret");
+    expect(consoleError).toHaveBeenCalledWith(
+      "[soundcase-worker] run failed",
+      { diagnosticId: body.diagnosticId }
+    );
   });
 });
 
