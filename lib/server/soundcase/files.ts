@@ -166,12 +166,16 @@ export async function openSoundCaseFileSafe(filePath: string) {
     }
     throw error;
   }
-  const info = await handle.stat();
-  if (!info.isFile()) {
+  try {
+    const info = await handle.stat();
+    if (!info.isFile()) {
+      throw new SoundCaseFileError("soundcase_file_invalid");
+    }
+    return { handle, info };
+  } catch (error) {
     await handle.close();
-    throw new SoundCaseFileError("soundcase_file_invalid");
+    throw error;
   }
-  return { handle, info };
 }
 
 async function syncDirectory(directory: string): Promise<void> {

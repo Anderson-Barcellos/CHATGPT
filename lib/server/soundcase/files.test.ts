@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   assertRegularSoundCaseFile,
   getSoundCaseRoot,
+  openSoundCaseFileSafe,
   readJsonSafe,
   removeVersionTree,
   resolveSoundCasePath,
@@ -87,6 +88,21 @@ describe("SoundCase private files", () => {
       expect.objectContaining({ code: "soundcase_symlink_rejected" })
     );
     lstatSpy.mockRestore();
+  });
+
+  it("closes the descriptor when fstat fails", async () => {
+    const target = resolveSoundCasePath("broken-stat.json");
+    await fs.writeFile(target, "{}", "utf8");
+    const close = vi.fn().mockResolvedValue(undefined);
+    const statError = new Error("simulated fstat failure");
+    const openSpy = vi.spyOn(fs, "open").mockResolvedValue({
+      stat: vi.fn().mockRejectedValue(statError),
+      close,
+    } as never);
+
+    await expect(openSoundCaseFileSafe(target)).rejects.toBe(statError);
+    expect(close).toHaveBeenCalledOnce();
+    openSpy.mockRestore();
   });
 
   it("rejects a root writable by group or others", async () => {
