@@ -88,6 +88,33 @@ async function ensureTrustedRoot(create: boolean): Promise<void> {
   }
 }
 
+export async function ensureSoundCaseRoot(): Promise<void> {
+  await ensureTrustedRoot(true);
+}
+
+export async function listSoundCaseVersionIds(
+  projectId: string
+): Promise<string[]> {
+  const versionsPath = resolveSoundCasePath("projects", projectId, "versions");
+  try {
+    await assertNoSymlinkAncestors(versionsPath);
+    const entries = await fs.readdir(versionsPath, { withFileTypes: true });
+    const versionIds: string[] = [];
+    for (const entry of entries) {
+      if (entry.isSymbolicLink()) {
+        throw new SoundCaseFileError("soundcase_symlink_rejected");
+      }
+      if (entry.isDirectory() && isSafeSegment(entry.name)) {
+        versionIds.push(entry.name);
+      }
+    }
+    return versionIds.sort();
+  } catch (error) {
+    if (isMissing(error)) return [];
+    throw error;
+  }
+}
+
 async function assertNoSymlinkAncestors(targetPath: string): Promise<void> {
   const root = getSoundCaseRoot();
   const target = assertInsideRoot(targetPath);

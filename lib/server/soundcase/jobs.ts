@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { promises as fs } from "node:fs";
+import { constants, promises as fs } from "node:fs";
 import {
   SOUNDCASE_DEFAULT_AUDIO_FORMAT,
   type CreateSoundCaseVersionResult,
@@ -22,6 +22,8 @@ import {
 } from "@/lib/soundcase/text";
 import {
   assertRegularSoundCaseFile,
+  ensureSoundCaseRoot,
+  listSoundCaseVersionIds,
   readJsonSafe,
   removeVersionTree,
   resolveSoundCasePath,
@@ -37,6 +39,9 @@ import {
 const LEASE_DURATION_MS = 90_000;
 const queueLocks = new Map<string, Promise<void>>();
 const QUEUE_LOCK_KEY = "soundcase-jobs";
+const QUEUE_FILE_LOCK_TIMEOUT_MS = 10_000;
+const QUEUE_FILE_LOCK_RETRY_MS = 20;
+const QUEUE_FILE_LOCK_STALE_MS = 30_000;
 
 export class SoundCaseJobError extends Error {
   readonly code: string;
@@ -50,6 +55,86 @@ export class SoundCaseJobError extends Error {
   }
 }
 
+function queueFileLockPath(): string {
+  return resolveSoundCasePath("jobs.lock");
+}
+
+function processIsAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code !== "ESRCH";
+  }
+}
+
+async function removeStaleQueueFileLock(lockPath: string): Promise<boolean> {
+  let info;
+  try {
+    info = await fs.lstat(lockPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return true;
+    throw error;
+  }
+  if (info.isSymbolicLink() || !info.isFile()) {
+    throw new SoundCaseJobError("soundcase_queue_lock_invalid", 500);
+  }
+
+  const lock = await readJsonSafe<{ pid?: unknown; token?: unknown }>(lockPath).catch(
+    () => null
+  );
+  const ownerAlive =
+    typeof lock?.pid === "number" && Number.isInteger(lock.pid)
+      ? processIsAlive(lock.pid)
+      : false;
+  if (ownerAlive || Date.now() - info.mtimeMs < QUEUE_FILE_LOCK_STALE_MS) {
+    return false;
+  }
+  await fs.rm(lockPath, { force: true });
+  return true;
+}
+
+async function acquireQueueFileLock(): Promise<() => Promise<void>> {
+  await ensureSoundCaseRoot();
+  const lockPath = queueFileLockPath();
+  const token = crypto.randomUUID();
+  const startedAt = Date.now();
+
+  while (true) {
+    try {
+      const handle = await fs.open(
+        lockPath,
+        constants.O_WRONLY |
+          constants.O_CREAT |
+          constants.O_EXCL |
+          constants.O_NOFOLLOW,
+        0o600
+      );
+      try {
+        await handle.writeFile(
+          `${JSON.stringify({ pid: process.pid, token, createdAt: new Date().toISOString() })}\n`
+        );
+        await handle.sync();
+      } finally {
+        await handle.close();
+      }
+      return async () => {
+        const current = await readJsonSafe<{ token?: unknown }>(lockPath).catch(
+          () => null
+        );
+        if (current?.token === token) await fs.rm(lockPath, { force: true });
+      };
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      if (await removeStaleQueueFileLock(lockPath)) continue;
+      if (Date.now() - startedAt >= QUEUE_FILE_LOCK_TIMEOUT_MS) {
+        throw new SoundCaseJobError("soundcase_queue_lock_timeout", 503);
+      }
+      await new Promise((resolve) => setTimeout(resolve, QUEUE_FILE_LOCK_RETRY_MS));
+    }
+  }
+}
+
 async function withQueueLock<T>(fn: () => Promise<T>): Promise<T> {
   const previous = queueLocks.get(QUEUE_LOCK_KEY) ?? Promise.resolve();
   let release!: () => void;
@@ -59,11 +144,17 @@ async function withQueueLock<T>(fn: () => Promise<T>): Promise<T> {
   const tail = previous.then(() => current);
   queueLocks.set(QUEUE_LOCK_KEY, tail);
   await previous;
+  let releaseFileLock: (() => Promise<void>) | null = null;
   try {
+    releaseFileLock = await acquireQueueFileLock();
     return await fn();
   } finally {
-    release();
-    if (queueLocks.get(QUEUE_LOCK_KEY) === tail) queueLocks.delete(QUEUE_LOCK_KEY);
+    try {
+      await releaseFileLock?.();
+    } finally {
+      release();
+      if (queueLocks.get(QUEUE_LOCK_KEY) === tail) queueLocks.delete(QUEUE_LOCK_KEY);
+    }
   }
 }
 
@@ -228,25 +319,40 @@ export async function createSoundCaseVersion(
       }
     }
 
-    const orphan = project.versions.find(
-      (version) =>
-        version.idempotencyKey === idempotencyKey &&
+    const jobVersionIds = new Set(
+      jobs.filter((job) => job.projectId === projectId).map((job) => job.versionId)
+    );
+    const canonicalVersionIds = await listSoundCaseVersionIds(projectId);
+    const candidateVersionIds = new Set([
+      ...project.versions.map((version) => version.id),
+      ...canonicalVersionIds,
+    ]);
+    let orphan: SoundCaseVersion | null = null;
+    for (const versionId of candidateVersionIds) {
+      if (jobVersionIds.has(versionId)) continue;
+      const version = await getSoundCaseVersion(projectId, versionId).catch(() => null);
+      if (
+        version?.idempotencyKey === idempotencyKey &&
         (version.status === "queued" ||
           version.status === "directing" ||
           version.status === "synthesizing" ||
           version.status === "assembling" ||
           version.status === "audio_ready" ||
           version.status === "interrupted")
-    );
+      ) {
+        orphan = version;
+        break;
+      }
+    }
     if (orphan) {
-      const version = await getSoundCaseVersion(projectId, orphan.id);
       const now = (options.now ?? new Date()).toISOString();
+      await upsertSoundCaseVersionProjection(projectId, summaryOf(orphan));
       await writeJobs([
         ...jobs,
         {
           id: crypto.randomUUID(),
           projectId,
-          versionId: version.id,
+          versionId: orphan.id,
           status: "queued",
           revision: 0,
           attempt: 0,
@@ -255,7 +361,7 @@ export async function createSoundCaseVersion(
           updatedAt: now,
         },
       ]);
-      return { version, created: false };
+      return { version: orphan, created: false };
     }
 
     const now = (options.now ?? new Date()).toISOString();
@@ -334,12 +440,18 @@ export async function createSoundCaseVersion(
   });
 }
 
-function guardMatches(job: SoundCaseJob, guard: SoundCaseLeaseGuard): boolean {
+function guardMatches(
+  job: SoundCaseJob,
+  guard: SoundCaseLeaseGuard,
+  now: Date
+): boolean {
   return (
     job.id === guard.jobId &&
     job.status === "running" &&
     job.leaseOwner === guard.workerId &&
-    job.revision === guard.expectedRevision
+    job.revision === guard.expectedRevision &&
+    typeof job.leaseExpiresAt === "string" &&
+    job.leaseExpiresAt > now.toISOString()
   );
 }
 
@@ -398,7 +510,7 @@ export async function renewSoundCaseLease(
     const index = jobs.findIndex((job) => job.id === guard.jobId);
     const job = jobs[index];
     const now = options.now ?? new Date();
-    if (!job || !guardMatches(job, guard) || (job.leaseExpiresAt && job.leaseExpiresAt <= now.toISOString())) {
+    if (!job || !guardMatches(job, guard, now)) {
       return null;
     }
     const updated: SoundCaseJob = {
@@ -414,16 +526,30 @@ export async function renewSoundCaseLease(
 }
 
 export async function updateSoundCaseChunk(
-  input: UpdateSoundCaseChunkInput
+  input: UpdateSoundCaseChunkInput,
+  options: { now?: Date } = {}
 ): Promise<SoundCaseClaimedJob | null> {
   return withQueueLock(async () => {
     const jobs = await readJobs();
     const index = jobs.findIndex((job) => job.id === input.jobId);
     const job = jobs[index];
-    if (!job || !guardMatches(job, input)) return null;
+    const operationNow = options.now ?? new Date();
+    if (!job || !guardMatches(job, input, operationNow)) return null;
     const version = await getSoundCaseVersion(job.projectId, job.versionId);
     const chunkIndex = version.manifest.chunks.findIndex((chunk) => chunk.id === input.chunkId);
     if (chunkIndex < 0) throw new SoundCaseJobError("soundcase_chunk_not_found", 404);
+    if (
+      input.status === "completed" &&
+      !(await completedChunkIsValid(
+        job.projectId,
+        job.versionId,
+        input.fileName,
+        input.byteLength,
+        input.contentHash
+      ))
+    ) {
+      throw new SoundCaseJobError("soundcase_chunk_integrity_invalid", 422);
+    }
     const chunks = [...version.manifest.chunks];
     chunks[chunkIndex] = {
       ...chunks[chunkIndex],
@@ -436,7 +562,7 @@ export async function updateSoundCaseChunk(
       ...(input.errorCode ? { errorCode: input.errorCode } : {}),
     };
     const completedChunks = chunks.filter((chunk) => chunk.status === "completed").length;
-    const now = new Date().toISOString();
+    const now = operationNow.toISOString();
     const nextVersion: SoundCaseVersion = {
       ...version,
       status: "synthesizing",
@@ -468,9 +594,10 @@ export async function finishSoundCaseJob(
     const jobs = await readJobs();
     const index = jobs.findIndex((job) => job.id === guard.jobId);
     const job = jobs[index];
-    if (!job || !guardMatches(job, guard)) return null;
+    const operationNow = options.now ?? new Date();
+    if (!job || !guardMatches(job, guard, operationNow)) return null;
     const version = await getSoundCaseVersion(job.projectId, job.versionId);
-    const now = (options.now ?? new Date()).toISOString();
+    const now = operationNow.toISOString();
     const versionStatus = result.status === "completed" ? "ready" : result.status;
     const nextVersion: SoundCaseVersion = {
       ...version,
@@ -530,6 +657,7 @@ async function completedChunkIsValid(
   byteLength: number | undefined,
   contentHash: string | undefined
 ): Promise<boolean> {
+  if (byteLength === undefined || contentHash === undefined) return false;
   const match = fileName?.match(/^chunks\/(\d{4,})\.flac$/u);
   if (!match) return false;
   const filePath = resolveSoundCasePath(
@@ -543,11 +671,8 @@ async function completedChunkIsValid(
   try {
     await assertRegularSoundCaseFile(filePath);
     const info = await fs.stat(filePath);
-    if (byteLength !== undefined && info.size !== byteLength) return false;
-    if (contentHash !== undefined) {
-      return hash(await fs.readFile(filePath)) === contentHash;
-    }
-    return true;
+    if (info.size !== byteLength) return false;
+    return hash(await fs.readFile(filePath)) === contentHash;
   } catch {
     return false;
   }
@@ -562,28 +687,47 @@ export async function resumeSoundCaseVersion(
     const jobIndex = jobs.findIndex((job) => job.projectId === projectId && job.versionId === versionId);
     if (jobIndex < 0) throw new SoundCaseJobError("soundcase_job_not_found", 404);
     const version = await getSoundCaseVersion(projectId, versionId);
-    if (version.status !== "interrupted" && version.status !== "failed") {
+    const job = jobs[jobIndex];
+    const partialResume =
+      version.status === "queued" &&
+      (job.status === "interrupted" || job.status === "failed");
+    if (
+      !partialResume &&
+      version.status !== "interrupted" &&
+      version.status !== "failed"
+    ) {
       throw new SoundCaseJobError("soundcase_version_not_resumable");
     }
 
-    const chunks = await Promise.all(
-      version.manifest.chunks.map(async (chunk) => {
-        if (chunk.status !== "completed") return { ...chunk, status: "pending" as const };
-        if (
-          await completedChunkIsValid(
-            projectId,
-            versionId,
-            chunk.fileName,
-            chunk.byteLength,
-            chunk.contentHash
-          )
-        ) {
-          return chunk;
-        }
-        const { fileName: _file, durationSeconds: _duration, byteLength: _bytes, contentHash: _hash, errorCode: _error, ...base } = chunk;
-        return { ...base, status: "pending" as const };
-      })
-    );
+    const chunks = partialResume
+      ? version.manifest.chunks
+      : await Promise.all(
+          version.manifest.chunks.map(async (chunk) => {
+            if (chunk.status !== "completed") {
+              return { ...chunk, status: "pending" as const };
+            }
+            if (
+              await completedChunkIsValid(
+                projectId,
+                versionId,
+                chunk.fileName,
+                chunk.byteLength,
+                chunk.contentHash
+              )
+            ) {
+              return chunk;
+            }
+            const {
+              fileName: _file,
+              durationSeconds: _duration,
+              byteLength: _bytes,
+              contentHash: _hash,
+              errorCode: _error,
+              ...base
+            } = chunk;
+            return { ...base, status: "pending" as const };
+          })
+        );
     const completedChunks = chunks.filter((chunk) => chunk.status === "completed").length;
     const now = new Date().toISOString();
     const resumed: SoundCaseVersion = {
@@ -602,7 +746,6 @@ export async function resumeSoundCaseVersion(
     delete resumed.completedAt;
     await writeVersion(resumed);
 
-    const job = jobs[jobIndex];
     const { leaseOwner: _owner, leaseExpiresAt: _expires, lastErrorCode: _error, ...withoutLease } = job;
     jobs[jobIndex] = {
       ...withoutLease,
