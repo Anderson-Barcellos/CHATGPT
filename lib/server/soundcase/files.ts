@@ -290,6 +290,39 @@ export async function promoteSoundCaseFile(
   await syncDirectory(parent);
 }
 
+export async function removeSoundCaseMediaParts(
+  projectId: string,
+  versionId: string,
+  stem: string,
+  options: { chunks?: boolean } = {}
+): Promise<void> {
+  if (!/^(?:final\.(?:mp3|flac|wav)|\d{4,}\.flac)$/u.test(stem)) {
+    throw new SoundCaseFileError("soundcase_path_invalid");
+  }
+  const directory = options.chunks
+    ? resolveSoundCasePath("projects", projectId, "versions", versionId, "chunks")
+    : resolveSoundCasePath("projects", projectId, "versions", versionId);
+  await assertNoSymlinkAncestors(directory);
+  let entries;
+  try {
+    entries = await fs.readdir(directory, { withFileTypes: true });
+  } catch (error) {
+    if (isMissing(error)) return;
+    throw error;
+  }
+  const prefix = `${stem}.`;
+  let removed = false;
+  for (const entry of entries) {
+    if (!entry.name.startsWith(prefix) || !entry.name.endsWith(".part")) continue;
+    if (entry.isSymbolicLink() || !entry.isFile()) {
+      throw new SoundCaseFileError("soundcase_file_invalid");
+    }
+    await fs.rm(path.join(directory, entry.name));
+    removed = true;
+  }
+  if (removed) await syncDirectory(directory);
+}
+
 export async function writeJsonDurable<T>(
   filePath: string,
   value: T

@@ -31,6 +31,7 @@ import {
   ensureSoundCaseRoot,
   listSoundCaseVersionIds,
   readJsonSafe,
+  readBufferSafe,
   readTextSafe,
   removeVersionTree,
   resolveSoundCasePath,
@@ -803,9 +804,9 @@ async function completedChunkIsValid(
   );
   try {
     await assertRegularSoundCaseFile(filePath);
-    const info = await fs.stat(filePath);
-    if (info.size !== byteLength) return false;
-    return hash(await fs.readFile(filePath)) === contentHash;
+    const bytes = await readBufferSafe(filePath);
+    if (!bytes || bytes.byteLength !== byteLength) return false;
+    return hash(bytes) === contentHash;
   } catch {
     return false;
   }
@@ -858,7 +859,7 @@ export async function resumeSoundCaseVersion(
               errorCode: _error,
               ...base
             } = chunk;
-            return { ...base, status: "pending" as const };
+            return { ...base, status: "pending" as const, attempts: 0 };
           })
         );
     const completedChunks = chunks.filter((chunk) => chunk.status === "completed").length;

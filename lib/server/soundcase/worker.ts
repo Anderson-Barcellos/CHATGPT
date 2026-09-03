@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import { promises as fs } from "node:fs";
 import type OpenAI from "openai";
 import type {
   SoundCaseClaimedJob,
@@ -214,7 +213,8 @@ async function completedChunkValid(
     "chunks", `${String(chunk.index).padStart(4, "0")}.flac`
   );
   try {
-    const bytes = await fs.readFile(filePath);
+    const bytes = await readBufferSafe(filePath);
+    if (!bytes) return false;
     if (
       bytes.length !== chunk.byteLength ||
       createHash("sha256").update(bytes).digest("hex") !== chunk.contentHash

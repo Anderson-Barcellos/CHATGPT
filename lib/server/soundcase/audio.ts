@@ -13,6 +13,7 @@ import { TTS_MODEL } from "@/lib/tts/speechText";
 import {
   assertRegularSoundCaseFile,
   promoteSoundCaseFile,
+  removeSoundCaseMediaParts,
   resolveSoundCasePath,
   writeBufferDurable,
   writeTextDurable,
@@ -158,6 +159,12 @@ export async function synthesizeSoundCaseChunk(input: {
   const finalPath = resolveSoundCasePath(
     "projects", input.projectId, "versions", input.versionId, "chunks", chunkName
   );
+  await removeSoundCaseMediaParts(
+    input.projectId,
+    input.versionId,
+    chunkName,
+    { chunks: true }
+  );
   const partPath = `${finalPath}.${randomUUID()}.part`;
   await writeBufferDurable(partPath, bytes);
   try {
@@ -227,6 +234,7 @@ export async function assembleSoundCaseAudio(input: {
   const finalPath = resolveSoundCasePath(
     "projects", input.projectId, "versions", input.versionId, fileName
   );
+  await removeSoundCaseMediaParts(input.projectId, input.versionId, fileName);
   const partPath = `${finalPath}.${randomUUID()}.part`;
   const config = FORMAT_CONFIG[input.format];
   await input.beforeWork?.();
@@ -254,6 +262,10 @@ export async function assembleSoundCaseAudio(input: {
     await fs.rm(partPath, { force: true });
     throw workError;
   }
-  await promoteSoundCaseFile(partPath, finalPath);
-  return { format: input.format, durationSeconds, contentType: config.contentType, fileName };
+  try {
+    await promoteSoundCaseFile(partPath, finalPath);
+    return { format: input.format, durationSeconds, contentType: config.contentType, fileName };
+  } finally {
+    await fs.rm(partPath, { force: true });
+  }
 }

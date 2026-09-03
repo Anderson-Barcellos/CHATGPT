@@ -312,6 +312,12 @@ describe("SoundCase version queue", () => {
       ...secondIntegrity,
       durationSeconds: 10,
     });
+    const manifestFile = path.join(
+      root, "projects", project.id, "versions", created.version.id, "manifest.json"
+    );
+    const persistedManifest = JSON.parse(await fs.readFile(manifestFile, "utf8"));
+    persistedManifest.chunks[1].attempts = 4;
+    await fs.writeFile(manifestFile, JSON.stringify(persistedManifest));
     await writeChunk(project.id, created.version.id, 1, "alter");
     await finishSoundCaseJob(
       {
@@ -326,6 +332,7 @@ describe("SoundCase version queue", () => {
     expect(resumed.status).toBe("queued");
     expect(resumed.manifest.chunks[0].status).toBe("completed");
     expect(resumed.manifest.chunks[1].status).toBe("pending");
+    expect(resumed.manifest.chunks[1].attempts).toBe(0);
     expect(resumed.manifest.completedChunks).toBe(1);
   });
 

@@ -87,6 +87,9 @@ describe("SoundCase audio pipeline", () => {
       ), Buffer.from("fLaCdata"));
     }
     const calls: Array<{ file: string; args: string[]; cwd?: string }> = [];
+    await fs.writeFile(resolveSoundCasePath(
+      "projects", "project-a", "versions", "version-a", "final.mp3.abandoned.part"
+    ), Buffer.alloc(32));
     const execFile: SoundCaseExecFile = vi.fn(async (file, args, options) => {
       calls.push({ file, args, cwd: options?.cwd });
       if (file.endsWith("ffmpeg")) await fs.writeFile(args.at(-1)!, Buffer.from("ID3audio"));
@@ -109,6 +112,9 @@ describe("SoundCase audio pipeline", () => {
     expect(calls[0].args).toEqual(expect.arrayContaining([
       "-hide_banner", "-loglevel", "error", "-nostats", "-n",
     ]));
+    await expect(fs.access(resolveSoundCasePath(
+      "projects", "project-a", "versions", "version-a", "final.mp3.abandoned.part"
+    ))).rejects.toMatchObject({ code: "ENOENT" });
   });
 
   it("rejects a wrong codec or non-positive duration", async () => {
