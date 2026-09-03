@@ -4,9 +4,9 @@
 
 ### Nenhuma FRENTE ativa
 
-Anders ainda precisa fechar a ENTREGA L1 integrada ou ativar outra frente. As candidatas abaixo não estão automaticamente autorizadas.
+O fechamento do repositório e a ENTREGA L1 integrada foram fechados por Anders em 2026-09-03. As candidatas abaixo não estão automaticamente autorizadas; uma nova FRENTE só começa por decisão dele.
 
-#### ENTREGA L1 — Layout confiável, acessível e consistente (`pronta para revisão integrada`)
+#### ENTREGA L1 — Layout confiável, acessível e consistente (`fechada`)
 
 Resultado esperado: preservar o Atmosphere Glass enquanto a home mobile passa a usar conversas reais, os atalhos abrem a aba correta, o Canvas funciona como modal acessível e os estados visuais deixam de prometer informações sem fonte real.
 
