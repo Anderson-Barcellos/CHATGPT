@@ -28,15 +28,15 @@ function versionPath(projectId: string, versionId: string): string {
   return `${projectPath(projectId)}/versions/${encodeURIComponent(versionId)}`;
 }
 
-export function saveSoundCaseDraftOnExit(
+export function flushSoundCaseDraftOnExitBestEffort(
   projectId: string,
   input: { text: string; revision: number; title?: string }
-): boolean {
+): void {
   const url = apiUrl(projectPath(projectId));
   const body = JSON.stringify(input);
   try {
     const payload = new Blob([body], { type: "application/json" });
-    if (navigator.sendBeacon(url, payload)) return true;
+    if (navigator.sendBeacon(url, payload)) return;
   } catch {
     // A keepalive request below is the best available fallback on older browsers.
   }
@@ -48,9 +48,8 @@ export function saveSoundCaseDraftOnExit(
       credentials: "same-origin",
       keepalive: true,
     }).catch(() => undefined);
-    return true;
   } catch {
-    return false;
+    // The synchronous local recovery copy remains authoritative until CAS confirms.
   }
 }
 

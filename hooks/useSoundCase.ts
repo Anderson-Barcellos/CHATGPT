@@ -2,8 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ClientApiError } from "@/lib/api/errors";
-import { soundCaseApi, readableSoundCaseError, saveSoundCaseDraftOnExit } from "@/lib/soundcase/api";
+import { flushSoundCaseDraftOnExitBestEffort, soundCaseApi, readableSoundCaseError } from "@/lib/soundcase/api";
 import { getSoundCasePollInterval } from "@/lib/soundcase/progress";
+import {
+  clearSoundCaseDraftRecovery,
+  readSoundCaseDraftRecovery,
+  saveSoundCaseDraftRecovery,
+  type SoundCaseDraftRecovery,
+} from "@/lib/soundcase/draftRecovery";
 import type {
   SoundCaseGenerationSettings,
   SoundCaseProject,
@@ -21,6 +27,21 @@ export function buildSoundCaseDraftConflict(
   serverProject: SoundCaseProjectDetail
 ): SoundCaseDraftConflict {
   return { localText, serverProject };
+}
+
+export function reconcileSoundCaseDraftRecovery(
+  recovery: SoundCaseDraftRecovery | null,
+  serverProject: SoundCaseProjectDetail
+): { text: string; conflict: SoundCaseDraftConflict | null } {
+  if (!recovery || recovery.text === serverProject.draftText) {
+    return { text: serverProject.draftText, conflict: null };
+  }
+  return {
+    text: recovery.text,
+    conflict: recovery.baseRevision === serverProject.draftRevision
+      ? null
+      : buildSoundCaseDraftConflict(recovery.text, serverProject),
+  };
 }
 
 export function useSoundCase() {
@@ -54,6 +75,7 @@ export function useSoundCase() {
       draftRef.current = next.draftText;
     }
     persistedTextRef.current = next.draftText;
+    if (draftRef.current === next.draftText) clearSoundCaseDraftRecovery(next.id);
   }, []);
 
   const refreshProjects = useCallback(async () => {
@@ -64,7 +86,18 @@ export function useSoundCase() {
 
   const loadProject = useCallback(async (projectId: string, preserveDirty = false) => {
     const next = await soundCaseApi.getProject(projectId);
+    const recovery = readSoundCaseDraftRecovery(projectId);
+    const reconciled = reconcileSoundCaseDraftRecovery(recovery, next);
     applyProject(next, preserveDirty);
+    if (recovery && reconciled.text !== next.draftText) {
+      setDraftTextState(reconciled.text);
+      draftRef.current = reconciled.text;
+      saveSoundCaseDraftRecovery(recovery);
+      if (reconciled.conflict) {
+        setConflict(reconciled.conflict);
+        conflictRef.current = reconciled.conflict;
+      }
+    }
     setActiveProjectIdState(projectId);
     const activeVersionId = next.activeVersionId;
     if (activeVersionId) {
@@ -99,6 +132,7 @@ export function useSoundCase() {
           revision: revision ?? current.draftRevision,
         });
         applyProject(saved, true);
+        if (draftRef.current === saved.draftText) clearSoundCaseDraftRecovery(saved.id);
         setProjects((items) => items.map((item) => item.id === saved.id ? saved : item));
         setError(null);
         return saved;
@@ -153,7 +187,7 @@ export function useSoundCase() {
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
       }
-      saveSoundCaseDraftOnExit(current.id, {
+      flushSoundCaseDraftOnExitBestEffort(current.id, {
         text: draftRef.current,
         revision: current.draftRevision,
       });
@@ -213,6 +247,19 @@ export function useSoundCase() {
   const setDraftText = useCallback((text: string) => {
     setDraftTextState(text);
     draftRef.current = text;
+    const current = projectRef.current;
+    if (!current) return;
+    if (text === persistedTextRef.current) {
+      clearSoundCaseDraftRecovery(current.id);
+      return;
+    }
+    const stored = saveSoundCaseDraftRecovery({
+      projectId: current.id,
+      text,
+      baseRevision: current.draftRevision,
+      updatedAt: new Date().toISOString(),
+    });
+    if (!stored) setError("O navegador não conseguiu guardar a cópia local de recuperação; aguarde o indicador de salvamento antes de sair.");
   }, []);
 
   const createProject = useCallback(async (input: { title?: string; text?: string } = {}) => {
@@ -275,6 +322,7 @@ export function useSoundCase() {
 
   const deleteProject = useCallback(async (projectId: string) => {
     await soundCaseApi.deleteProject(projectId);
+    clearSoundCaseDraftRecovery(projectId);
     const remaining = await refreshProjects();
     if (projectRef.current?.id !== projectId) return;
     const next = [...remaining].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];

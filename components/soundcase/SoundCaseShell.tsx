@@ -23,6 +23,11 @@ const DEFAULT_SETTINGS: SoundCaseGenerationSettings = {
   voiceOverride: null, speedOverride: null, instructionsOverride: null,
 };
 
+export function prepareSoundCaseRealtimeGeneration(stop: () => void, prime: () => void) {
+  stop();
+  prime();
+}
+
 export function SoundCaseShell() {
   const soundcase = useSoundCase();
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
@@ -61,7 +66,7 @@ export function SoundCaseShell() {
 
   const generate = async (playbackMode: "realtime" | "silent") => {
     if (playbackMode === "realtime") {
-      realtime.prime();
+      prepareSoundCaseRealtimeGeneration(stopRealtimeContext, realtime.prime);
       realtimeTextRef.current = soundcase.draftText;
       startedRealtimeVersionRef.current = null;
     } else {

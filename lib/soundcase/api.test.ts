@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { saveSoundCaseDraftOnExit, soundCaseApi } from "@/lib/soundcase/api";
+import { flushSoundCaseDraftOnExitBestEffort, soundCaseApi } from "@/lib/soundcase/api";
 
 describe("SoundCase client API", () => {
   beforeEach(() => {
@@ -34,7 +34,7 @@ describe("SoundCase client API", () => {
     const sendBeacon = vi.fn().mockReturnValue(true);
     vi.stubGlobal("navigator", { sendBeacon });
 
-    expect(saveSoundCaseDraftOnExit("project/id", { text: "última edição", revision: 8 })).toBe(true);
+    flushSoundCaseDraftOnExitBestEffort("project/id", { text: "última edição", revision: 8 });
     expect(sendBeacon).toHaveBeenCalledWith(
       "/chat/api/soundcase/projects/project%2Fid",
       expect.any(Blob)
@@ -45,7 +45,7 @@ describe("SoundCase client API", () => {
   it("falls back to a keepalive POST when beacon declines the payload", () => {
     vi.stubGlobal("navigator", { sendBeacon: vi.fn().mockReturnValue(false) });
 
-    expect(saveSoundCaseDraftOnExit("p", { text: "rascunho", revision: 2 })).toBe(true);
+    flushSoundCaseDraftOnExitBestEffort("p", { text: "rascunho", revision: 2 });
     expect(fetch).toHaveBeenCalledWith("/chat/api/soundcase/projects/p", expect.objectContaining({
       method: "POST", keepalive: true, credentials: "same-origin",
       body: JSON.stringify({ text: "rascunho", revision: 2 }),

@@ -439,6 +439,7 @@ export function GauchoStudioShell() {
         />
 
         <header className={styles.topbar}>
+          <ProductNav active="studio" compact className={styles.midProductNav} />
           <ProductNav active="studio" className={styles.topProductNav} />
           <div className={styles.executionStatus}>
             <span

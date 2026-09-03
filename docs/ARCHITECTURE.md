@@ -176,7 +176,7 @@ O cliente também usa stores Zustand e cache local, mas o estado canônico compa
 
 ## SoundCase
 
-SoundCase é uma terceira superfície em `/soundcase`, ao lado de Chat e Studio. `hooks/useSoundCase.ts` mantém draft, autosave serializado com CAS, polling terminal e reconciliação de conflitos; `components/soundcase/*` compõe a folha editorial, direção, acervo e players responsivos.
+SoundCase é uma terceira superfície em `/soundcase`, ao lado de Chat e Studio. `hooks/useSoundCase.ts` mantém draft, autosave serializado com CAS, polling terminal e reconciliação de conflitos; `components/soundcase/*` compõe a folha editorial, direção, acervo e players responsivos. Enquanto uma edição ainda não foi confirmada pelo servidor, uma cópia de recuperação fica no `localStorage` do mesmo navegador e é removida após o CAS, descarte remoto ou exclusão; beacon/keepalive na saída é apenas uma tentativa adicional, não a fonte de durabilidade.
 
 No servidor, `lib/server/soundcase/store.ts` mantém projetos/drafts privados e `jobs.ts` mantém fila, leases e manifesto. O worker chama Luna uma vez para metadados de direção, sintetiza segmentos exatos em FLAC com concorrência dois, monta MP3/FLAC/WAV por FFmpeg e gera capa separadamente. Publicação de arquivos e transições de versão são cercadas pelo lease; retomada reaproveita chunks já validados. Realtime compartilha apenas o handshake WebRTC do Chat, resolve voz/direção pelo ID autenticado e recebe o texto segmentado diretamente no data channel.
 

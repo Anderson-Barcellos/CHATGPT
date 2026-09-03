@@ -311,6 +311,7 @@ export function WorkspaceFrameV2({
                   </div>
                 </div>
 
+                <ProductNav active="chat" compact className="hidden md:flex min-[1360px]:hidden" />
                 <ProductNav active="chat" className="hidden min-[1360px]:flex" />
 
                 <button
