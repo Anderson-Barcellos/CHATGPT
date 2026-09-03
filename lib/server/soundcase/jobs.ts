@@ -3,14 +3,19 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { constants, promises as fs } from "node:fs";
 import {
   SOUNDCASE_DEFAULT_AUDIO_FORMAT,
+  type SoundCaseAudioReady,
   type CreateSoundCaseVersionResult,
   type SoundCaseClaimedJob,
+  type SoundCaseCoverReady,
+  type SoundCaseDirection,
+  type SoundCaseEffectiveSettings,
   type SoundCaseGenerationSettings,
   type SoundCaseJob,
   type SoundCaseLeaseGuard,
   type SoundCaseManifest,
   type SoundCasePublicError,
   type SoundCaseVersion,
+  type SoundCaseVersionStatus,
   type SoundCaseVersionMetadata,
   type SoundCaseVersionSummary,
   type UpdateSoundCaseChunkInput,
@@ -26,6 +31,7 @@ import {
   ensureSoundCaseRoot,
   listSoundCaseVersionIds,
   readJsonSafe,
+  readTextSafe,
   removeVersionTree,
   resolveSoundCasePath,
   writeJsonDurable,
@@ -309,6 +315,15 @@ export async function getSoundCaseVersion(
   return { ...metadata, manifest };
 }
 
+export async function readSoundCaseVersionSource(
+  projectId: string,
+  versionId: string
+): Promise<string> {
+  const source = await readTextSafe(sourcePath(projectId, versionId));
+  if (source === null) throw new SoundCaseJobError("soundcase_source_not_found", 404);
+  return source;
+}
+
 async function claimed(job: SoundCaseJob): Promise<SoundCaseClaimedJob> {
   const version = await getSoundCaseVersion(job.projectId, job.versionId);
   return { ...job, version, manifest: version.manifest };
@@ -547,6 +562,90 @@ export async function renewSoundCaseLease(
   });
 }
 
+async function mutateClaimedVersion(
+  guard: SoundCaseLeaseGuard,
+  mutate: (version: SoundCaseVersion, now: string) => SoundCaseVersion,
+  options: { now?: Date } = {}
+): Promise<SoundCaseClaimedJob | null> {
+  return withQueueLock(async () => {
+    const jobs = await readJobs();
+    const index = jobs.findIndex((job) => job.id === guard.jobId);
+    const job = jobs[index];
+    const operationNow = options.now ?? new Date();
+    if (!job || !guardMatches(job, guard, operationNow)) return null;
+    const now = operationNow.toISOString();
+    const version = mutate(
+      await getSoundCaseVersion(job.projectId, job.versionId),
+      now
+    );
+    await writeVersion(version);
+    const updatedJob = { ...job, revision: job.revision + 1, updatedAt: now };
+    jobs[index] = updatedJob;
+    await writeJobs(jobs);
+    return { ...updatedJob, version, manifest: version.manifest };
+  });
+}
+
+export async function setSoundCaseVersionPhase(
+  guard: SoundCaseLeaseGuard,
+  phase: SoundCaseVersionStatus,
+  options: { now?: Date } = {}
+): Promise<SoundCaseClaimedJob | null> {
+  return mutateClaimedVersion(
+    guard,
+    (version, now) => ({
+      ...version,
+      status: phase,
+      progress: { ...version.progress, phase, updatedAt: now },
+    }),
+    options
+  );
+}
+
+export async function setSoundCaseDirection(
+  guard: SoundCaseLeaseGuard,
+  input: { direction: SoundCaseDirection; effectiveSettings: SoundCaseEffectiveSettings },
+  options: { now?: Date } = {}
+): Promise<SoundCaseClaimedJob | null> {
+  return mutateClaimedVersion(
+    guard,
+    (version, now) => ({
+      ...version,
+      status: "synthesizing",
+      direction: input.direction,
+      effectiveSettings: input.effectiveSettings,
+      summary: input.direction.summary,
+      progress: { ...version.progress, phase: "synthesizing", updatedAt: now },
+    }),
+    options
+  );
+}
+
+export async function setSoundCaseAudioReady(
+  guard: SoundCaseLeaseGuard,
+  audio: SoundCaseAudioReady,
+  options: { now?: Date } = {}
+): Promise<SoundCaseClaimedJob | null> {
+  return mutateClaimedVersion(
+    guard,
+    (version, now) => ({
+      ...version,
+      status: "audio_ready",
+      audio,
+      progress: { ...version.progress, phase: "audio_ready", updatedAt: now },
+    }),
+    options
+  );
+}
+
+export async function setSoundCaseCoverReady(
+  guard: SoundCaseLeaseGuard,
+  cover: SoundCaseCoverReady,
+  options: { now?: Date } = {}
+): Promise<SoundCaseClaimedJob | null> {
+  return mutateClaimedVersion(guard, (version) => ({ ...version, cover }), options);
+}
+
 export async function updateSoundCaseChunk(
   input: UpdateSoundCaseChunkInput,
   options: { now?: Date } = {}
@@ -576,7 +675,8 @@ export async function updateSoundCaseChunk(
     chunks[chunkIndex] = {
       ...chunks[chunkIndex],
       status: input.status,
-      attempts: chunks[chunkIndex].attempts + 1,
+      attempts:
+        chunks[chunkIndex].attempts + (input.status === "synthesizing" ? 1 : 0),
       ...(input.fileName ? { fileName: input.fileName } : {}),
       ...(input.durationSeconds !== undefined ? { durationSeconds: input.durationSeconds } : {}),
       ...(input.byteLength !== undefined ? { byteLength: input.byteLength } : {}),
@@ -609,7 +709,11 @@ export async function updateSoundCaseChunk(
 
 export async function finishSoundCaseJob(
   guard: SoundCaseLeaseGuard,
-  result: { status: "completed" | "interrupted" | "failed"; error?: SoundCasePublicError },
+  result: {
+    status: "completed" | "interrupted" | "failed";
+    error?: SoundCasePublicError;
+    nextRunAt?: string;
+  },
   options: { now?: Date } = {}
 ): Promise<SoundCaseJob | null> {
   return withQueueLock(async () => {
@@ -635,6 +739,7 @@ export async function finishSoundCaseJob(
       status: result.status,
       revision: job.revision + 1,
       updatedAt: now,
+      ...(result.nextRunAt ? { nextRunAt: result.nextRunAt } : {}),
       ...(result.error ? { lastErrorCode: result.error.code } : {}),
     };
     jobs[index] = updated;

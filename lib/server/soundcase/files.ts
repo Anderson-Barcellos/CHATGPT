@@ -170,6 +170,20 @@ export async function writeTextDurable(
   filePath: string,
   content: string
 ): Promise<void> {
+  await writeContentDurable(filePath, content);
+}
+
+export async function writeBufferDurable(
+  filePath: string,
+  content: Uint8Array
+): Promise<void> {
+  await writeContentDurable(filePath, content);
+}
+
+async function writeContentDurable(
+  filePath: string,
+  content: string | Uint8Array
+): Promise<void> {
   const target = assertInsideRoot(filePath);
   const parent = path.dirname(target);
   await ensureTrustedRoot(true);
@@ -204,7 +218,11 @@ export async function writeTextDurable(
         constants.O_NOFOLLOW,
       0o600
     );
-    await handle.writeFile(content, { encoding: "utf8" });
+    if (typeof content === "string") {
+      await handle.writeFile(content, { encoding: "utf8" });
+    } else {
+      await handle.writeFile(content);
+    }
     await handle.sync();
     await handle.close();
     handle = null;
@@ -231,6 +249,36 @@ export async function writeTextDurable(
     }
     if (cleanupError) throw cleanupError;
   }
+}
+
+export async function promoteSoundCaseFile(
+  temporaryPath: string,
+  finalPath: string
+): Promise<void> {
+  const temporary = assertInsideRoot(temporaryPath);
+  const target = assertInsideRoot(finalPath);
+  const parent = path.dirname(target);
+  if (
+    path.dirname(temporary) !== parent ||
+    !path.basename(temporary).endsWith(".part")
+  ) {
+    throw new SoundCaseFileError("soundcase_path_invalid");
+  }
+  await assertNoSymlinkAncestors(parent);
+  await assertRegularSoundCaseFile(temporary);
+  try {
+    const existing = await fs.lstat(target);
+    if (existing.isSymbolicLink()) {
+      throw new SoundCaseFileError("soundcase_symlink_rejected");
+    }
+    if (!existing.isFile()) {
+      throw new SoundCaseFileError("soundcase_file_invalid");
+    }
+  } catch (error) {
+    if (!isMissing(error)) throw error;
+  }
+  await fs.rename(temporary, target);
+  await syncDirectory(parent);
 }
 
 export async function writeJsonDurable<T>(
