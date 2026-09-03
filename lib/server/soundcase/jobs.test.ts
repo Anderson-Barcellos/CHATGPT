@@ -11,6 +11,8 @@ import {
   cancelSoundCaseVersion,
   claimNextSoundCaseJob,
   createSoundCaseVersion,
+  deleteSoundCaseProjectWithJobs,
+  deleteSoundCaseVersion,
   acquireSoundCaseQueueLock,
   finishSoundCaseJob,
   getSoundCaseVersion,
@@ -384,6 +386,34 @@ describe("SoundCase version queue", () => {
 
     expect(next.created).toBe(true);
     expect(next.version.id).not.toBe(created.version.id);
+  });
+
+  it("deletes a version and its queued job under the queue lock", async () => {
+    const project = await createSoundCaseProject({ text: "Versão removível." });
+    const created = await createSoundCaseVersion(project.id, settings);
+
+    await deleteSoundCaseVersion(project.id, created.version.id);
+
+    await expect(getSoundCaseVersion(project.id, created.version.id)).rejects.toMatchObject({
+      code: "soundcase_version_not_found",
+    });
+    expect((await getSoundCaseProject(project.id)).versions).toEqual([]);
+    const jobs = JSON.parse(await fs.readFile(path.join(root, "jobs.json"), "utf8"));
+    expect(jobs).toEqual([]);
+  });
+
+  it("fences project jobs before deleting its private tree", async () => {
+    const project = await createSoundCaseProject({ text: "Projeto removível." });
+    await createSoundCaseVersion(project.id, settings);
+
+    await deleteSoundCaseProjectWithJobs(project.id);
+
+    await expect(getSoundCaseProject(project.id)).rejects.toMatchObject({
+      code: "soundcase_project_not_found",
+    });
+    const jobs = JSON.parse(await fs.readFile(path.join(root, "jobs.json"), "utf8"));
+    expect(jobs).toEqual([]);
+    await expect(fs.access(path.join(root, "projects", project.id))).rejects.toMatchObject({ code: "ENOENT" });
   });
 
   it("repairs an orphan from version.json when the projection is absent", async () => {

@@ -291,8 +291,10 @@ export interface SoundCaseProjectResponse {
   project: SoundCaseProjectDetail;
 }
 
+export type SoundCasePublicVersion = Omit<SoundCaseVersion, "segments" | "manifest">;
+
 export interface SoundCaseVersionResponse {
-  version: SoundCaseVersion;
+  version: SoundCasePublicVersion;
 }
 
 export interface SoundCaseActionResponse {

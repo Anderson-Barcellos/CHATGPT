@@ -21,7 +21,7 @@ import {
   writeTextDurable,
 } from "@/lib/server/soundcase/files";
 
-const MAX_IMPORT_BYTES = 1024 * 1024;
+export const SOUNDCASE_MAX_IMPORT_BYTES = 1024 * 1024;
 const MAX_PROJECT_TITLE_CHARS = 120;
 const INDEX_LOCK_KEY = "__soundcase_projects_index__";
 const lockChains = new Map<string, Promise<void>>();
@@ -268,7 +268,7 @@ function parseImport(input: SoundCaseTextImport): {
   if (!sourceType || !validMime) {
     throw new SoundCaseStoreError("soundcase_import_type", 415);
   }
-  if (input.bytes.byteLength > MAX_IMPORT_BYTES) {
+  if (input.bytes.byteLength > SOUNDCASE_MAX_IMPORT_BYTES) {
     throw new SoundCaseStoreError("soundcase_import_size", 413);
   }
 

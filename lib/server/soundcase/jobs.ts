@@ -39,6 +39,7 @@ import {
   writeTextDurable,
 } from "@/lib/server/soundcase/files";
 import {
+  deleteSoundCaseProject,
   getSoundCaseProject,
   removeSoundCaseVersionProjection,
   upsertSoundCaseVersionProjection,
@@ -781,6 +782,42 @@ export async function cancelSoundCaseVersion(
     };
     await writeVersion(canceled);
     return canceled;
+  });
+}
+
+export async function deleteSoundCaseVersion(
+  projectId: string,
+  versionId: string
+): Promise<void> {
+  await withQueueLock(async () => {
+    await getSoundCaseVersion(projectId, versionId);
+    const project = await getSoundCaseProject(projectId);
+    const jobs = await readJobs();
+    const remainingJobs = jobs.filter(
+      (job) => !(job.projectId === projectId && job.versionId === versionId)
+    );
+    if (remainingJobs.length !== jobs.length) await writeJobs(remainingJobs);
+    const previousActiveVersionId = project.activeVersionId === versionId
+      ? project.versions.find((version) => version.id !== versionId)?.id ?? null
+      : project.activeVersionId;
+    await removeSoundCaseVersionProjection(
+      projectId,
+      versionId,
+      previousActiveVersionId
+    );
+    await removeVersionTree(projectId, versionId);
+  });
+}
+
+export async function deleteSoundCaseProjectWithJobs(
+  projectId: string
+): Promise<void> {
+  await withQueueLock(async () => {
+    await getSoundCaseProject(projectId);
+    const jobs = await readJobs();
+    const remainingJobs = jobs.filter((job) => job.projectId !== projectId);
+    if (remainingJobs.length !== jobs.length) await writeJobs(remainingJobs);
+    await deleteSoundCaseProject(projectId);
   });
 }
 
