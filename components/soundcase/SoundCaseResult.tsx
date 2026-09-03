@@ -2,6 +2,8 @@ import { CalendarDays, Clock3, Sparkles } from "lucide-react";
 import type { SoundCasePublicVersion } from "@/lib/soundcase/types";
 import styles from "./SoundCase.module.css";
 
+/* eslint-disable @next/next/no-img-element -- Private cover URLs require the authenticated browser request; the Next image optimizer cannot replay that session. */
+
 export function SoundCaseResult({ version, coverUrl }: { version: SoundCasePublicVersion; coverUrl: string }) {
   if (!version.direction) return null;
   const effective = version.effectiveSettings;
