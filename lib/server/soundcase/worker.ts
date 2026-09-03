@@ -74,6 +74,27 @@ class ChunkAttemptsExhaustedError extends Error {
   }
 }
 
+class ChunkPermanentError extends Error {
+  constructor() {
+    super("soundcase_chunk_permanent_failure");
+  }
+}
+
+function isRetryableChunkError(error: unknown): boolean {
+  if (error && typeof error === "object" && "status" in error) {
+    const status = Number((error as { status?: unknown }).status);
+    if (status === 429 || status >= 500) return true;
+    if (status >= 400) return false;
+  }
+  if (error instanceof Error && (
+    error.message === "soundcase_chunk_flac_invalid" ||
+    error.message === "soundcase_audio_probe_invalid" ||
+    error.message === "soundcase_audio_probe_mismatch" ||
+    error.name === "SoundCaseFileError"
+  )) return false;
+  return true;
+}
+
 async function withLeaseHeartbeat<T>(
   checkpoint: () => Promise<unknown>,
   operation: (signal: AbortSignal) => Promise<T>
@@ -317,6 +338,7 @@ export async function runNextSoundCaseJob(
             await state.mutate((guard) => updateSoundCaseChunk({
               ...guard, chunkId: chunk.id, status: "failed", errorCode: "soundcase_chunk_failed",
             }, { now: now() }));
+            if (!isRetryableChunkError(error)) throw new ChunkPermanentError();
             if (attempt < 3) await sleep(jitter(1_000 * 2 ** attempt));
           }
         }
@@ -372,7 +394,7 @@ export async function runNextSoundCaseJob(
       return { status: "canceled", versionId: claimed.versionId };
     }
     const publicError = safeError(error);
-    const terminalStatus = error instanceof ChunkAttemptsExhaustedError
+    const terminalStatus = error instanceof ChunkAttemptsExhaustedError || error instanceof ChunkPermanentError
       ? "failed" as const
       : "interrupted" as const;
     try {

@@ -4,7 +4,7 @@ import path from "node:path";
 import type OpenAI from "openai";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SoundCaseGenerationSettings } from "@/lib/soundcase/types";
-import { cancelSoundCaseVersion, createSoundCaseVersion, getSoundCaseVersion } from "@/lib/server/soundcase/jobs";
+import { cancelSoundCaseVersion, createSoundCaseVersion, getSoundCaseVersion, resumeSoundCaseVersion } from "@/lib/server/soundcase/jobs";
 import { createSoundCaseProject } from "@/lib/server/soundcase/store";
 import { runNextSoundCaseJob } from "@/lib/server/soundcase/worker";
 import type { SoundCaseExecFile } from "@/lib/server/soundcase/audio";
@@ -48,9 +48,13 @@ describe("SoundCase resumable worker", () => {
       .mockRejectedValueOnce(new Error("provider"))
       .mockRejectedValueOnce(new Error("provider"))
       .mockResolvedValue(new Response(Buffer.from("fLaCdata")));
+    let coverObservedAudioReady = false;
     const client = {
       audio: { speech: { create: speech } },
-      responses: { create: vi.fn().mockRejectedValue(new Error("cover")) },
+      responses: { create: vi.fn(async () => {
+        coverObservedAudioReady = (await getSoundCaseVersion(project.id, created.version.id)).status === "audio_ready";
+        throw new Error("cover");
+      }) },
     } as unknown as OpenAI;
     const sleeps: number[] = [];
 
@@ -67,6 +71,7 @@ describe("SoundCase resumable worker", () => {
     expect(version.audio).toMatchObject({ status: "ready", format: "mp3" });
     expect(version.cover).toMatchObject({ status: "fallback", fileName: "cover.svg" });
     expect(version.status).toBe("ready");
+    expect(coverObservedAudioReady).toBe(true);
     expect(version.manifest.chunks[0].attempts).toBe(3);
     await expect(fs.readFile(path.join(root, "projects", project.id, "versions", created.version.id, "cover.svg"), "utf8"))
       .resolves.toContain("SOUNDCASE");
@@ -115,6 +120,7 @@ describe("SoundCase resumable worker", () => {
       audio: { speech: { create: secondSpeech } },
       responses: { create: vi.fn().mockRejectedValue(new Error("cover")) },
     } as unknown as OpenAI;
+    await resumeSoundCaseVersion(project.id, created.version.id);
     const completed = await runNextSoundCaseJob({
       workerId: "worker-new", openai: secondClient, execFile: fakeExec(),
       now: () => new Date("2030-01-01T00:00:10.000Z"),
@@ -148,6 +154,23 @@ describe("SoundCase resumable worker", () => {
     })).resolves.toEqual({ status: "empty" });
     expect(speech).toHaveBeenCalledTimes(4);
     expect((await getSoundCaseVersion(project.id, created.version.id)).manifest.chunks[0].attempts).toBe(4);
+  });
+
+  it("does not spend retries on a permanent invalid FLAC response", async () => {
+    const project = await createSoundCaseProject({ text: "Resposta inválida." });
+    await createSoundCaseVersion(project.id, settings);
+    const speech = vi.fn().mockResolvedValue(new Response(Buffer.from("not-flac")));
+    const client = {
+      audio: { speech: { create: speech } }, responses: { create: vi.fn() },
+    } as unknown as OpenAI;
+
+    const result = await runNextSoundCaseJob({
+      workerId: "worker-invalid", openai: client, execFile: fakeExec(),
+      sleep: async () => undefined,
+    });
+
+    expect(result.status).toBe("failed");
+    expect(speech).toHaveBeenCalledTimes(1);
   });
 
   it("stops publication and does not open a third slot after cancellation", async () => {
@@ -191,6 +214,7 @@ describe("SoundCase resumable worker", () => {
     expect(first.status).toBe("interrupted");
     expect((await getSoundCaseVersion(project.id, created.version.id)).audio.status).toBe("ready");
     await fs.rm(path.join(versionDirectory, "cover.svg"));
+    await resumeSoundCaseVersion(project.id, created.version.id);
 
     const second = await runNextSoundCaseJob({
       workerId: "worker-cover-resume", openai: client, execFile,

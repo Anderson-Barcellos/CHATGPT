@@ -511,7 +511,7 @@ export async function claimNextSoundCaseJob(
     const eligible = jobs
       .filter((job) => {
         if (job.nextRunAt > iso) return false;
-        if (job.status === "queued" || job.status === "interrupted") return true;
+        if (job.status === "queued") return true;
         return job.status === "running" && Boolean(job.leaseExpiresAt && job.leaseExpiresAt <= iso);
       })
       .sort((left, right) =>

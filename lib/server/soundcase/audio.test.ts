@@ -3,8 +3,10 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SoundCaseManifest } from "@/lib/soundcase/types";
-import { assembleSoundCaseAudio, probeSoundCaseAudio, type SoundCaseExecFile } from "@/lib/server/soundcase/audio";
+import { assembleSoundCaseAudio, probeSoundCaseAudio, synthesizeSoundCaseChunk, type SoundCaseExecFile } from "@/lib/server/soundcase/audio";
 import { resolveSoundCasePath, writeBufferDurable } from "@/lib/server/soundcase/files";
+import { segmentSoundCaseText } from "@/lib/soundcase/text";
+import { buildFallbackSoundCaseDirection } from "@/lib/server/soundcase/direction";
 
 let root: string;
 let previousRoot: string | undefined;
@@ -37,6 +39,46 @@ function manifest(): SoundCaseManifest {
 }
 
 describe("SoundCase audio pipeline", () => {
+  it("sends exact text and promotes a probed FLAC only after lease hooks", async () => {
+    const [segment] = segmentSoundCaseText("Texto exato, sem reescrita.");
+    const direction = buildFallbackSoundCaseDirection({ sourceText: segment.text, segments: [segment] });
+    const events: string[] = [];
+    const create = vi.fn(async () => {
+      events.push("provider");
+      return new Response(Buffer.from("fLaCdata"));
+    });
+    const execFile: SoundCaseExecFile = vi.fn(async () => ({
+      stdout: JSON.stringify({ streams: [{ codec_name: "flac", duration: "1.5" }] }), stderr: "",
+    }));
+    const artifact = await synthesizeSoundCaseChunk({
+      projectId: "project-a", versionId: "version-a",
+      chunk: {
+        id: segment.id, index: 0, segmentId: segment.id, start: segment.start,
+        end: segment.end, textHash: segment.textHash, status: "synthesizing", attempts: 1,
+      },
+      segment, direction,
+      effectiveSettings: {
+        format: { value: "mp3", source: "automatic" },
+        voice: { value: "marin", source: "fallback" },
+        speed: { value: 1, source: "fallback" },
+        instructions: { value: direction.globalInstructions, source: "fallback" },
+      },
+      client: { audio: { speech: { create } } }, execFile,
+      beforeProvider: async () => { events.push("before"); },
+      afterProvider: async () => { events.push("after"); },
+    });
+
+    expect(events).toEqual(["before", "provider", "after"]);
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({
+      model: "gpt-4o-mini-tts", input: segment.text, voice: "marin",
+      speed: 1, response_format: "flac",
+    }), expect.objectContaining({ signal: undefined }));
+    expect(artifact).toMatchObject({ fileName: "chunks/0000.flac", durationSeconds: 1.5, byteLength: 8 });
+    await expect(fs.readFile(resolveSoundCasePath(
+      "projects", "project-a", "versions", "version-a", "chunks", "0000.flac"
+    ))).resolves.toEqual(Buffer.from("fLaCdata"));
+  });
+
   it("assembles chunks in manifest order and validates before promotion", async () => {
     for (let index = 0; index < 3; index += 1) {
       await writeBufferDurable(resolveSoundCasePath(
