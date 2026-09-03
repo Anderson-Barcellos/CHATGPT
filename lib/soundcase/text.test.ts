@@ -6,8 +6,19 @@ import {
   normalizeSoundCaseText,
   segmentSoundCaseText,
 } from "@/lib/soundcase/text";
+import {
+  SOUNDCASE_AUDIO_FORMAT_OVERRIDES,
+  SOUNDCASE_DEFAULT_AUDIO_FORMAT,
+  SOUNDCASE_INTERMEDIATE_AUDIO_FORMAT,
+} from "@/lib/soundcase/types";
 
 describe("SoundCase text", () => {
+  it("keeps final and intermediate format policy explicit", () => {
+    expect(SOUNDCASE_DEFAULT_AUDIO_FORMAT).toBe("mp3");
+    expect(SOUNDCASE_AUDIO_FORMAT_OVERRIDES).toEqual(["flac", "wav"]);
+    expect(SOUNDCASE_INTERMEDIATE_AUDIO_FORMAT).toBe("flac");
+  });
+
   it("segments without losing narratable text order", () => {
     const source = "Primeiro parágrafo. Ainda primeiro.\n\nSegundo parágrafo.";
     const segments = segmentSoundCaseText(source, { maxChars: 48 });

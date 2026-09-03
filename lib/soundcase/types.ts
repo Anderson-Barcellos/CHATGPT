@@ -1,6 +1,10 @@
 import type { TtsAudioFormat } from "@/types";
 import type { TtsVoice } from "@/lib/tts/speechText";
 
+export const SOUNDCASE_DEFAULT_AUDIO_FORMAT = "mp3" satisfies TtsAudioFormat;
+export const SOUNDCASE_AUDIO_FORMAT_OVERRIDES = ["flac", "wav"] as const satisfies readonly TtsAudioFormat[];
+export const SOUNDCASE_INTERMEDIATE_AUDIO_FORMAT = "flac" satisfies TtsAudioFormat;
+
 export type SoundCasePlaybackMode = "realtime" | "silent";
 export type SoundCaseChoiceSource = "automatic" | "override" | "fallback";
 
