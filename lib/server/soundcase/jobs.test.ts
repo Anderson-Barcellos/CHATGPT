@@ -4,7 +4,7 @@ import { once } from "node:events";
 import { promises as fs } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SoundCaseGenerationSettings } from "@/lib/soundcase/types";
 import { createSoundCaseProject, getSoundCaseProject } from "@/lib/server/soundcase/store";
 import {
@@ -196,15 +196,32 @@ describe("SoundCase version queue", () => {
 
   it("excludes a second process with a kernel-backed queue lock", async () => {
     const lockPath = path.join(root, "jobs.lock");
-    const release = await acquireSoundCaseQueueLock();
+    const lock = await acquireSoundCaseQueueLock();
     const blocked = spawn("/usr/bin/flock", ["--nonblock", lockPath, "/bin/true"]);
     const [blockedCode] = (await once(blocked, "exit")) as [number];
     expect(blockedCode).toBe(1);
 
-    await release();
+    await lock.release();
     const admitted = spawn("/usr/bin/flock", ["--nonblock", lockPath, "/bin/true"]);
     const [admittedCode] = (await once(admitted, "exit")) as [number];
     expect(admittedCode).toBe(0);
+  });
+
+  it("triggers fail-stop when the kernel lock holder dies unexpectedly", async () => {
+    const onUnexpectedExit = vi.fn();
+    const lock = await acquireSoundCaseQueueLock({ onUnexpectedExit });
+
+    process.kill(lock.holderPid, "SIGKILL");
+
+    await vi.waitFor(() => expect(onUnexpectedExit).toHaveBeenCalledOnce());
+    const contender = spawn("/usr/bin/flock", [
+      "--nonblock",
+      path.join(root, "jobs.lock"),
+      "/bin/true",
+    ]);
+    const [code] = (await once(contender, "exit")) as [number];
+    expect(code).toBe(0);
+    await lock.release();
   });
 
   it("rejects a stale lease guard after renewal", async () => {

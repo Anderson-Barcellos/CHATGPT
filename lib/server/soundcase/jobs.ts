@@ -88,7 +88,7 @@ async function waitForFlock(
 }
 
 async function releaseFlock(child: ChildProcessWithoutNullStreams): Promise<void> {
-  if (child.exitCode !== null) return;
+  if (child.exitCode !== null || child.signalCode !== null) return;
   await new Promise<void>((resolve) => {
     child.once("exit", () => resolve());
     child.once("error", () => resolve());
@@ -96,7 +96,14 @@ async function releaseFlock(child: ChildProcessWithoutNullStreams): Promise<void
   });
 }
 
-export async function acquireSoundCaseQueueLock(): Promise<() => Promise<void>> {
+export interface SoundCaseQueueLock {
+  holderPid: number;
+  release: () => Promise<void>;
+}
+
+export async function acquireSoundCaseQueueLock(
+  options: { onUnexpectedExit?: () => void } = {}
+): Promise<SoundCaseQueueLock> {
   await ensureSoundCaseRoot();
   const lockPath = queueFileLockPath();
   const handle = await fs.open(
@@ -116,6 +123,7 @@ export async function acquireSoundCaseQueueLock(): Promise<() => Promise<void>> 
       "--exclusive",
       "--wait",
       FLOCK_WAIT_SECONDS,
+      "--no-fork",
       lockPath,
       process.execPath,
       "-e",
@@ -123,14 +131,30 @@ export async function acquireSoundCaseQueueLock(): Promise<() => Promise<void>> 
     ],
     { stdio: ["pipe", "pipe", "pipe"] }
   );
+  let acquired = false;
+  let releasing = false;
+  const onUnexpectedExit = options.onUnexpectedExit ?? (() => process.exit(1));
+  child.on("exit", () => {
+    if (acquired && !releasing) onUnexpectedExit();
+  });
   try {
     await waitForFlock(child);
+    if (child.exitCode !== null || child.signalCode !== null) {
+      throw new SoundCaseJobError("soundcase_queue_lock_failed", 503);
+    }
+    acquired = true;
   } catch (error) {
     child.stdin.destroy();
     child.kill();
     throw error;
   }
-  return () => releaseFlock(child);
+  return {
+    holderPid: child.pid!,
+    release: async () => {
+      releasing = true;
+      await releaseFlock(child);
+    },
+  };
 }
 
 async function withQueueLock<T>(fn: () => Promise<T>): Promise<T> {
@@ -142,13 +166,13 @@ async function withQueueLock<T>(fn: () => Promise<T>): Promise<T> {
   const tail = previous.then(() => current);
   queueLocks.set(QUEUE_LOCK_KEY, tail);
   await previous;
-  let releaseFileLock: (() => Promise<void>) | null = null;
+  let queueFileLock: SoundCaseQueueLock | null = null;
   try {
-    releaseFileLock = await acquireSoundCaseQueueLock();
+    queueFileLock = await acquireSoundCaseQueueLock();
     return await fn();
   } finally {
     try {
-      await releaseFileLock?.();
+      await queueFileLock?.release();
     } finally {
       release();
       if (queueLocks.get(QUEUE_LOCK_KEY) === tail) queueLocks.delete(QUEUE_LOCK_KEY);
