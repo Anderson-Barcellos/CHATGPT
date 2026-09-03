@@ -189,35 +189,36 @@ export async function getSoundCaseProject(
   });
 }
 
-async function mutateDraft(
+async function persistDraftMutation(
   projectId: string,
-  input: UpdateSoundCaseProjectInput,
+  input: Omit<UpdateSoundCaseProjectInput, "revision"> & { revision?: number },
   importMetadata?: SoundCaseImportMetadata
 ): Promise<SoundCaseProjectDetail> {
-  return withStoreLock(projectId, async () => {
-    const normalizedText = normalizeSoundCaseText(input.text);
-    return withStoreLock(INDEX_LOCK_KEY, async () => {
-      const projects = await readProjects();
-      const { project, index } = requireActiveProject(projects, projectId);
-      if (input.revision !== project.draftRevision) {
-        throw new SoundCaseStoreError("soundcase_revision_conflict", 409);
-      }
+  const normalizedText = normalizeSoundCaseText(input.text);
+  return withStoreLock(INDEX_LOCK_KEY, async () => {
+    const projects = await readProjects();
+    const { project, index } = requireActiveProject(projects, projectId);
+    if (
+      input.revision !== undefined &&
+      input.revision !== project.draftRevision
+    ) {
+      throw new SoundCaseStoreError("soundcase_revision_conflict", 409);
+    }
 
-      const updated: SoundCaseProject = {
-        ...project,
-        title:
-          input.title === undefined ? project.title : normalizeTitle(input.title),
-        draftRevision: project.draftRevision + 1,
-        ...(importMetadata ? { importMetadata } : {}),
-        updatedAt: new Date().toISOString(),
-      };
-      projects[index] = updated;
+    const updated: SoundCaseProject = {
+      ...project,
+      title:
+        input.title === undefined ? project.title : normalizeTitle(input.title),
+      draftRevision: project.draftRevision + 1,
+      ...(importMetadata ? { importMetadata } : {}),
+      updatedAt: new Date().toISOString(),
+    };
+    projects[index] = updated;
 
-      await writeTextDurable(projectDraftPath(projectId), normalizedText);
-      await writeProjects(projects);
-      await writeJsonDurable(projectMetadataPath(projectId), updated);
-      return buildProjectDetail(updated, normalizedText);
-    });
+    await writeTextDurable(projectDraftPath(projectId), normalizedText);
+    await writeProjects(projects);
+    await writeJsonDurable(projectMetadataPath(projectId), updated);
+    return buildProjectDetail(updated, normalizedText);
   });
 }
 
@@ -225,7 +226,9 @@ export async function saveSoundCaseDraft(
   projectId: string,
   input: UpdateSoundCaseProjectInput
 ): Promise<SoundCaseProjectDetail> {
-  return mutateDraft(projectId, input);
+  return withStoreLock(projectId, () =>
+    persistDraftMutation(projectId, input)
+  );
 }
 
 function parseImport(input: SoundCaseTextImport): {
@@ -235,9 +238,7 @@ function parseImport(input: SoundCaseTextImport): {
   const extension = input.name.toLowerCase().match(/\.([^.]+)$/u)?.[1];
   const sourceType = extension === "txt" || extension === "md" ? extension : null;
   const validMime =
-    (sourceType === "txt" && input.mime === "text/plain") ||
-    (sourceType === "md" &&
-      (input.mime === "text/markdown" || input.mime === "text/plain"));
+    input.mime === "text/plain" || input.mime === "text/markdown";
   if (!sourceType || !validMime) {
     throw new SoundCaseStoreError("soundcase_import_type", 415);
   }
@@ -260,15 +261,16 @@ export async function importSoundCaseText(
   input: SoundCaseTextImport
 ): Promise<SoundCaseProjectDetail> {
   const parsed = parseImport(input);
-  const current = await getSoundCaseProject(projectId);
-  return mutateDraft(
-    projectId,
-    { text: parsed.text, revision: current.draftRevision },
-    {
-      sourceName: input.name.slice(0, 255),
-      sourceType: parsed.sourceType,
-      importedAt: new Date().toISOString(),
-    }
+  return withStoreLock(projectId, () =>
+    persistDraftMutation(
+      projectId,
+      { text: parsed.text },
+      {
+        sourceName: input.name.slice(0, 255),
+        sourceType: parsed.sourceType,
+        importedAt: new Date().toISOString(),
+      }
+    )
   );
 }
 

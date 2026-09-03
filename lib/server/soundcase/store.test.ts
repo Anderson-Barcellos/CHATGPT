@@ -98,6 +98,24 @@ describe("SoundCase project store", () => {
     });
   });
 
+  it("serializes import as one mutation without a synthetic CAS conflict", async () => {
+    const project = await createSoundCaseProject({ title: "Importação" });
+    const [imported] = await Promise.allSettled([
+      importSoundCaseText(project.id, {
+        name: "capitulo.txt",
+        mime: "text/markdown",
+        bytes: new TextEncoder().encode("conteúdo importado"),
+      }),
+      saveSoundCaseDraft(project.id, {
+        text: "autosave concorrente",
+        revision: 0,
+      }),
+    ]);
+
+    expect(imported.status).toBe("fulfilled");
+    expect((await getSoundCaseProject(project.id)).draftRevision).toBeGreaterThanOrEqual(1);
+  });
+
   it("rejects extension mismatch, oversized input and invalid UTF-8", async () => {
     const project = await createSoundCaseProject({ title: "Importação" });
 
