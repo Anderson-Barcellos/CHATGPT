@@ -38,6 +38,8 @@ describe("WorkspaceFrameV2", () => {
     expect(markup).toContain("text-[length:var(--gc-mobile-tab-font-size)]");
     expect(markup).not.toContain("text-[0.6rem]");
     expect(markup).not.toContain('class="dark ');
+    expect(markup).not.toContain(">Salvo<");
+    expect(markup).not.toContain(">online<");
   });
 });
 

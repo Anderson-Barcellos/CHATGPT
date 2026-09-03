@@ -12,11 +12,15 @@ interface UIState extends ArtifactState {
   imageSize: string;
   imageQuality: string;
   activePanelTab: ActivePanelTab;
+  contextPanelOpen: boolean;
   activeSelection: ActiveSelection | null;
   setActiveMode: (mode: AppMode) => void;
   setImageSize: (size: string) => void;
   setImageQuality: (quality: string) => void;
   setActivePanelTab: (tab: ActivePanelTab) => void;
+  setContextPanelOpen: (open: boolean) => void;
+  openContextPanel: (tab?: ActivePanelTab) => void;
+  closeContextPanel: () => void;
   setActiveSelection: (selection: ActiveSelection | null) => void;
   openArtifact: (artifact: MessageArtifact, messageId?: string) => void;
   closeArtifact: () => void;
@@ -30,11 +34,19 @@ export const useUIStore = create<UIState>((set) => ({
   activeArtifact: null,
   artifactMessageId: null,
   activePanelTab: "activity",
+  contextPanelOpen: false,
   activeSelection: null,
   setActiveMode: (mode) => set({ activeMode: mode }),
   setImageSize: (size) => set({ imageSize: size }),
   setImageQuality: (quality) => set({ imageQuality: quality }),
   setActivePanelTab: (tab) => set({ activePanelTab: tab }),
+  setContextPanelOpen: (open) => set({ contextPanelOpen: open }),
+  openContextPanel: (tab) =>
+    set((state) => ({
+      contextPanelOpen: true,
+      activePanelTab: tab ?? state.activePanelTab,
+    })),
+  closeContextPanel: () => set({ contextPanelOpen: false }),
   setActiveSelection: (selection) => set({ activeSelection: selection }),
   openArtifact: (artifact, messageId) =>
     set({

@@ -42,6 +42,24 @@ describe("MessageContent streaming routing", () => {
     expect(markup).toContain("item pronto");
   });
 
+  it("uses theme-aware high-contrast colors for interrupted responses", () => {
+    const markup = renderToStaticMarkup(
+      <MessageContent
+        message={{
+          id: "assistant-interrupted",
+          role: "assistant",
+          content: "Resposta parcial",
+          timestamp: new Date("2026-08-22T12:00:00.000Z"),
+          streamStatus: "interrupted",
+        }}
+      />
+    );
+
+    expect(markup).toContain("text-amber-800");
+    expect(markup).toContain("dark:text-amber-200");
+    expect(markup).not.toContain("text-amber-300/90");
+  });
+
   it("promotes a completed Mermaid fence from live code to the diagram renderer", () => {
     const markup = renderToStaticMarkup(
       <MessageContent

@@ -4,13 +4,17 @@ import { AnimatePresence } from "framer-motion";
 import { ChatContainer } from "@/components/chat/ChatContainer";
 import { ArtifactPreviewSheet } from "@/components/workspace-v2/canvas/ArtifactPreviewSheet";
 import { useUIStore } from "@/stores/uiStore";
-import type { Message } from "@/types";
+import type { Conversation, Message } from "@/types";
 
 interface ChatCanvasV2Props {
   messages: Message[];
   isLoading: boolean;
   editAndResend: (messageId: string, newContent: string) => Promise<void>;
   deleteMessage: (messageId: string) => Promise<void>;
+  recentConversations: Pick<Conversation, "id" | "title" | "updatedAt">[];
+  activeConversationId: string | null;
+  onSelectConversation: (id: string) => void;
+  onOpenConversations: () => void;
 }
 
 export function ChatCanvasV2({
@@ -18,6 +22,10 @@ export function ChatCanvasV2({
   isLoading,
   editAndResend,
   deleteMessage,
+  recentConversations,
+  activeConversationId,
+  onSelectConversation,
+  onOpenConversations,
 }: ChatCanvasV2Props) {
   const { artifactOpen, activeArtifact, closeArtifact } = useUIStore();
 
@@ -28,6 +36,10 @@ export function ChatCanvasV2({
         isLoading={isLoading}
         editAndResend={editAndResend}
         deleteMessage={deleteMessage}
+        recentConversations={recentConversations}
+        activeConversationId={activeConversationId}
+        onSelectConversation={onSelectConversation}
+        onOpenConversations={onOpenConversations}
       />
 
       <AnimatePresence>

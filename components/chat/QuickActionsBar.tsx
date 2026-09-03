@@ -47,10 +47,11 @@ function ActionButton({
     <button
       type="button"
       title={title}
+      aria-label={title}
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex size-7 items-center justify-center rounded-md text-muted-foreground/70 hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground disabled:pointer-events-none disabled:opacity-40",
+        "gc-touch-target flex size-7 items-center justify-center rounded-md text-muted-foreground/70 hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground disabled:pointer-events-none disabled:opacity-40",
         className
       )}
     >
@@ -80,7 +81,7 @@ export function QuickActionsBar({
     touchTimer.current = window.setTimeout(() => setTouched(false), 2000);
   }, [isMobile]);
   const { appendToNotes } = useNotes();
-  const { setActivePanelTab } = useUIStore();
+  const { openContextPanel } = useUIStore();
 
   const handleCopy = useCallback(async () => {
     try {
@@ -94,15 +95,15 @@ export function QuickActionsBar({
 
   const handleNote = useCallback(() => {
     appendToNotes(content, messageId);
-    setActivePanelTab("notes");
-  }, [content, messageId, appendToNotes, setActivePanelTab]);
+    openContextPanel("notes");
+  }, [content, messageId, appendToNotes, openContextPanel]);
 
   const handlePulseDraft = useCallback(() => {
-    setActivePanelTab("pulse");
+    openContextPanel("pulse");
     window.dispatchEvent(
       new CustomEvent("gaucho:pulse-draft-from-text", { detail: { text: content } })
     );
-  }, [content, setActivePanelTab]);
+  }, [content, openContextPanel]);
 
   const handleQuote = useCallback(() => {
     window.dispatchEvent(

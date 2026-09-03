@@ -18,9 +18,9 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   const implRef = useRef<AppendFn | null>(null);
 
   const appendToNotes = useCallback((text: string, sourceMessageId: string) => {
+    useUIStore.getState().openContextPanel("notes");
     if (implRef.current) {
       implRef.current(text, sourceMessageId);
-      useUIStore.getState().setActivePanelTab("notes");
       return;
     }
 
@@ -33,7 +33,6 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     })
       .then(() => {
         window.dispatchEvent(new CustomEvent("gaucho:workspace-note-created"));
-        useUIStore.getState().setActivePanelTab("notes");
         toast.success("Trecho salvo nas notas locais.");
       })
       .catch(() => {

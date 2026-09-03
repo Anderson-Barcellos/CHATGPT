@@ -30,8 +30,8 @@ import {
   shouldAutoScroll,
 } from "@/lib/chat/scrollState";
 import { cn } from "@/lib/utils";
-import { useChatStore } from "@/stores/chatStore";
-import { Message } from "@/types";
+import { useUIStore } from "@/stores/uiStore";
+import type { Conversation, Message } from "@/types";
 
 const SUGGESTIONS = [
   { icon: Code, label: "Escrever codigo", desc: "Gere, refatore ou debug", prompt: "Me ajude a escrever um código em ", accent: "from-primary/20 to-accent/10", iconColor: "text-primary" },
@@ -42,21 +42,6 @@ const SUGGESTIONS = [
   { icon: Languages, label: "Traduzir", desc: "Qualquer idioma", prompt: "Traduza o seguinte texto para ", accent: "from-emerald-500/20 to-accent/10", iconColor: "text-emerald-700 dark:text-emerald-300" },
 ];
 
-const SUBTITLES = [
-  "Bora criar algo bonito hoje?",
-  "No que posso te ajudar?",
-  "Pronto pra mais um dia produtivo!",
-  "O que vamos construir hoje?",
-  "Estou aqui pra qualquer coisa!",
-];
-
-const MOBILE_CONVERSATIONS = [
-  { title: "Paciente João Silva", time: "09:21", active: true },
-  { title: "Relatório USG Apêndice", time: "Ontem" },
-  { title: "Rotina Vesícula", time: "Ontem" },
-  { title: "Dúvida Hepática", time: "17/06" },
-];
-
 const MOBILE_ACTIONS = [
   { icon: ImageIcon, label: "Analisar imagem", prompt: "Analise a seguinte imagem: " },
   { icon: FileText, label: "Criar relatório", prompt: "Crie um relatório clínico sobre " },
@@ -64,22 +49,31 @@ const MOBILE_ACTIONS = [
   { icon: CircleHelp, label: "Perguntar algo", prompt: "Quero perguntar sobre " },
 ];
 
-function getGreeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "Bom dia";
-  if (h < 18) return "Boa tarde";
-  return "Boa noite";
+function formatConversationDate(date: Date): string {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "America/Sao_Paulo",
+  }).format(date);
 }
 
 interface WelcomeScreenProps {
   onSuggestionClick: (prompt: string) => void;
+  recentConversations: Pick<Conversation, "id" | "title" | "updatedAt">[];
+  activeConversationId: string | null;
+  onSelectConversation: (id: string) => void;
+  onOpenConversations: () => void;
+  onOpenContextPanel: () => void;
 }
 
-function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
-  const [subtitle] = useState(
-    () => SUBTITLES[Math.floor(Math.random() * SUBTITLES.length)]
-  );
-
+function WelcomeScreen({
+  onSuggestionClick,
+  recentConversations,
+  activeConversationId,
+  onSelectConversation,
+  onOpenConversations,
+  onOpenContextPanel,
+}: WelcomeScreenProps) {
   return (
     <div className="flex flex-1 items-start justify-center px-[var(--gc-mobile-welcome-outer-x)] py-[var(--gc-mobile-welcome-outer-y)] md:items-center md:px-5 md:py-8">
       <div className="w-full max-w-5xl">
@@ -90,29 +84,35 @@ function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
               <button
                 type="button"
                 className="inline-flex items-center gap-1 text-[0.82rem] font-medium text-primary"
-                onClick={() => window.dispatchEvent(new CustomEvent("gaucho:open-context-panel"))}
+                onClick={onOpenConversations}
               >
                 Ver todas
                 <ChevronRight className="size-4" />
               </button>
             </div>
             <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {MOBILE_CONVERSATIONS.map((conversation) => (
+              {recentConversations.length === 0 ? (
+                <div className="flex min-h-[4.45rem] min-w-full items-center rounded-[1.05rem] border border-dashed border-[color:var(--gc-border-soft)] bg-background/58 px-3 text-[0.8rem] text-muted-foreground">
+                  Tuas conversas recentes vão aparecer aqui.
+                </div>
+              ) : recentConversations.map((conversation) => (
                 <button
-                  key={conversation.title}
+                  key={conversation.id}
                   type="button"
+                  aria-current={conversation.id === activeConversationId ? "page" : undefined}
+                  onClick={() => onSelectConversation(conversation.id)}
                   className={cn(
                     "flex min-h-[4.45rem] min-w-[7.9rem] flex-col justify-between rounded-[1.05rem] border bg-background/72 p-2.25 text-left shadow-[0_10px_22px_rgba(15,23,42,0.06)]",
-                    conversation.active
+                    conversation.id === activeConversationId
                       ? "border-primary/60 bg-primary/5"
                       : "border-[color:var(--gc-border-soft)]"
                   )}
                 >
                   <span className="flex items-start gap-1.5">
                     <MessageCircle className="mt-0.5 size-3.5 shrink-0 text-primary" />
-                    <span className="text-[0.84rem] font-medium leading-snug text-foreground">{conversation.title}</span>
+                    <span className="line-clamp-2 text-[0.84rem] font-medium leading-snug text-foreground">{conversation.title || "Nova conversa"}</span>
                   </span>
-                  <span className="pl-5 text-[0.68rem] text-muted-foreground">{conversation.time}</span>
+                  <span className="pl-5 text-[0.68rem] text-muted-foreground">{formatConversationDate(conversation.updatedAt)}</span>
                 </button>
               ))}
             </div>
@@ -120,7 +120,7 @@ function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
 
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent("gaucho:open-context-panel"))}
+            onClick={onOpenContextPanel}
             className="flex w-full items-center gap-2.5 rounded-[1.3rem] border border-[color:var(--gc-border-soft)] bg-background/78 px-3.25 py-2.75 text-left shadow-[0_12px_26px_rgba(15,23,42,0.06)]"
           >
             <span className="flex size-10 shrink-0 items-center justify-center rounded-[1rem] border border-[color:var(--gc-border-soft)] bg-muted/48 text-foreground">
@@ -128,7 +128,7 @@ function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-[0.94rem] font-semibold text-foreground">Painel contextual</span>
-              <span className="block text-[0.78rem] leading-snug text-muted-foreground">Exames, imagens, protocolos e mais</span>
+              <span className="block text-[0.78rem] leading-snug text-muted-foreground">Pulse, notas e rotinas</span>
             </span>
             <ChevronRight className="size-4.5 shrink-0 text-foreground" />
           </button>
@@ -160,22 +160,6 @@ function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
             </p>
           </section>
 
-          <div className="flex items-center gap-4 px-3 text-sm text-muted-foreground">
-            <span className="h-px flex-1 bg-border/70" />
-            Hoje
-            <span className="h-px flex-1 bg-border/70" />
-          </div>
-
-          <section className="flex items-start gap-2.25 pb-2">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-[color:var(--gc-border-soft)] bg-background">
-              <ShieldCheck className="size-4.5 text-primary" />
-            </div>
-            <div className="rounded-[1.05rem] bg-muted/62 px-3.5 py-2.75 text-[0.84rem] leading-relaxed text-foreground shadow-[0_10px_22px_rgba(15,23,42,0.05)]">
-              <p>Pronto para te ajudar com análises, relatórios e dúvidas clínicas.</p>
-              <p className="mt-2">Qual é o tema de hoje?</p>
-              <p className="mt-2.5 text-[0.7rem] text-muted-foreground">09:21</p>
-            </div>
-          </section>
         </div>
 
         <div className="gc-refined-panel hidden rounded-[var(--gc-mobile-welcome-panel-radius)] border px-[var(--gc-mobile-welcome-panel-x)] py-[var(--gc-mobile-welcome-panel-y)] md:block md:rounded-[2rem] md:px-7 md:py-7">
@@ -194,16 +178,16 @@ function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
                 </div>
 
                 <h2 className="mt-3 text-[length:var(--gc-mobile-welcome-title-size)] font-semibold leading-none tracking-[-0.04em] text-foreground md:mt-6 md:text-[2.6rem]">
-                  {getGreeting()}, Anders.
+                  Olá, Anders.
                 </h2>
                 <p className="mt-2 max-w-md text-body-sm leading-relaxed text-muted-foreground md:mt-3 md:text-base">
-                  {subtitle} Escolhe um ponto de partida e eu já deixo o composer pronto com o contexto inicial.
+                  No que posso te ajudar? Escolhe um ponto de partida e eu já deixo o composer pronto com o contexto inicial.
                 </p>
               </div>
 
               <button
                 type="button"
-                onClick={() => window.dispatchEvent(new CustomEvent("gaucho:open-context-panel"))}
+                onClick={onOpenContextPanel}
                 className="mt-3 flex w-full items-center gap-3 rounded-2xl border border-[color:var(--gc-border-soft)] bg-background/62 px-3 py-3 text-left text-body-sm leading-relaxed text-muted-foreground/86 transition-colors hover:border-primary/30 hover:bg-primary/5 md:mt-6 md:px-4"
               >
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary">
@@ -270,6 +254,10 @@ interface ChatContainerProps {
   isLoading: boolean;
   editAndResend: (messageId: string, newContent: string) => Promise<void>;
   deleteMessage: (messageId: string) => Promise<void>;
+  recentConversations: Pick<Conversation, "id" | "title" | "updatedAt">[];
+  activeConversationId: string | null;
+  onSelectConversation: (id: string) => void;
+  onOpenConversations: () => void;
 }
 
 export function getChatMessageRenderKey(message: Message): string {
@@ -296,7 +284,12 @@ export function ChatContainer({
   isLoading,
   editAndResend,
   deleteMessage,
+  recentConversations,
+  activeConversationId,
+  onSelectConversation,
+  onOpenConversations,
 }: ChatContainerProps) {
+  const openContextPanel = useUIStore((state) => state.openContextPanel);
   const regenerateLastMessage = useCallback(() => {
     const lastAssistantIdx = [...messages].reverse().findIndex((m) => m.role === "assistant");
     if (lastAssistantIdx === -1) return;
@@ -305,7 +298,6 @@ export function ChatContainer({
     if (!lastUserMsg?.content?.trim()) return;
     void editAndResend(lastUserMsg.id, lastUserMsg.content);
   }, [messages, editAndResend]);
-  const activeConversationId = useChatStore((state) => state.activeConversationId);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const isTrackingBottomRef = useRef(true);
@@ -540,7 +532,14 @@ export function ChatContainer({
           className="gc-chat-thread mx-auto flex w-full max-w-3xl flex-col gap-[var(--gc-mobile-chat-content-gap)] px-[var(--gc-mobile-chat-content-x)] py-[var(--gc-mobile-chat-content-y)] md:gap-5 md:px-5 md:py-7 lg:max-w-[50rem] min-[1490px]:max-w-[60rem]"
         >
           {messages.length === 0 ? (
-            <WelcomeScreen onSuggestionClick={handleSuggestion} />
+            <WelcomeScreen
+              onSuggestionClick={handleSuggestion}
+              recentConversations={recentConversations}
+              activeConversationId={activeConversationId}
+              onSelectConversation={onSelectConversation}
+              onOpenConversations={onOpenConversations}
+              onOpenContextPanel={() => openContextPanel("activity")}
+            />
           ) : (
             <AnimatePresence initial={false}>
               {messages.map((message, idx) => {

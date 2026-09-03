@@ -28,7 +28,6 @@ import {
   Search,
   Send,
   Settings,
-  ShieldCheck,
   StickyNote,
   Square,
   Upload,
@@ -64,6 +63,7 @@ import { GPTLogo } from "@/components/ui/gpt-logo";
 import { ProductNav } from "@/components/navigation/ProductNav";
 import { useCommandPaletteContext } from "@/components/command/CommandPaletteProvider";
 import { cn } from "@/lib/utils";
+import { useUIStore } from "@/stores/uiStore";
 import type { FileAttachment, ResponseMode } from "@/types";
 
 const RESPONSE_MODE_LABELS: Record<ResponseMode, string> = {
@@ -216,6 +216,7 @@ export function WorkspaceFrameV2({
   onMobileContextOpenChange,
 }: WorkspaceFrameV2Props) {
   const { setOpen: openCommandPalette } = useCommandPaletteContext();
+  const openContextPanel = useUIStore((state) => state.openContextPanel);
   const [internalSidebarOpen, setInternalSidebarOpen] = useState(false);
   const sidebarOpen = mobileSidebarOpen ?? internalSidebarOpen;
   const setSidebarOpen = onMobileSidebarOpenChange ?? setInternalSidebarOpen;
@@ -327,10 +328,6 @@ export function WorkspaceFrameV2({
                 </button>
 
                 <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-0.5 md:static md:translate-y-0 md:gap-1.5">
-                  <div className="hidden items-center gap-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-2 py-1 text-nano font-semibold text-emerald-700 dark:text-emerald-300 lg:flex">
-                    <ShieldCheck className="size-3.5" />
-                    Salvo
-                  </div>
                   <span className="hidden md:inline-flex">{exportControl ?? null}</span>
                   <IconButton
                     label="Buscar comandos"
@@ -376,7 +373,7 @@ export function WorkspaceFrameV2({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setContextOpen(true)}
+                    onClick={() => openContextPanel("activity")}
                     className="relative flex h-full flex-col items-center justify-center gap-0.25 rounded-xl text-[length:var(--gc-mobile-tab-font-size)] font-medium text-muted-foreground"
                   >
                     <span className="absolute top-1.5 size-1.5 rounded-full bg-primary" />
@@ -385,7 +382,7 @@ export function WorkspaceFrameV2({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setContextOpen(true)}
+                    onClick={() => openContextPanel("notes")}
                     className="flex h-full flex-col items-center justify-center gap-0.25 rounded-xl text-[length:var(--gc-mobile-tab-font-size)] font-medium text-muted-foreground"
                   >
                     <StickyNote className="size-4.5" />
@@ -393,7 +390,7 @@ export function WorkspaceFrameV2({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setContextOpen(true)}
+                    onClick={() => openContextPanel("pulse")}
                     className="flex h-full flex-col items-center justify-center gap-0.25 rounded-xl text-[length:var(--gc-mobile-tab-font-size)] font-medium text-muted-foreground"
                   >
                     <CalendarCheck className="size-4.5" />
@@ -421,10 +418,6 @@ export function WorkspaceFrameV2({
                     />
                   </div>
                 </div>
-                <span className="hidden items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-2 py-0.5 text-nano font-medium text-emerald-700 dark:text-emerald-300 md:inline-flex">
-                  <span className="size-1.5 rounded-full bg-emerald-500" />
-                  online
-                </span>
               </div>
             </header>
 

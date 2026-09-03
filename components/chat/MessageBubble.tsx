@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { MessageContent } from "./MessageContent";
 import { ReasoningPanel } from "./ReasoningPanel";
 import { Message } from "@/types";
@@ -52,10 +52,11 @@ function formatTime(date: Date): string {
 }
 
 export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: MessageBubbleProps) {
+  const shouldReduceMotion = useReducedMotion();
   const isUser = message.role === "user";
   const webSearchStatus = getWebSearchIndicatorStatus(message);
   const { appendToNotes } = useNotes();
-  const { setActivePanelTab } = useUIStore();
+  const { openContextPanel } = useUIStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -105,20 +106,27 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
   }, [message.content]);
 
   const handlePulseDraft = useCallback(() => {
-    setActivePanelTab("pulse");
+    openContextPanel("pulse");
     window.dispatchEvent(
       new CustomEvent("gaucho:pulse-draft-from-text", {
         detail: { text: message.content },
       })
     );
-  }, [message.content, setActivePanelTab]);
+  }, [message.content, openContextPanel]);
 
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, y: 8 }}
+      layout={
+        shouldReduceMotion || message.streamStatus === "streaming"
+          ? false
+          : "position"
+      }
+      initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
+      transition={{
+        duration: shouldReduceMotion ? 0 : 0.15,
+        ease: [0.2, 0, 0, 1],
+      }}
       className={cn(
         "gc-message-row group flex gap-2 md:gap-3",
         isUser ? "justify-end" : "justify-start"

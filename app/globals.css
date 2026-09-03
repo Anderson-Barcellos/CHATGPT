@@ -855,7 +855,7 @@ body {
     /* Fluid mobile density: compact layout with more comfortable controls. */
     --gc-mobile-frame-pad: 0;
     --gc-mobile-shell-radius: 0;
-    --gc-mobile-header-height: 2.25rem;
+    --gc-mobile-header-height: 2.75rem;
     --gc-mobile-header-x: 0.5rem;
     --gc-mobile-subheader-height: 1.56rem;
     --gc-mobile-subheader-x: 0.5rem;
@@ -864,16 +864,16 @@ body {
     --gc-mobile-composer-footer-top: 0.1875rem;
     --gc-mobile-composer-footer-bottom: 0.1875rem;
     --gc-mobile-composer-radius: 0.65rem;
-    --gc-mobile-textarea-min-height: 32px;
+    --gc-mobile-textarea-min-height: 44px;
     --gc-mobile-textarea-max-height: 118px;
     --gc-mobile-textarea-px: 0.5625rem;
     --gc-mobile-textarea-pt: 0.5rem;
     --gc-mobile-textarea-pb: 0.25rem;
     --gc-mobile-textarea-font-size: 16px;
-    --gc-mobile-control-height: 1.85rem;
+    --gc-mobile-control-height: 2.75rem;
     --gc-mobile-control-font-size: 11px;
     --gc-mobile-send-font-size: 11px;
-    --gc-mobile-icon-button-size: 2rem;
+    --gc-mobile-icon-button-size: 2.75rem;
     --gc-mobile-header-title-font-size: 0.82rem;
     --gc-mobile-header-caption-font-size: 0.625rem;
     --gc-mobile-subheader-font-size: 0.625rem;
@@ -1421,5 +1421,31 @@ body {
   .gpt-organic,
   .gpt-core {
     animation: none !important;
+  }
+
+  [data-slot="sheet-content"],
+  .gc-atmosphere-shell *,
+  .gc-atmosphere-shell *::before,
+  .gc-atmosphere-shell *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+@media (pointer: coarse) {
+  .gc-touch-target,
+  .gc-clinical-input-surface,
+  .gc-settings-tab,
+  .gc-atmosphere-shell .gc-clinical-input-surface,
+  .gc-atmosphere-shell .gc-rail-filters button,
+  .gc-atmosphere-shell .gc-rail-footer button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .gc-atmosphere-shell .gc-conversation-row {
+    min-height: 44px;
   }
 }

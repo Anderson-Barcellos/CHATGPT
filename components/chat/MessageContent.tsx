@@ -41,7 +41,7 @@ function getStreamStatusNotice(streamStatus: Message["streamStatus"]) {
   if (streamStatus === "interrupted") {
     return {
       className:
-        "mt-2 flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/[0.08] px-3 py-1.5 text-xs text-amber-300/90",
+        "mt-2 flex items-center gap-2 rounded-md border border-amber-500/35 bg-amber-500/[0.10] px-3 py-1.5 text-xs text-amber-800 dark:text-amber-200",
       message: "Resposta interrompida — pode regenerar pra completar.",
     };
   }
@@ -49,7 +49,7 @@ function getStreamStatusNotice(streamStatus: Message["streamStatus"]) {
   if (streamStatus === "aborted") {
     return {
       className:
-        "mt-2 flex items-center gap-2 rounded-md border border-amber-400/25 bg-amber-400/[0.07] px-3 py-1.5 text-xs text-amber-200/85",
+        "mt-2 flex items-center gap-2 rounded-md border border-amber-500/35 bg-amber-500/[0.10] px-3 py-1.5 text-xs text-amber-800 dark:text-amber-200",
       message: "Geração cancelada por ti — podes regenerar quando quiser.",
     };
   }
@@ -57,7 +57,7 @@ function getStreamStatusNotice(streamStatus: Message["streamStatus"]) {
   if (streamStatus === "failed") {
     return {
       className:
-        "mt-2 flex items-center gap-2 rounded-md border border-rose-500/30 bg-rose-500/[0.09] px-3 py-1.5 text-xs text-rose-200/90",
+        "mt-2 flex items-center gap-2 rounded-md border border-rose-500/35 bg-rose-500/[0.10] px-3 py-1.5 text-xs text-rose-800 dark:text-rose-200",
       message: "Falha na geração — tenta regenerar para concluir.",
     };
   }
