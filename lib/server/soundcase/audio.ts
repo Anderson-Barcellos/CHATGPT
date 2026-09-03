@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { execFile as nodeExecFile } from "node:child_process";
 import { promises as fs } from "node:fs";
 import type { TtsAudioFormat } from "@/types";
@@ -11,6 +11,7 @@ import type {
 } from "@/lib/soundcase/types";
 import { TTS_MODEL } from "@/lib/tts/speechText";
 import {
+  assertRegularSoundCaseFile,
   promoteSoundCaseFile,
   resolveSoundCasePath,
   writeBufferDurable,
@@ -20,7 +21,7 @@ import {
 export type SoundCaseExecFile = (
   file: string,
   args: string[],
-  options?: { cwd?: string }
+  options?: { cwd?: string; signal?: AbortSignal }
 ) => Promise<{ stdout: string; stderr: string }>;
 
 export interface SoundCaseSpeechClient {
@@ -33,7 +34,7 @@ export interface SoundCaseSpeechClient {
         speed: number;
         instructions: string;
         response_format: "flac";
-      }): Promise<{ arrayBuffer(): Promise<ArrayBuffer> }>;
+      }, options?: { signal?: AbortSignal }): Promise<{ arrayBuffer(): Promise<ArrayBuffer> }>;
     };
   };
 }
@@ -70,7 +71,7 @@ function defaultExecFile(
   options: { cwd?: string } = {}
 ): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
-    nodeExecFile(file, args, options, (error, stdout, stderr) => {
+    nodeExecFile(file, args, { ...options, maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => {
       if (error) reject(error);
       else resolve({ stdout: String(stdout), stderr: String(stderr) });
     });
@@ -119,6 +120,7 @@ export async function synthesizeSoundCaseChunk(input: {
   execFile?: SoundCaseExecFile;
   beforeProvider?: () => Promise<void>;
   afterProvider?: () => Promise<void>;
+  signal?: AbortSignal;
 }): Promise<{
   fileName: string;
   durationSeconds: number;
@@ -141,7 +143,7 @@ export async function synthesizeSoundCaseChunk(input: {
         segmentDirection,
       ].filter(Boolean).join("\n\n"),
       response_format: "flac",
-    });
+    }, { signal: input.signal });
     bytes = Buffer.from(await response.arrayBuffer());
   } catch (error) {
     await input.afterProvider?.();
@@ -156,7 +158,7 @@ export async function synthesizeSoundCaseChunk(input: {
   const finalPath = resolveSoundCasePath(
     "projects", input.projectId, "versions", input.versionId, "chunks", chunkName
   );
-  const partPath = `${finalPath}.part`;
+  const partPath = `${finalPath}.${randomUUID()}.part`;
   await writeBufferDurable(partPath, bytes);
   try {
     const durationSeconds = await probeSoundCaseAudio(
@@ -190,6 +192,7 @@ export async function assembleSoundCaseAudio(input: {
   execFile?: SoundCaseExecFile;
   beforeWork?: () => Promise<void>;
   afterWork?: () => Promise<void>;
+  signal?: AbortSignal;
 }): Promise<{
   format: TtsAudioFormat;
   durationSeconds: number;
@@ -207,6 +210,12 @@ export async function assembleSoundCaseAudio(input: {
   const chunksDirectory = resolveSoundCasePath(
     "projects", input.projectId, "versions", input.versionId, "chunks"
   );
+  for (const chunk of chunks) {
+    await assertRegularSoundCaseFile(resolveSoundCasePath(
+      "projects", input.projectId, "versions", input.versionId, "chunks",
+      `${String(chunk.index).padStart(4, "0")}.flac`
+    ));
+  }
   const concatPath = resolveSoundCasePath(
     "projects", input.projectId, "versions", input.versionId, "chunks", "concat.txt"
   );
@@ -218,18 +227,19 @@ export async function assembleSoundCaseAudio(input: {
   const finalPath = resolveSoundCasePath(
     "projects", input.projectId, "versions", input.versionId, fileName
   );
-  const partPath = `${finalPath}.part`;
+  const partPath = `${finalPath}.${randomUUID()}.part`;
   const config = FORMAT_CONFIG[input.format];
   await input.beforeWork?.();
   let durationSeconds = 0;
   let workError: unknown;
   try {
     await execFile(FFMPEG_PATH, [
-      "-y", "-nostdin", "-f", "concat", "-safe", "1", "-i", "concat.txt",
+      "-n", "-nostdin", "-hide_banner", "-loglevel", "error", "-nostats",
+      "-f", "concat", "-safe", "1", "-i", "concat.txt",
       "-map", "0:a:0", "-vn", ...config.encode,
       "-metadata", `title=${safeMetadata(input.title)}`,
       "-f", config.muxer, partPath,
-    ], { cwd: chunksDirectory });
+    ], { cwd: chunksDirectory, signal: input.signal });
     durationSeconds = await probeSoundCaseAudio(partPath, input.format, execFile);
   } catch (error) {
     workError = error;

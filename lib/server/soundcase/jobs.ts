@@ -725,15 +725,21 @@ export async function finishSoundCaseJob(
     const version = await getSoundCaseVersion(job.projectId, job.versionId);
     const now = operationNow.toISOString();
     const versionStatus = result.status === "completed" ? "ready" : result.status;
+    const { error: _previousError, ...versionWithoutError } = version;
     const nextVersion: SoundCaseVersion = {
-      ...version,
+      ...(result.status === "completed" ? versionWithoutError : version),
       status: versionStatus,
       progress: { ...version.progress, phase: versionStatus, updatedAt: now },
       ...(result.error ? { error: result.error } : {}),
       ...(result.status === "completed" ? { completedAt: now } : {}),
     };
     await writeVersion(nextVersion);
-    const { leaseOwner: _owner, leaseExpiresAt: _expires, ...withoutLease } = job;
+    const {
+      leaseOwner: _owner,
+      leaseExpiresAt: _expires,
+      lastErrorCode: _previousErrorCode,
+      ...withoutLease
+    } = job;
     const updated: SoundCaseJob = {
       ...withoutLease,
       status: result.status,
@@ -831,7 +837,7 @@ export async function resumeSoundCaseVersion(
       : await Promise.all(
           version.manifest.chunks.map(async (chunk) => {
             if (chunk.status !== "completed") {
-              return { ...chunk, status: "pending" as const };
+              return { ...chunk, status: "pending" as const, attempts: 0 };
             }
             if (
               await completedChunkIsValid(

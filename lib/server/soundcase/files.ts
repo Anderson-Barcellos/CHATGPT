@@ -266,6 +266,15 @@ export async function promoteSoundCaseFile(
   }
   await assertNoSymlinkAncestors(parent);
   await assertRegularSoundCaseFile(temporary);
+  const temporaryHandle = await fs.open(
+    temporary,
+    constants.O_RDONLY | constants.O_NOFOLLOW
+  );
+  try {
+    await temporaryHandle.sync();
+  } finally {
+    await temporaryHandle.close();
+  }
   try {
     const existing = await fs.lstat(target);
     if (existing.isSymbolicLink()) {
@@ -289,6 +298,11 @@ export async function writeJsonDurable<T>(
 }
 
 export async function readTextSafe(filePath: string): Promise<string | null> {
+  const content = await readBufferSafe(filePath);
+  return content === null ? null : content.toString("utf8");
+}
+
+export async function readBufferSafe(filePath: string): Promise<Buffer | null> {
   const target = assertInsideRoot(filePath);
   try {
     await assertRegularSoundCaseFile(target);
@@ -313,7 +327,7 @@ export async function readTextSafe(filePath: string): Promise<string | null> {
     if (!info.isFile()) {
       throw new SoundCaseFileError("soundcase_file_invalid");
     }
-    return await handle.readFile({ encoding: "utf8" });
+    return await handle.readFile();
   } finally {
     await handle.close();
   }

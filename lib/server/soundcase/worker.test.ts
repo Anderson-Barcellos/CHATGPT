@@ -91,20 +91,24 @@ describe("SoundCase resumable worker", () => {
   it("resumes after process reentry without paying for a completed chunk again", async () => {
     const project = await createSoundCaseProject({ text: "Primeiro trecho.\n\nSegundo trecho." });
     const created = await createSoundCaseVersion(project.id, settings);
-    const firstSpeech = vi.fn()
-      .mockResolvedValueOnce(new Response(Buffer.from("fLaCdata")))
-      .mockRejectedValue(new Error("provider"));
+    const firstSpeech = vi.fn().mockImplementation(
+      async () => new Response(Buffer.from("fLaCdata"))
+    );
     const firstClient = {
       audio: { speech: { create: firstSpeech } },
       responses: { create: vi.fn() },
     } as unknown as OpenAI;
     const firstNow = new Date("2030-01-01T00:00:00.000Z");
+    const failingExec: SoundCaseExecFile = vi.fn(async (file) => {
+      if (file.endsWith("ffmpeg")) throw new Error("assembly_crash");
+      return { stdout: JSON.stringify({ streams: [{ codec_name: "flac", duration: "2.5" }] }), stderr: "" };
+    });
     const interrupted = await runNextSoundCaseJob({
-      workerId: "worker-old", openai: firstClient, execFile: fakeExec(),
+      workerId: "worker-old", openai: firstClient, execFile: failingExec,
       now: () => firstNow, sleep: async () => undefined,
     });
     expect(interrupted.status).toBe("interrupted");
-    expect(firstSpeech).toHaveBeenCalledTimes(5);
+    expect(firstSpeech).toHaveBeenCalledTimes(2);
 
     const secondSpeech = vi.fn().mockResolvedValue(new Response(Buffer.from("fLaCdata")));
     const secondClient = {
@@ -117,9 +121,33 @@ describe("SoundCase resumable worker", () => {
     });
 
     expect(completed.status).toBe("completed");
-    expect(secondSpeech).toHaveBeenCalledTimes(1);
-    expect(secondSpeech.mock.calls[0][0].input).toBe("Segundo trecho.");
-    expect((await getSoundCaseVersion(project.id, created.version.id)).manifest.completedChunks).toBe(2);
+    expect(secondSpeech).not.toHaveBeenCalled();
+    const finalVersion = await getSoundCaseVersion(project.id, created.version.id);
+    expect(finalVersion.manifest.completedChunks).toBe(2);
+    expect(finalVersion.error).toBeUndefined();
+    const jobs = JSON.parse(await fs.readFile(path.join(root, "jobs.json"), "utf8"));
+    expect(jobs[0].lastErrorCode).toBeUndefined();
+  });
+
+  it("keeps the four-attempt budget durable across automatic worker runs", async () => {
+    const project = await createSoundCaseProject({ text: "Provider indisponível." });
+    const created = await createSoundCaseVersion(project.id, settings);
+    const speech = vi.fn().mockRejectedValue(new Error("provider"));
+    const client = {
+      audio: { speech: { create: speech } }, responses: { create: vi.fn() },
+    } as unknown as OpenAI;
+    const failed = await runNextSoundCaseJob({
+      workerId: "worker-fail", openai: client, execFile: fakeExec(),
+      sleep: async () => undefined,
+    });
+
+    expect(failed.status).toBe("failed");
+    expect(speech).toHaveBeenCalledTimes(4);
+    await expect(runNextSoundCaseJob({
+      workerId: "worker-next", openai: client, execFile: fakeExec(),
+    })).resolves.toEqual({ status: "empty" });
+    expect(speech).toHaveBeenCalledTimes(4);
+    expect((await getSoundCaseVersion(project.id, created.version.id)).manifest.chunks[0].attempts).toBe(4);
   });
 
   it("stops publication and does not open a third slot after cancellation", async () => {
@@ -143,5 +171,35 @@ describe("SoundCase resumable worker", () => {
     expect((await getSoundCaseVersion(project.id, created.version.id)).status).toBe("canceled");
     await expect(fs.readdir(path.join(root, "projects", project.id, "versions", created.version.id, "chunks")))
       .rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("reuses confirmed final audio when cover storage interrupted the prior process", async () => {
+    const project = await createSoundCaseProject({ text: "Áudio deve sobreviver." });
+    const created = await createSoundCaseVersion(project.id, settings);
+    const versionDirectory = path.join(root, "projects", project.id, "versions", created.version.id);
+    await fs.symlink(path.join(root, "outside.svg"), path.join(versionDirectory, "cover.svg"));
+    const speech = vi.fn().mockImplementation(async () => new Response(Buffer.from("fLaCdata")));
+    const client = {
+      audio: { speech: { create: speech } },
+      responses: { create: vi.fn().mockRejectedValue(new Error("cover")) },
+    } as unknown as OpenAI;
+    const execFile = fakeExec();
+    const first = await runNextSoundCaseJob({
+      workerId: "worker-cover-crash", openai: client, execFile,
+      now: () => new Date("2030-02-01T00:00:00.000Z"),
+    });
+    expect(first.status).toBe("interrupted");
+    expect((await getSoundCaseVersion(project.id, created.version.id)).audio.status).toBe("ready");
+    await fs.rm(path.join(versionDirectory, "cover.svg"));
+
+    const second = await runNextSoundCaseJob({
+      workerId: "worker-cover-resume", openai: client, execFile,
+      now: () => new Date("2030-02-01T00:00:10.000Z"),
+    });
+
+    expect(second.status).toBe("completed");
+    expect(speech).toHaveBeenCalledTimes(1);
+    const ffmpegCalls = vi.mocked(execFile).mock.calls.filter(([file]) => file.endsWith("ffmpeg"));
+    expect(ffmpegCalls).toHaveLength(1);
   });
 });

@@ -64,6 +64,9 @@ describe("SoundCase audio pipeline", () => {
     expect(audio).toMatchObject({ format: "mp3", durationSeconds: 3.2, fileName: "final.mp3" });
     expect(calls[0].args).toContain("libmp3lame");
     expect(calls[0].args).toContain("192k");
+    expect(calls[0].args).toEqual(expect.arrayContaining([
+      "-hide_banner", "-loglevel", "error", "-nostats", "-n",
+    ]));
   });
 
   it("rejects a wrong codec or non-positive duration", async () => {

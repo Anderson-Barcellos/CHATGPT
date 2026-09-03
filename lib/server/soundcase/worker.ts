@@ -3,6 +3,8 @@ import { promises as fs } from "node:fs";
 import type OpenAI from "openai";
 import type {
   SoundCaseClaimedJob,
+  SoundCaseAudioReady,
+  SoundCaseCoverReady,
   SoundCaseDirection,
   SoundCaseEffectiveSettings,
   SoundCaseLeaseGuard,
@@ -38,7 +40,11 @@ import {
   generateSoundCaseCover,
   type SoundCaseImageClient,
 } from "@/lib/server/soundcase/cover";
-import { resolveSoundCasePath } from "@/lib/server/soundcase/files";
+import {
+  assertRegularSoundCaseFile,
+  readBufferSafe,
+  resolveSoundCasePath,
+} from "@/lib/server/soundcase/files";
 
 export interface SoundCaseWorkerDeps {
   workerId: string;
@@ -53,12 +59,54 @@ export type SoundCaseWorkerResult =
   | { status: "empty" }
   | { status: "completed"; versionId: string }
   | { status: "interrupted"; versionId: string; error: SoundCasePublicError }
+  | { status: "failed"; versionId: string; error: SoundCasePublicError }
   | { status: "canceled"; versionId: string };
 
 class LeaseLostError extends Error {
   constructor() {
     super("soundcase_lease_lost");
   }
+}
+
+class ChunkAttemptsExhaustedError extends Error {
+  constructor() {
+    super("soundcase_chunk_attempts_exhausted");
+  }
+}
+
+async function withLeaseHeartbeat<T>(
+  checkpoint: () => Promise<unknown>,
+  operation: (signal: AbortSignal) => Promise<T>
+): Promise<T> {
+  await checkpoint();
+  const controller = new AbortController();
+  let heartbeatError: unknown;
+  let heartbeat = Promise.resolve();
+  const timer = setInterval(() => {
+    heartbeat = heartbeat.then(async () => {
+      try {
+        await checkpoint();
+      } catch (error) {
+        heartbeatError = error;
+        controller.abort();
+      }
+    });
+  }, 30_000);
+  timer.unref?.();
+  let result: T | undefined;
+  let operationError: unknown;
+  try {
+    result = await operation(controller.signal);
+  } catch (error) {
+    operationError = error;
+  } finally {
+    clearInterval(timer);
+  }
+  await heartbeat;
+  if (heartbeatError) throw heartbeatError;
+  await checkpoint();
+  if (operationError) throw operationError;
+  return result as T;
 }
 
 function resolveEffectiveSettings(
@@ -157,6 +205,47 @@ async function completedChunkValid(
   }
 }
 
+async function existingAudio(
+  version: SoundCaseVersion,
+  execFile: SoundCaseExecFile | undefined
+): Promise<SoundCaseAudioReady | null> {
+  const format = version.effectiveSettings?.format.value ?? version.requestedSettings.format;
+  const fileName = `final.${format}`;
+  const filePath = resolveSoundCasePath(
+    "projects", version.projectId, "versions", version.id, fileName
+  );
+  try {
+    await assertRegularSoundCaseFile(filePath);
+    const durationSeconds = await probeSoundCaseAudio(filePath, format, execFile);
+    const contentType = format === "mp3" ? "audio/mpeg" : format === "flac" ? "audio/flac" : "audio/wav";
+    return { status: "ready", format, durationSeconds, contentType, fileName };
+  } catch {
+    return null;
+  }
+}
+
+async function existingCover(version: SoundCaseVersion): Promise<SoundCaseCoverReady | null> {
+  for (const candidate of [
+    { status: "ready" as const, fileName: "cover.png", contentType: "image/png" as const },
+    { status: "fallback" as const, fileName: "cover.svg", contentType: "image/svg+xml" as const },
+  ]) {
+    const filePath = resolveSoundCasePath(
+      "projects", version.projectId, "versions", version.id, candidate.fileName
+    );
+    try {
+      const bytes = await readBufferSafe(filePath);
+      if (!bytes) continue;
+      const valid = candidate.fileName.endsWith(".png")
+        ? bytes.length >= 8 && bytes.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10]))
+        : bytes.subarray(0, 256).toString("utf8").includes("<svg");
+      if (valid) return candidate;
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
 export async function runNextSoundCaseJob(
   deps: SoundCaseWorkerDeps
 ): Promise<SoundCaseWorkerResult> {
@@ -198,24 +287,26 @@ export async function runNextSoundCaseJob(
         const chunk = version.manifest.chunks[chunkIndex];
         const segment = version.segments.find((item) => item.id === chunk.segmentId);
         if (!segment) throw new Error("soundcase_segment_missing");
-        let lastError: unknown;
-        for (let attempt = 0; attempt < 4; attempt += 1) {
+        for (let attempt = chunk.attempts; attempt < 4; attempt += 1) {
           await state.mutate((guard) => updateSoundCaseChunk({
             ...guard, chunkId: chunk.id, status: "synthesizing",
           }, { now: now() }));
           try {
-            const artifact = await synthesizeSoundCaseChunk({
-              projectId: version.projectId,
-              versionId: version.id,
-              chunk,
-              segment,
-              direction: direction!,
-              effectiveSettings: effective!,
-              client: client as SoundCaseSpeechClient,
-              execFile: deps.execFile,
-              beforeProvider: async () => { await state.checkpoint(); },
-              afterProvider: async () => { await state.checkpoint(); },
-            });
+            const artifact = await withLeaseHeartbeat(state.checkpoint, (signal) =>
+              synthesizeSoundCaseChunk({
+                projectId: version.projectId,
+                versionId: version.id,
+                chunk,
+                segment,
+                direction: direction!,
+                effectiveSettings: effective!,
+                client: client as SoundCaseSpeechClient,
+                execFile: deps.execFile,
+                beforeProvider: async () => { await state.checkpoint(); },
+                afterProvider: async () => { await state.checkpoint(); },
+                signal,
+              })
+            );
             const persisted = await state.mutate((guard) => updateSoundCaseChunk({
               ...guard, chunkId: chunk.id, status: "completed", ...artifact,
             }, { now: now() }));
@@ -223,42 +314,57 @@ export async function runNextSoundCaseJob(
             return;
           } catch (error) {
             if (error instanceof LeaseLostError) throw error;
-            lastError = error;
             await state.mutate((guard) => updateSoundCaseChunk({
               ...guard, chunkId: chunk.id, status: "failed", errorCode: "soundcase_chunk_failed",
             }, { now: now() }));
             if (attempt < 3) await sleep(jitter(1_000 * 2 ** attempt));
           }
         }
-        throw lastError ?? new Error("soundcase_chunk_failed");
+        throw new ChunkAttemptsExhaustedError();
       }));
       version = await getSoundCaseVersion(version.projectId, version.id);
     }
 
-    await state.mutate((guard) => setSoundCaseVersionPhase(guard, "assembling", { now: now() }));
     version = await getSoundCaseVersion(version.projectId, version.id);
-    await state.checkpoint();
-    const audio = await assembleSoundCaseAudio({
-      projectId: version.projectId,
-      versionId: version.id,
-      manifest: version.manifest,
-      format: effective.format.value,
-      title: direction.title,
-      execFile: deps.execFile,
-      beforeWork: async () => { await state.checkpoint(); },
-      afterWork: async () => { await state.checkpoint(); },
-    });
-    await state.mutate((guard) => setSoundCaseAudioReady(guard, { status: "ready", ...audio }, { now: now() }));
-    const cover = await generateSoundCaseCover({
-      projectId: version.projectId,
-      versionId: version.id,
-      title: direction.title,
-      prompt: direction.coverPrompt,
-      client: client as SoundCaseImageClient,
-      beforeProvider: async () => { await state.checkpoint(); },
-      afterProvider: async () => { await state.checkpoint(); },
-    });
-    await state.mutate((guard) => setSoundCaseCoverReady(guard, cover, { now: now() }));
+    let audio = await existingAudio(version, deps.execFile);
+    const audioWasConfirmed = version.audio.status === "ready" && audio !== null;
+    if (!audio) {
+      await state.mutate((guard) => setSoundCaseVersionPhase(guard, "assembling", { now: now() }));
+      const assembled = await withLeaseHeartbeat(state.checkpoint, (signal) => assembleSoundCaseAudio({
+        projectId: version.projectId,
+        versionId: version.id,
+        manifest: version.manifest,
+        format: effective.format.value,
+        title: direction.title,
+        execFile: deps.execFile,
+        beforeWork: async () => { await state.checkpoint(); },
+        afterWork: async () => { await state.checkpoint(); },
+        signal,
+      }));
+      audio = { status: "ready", ...assembled };
+    }
+    if (!audioWasConfirmed) {
+      const persisted = await state.mutate((guard) => setSoundCaseAudioReady(guard, audio!, { now: now() }));
+      version = persisted!.version;
+    }
+    let cover = await existingCover(version);
+    const coverWasConfirmed = version.cover.status !== "pending" && cover !== null;
+    if (!cover) {
+      cover = await withLeaseHeartbeat(state.checkpoint, (signal) => generateSoundCaseCover({
+        projectId: version.projectId,
+        versionId: version.id,
+        title: direction.title,
+        prompt: direction.coverPrompt,
+        client: client as SoundCaseImageClient,
+        beforeProvider: async () => { await state.checkpoint(); },
+        afterProvider: async () => { await state.checkpoint(); },
+        signal,
+      }));
+    }
+    if (!coverWasConfirmed) {
+      const persisted = await state.mutate((guard) => setSoundCaseCoverReady(guard, cover, { now: now() }));
+      version = persisted!.version;
+    }
     await state.mutate((guard) => finishSoundCaseJob(guard, { status: "completed" }, { now: now() }));
     return { status: "completed", versionId: version.id };
   } catch (error) {
@@ -266,9 +372,12 @@ export async function runNextSoundCaseJob(
       return { status: "canceled", versionId: claimed.versionId };
     }
     const publicError = safeError(error);
+    const terminalStatus = error instanceof ChunkAttemptsExhaustedError
+      ? "failed" as const
+      : "interrupted" as const;
     try {
       await state.mutate((guard) => finishSoundCaseJob(guard, {
-        status: "interrupted",
+        status: terminalStatus,
         error: publicError,
         nextRunAt: new Date(now().getTime() + 8_000).toISOString(),
       }, { now: now() }));
@@ -278,6 +387,6 @@ export async function runNextSoundCaseJob(
       }
       throw finishError;
     }
-    return { status: "interrupted", versionId: claimed.versionId, error: publicError };
+    return { status: terminalStatus, versionId: claimed.versionId, error: publicError };
   }
 }

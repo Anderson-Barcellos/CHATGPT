@@ -2,7 +2,7 @@ import type { SoundCaseCoverReady } from "@/lib/soundcase/types";
 import { resolveSoundCasePath, writeBufferDurable, writeTextDurable } from "@/lib/server/soundcase/files";
 
 export interface SoundCaseImageClient {
-  responses: { create(input: unknown): Promise<unknown> };
+  responses: { create(input: unknown, options?: { signal?: AbortSignal }): Promise<unknown> };
 }
 
 function extractPng(response: unknown): Buffer | null {
@@ -38,6 +38,7 @@ export async function generateSoundCaseCover(input: {
   client: SoundCaseImageClient | null;
   beforeProvider?: () => Promise<void>;
   afterProvider?: () => Promise<void>;
+  signal?: AbortSignal;
 }): Promise<SoundCaseCoverReady> {
   const base = ["projects", input.projectId, "versions", input.versionId] as const;
   let png: Buffer | null = null;
@@ -50,7 +51,7 @@ export async function generateSoundCaseCover(input: {
         store: false,
         tools: [{ type: "image_generation", model: "gpt-image-2", quality: "high", size: "auto", background: "auto", output_format: "png" }],
         tool_choice: { type: "image_generation" },
-      }));
+      }, { signal: input.signal }));
     } catch {
       png = null;
     }
