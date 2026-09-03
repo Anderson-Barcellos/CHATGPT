@@ -2,7 +2,7 @@
 
 **Data:** 2026-09-02
 
-**Estado:** desenho aprovado em conversa; especificação pronta para revisão
+**Estado:** aprovado por Anders em 2026-09-02; pronto para implementação
 
 **Superfície:** `/chat/soundcase` no deployment público e `/soundcase` no roteamento interno do app
 **Referências visuais:** [desktop](./assets/soundcase-desktop-blue.webp) e [mobile](./assets/soundcase-mobile-blue.webp)
