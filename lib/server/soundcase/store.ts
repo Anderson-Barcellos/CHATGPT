@@ -8,6 +8,8 @@ import type {
   SoundCaseImportMetadata,
   SoundCaseProject,
   SoundCaseProjectDetail,
+  SoundCaseProjectMetadata,
+  SoundCaseVersionSummary,
   UpdateSoundCaseProjectInput,
 } from "@/lib/soundcase/types";
 import {
@@ -106,6 +108,29 @@ async function writeProjects(projects: SoundCaseProject[]): Promise<void> {
   await writeJsonDurable(projectsIndexPath(), projects);
 }
 
+async function readProjectMetadata(
+  project: SoundCaseProject
+): Promise<SoundCaseProjectMetadata> {
+  const value = await readJsonSafe<SoundCaseProjectMetadata>(
+    projectMetadataPath(project.id)
+  );
+  if (
+    value &&
+    value.project?.id === project.id &&
+    Array.isArray(value.versions)
+  ) {
+    return value;
+  }
+  return { project, versions: [] };
+}
+
+async function writeProjectMetadata(
+  project: SoundCaseProject,
+  versions: SoundCaseVersionSummary[]
+): Promise<void> {
+  await writeJsonDurable(projectMetadataPath(project.id), { project, versions });
+}
+
 function normalizeTitle(title: string | undefined): string {
   const normalized = title?.trim().slice(0, MAX_PROJECT_TITLE_CHARS);
   return normalized || "Novo SoundCase";
@@ -138,7 +163,7 @@ async function buildProjectDetail(
     draftText: text,
     draftWordCount: countSoundCaseWords(text),
     estimatedDurationSeconds: estimateSoundCaseDuration(text, 1),
-    versions: [],
+    versions: (await readProjectMetadata(project)).versions,
   };
 }
 
@@ -167,7 +192,7 @@ export async function createSoundCaseProject(
 
     try {
       await writeTextDurable(projectDraftPath(project.id), draftText);
-      await writeJsonDurable(projectMetadataPath(project.id), project);
+      await writeProjectMetadata(project, []);
       await writeProjects([project, ...projects]);
     } catch (error) {
       await removeProjectTree(project.id).catch(() => undefined);
@@ -217,7 +242,8 @@ async function persistDraftMutation(
 
     await writeTextDurable(projectDraftPath(projectId), normalizedText);
     await writeProjects(projects);
-    await writeJsonDurable(projectMetadataPath(projectId), updated);
+    const metadata = await readProjectMetadata(project);
+    await writeProjectMetadata(updated, metadata.versions);
     return buildProjectDetail(updated, normalizedText);
   });
 }
@@ -296,5 +322,59 @@ export async function deleteSoundCaseProject(
       await writeProjects(projects);
     });
     await removeProjectTree(projectId);
+  });
+}
+
+export async function upsertSoundCaseVersionProjection(
+  projectId: string,
+  version: SoundCaseVersionSummary
+): Promise<void> {
+  await withStoreLock(projectId, async () => {
+    await withStoreLock(INDEX_LOCK_KEY, async () => {
+      const projects = await readProjects();
+      const { project, index } = requireActiveProject(projects, projectId);
+      const metadata = await readProjectMetadata(project);
+      const versionIndex = metadata.versions.findIndex(
+        (candidate) => candidate.id === version.id
+      );
+      const versions = [...metadata.versions];
+      if (versionIndex >= 0) versions[versionIndex] = version;
+      else versions.unshift(version);
+      const updated: SoundCaseProject = {
+        ...project,
+        activeVersionId: version.id,
+        updatedAt: version.createdAt > project.updatedAt
+          ? version.createdAt
+          : new Date().toISOString(),
+      };
+      projects[index] = updated;
+      await writeProjects(projects);
+      await writeProjectMetadata(updated, versions);
+    });
+  });
+}
+
+export async function removeSoundCaseVersionProjection(
+  projectId: string,
+  versionId: string,
+  previousActiveVersionId: string | null
+): Promise<void> {
+  await withStoreLock(projectId, async () => {
+    await withStoreLock(INDEX_LOCK_KEY, async () => {
+      const projects = await readProjects();
+      const { project, index } = requireActiveProject(projects, projectId);
+      const metadata = await readProjectMetadata(project);
+      const updated: SoundCaseProject = {
+        ...project,
+        activeVersionId: previousActiveVersionId,
+        updatedAt: new Date().toISOString(),
+      };
+      projects[index] = updated;
+      await writeProjects(projects);
+      await writeProjectMetadata(
+        updated,
+        metadata.versions.filter((version) => version.id !== versionId)
+      );
+    });
   });
 }

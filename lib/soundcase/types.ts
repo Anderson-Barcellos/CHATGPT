@@ -116,6 +116,8 @@ export interface SoundCaseChunk {
   attempts: number;
   fileName?: string;
   durationSeconds?: number;
+  byteLength?: number;
+  contentHash?: string;
   errorCode?: string;
 }
 
@@ -197,6 +199,7 @@ export interface SoundCaseVersion {
 export interface SoundCaseVersionSummary {
   id: string;
   projectId: string;
+  idempotencyKey: string;
   status: SoundCaseVersionStatus;
   title: string;
   summary: string | null;
@@ -230,6 +233,34 @@ export interface SoundCaseJob {
   createdAt: string;
   updatedAt: string;
   lastErrorCode?: string;
+}
+
+export type SoundCaseVersionMetadata = Omit<SoundCaseVersion, "manifest">;
+
+export interface SoundCaseProjectMetadata {
+  project: SoundCaseProject;
+  versions: SoundCaseVersionSummary[];
+}
+
+export interface SoundCaseLeaseGuard {
+  jobId: string;
+  workerId: string;
+  expectedRevision: number;
+}
+
+export interface SoundCaseClaimedJob extends SoundCaseJob {
+  version: SoundCaseVersion;
+  manifest: SoundCaseManifest;
+}
+
+export interface UpdateSoundCaseChunkInput extends SoundCaseLeaseGuard {
+  chunkId: string;
+  status: SoundCaseChunkStatus;
+  fileName?: string;
+  durationSeconds?: number;
+  byteLength?: number;
+  contentHash?: string;
+  errorCode?: string;
 }
 
 export interface CreateSoundCaseProjectInput {
