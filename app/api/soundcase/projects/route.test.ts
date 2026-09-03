@@ -45,4 +45,13 @@ describe("/api/soundcase/projects", () => {
     expect(mocks.createSoundCaseProject).toHaveBeenCalledWith({ title: "Leitura", text: "Texto" });
     await expect(response.json()).resolves.toMatchObject({ project: { draftText: "Texto" } });
   });
+
+  it("sanitizes unknown storage errors", async () => {
+    mocks.listSoundCaseProjects.mockRejectedValue(new Error("private path /secret"));
+    const response = await GET(new NextRequest("http://local/api/soundcase/projects"));
+    const body = await response.json();
+    expect(response.status).toBe(500);
+    expect(body.code).toBe("soundcase_internal_error");
+    expect(JSON.stringify(body)).not.toContain("/secret");
+  });
 });

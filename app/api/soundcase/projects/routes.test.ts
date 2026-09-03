@@ -28,7 +28,7 @@ vi.mock("@/lib/server/soundcase/jobs", () => ({
   deleteSoundCaseProjectWithJobs: mocks.deleteSoundCaseProjectWithJobs,
 }));
 
-import { PATCH } from "@/app/api/soundcase/projects/[projectId]/route";
+import { DELETE as DELETE_PROJECT, PATCH } from "@/app/api/soundcase/projects/[projectId]/route";
 import { POST as IMPORT } from "@/app/api/soundcase/projects/[projectId]/import/route";
 import { POST as CREATE_VERSION } from "@/app/api/soundcase/projects/[projectId]/versions/route";
 import { GET as GET_VERSION } from "@/app/api/soundcase/projects/[projectId]/versions/[versionId]/route";
@@ -66,6 +66,13 @@ describe("SoundCase project/version routes", () => {
     await expect(response.json()).resolves.toMatchObject({ code: "soundcase_revision_conflict" });
   });
 
+  it("authenticates PATCH before its bounded JSON reader", async () => {
+    mocks.requireAppAuth.mockResolvedValue(new Response(null, { status: 401 }));
+    const response = await PATCH(new NextRequest("http://local", { method: "PATCH" }), projectContext);
+    expect(response.status).toBe(401);
+    expect(mocks.readJsonWithLimit).not.toHaveBeenCalled();
+  });
+
   it("does not parse multipart before authentication", async () => {
     mocks.requireAppAuth.mockResolvedValue(new Response(null, { status: 401 }));
     const formData = vi.fn(() => { throw new Error("must not read"); });
@@ -88,6 +95,19 @@ describe("SoundCase project/version routes", () => {
     expect(body.version.segments).toBeUndefined();
     expect(body.version.manifest).toBeUndefined();
     expect(JSON.stringify(body)).not.toContain("fonte privada");
+  });
+
+  it("rejects invalid or oversized settings before creating a job", async () => {
+    mocks.readJsonWithLimit.mockResolvedValueOnce({ ok: true, value: { settings: {
+      automatic: "yes", playbackMode: "realtime", format: "mp3",
+      voiceOverride: null, speedOverride: null, instructionsOverride: null,
+    } } });
+    const invalid = await CREATE_VERSION(new NextRequest("http://local", { method: "POST" }), projectContext);
+    expect(invalid.status).toBe(400);
+    mocks.readJsonWithLimit.mockResolvedValueOnce({ ok: false, reason: "too_large", status: 413 });
+    const large = await CREATE_VERSION(new NextRequest("http://local", { method: "POST" }), projectContext);
+    expect(large.status).toBe(413);
+    expect(mocks.createSoundCaseVersion).not.toHaveBeenCalled();
   });
 
   it("rejects invalid ids before touching the version store", async () => {
@@ -119,6 +139,27 @@ describe("SoundCase project/version routes", () => {
     expect(mocks.importSoundCaseText).toHaveBeenCalledWith(PROJECT_ID, expect.objectContaining({
       name: "capitulo.md", mime: "text/markdown",
     }));
+  });
+
+  it("rejects an oversized upload before reading its bytes", async () => {
+    const file = new File([new Uint8Array(1024 * 1024 + 1)], "grande.txt", { type: "text/plain" });
+    const arrayBuffer = vi.spyOn(file, "arrayBuffer");
+    const form = new FormData();
+    form.set("file", file);
+    const response = await IMPORT(
+      { formData: vi.fn().mockResolvedValue(form) } as unknown as NextRequest,
+      projectContext
+    );
+    expect(response.status).toBe(413);
+    expect(arrayBuffer).not.toHaveBeenCalled();
+  });
+
+  it("coordinates project deletion through the queue domain", async () => {
+    const response = await DELETE_PROJECT(
+      new NextRequest("http://local", { method: "DELETE" }), projectContext
+    );
+    expect(response.status).toBe(200);
+    expect(mocks.deleteSoundCaseProjectWithJobs).toHaveBeenCalledWith(PROJECT_ID);
   });
 
   it("exposes resume and coordinated version deletion", async () => {

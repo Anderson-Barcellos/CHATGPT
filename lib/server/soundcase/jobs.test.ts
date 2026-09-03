@@ -416,6 +416,18 @@ describe("SoundCase version queue", () => {
     await expect(fs.access(path.join(root, "projects", project.id))).rejects.toMatchObject({ code: "ENOENT" });
   });
 
+  it("retries private-tree cleanup for an already tombstoned project", async () => {
+    const project = await createSoundCaseProject({ text: "Cleanup retomável." });
+    const indexPath = path.join(root, "projects.json");
+    const projects = JSON.parse(await fs.readFile(indexPath, "utf8"));
+    projects[0] = { ...projects[0], deletedAt: new Date().toISOString() };
+    await fs.writeFile(indexPath, JSON.stringify(projects));
+
+    await deleteSoundCaseProjectWithJobs(project.id);
+
+    await expect(fs.access(path.join(root, "projects", project.id))).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
   it("repairs an orphan from version.json when the projection is absent", async () => {
     const project = await createSoundCaseProject({ text: "Órfão canônico." });
     const created = await createSoundCaseVersion(project.id, settings);

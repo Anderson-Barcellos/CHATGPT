@@ -813,7 +813,6 @@ export async function deleteSoundCaseProjectWithJobs(
   projectId: string
 ): Promise<void> {
   await withQueueLock(async () => {
-    await getSoundCaseProject(projectId);
     const jobs = await readJobs();
     const remainingJobs = jobs.filter((job) => job.projectId !== projectId);
     if (remainingJobs.length !== jobs.length) await writeJobs(remainingJobs);
