@@ -36,25 +36,32 @@ export async function generateSoundCaseCover(input: {
   title: string;
   prompt: string;
   client: SoundCaseImageClient | null;
+  beforeProvider?: () => Promise<void>;
+  afterProvider?: () => Promise<void>;
 }): Promise<SoundCaseCoverReady> {
   const base = ["projects", input.projectId, "versions", input.versionId] as const;
-  try {
-    if (!input.client) throw new Error("soundcase_cover_client_missing");
-    const response = await input.client.responses.create({
-      model: "gpt-5.6-luna",
-      input: input.prompt,
-      store: false,
-      tools: [{ type: "image_generation", model: "gpt-image-2", quality: "high", size: "auto", background: "auto", output_format: "png" }],
-      tool_choice: { type: "image_generation" },
-    });
-    const png = extractPng(response);
-    if (!png) throw new Error("soundcase_cover_png_invalid");
+  let png: Buffer | null = null;
+  if (input.client) {
+    await input.beforeProvider?.();
+    try {
+      png = extractPng(await input.client.responses.create({
+        model: "gpt-5.6-luna",
+        input: input.prompt,
+        store: false,
+        tools: [{ type: "image_generation", model: "gpt-image-2", quality: "high", size: "auto", background: "auto", output_format: "png" }],
+        tool_choice: { type: "image_generation" },
+      }));
+    } catch {
+      png = null;
+    }
+    await input.afterProvider?.();
+  }
+  if (png) {
     const filePath = resolveSoundCasePath(...base, "cover.png");
     await writeBufferDurable(filePath, png);
     return { status: "ready", contentType: "image/png", fileName: "cover.png" };
-  } catch {
-    const filePath = resolveSoundCasePath(...base, "cover.svg");
-    await writeTextDurable(filePath, fallbackSvg(input.title));
-    return { status: "fallback", contentType: "image/svg+xml", fileName: "cover.svg" };
   }
+  const filePath = resolveSoundCasePath(...base, "cover.svg");
+  await writeTextDurable(filePath, fallbackSvg(input.title));
+  return { status: "fallback", contentType: "image/svg+xml", fileName: "cover.svg" };
 }

@@ -129,18 +129,24 @@ export async function synthesizeSoundCaseChunk(input: {
   const segmentDirection = input.direction.segmentDirections.find(
     (item) => item.segmentId === input.segment.id
   )?.instructions;
-  const response = await input.client.audio.speech.create({
-    model: TTS_MODEL,
-    voice: input.effectiveSettings.voice.value,
-    input: input.segment.text,
-    speed: input.effectiveSettings.speed.value,
-    instructions: [
-      input.effectiveSettings.instructions.value,
-      segmentDirection,
-    ].filter(Boolean).join("\n\n"),
-    response_format: "flac",
-  });
-  const bytes = Buffer.from(await response.arrayBuffer());
+  let bytes: Buffer;
+  try {
+    const response = await input.client.audio.speech.create({
+      model: TTS_MODEL,
+      voice: input.effectiveSettings.voice.value,
+      input: input.segment.text,
+      speed: input.effectiveSettings.speed.value,
+      instructions: [
+        input.effectiveSettings.instructions.value,
+        segmentDirection,
+      ].filter(Boolean).join("\n\n"),
+      response_format: "flac",
+    });
+    bytes = Buffer.from(await response.arrayBuffer());
+  } catch (error) {
+    await input.afterProvider?.();
+    throw error;
+  }
   await input.afterProvider?.();
   if (bytes.length < 4 || bytes.subarray(0, 4).toString("ascii") !== "fLaC") {
     throw new Error("soundcase_chunk_flac_invalid");
@@ -182,6 +188,8 @@ export async function assembleSoundCaseAudio(input: {
   format: TtsAudioFormat;
   title: string;
   execFile?: SoundCaseExecFile;
+  beforeWork?: () => Promise<void>;
+  afterWork?: () => Promise<void>;
 }): Promise<{
   format: TtsAudioFormat;
   durationSeconds: number;
@@ -212,6 +220,9 @@ export async function assembleSoundCaseAudio(input: {
   );
   const partPath = `${finalPath}.part`;
   const config = FORMAT_CONFIG[input.format];
+  await input.beforeWork?.();
+  let durationSeconds = 0;
+  let workError: unknown;
   try {
     await execFile(FFMPEG_PATH, [
       "-y", "-nostdin", "-f", "concat", "-safe", "1", "-i", "concat.txt",
@@ -219,11 +230,20 @@ export async function assembleSoundCaseAudio(input: {
       "-metadata", `title=${safeMetadata(input.title)}`,
       "-f", config.muxer, partPath,
     ], { cwd: chunksDirectory });
-    const durationSeconds = await probeSoundCaseAudio(partPath, input.format, execFile);
-    await promoteSoundCaseFile(partPath, finalPath);
-    return { format: input.format, durationSeconds, contentType: config.contentType, fileName };
+    durationSeconds = await probeSoundCaseAudio(partPath, input.format, execFile);
+  } catch (error) {
+    workError = error;
+  }
+  try {
+    await input.afterWork?.();
   } catch (error) {
     await fs.rm(partPath, { force: true });
     throw error;
   }
+  if (workError) {
+    await fs.rm(partPath, { force: true });
+    throw workError;
+  }
+  await promoteSoundCaseFile(partPath, finalPath);
+  return { format: input.format, durationSeconds, contentType: config.contentType, fileName };
 }

@@ -245,18 +245,19 @@ export async function runNextSoundCaseJob(
       format: effective.format.value,
       title: direction.title,
       execFile: deps.execFile,
+      beforeWork: async () => { await state.checkpoint(); },
+      afterWork: async () => { await state.checkpoint(); },
     });
-    await state.checkpoint();
     await state.mutate((guard) => setSoundCaseAudioReady(guard, { status: "ready", ...audio }, { now: now() }));
-    await state.checkpoint();
     const cover = await generateSoundCaseCover({
       projectId: version.projectId,
       versionId: version.id,
       title: direction.title,
       prompt: direction.coverPrompt,
       client: client as SoundCaseImageClient,
+      beforeProvider: async () => { await state.checkpoint(); },
+      afterProvider: async () => { await state.checkpoint(); },
     });
-    await state.checkpoint();
     await state.mutate((guard) => setSoundCaseCoverReady(guard, cover, { now: now() }));
     await state.mutate((guard) => finishSoundCaseJob(guard, { status: "completed" }, { now: now() }));
     return { status: "completed", versionId: version.id };
