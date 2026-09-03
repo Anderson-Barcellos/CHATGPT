@@ -28,6 +28,32 @@ function versionPath(projectId: string, versionId: string): string {
   return `${projectPath(projectId)}/versions/${encodeURIComponent(versionId)}`;
 }
 
+export function saveSoundCaseDraftOnExit(
+  projectId: string,
+  input: { text: string; revision: number; title?: string }
+): boolean {
+  const url = apiUrl(projectPath(projectId));
+  const body = JSON.stringify(input);
+  try {
+    const payload = new Blob([body], { type: "application/json" });
+    if (navigator.sendBeacon(url, payload)) return true;
+  } catch {
+    // A keepalive request below is the best available fallback on older browsers.
+  }
+  try {
+    void fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      credentials: "same-origin",
+      keepalive: true,
+    }).catch(() => undefined);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function readableSoundCaseError(error: unknown, fallback: string): string {
   if (error instanceof ClientApiError || error instanceof Error) return error.message;
   return fallback;

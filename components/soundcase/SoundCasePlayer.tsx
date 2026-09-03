@@ -2,7 +2,7 @@
 
 import { Download, FileAudio, Pause, Play, Radio, Square } from "lucide-react";
 import { useRef, useState } from "react";
-import { describeAudioPlayError, primeBrowserAudio } from "@/lib/tts/browserAudio";
+import { describeAudioPlayError } from "@/lib/tts/browserAudio";
 import type { SoundCasePublicVersion } from "@/lib/soundcase/types";
 import styles from "./SoundCase.module.css";
 
@@ -27,7 +27,6 @@ export interface SoundCasePlayerProps {
 
 export function SoundCasePlayer({ version, audioUrl, realtime }: SoundCasePlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const unlockedRef = useRef(false);
   const [playingFinal, setPlayingFinal] = useState(false);
   const [playError, setPlayError] = useState<string | null>(null);
   const readyAudio = version.audio.status === "ready" ? version.audio : null;
@@ -36,7 +35,6 @@ export function SoundCasePlayer({ version, audioUrl, realtime }: SoundCasePlayer
   const playFinal = async () => {
     const audio = audioRef.current;
     if (!audio) return;
-    primeBrowserAudio(audio, unlockedRef);
     try {
       await audio.play();
       setPlayingFinal(true);

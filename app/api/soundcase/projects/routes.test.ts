@@ -28,7 +28,7 @@ vi.mock("@/lib/server/soundcase/jobs", () => ({
   deleteSoundCaseProjectWithJobs: mocks.deleteSoundCaseProjectWithJobs,
 }));
 
-import { DELETE as DELETE_PROJECT, PATCH } from "@/app/api/soundcase/projects/[projectId]/route";
+import { DELETE as DELETE_PROJECT, PATCH, POST as FLUSH_DRAFT } from "@/app/api/soundcase/projects/[projectId]/route";
 import { POST as IMPORT } from "@/app/api/soundcase/projects/[projectId]/import/route";
 import { POST as CREATE_VERSION } from "@/app/api/soundcase/projects/[projectId]/versions/route";
 import { GET as GET_VERSION } from "@/app/api/soundcase/projects/[projectId]/versions/[versionId]/route";
@@ -71,6 +71,18 @@ describe("SoundCase project/version routes", () => {
     const response = await PATCH(new NextRequest("http://local", { method: "PATCH" }), projectContext);
     expect(response.status).toBe(401);
     expect(mocks.readJsonWithLimit).not.toHaveBeenCalled();
+  });
+
+  it("accepts page-exit draft flushes over POST with the same CAS contract", async () => {
+    mocks.readJsonWithLimit.mockResolvedValue({ ok: true, value: { text: "última edição", revision: 3 } });
+    mocks.saveSoundCaseDraft.mockResolvedValue({ id: PROJECT_ID, draftText: "última edição" });
+
+    const response = await FLUSH_DRAFT(new NextRequest("http://local", { method: "POST" }), projectContext);
+
+    expect(response.status).toBe(200);
+    expect(mocks.saveSoundCaseDraft).toHaveBeenCalledWith(PROJECT_ID, {
+      text: "última edição", revision: 3,
+    });
   });
 
   it("does not parse multipart before authentication", async () => {

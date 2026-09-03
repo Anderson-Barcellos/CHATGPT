@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Library } from "lucide-react";
 import { toast } from "sonner";
 import { DirectionSidebar } from "@/components/soundcase/DirectionSidebar";
+import { ProductNav } from "@/components/navigation/ProductNav";
 import { SoundCaseEditor } from "@/components/soundcase/SoundCaseEditor";
 import { SoundCaseLibrary } from "@/components/soundcase/SoundCaseLibrary";
 import { SoundCaseMobileDock } from "@/components/soundcase/SoundCaseMobileDock";
@@ -31,6 +33,12 @@ export function SoundCaseShell() {
   const realtimeTextRef = useRef("");
   const startedRealtimeVersionRef = useRef<string | null>(null);
   const realtime = useSoundCaseRealtime();
+
+  const stopRealtimeContext = () => {
+    realtime.stop();
+    setPendingRealtimeVersionId(null);
+    startedRealtimeVersionRef.current = null;
+  };
   const words = useMemo(() => {
     const text = soundcase.draftText.trim();
     return text ? text.split(/\s+/u).length : 0;
@@ -72,7 +80,7 @@ export function SoundCaseShell() {
     <div className={styles.shell}>
       <header className={styles.header}>
         <div className={styles.brand}><span />Gaucho SoundCase</div>
-        <nav aria-label="Produtos"><a href="/">Chat</a><a href="/studio">Studio</a><a href="/soundcase" aria-current="page">SoundCase</a></nav>
+        <ProductNav active="soundcase" />
       </header>
       <div className={styles.workspace}>
         <DirectionSidebar settings={settings} onChange={setSettings} onGenerate={(mode) => void generate(mode)} busy={generating} disabled={!words || overLimit || Boolean(soundcase.conflict)} />
@@ -85,7 +93,10 @@ export function SoundCaseShell() {
           disabled={soundcase.loading}
           onChange={soundcase.setDraftText}
           onImport={(file) => soundcase.importText(file).then(() => undefined)}
-          onCreate={!soundcase.project ? () => soundcase.createProject({ title: "Novo SoundCase" }).then(() => undefined) : undefined}
+          onCreate={!soundcase.project ? () => {
+            stopRealtimeContext();
+            return soundcase.createProject({ title: "Novo SoundCase" }).then(() => undefined);
+          } : undefined}
         />
         <div className={styles.resultRail}>
           {soundcase.selectedVersion?.direction ? <SoundCaseResult version={soundcase.selectedVersion} coverUrl={soundCaseApi.coverUrl(soundcase.selectedVersion.projectId, soundcase.selectedVersion.id)} /> : null}
@@ -93,16 +104,17 @@ export function SoundCaseShell() {
           <SoundCaseLibrary
             projects={soundcase.projects} project={soundcase.project}
             selectedVersionId={soundcase.selectedVersion?.id ?? null}
-            onCreate={() => void soundcase.createProject({ title: "Novo SoundCase" })}
-            onSelectProject={(id) => void soundcase.setActiveProjectId(id)}
-            onSelectVersion={(id) => void soundcase.selectVersion(id)}
-            onResumeVersion={(id) => void soundcase.resumeVersion(id)}
-            onDeleteVersion={(id) => void soundcase.deleteVersion(id)}
-            onDeleteProject={(id) => void soundcase.deleteProject(id)}
+            onCreate={() => { stopRealtimeContext(); void soundcase.createProject({ title: "Novo SoundCase" }); }}
+            onSelectProject={(id) => { stopRealtimeContext(); void soundcase.setActiveProjectId(id); }}
+            onSelectVersion={(id) => { stopRealtimeContext(); void soundcase.selectVersion(id); }}
+            onResumeVersion={(id) => { stopRealtimeContext(); void soundcase.resumeVersion(id); }}
+            onDeleteVersion={(id) => { stopRealtimeContext(); void soundcase.deleteVersion(id); }}
+            onDeleteProject={(id) => { stopRealtimeContext(); void soundcase.deleteProject(id); }}
           />
         </div>
       </div>
       <SoundCaseMobileDock onDirection={() => setDirectionOpen(true)} onLibrary={() => setLibraryOpen(true)} onGenerate={() => void generate("realtime")} disabled={!words || overLimit || generating || Boolean(soundcase.conflict)} />
+      <button type="button" className={styles.tabletLibraryTrigger} aria-label="Abrir acervo" onClick={() => setLibraryOpen(true)}><Library /></button>
       <Sheet open={directionOpen} onOpenChange={setDirectionOpen}>
         <SheetContent side="bottom" className={styles.sheetPanel}>
           <SheetHeader><SheetTitle>Direção de leitura</SheetTitle><SheetDescription>Ajuste voz, ritmo e formato; Luna continua como padrão.</SheetDescription></SheetHeader>
@@ -114,10 +126,12 @@ export function SoundCaseShell() {
           <SheetHeader><SheetTitle>Acervo</SheetTitle><SheetDescription>Projetos e gerações privadas.</SheetDescription></SheetHeader>
           <SoundCaseLibrary
             projects={soundcase.projects} project={soundcase.project} selectedVersionId={soundcase.selectedVersion?.id ?? null}
-            onCreate={() => void soundcase.createProject({ title: "Novo SoundCase" })}
-            onSelectProject={(id) => { setLibraryOpen(false); void soundcase.setActiveProjectId(id); }}
-            onSelectVersion={(id) => { setLibraryOpen(false); void soundcase.selectVersion(id); }}
-            onResumeVersion={(id) => void soundcase.resumeVersion(id)} onDeleteVersion={(id) => void soundcase.deleteVersion(id)} onDeleteProject={(id) => void soundcase.deleteProject(id)}
+            onCreate={() => { stopRealtimeContext(); void soundcase.createProject({ title: "Novo SoundCase" }); }}
+            onSelectProject={(id) => { stopRealtimeContext(); setLibraryOpen(false); void soundcase.setActiveProjectId(id); }}
+            onSelectVersion={(id) => { stopRealtimeContext(); setLibraryOpen(false); void soundcase.selectVersion(id); }}
+            onResumeVersion={(id) => { stopRealtimeContext(); void soundcase.resumeVersion(id); }}
+            onDeleteVersion={(id) => { stopRealtimeContext(); void soundcase.deleteVersion(id); }}
+            onDeleteProject={(id) => { stopRealtimeContext(); void soundcase.deleteProject(id); }}
           />
         </SheetContent>
       </Sheet>

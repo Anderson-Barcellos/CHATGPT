@@ -38,6 +38,10 @@ export async function PATCH(request: NextRequest, context: Context) {
   catch (error) { return soundCaseErrorResponse(error); }
 }
 
+export async function POST(request: NextRequest, context: Context) {
+  return PATCH(request, context);
+}
+
 export async function DELETE(request: NextRequest, context: Context) {
   const unauthorized = await requireAppAuth(request);
   if (unauthorized) return unauthorized;

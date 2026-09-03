@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { soundCaseApi } from "@/lib/soundcase/api";
+import { saveSoundCaseDraftOnExit, soundCaseApi } from "@/lib/soundcase/api";
 
 describe("SoundCase client API", () => {
   beforeEach(() => {
@@ -28,5 +28,27 @@ describe("SoundCase client API", () => {
     expect(soundCaseApi.audioUrl("p/1", "v 2")).toBe(
       "/chat/api/soundcase/projects/p%2F1/versions/v%202/audio"
     );
+  });
+
+  it("flushes the latest draft through an authenticated beacon on page exit", () => {
+    const sendBeacon = vi.fn().mockReturnValue(true);
+    vi.stubGlobal("navigator", { sendBeacon });
+
+    expect(saveSoundCaseDraftOnExit("project/id", { text: "última edição", revision: 8 })).toBe(true);
+    expect(sendBeacon).toHaveBeenCalledWith(
+      "/chat/api/soundcase/projects/project%2Fid",
+      expect.any(Blob)
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("falls back to a keepalive POST when beacon declines the payload", () => {
+    vi.stubGlobal("navigator", { sendBeacon: vi.fn().mockReturnValue(false) });
+
+    expect(saveSoundCaseDraftOnExit("p", { text: "rascunho", revision: 2 })).toBe(true);
+    expect(fetch).toHaveBeenCalledWith("/chat/api/soundcase/projects/p", expect.objectContaining({
+      method: "POST", keepalive: true, credentials: "same-origin",
+      body: JSON.stringify({ text: "rascunho", revision: 2 }),
+    }));
   });
 });

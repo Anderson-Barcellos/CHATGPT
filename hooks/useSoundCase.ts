@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ClientApiError } from "@/lib/api/errors";
-import { soundCaseApi, readableSoundCaseError } from "@/lib/soundcase/api";
+import { soundCaseApi, readableSoundCaseError, saveSoundCaseDraftOnExit } from "@/lib/soundcase/api";
 import { getSoundCasePollInterval } from "@/lib/soundcase/progress";
 import type {
   SoundCaseGenerationSettings,
@@ -144,6 +144,32 @@ export function useSoundCase() {
       saveTimerRef.current = null;
     };
   }, [conflict, draftText, persistDraft, project]);
+
+  useEffect(() => {
+    const persistLatestOnExit = () => {
+      const current = projectRef.current;
+      if (!current || conflictRef.current || draftRef.current === persistedTextRef.current) return;
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      saveSoundCaseDraftOnExit(current.id, {
+        text: draftRef.current,
+        revision: current.draftRevision,
+      });
+    };
+    const persistWhenHidden = () => {
+      if (document.visibilityState === "hidden") persistLatestOnExit();
+    };
+    window.addEventListener("pagehide", persistLatestOnExit);
+    window.addEventListener("beforeunload", persistLatestOnExit);
+    document.addEventListener("visibilitychange", persistWhenHidden);
+    return () => {
+      window.removeEventListener("pagehide", persistLatestOnExit);
+      window.removeEventListener("beforeunload", persistLatestOnExit);
+      document.removeEventListener("visibilitychange", persistWhenHidden);
+    };
+  }, []);
 
   useEffect(() => {
     const interval = getSoundCasePollInterval(selectedVersion);

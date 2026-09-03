@@ -1,7 +1,7 @@
 "use client";
 
 import { FileUp, Plus } from "lucide-react";
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { GenerationWave } from "@/components/soundcase/GenerationWave";
 import type { SoundCaseProgressView } from "@/lib/soundcase/progress";
 import styles from "./SoundCase.module.css";
@@ -27,7 +27,15 @@ function durationLabel(seconds: number): string {
 
 export function SoundCaseEditor(props: SoundCaseEditorProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [importError, setImportError] = useState<string | null>(null);
+
+  useLayoutEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [props.text]);
 
   if (props.onCreate && !props.title) {
     return (
@@ -64,6 +72,7 @@ export function SoundCaseEditor(props: SoundCaseEditorProps) {
         <h1>{props.title || "Sem título"}</h1>
         <p className={styles.paperHint}>Cole ou escreva seu texto. A direção será preparada automaticamente.</p>
         <textarea
+          ref={textareaRef}
           className={styles.paperTextarea}
           aria-label="Texto para narração"
           value={props.text}
