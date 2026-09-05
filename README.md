@@ -7,7 +7,7 @@ Alguns artefatos internos antigos ainda usam o rótulo histórico `Celer`, mas o
 
 ## O que o projeto faz
 
-- Chat com streaming, reasoning visível por summary/tokens, web search, geração de imagens, DeepSeek V4 Pro e Gemini 3.7 Flash no chat padrão, memory tools e code interpreter opcional.
+- Chat com streaming, reasoning visível por summary/tokens, web search, geração de imagens, GPT-6 Astra, DeepSeek V4 Pro e Gemini 3.8 Flash no chat padrão, memory tools e code interpreter opcional.
 - Histórico de conversas com persistência incremental durante streaming e recuperação de respostas interrompidas.
 - Memórias, RAG local de conversas, persona, prompt principal visível, instruções customizadas e preferências de TTS persistidas server-side.
 - Mini-player de áudio compartilhado entre respostas do chat e gerações Pulse, com TTS padrão em FLAC/turbo e Realtime 2.1 mini selecionável.

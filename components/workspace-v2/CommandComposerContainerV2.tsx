@@ -36,6 +36,7 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { useSpeechToText } from "@/hooks/useSpeechToText";
 import {
   getChatModels,
+  getFixedReasoningEffort,
   getSupportedReasoningEfforts,
   isDeepSeekModel,
   isReasoningModel as checkReasoning,
@@ -130,6 +131,7 @@ export function CommandComposerContainerV2({
     responseMode === "deepsearch_medium" || responseMode === "deepsearch_high";
   const currentModel = MODELS[parameters.model];
   const isDeepSeekSelected = isDeepSeekModel(parameters.model);
+  const fixedReasoningEffort = getFixedReasoningEffort(parameters.model);
   const supportedReasoningEfforts = useMemo(
     () => getSupportedReasoningEfforts(parameters.model),
     [parameters.model]
@@ -426,6 +428,8 @@ export function CommandComposerContainerV2({
         <TooltipContent>
           {isDeepSeekSelected
             ? "DeepSeek usa raciocinio maximo fixo"
+            : fixedReasoningEffort
+            ? `Raciocinio fixo: ${currentReasoning?.label || "Medio"}`
             : `Raciocínio: ${currentReasoning?.label || "Medio"}`}
         </TooltipContent>
       </Tooltip>
@@ -438,7 +442,7 @@ export function CommandComposerContainerV2({
           <DropdownMenuItem
             key={option.value}
             onClick={() => updateParameters({ reasoningEffort: option.value })}
-            disabled={isDeepSeekSelected}
+            disabled={isDeepSeekSelected || !!fixedReasoningEffort}
             className={cn(
               "flex flex-col items-start gap-0.5",
               parameters.reasoningEffort === option.value && "bg-primary/10 text-foreground"

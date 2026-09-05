@@ -28,6 +28,7 @@ import { useCustomInstructions } from "@/hooks/useCustomInstructions";
 import {
   MODELS,
   isDeepSeekModel,
+  getFixedVerbosity,
   modelSupportsCodeInterpreter,
   modelSupportsTemperature,
   modelSupportsVerbosity,
@@ -357,6 +358,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
 
   const currentModel = MODELS[parameters.model];
   const isDeepSeekSelected = isDeepSeekModel(parameters.model);
+  const fixedVerbosity = getFixedVerbosity(parameters.model);
   const showTemperature = modelSupportsTemperature(parameters.model);
   const showVerbosity = modelSupportsVerbosity(parameters.model);
   const showCodeInterpreter = modelSupportsCodeInterpreter(parameters.model);
@@ -585,14 +587,14 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                             <button
                               key={option.id}
                               type="button"
-                              disabled={isDeepSeekSelected}
+                              disabled={isDeepSeekSelected || !!fixedVerbosity}
                               onClick={() => updateParameters({ verbosity: option.id })}
                               className={cn(
                                 "gc-refined-panel rounded-xl border p-[var(--gc-mobile-settings-card-pad)] text-left transition-colors sm:p-3",
                                 parameters.verbosity === option.id
                                   ? "border-primary/30 bg-primary/10 text-foreground"
                                   : "text-muted-foreground hover:text-foreground",
-                                isDeepSeekSelected && "cursor-not-allowed opacity-70 hover:text-muted-foreground"
+                                (isDeepSeekSelected || fixedVerbosity) && "cursor-not-allowed opacity-70 hover:text-muted-foreground"
                               )}
                             >
                               <p className="text-xs font-medium">{option.label}</p>
@@ -605,6 +607,11 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                         {isDeepSeekSelected && (
                           <p className="text-micro text-muted-foreground">
                             DeepSeek V4 Pro usa verbosity alta fixa neste fluxo.
+                          </p>
+                        )}
+                        {fixedVerbosity && (
+                          <p className="text-micro text-muted-foreground">
+                            {currentModel?.name} usa verbosity media fixa neste fluxo.
                           </p>
                         )}
                       </div>

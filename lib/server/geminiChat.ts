@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import type { ChatRequestBody } from "@/lib/server/chatRequest";
 import type { AssistantStreamEvent } from "@/lib/chat/streamMachine";
 
-export const GEMINI_MODEL = "gemini-3.7-flash";
+export const GEMINI_MODEL = "gemini-3.8-flash";
 const GEMINI_MAX_OUTPUT_TOKENS = 65_536;
 
 type GeminiThinkingLevel = "low" | "medium" | "high";

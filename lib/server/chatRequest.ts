@@ -2,6 +2,8 @@ import OpenAI from "openai";
 import type { ResponseMode, ResponseVerbosity } from "@/types";
 import {
   MODELS,
+  getFixedReasoningEffort,
+  getFixedVerbosity,
   getSupportedReasoningEfforts,
   isReasoningModel,
   modelSupportsCodeInterpreter,
@@ -48,6 +50,7 @@ export const MEMORY_TOOL_NAMES = {
 export type MemoryToolName = (typeof MEMORY_TOOL_NAMES)[keyof typeof MEMORY_TOOL_NAMES];
 
 const LEGACY_MODEL_FALLBACKS: Record<string, string> = {
+  "gemini-3.7-flash": "gemini-3.8-flash",
   "gpt-chat-latest": "chat-latest",
   "gpt-5-chat-latest": "chat-latest",
   "gpt-5.1-chat-latest": DEFAULT_CHAT_MODEL,
@@ -235,13 +238,16 @@ export function buildResponseCreateParams(body: ChatRequestBody) {
     if (topP !== undefined) requestParams.top_p = topP;
   }
 
-  if (isReasoningModel(effectiveModel) && reasoning) {
-    const { effort, mode, ...supportedReasoning } = reasoning;
+  const fixedReasoningEffort = getFixedReasoningEffort(effectiveModel);
+  if (isReasoningModel(effectiveModel) && (reasoning || fixedReasoningEffort)) {
+    const { effort, mode, ...supportedReasoning } = reasoning ?? {};
     const sanitizedReasoning = {
       ...supportedReasoning,
-      ...(effort && effort !== "minimal" && getSupportedReasoningEfforts(effectiveModel).includes(effort) && {
-        effort,
-      }),
+      ...(fixedReasoningEffort
+        ? { effort: fixedReasoningEffort }
+        : effort && effort !== "minimal" && getSupportedReasoningEfforts(effectiveModel).includes(effort)
+        ? { effort }
+        : {}),
       ...(mode === "pro" && modelSupportsReasoningMode(effectiveModel, "pro") && {
         mode,
       }),
@@ -258,10 +264,16 @@ export function buildResponseCreateParams(body: ChatRequestBody) {
     };
   }
 
-  if (responseMode !== "quiz" && modelSupportsVerbosity(effectiveModel) && verbosity) {
+  const fixedVerbosity = getFixedVerbosity(effectiveModel);
+  const effectiveVerbosity = fixedVerbosity ?? verbosity;
+  if (
+    responseMode !== "quiz" &&
+    modelSupportsVerbosity(effectiveModel) &&
+    effectiveVerbosity
+  ) {
     requestParams.text = {
       ...requestParams.text,
-      verbosity,
+      verbosity: effectiveVerbosity,
     };
   }
 

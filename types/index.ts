@@ -313,6 +313,7 @@ export type ModelCapability =
 export type ModelFamily =
   | "gpt-4o"
   | "gpt-5"
+  | "gpt-6"
   | "deepseek"
   | "gemini"
   | "dall-e"
@@ -341,6 +342,8 @@ export interface ModelInfo {
   hiddenFromChatSelector?: boolean;
   supportedReasoningEfforts?: ReasoningEffort[];
   supportedReasoningModes?: ReasoningMode[];
+  fixedReasoningEffort?: ReasoningEffort;
+  fixedVerbosity?: ResponseVerbosity;
   recommendedFor: string[];
   badge?: string;
 }

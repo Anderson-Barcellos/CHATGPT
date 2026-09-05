@@ -7,6 +7,8 @@ import {
 } from "@/types";
 import {
   MODELS,
+  getFixedReasoningEffort,
+  getFixedVerbosity,
   getSupportedReasoningEfforts,
   isDeepSeekModel,
   isReasoningModel,
@@ -30,6 +32,7 @@ interface SettingsState {
 const DEFAULT_MODEL = "gpt-5.6-luna";
 
 const LEGACY_MODEL_FALLBACKS: Record<string, string> = {
+  "gemini-3.7-flash": "gemini-3.8-flash",
   "gpt-chat-latest": "chat-latest",
   "gpt-5-chat-latest": "chat-latest",
   "gpt-5.1-chat-latest": DEFAULT_MODEL,
@@ -59,7 +62,7 @@ function buildDefaultModelSettings(modelId: string): ModelScopedParameters {
   const defaultReasoningEffort =
     isDeepSeekModel(resolvedModelId)
       ? "xhigh"
-      : resolvedModelId === "gemini-3.7-flash"
+      : resolvedModelId === "gemini-3.8-flash"
       ? "high"
       : resolvedModelId === "gpt-5.6-luna"
       ? "low"
@@ -74,10 +77,12 @@ function buildDefaultModelSettings(modelId: string): ModelScopedParameters {
     maxOutputTokens: MODELS[resolvedModelId]?.maxOutput || 32768,
     temperature: 0.8,
     topP: 0.95,
-    reasoningEffort: defaultReasoningEffort,
+    reasoningEffort: getFixedReasoningEffort(resolvedModelId) ?? defaultReasoningEffort,
     reasoningMode: "standard",
     reasoningSummary: defaultReasoningSummary,
-    verbosity: isDeepSeekModel(resolvedModelId) ? "high" : "medium",
+    verbosity:
+      getFixedVerbosity(resolvedModelId) ??
+      (isDeepSeekModel(resolvedModelId) ? "high" : "medium"),
     codeInterpreterEnabled: false,
   };
 }
@@ -102,6 +107,8 @@ function clampModelSettings(
   )
     ? settings.reasoningMode
     : "standard";
+  const fixedReasoningEffort = getFixedReasoningEffort(resolvedModelId);
+  const fixedVerbosity = getFixedVerbosity(resolvedModelId);
 
   return {
     ...settings,
@@ -110,6 +117,8 @@ function clampModelSettings(
     topP: Number(settings.topP.toFixed(2)),
     reasoningEffort,
     reasoningMode,
+    ...(fixedReasoningEffort && { reasoningEffort: fixedReasoningEffort }),
+    ...(fixedVerbosity && { verbosity: fixedVerbosity }),
     ...(isDeepSeekModel(resolvedModelId)
       ? {
           reasoningEffort: "xhigh" as const,

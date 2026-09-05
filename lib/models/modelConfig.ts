@@ -4,6 +4,7 @@ import {
   ModelInfo,
   ReasoningEffort,
   ReasoningMode,
+  ResponseVerbosity,
   TokenUsage,
 } from "@/types";
 
@@ -14,11 +15,30 @@ const GPT_56_REASONING_MODES: ReasoningMode[] = ["standard", "pro"];
 const STANDARD_REASONING_EFFORTS: ReasoningEffort[] = [
   "none", "low", "medium", "high", "xhigh",
 ];
-const GEMINI_37_REASONING_EFFORTS: ReasoningEffort[] = [
+const GEMINI_FLASH_REASONING_EFFORTS: ReasoningEffort[] = [
   "low", "medium", "high",
 ];
 
 export const MODELS: Record<string, ModelInfo> = {
+  "gpt-6-astra": {
+    id: "gpt-6-astra",
+    name: "GPT-6 Astra",
+    family: "gpt-6",
+    description: "Modelo mais potente para trabalho complexo de ponta a ponta",
+    contextWindow: 1_050_000,
+    maxOutput: 128_000,
+    pricing: { input: 10, output: 50, cachedInput: 1 },
+    capabilities: ["chat", "reasoning", "vision", "function-calling", "json-mode"],
+    supportsStreaming: true,
+    supportsTemperature: false,
+    supportsVerbosity: true,
+    supportsCodeInterpreter: true,
+    supportedReasoningEfforts: ["low", "medium", "high", "xhigh", "max"],
+    fixedReasoningEffort: "medium",
+    fixedVerbosity: "medium",
+    recommendedFor: ["Trabalho de ponta a ponta", "Coding complexo", "Pesquisa profunda"],
+    badge: "Mais potente",
+  },
   "gpt-5.6-sol": {
     id: "gpt-5.6-sol",
     name: "GPT-5.6 Sol",
@@ -179,20 +199,20 @@ export const MODELS: Record<string, ModelInfo> = {
     recommendedFor: ["Chat longo", "Raciocinio profundo", "Analise economica"],
     badge: "DeepSeek",
   },
-  "gemini-3.7-flash": {
-    id: "gemini-3.7-flash",
-    name: "Gemini 3.7 Flash",
+  "gemini-3.8-flash": {
+    id: "gemini-3.8-flash",
+    name: "Gemini 3.8 Flash",
     family: "gemini",
     description: "Modelo Gemini rapido para tarefas agenticas, multimodais e pesquisa web",
     contextWindow: 1_048_576,
     maxOutput: 65_536,
-    pricing: { input: 1.5, output: 7.5 },
+    pricing: { input: 0.75, output: 3.75 },
     capabilities: ["chat", "reasoning", "vision", "function-calling", "json-mode"],
     supportsStreaming: true,
     supportsTemperature: false,
     supportsVerbosity: false,
     supportsCodeInterpreter: false,
-    supportedReasoningEfforts: GEMINI_37_REASONING_EFFORTS,
+    supportedReasoningEfforts: GEMINI_FLASH_REASONING_EFFORTS,
     recommendedFor: ["Chat rapido", "Pesquisa web", "Analise multimodal"],
     badge: "Gemini",
   },
@@ -241,7 +261,15 @@ export function isDeepSeekModel(modelId: string): boolean {
 }
 
 export function isGeminiModel(modelId: string): boolean {
-  return modelId === "gemini-3.7-flash";
+  return modelId === "gemini-3.8-flash";
+}
+
+export function getFixedReasoningEffort(modelId: string): ReasoningEffort | undefined {
+  return MODELS[modelId]?.fixedReasoningEffort;
+}
+
+export function getFixedVerbosity(modelId: string): ResponseVerbosity | undefined {
+  return MODELS[modelId]?.fixedVerbosity;
 }
 
 const REASONING_LABELS: Record<string, string> = {

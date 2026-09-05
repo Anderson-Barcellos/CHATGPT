@@ -1,6 +1,6 @@
 # Modelos
 
-**Última atualização:** 2026-08-04
+**Última atualização:** 2026-09-03
 **Fonte:** `lib/models/modelConfig.ts`
 
 ## Catálogo Atual
@@ -9,6 +9,7 @@
 
 | ID | Nome | Família | Reasoning | Contexto | Max output | Badge |
 |---|---|---|---|---|---|---|
+| `gpt-6-astra` | GPT-6 Astra | `gpt-6` | `medium` fixo | 1.05M | 128K | Mais potente |
 | `gpt-5.6-sol` | GPT-5.6 Sol | `gpt-5` | Sim (`standard`/`pro`, até `max`) | 1.05M | 128K | Mais potente |
 | `gpt-5.6-terra` | GPT-5.6 Terra | `gpt-5` | Sim (`standard`/`pro`, até `max`) | 1.05M | 128K | Equilibrado |
 | `gpt-5.6-luna` | GPT-5.6 Luna | `gpt-5` | Sim (`standard`/`pro`, até `max`) | 400K | 128K | Default |
@@ -18,7 +19,7 @@
 | `gpt-5.4-mini` | GPT-5.4 mini | `gpt-5` | Sim | 128K | 16K | Eficiente |
 | `gpt-5.2` | GPT-5.2 | `gpt-5` | Sim | 400K | 128K | Reasoning |
 | `deepseek-v4-pro` | DeepSeek V4 Pro | `deepseek` | Sim (máximo fixo) | 1M | 384K | DeepSeek |
-| `gemini-3.7-flash` | Gemini 3.7 Flash | `gemini` | Sim (`low` a `high`) | 1.048M | 65.536 | Gemini |
+| `gemini-3.8-flash` | Gemini 3.8 Flash | `gemini` | Sim (`low` a `high`) | 1.048M | 65.536 | Gemini |
 
 ### Imagem
 
@@ -30,6 +31,7 @@
 ## Defaults
 
 - Modelo padrão do chat: `gpt-5.6-luna`, reasoning `low`, modo `standard`.
+- `gpt-6-astra` usa reasoning `medium` e verbosity `medium` fixos; store e backend rejeitam overrides desses dois campos.
 - `gpt-5.6-sol` inicia com reasoning `medium`, modo `standard`.
 - `gpt-5.6-terra` inicia com reasoning `medium`, modo `standard`.
 - Sol, Terra e Luna aceitam `reasoning.mode="pro"` independentemente do effort e oferecem effort `max`.
@@ -43,7 +45,7 @@
 - O Pulse usa `gpt-5.4-mini` + `medium` por padrão e permite `gpt-5.6-sol` ou `gpt-5.6-terra` por rotina; todos usam verbosity `high`.
 - O `fresh_web_context` do DeepSeek usa `gpt-5.6-luna` + `low`; a resposta final continua no DeepSeek V4 Pro com reasoning máximo.
 - `deepseek-v4-pro` é permitido apenas no chat padrão streaming, não usa `code_interpreter` e depende de `DEEPSEEK_API_KEY`.
-- `gemini-3.7-flash` inicia em thinking `high`, permite `low`, `medium` e `high`, e depende de `GEMINI_API_KEY`.
+- `gemini-3.8-flash` inicia em thinking `high`, permite `low`, `medium` e `high`, e depende de `GEMINI_API_KEY`.
 - Gemini usa Interactions API stateless (`store=false`) com Google Search e URL Context nativos; Documento, Deepsearch e Quiz continuam nos modelos OpenAI forçados.
 - Autocomplete FIM do Studio usa `codestral-latest` (Codestral 25.08, Mistral) via `/v1/fim/completions`; a key vem de `CODESTRAL_API_KEY` ou `MISTRAL_API_KEY`, com `deepseek-v4-pro` como fallback legado via `DEEPSEEK_API_KEY`.
 - TTS usa `gpt-4o-mini-tts` em `lib/tts/speechText.ts`.
@@ -62,14 +64,15 @@
 - só envia `verbosity` quando `modelSupportsVerbosity()` permite;
 - só adiciona `code_interpreter` quando o usuário habilita e o modelo suporta.
 - faz enforcement rígido apenas para `responseMode="quiz"`; presets `document` e `deepsearch_*` são montados no app por `hooks/useChat.ts`.
-- roteia `gemini-3.7-flash` para o adapter Interactions API apenas em chat padrão streaming.
+- força reasoning e verbosity `medium` para `gpt-6-astra`, mesmo se o cliente enviar outros valores;
+- roteia `gemini-3.8-flash` para o adapter Interactions API apenas em chat padrão streaming.
 
 `lib/chat/reasoningConfig.ts`:
 
 - não envia reasoning quando o modelo não tem capacidade `reasoning`;
 - não envia reasoning quando o effort é `none`;
 - repassa `minimal`, `low`, `medium`, `high` e `xhigh` como `reasoning.effort` quando o modelo selecionado suporta o nível;
-- repassa também `max` somente nos GPT-5.6;
+- repassa também `max` nos modelos compatíveis, embora o Astra permaneça travado em `medium` neste app;
 - envia `reasoning.mode="pro"` somente em Sol/Terra/Luna; `standard` é omitido por ser o default da API;
 - repassa `auto`, `concise` e `detailed` como `reasoning.summary`;
 - converte a preferência local `summary=off` em omissão do campo, evitando valor inválido na Responses API.

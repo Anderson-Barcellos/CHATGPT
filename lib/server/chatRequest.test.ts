@@ -116,4 +116,30 @@ describe("buildResponseCreateParams", () => {
   it("allows GPT-5.6 Terra as a selectable chat model", () => {
     expect(resolveRequestedModel("gpt-5.6-terra")).toBe("gpt-5.6-terra");
   });
+
+  it("forces GPT-6 Astra reasoning and verbosity to medium", () => {
+    const params = buildResponseCreateParams({
+      input: [{ role: "user", content: "Teste" }],
+      model: "gpt-6-astra",
+      reasoning: { effort: "max", summary: "detailed" },
+      verbosity: "high",
+    });
+
+    expect(params.reasoning).toEqual({ effort: "medium", summary: "detailed" });
+    expect(params.text).toMatchObject({ verbosity: "medium" });
+  });
+
+  it("applies GPT-6 Astra fixed controls when the client omits them", () => {
+    const params = buildResponseCreateParams({
+      input: [{ role: "user", content: "Teste" }],
+      model: "gpt-6-astra",
+    });
+
+    expect(params.reasoning).toEqual({ effort: "medium" });
+    expect(params.text).toMatchObject({ verbosity: "medium" });
+  });
+
+  it("maps the previous Gemini Flash id to Gemini 3.8 Flash", () => {
+    expect(resolveRequestedModel("gemini-3.7-flash")).toBe("gemini-3.8-flash");
+  });
 });

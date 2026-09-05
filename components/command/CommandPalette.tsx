@@ -19,7 +19,11 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useCommandPaletteContext } from "@/components/command/CommandPaletteProvider";
-import { getChatModels, getSupportedReasoningEfforts } from "@/lib/models/modelConfig";
+import {
+  getChatModels,
+  getFixedReasoningEffort,
+  getSupportedReasoningEfforts,
+} from "@/lib/models/modelConfig";
 import { useChatStore } from "@/stores/chatStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useUIStore } from "@/stores/uiStore";
@@ -51,6 +55,7 @@ export function CommandPalette() {
 
   const chatModels = getChatModels();
   const supportedReasoningEfforts = getSupportedReasoningEfforts(parameters.model);
+  const fixedReasoningEffort = getFixedReasoningEffort(parameters.model);
 
   const run = useCallback(
     (fn: () => void) => {
@@ -136,7 +141,8 @@ export function CommandPalette() {
                   key={value}
                   value={`raciocínio ${label} ${value}`}
                   onSelect={() => run(() => updateParameters({ reasoningEffort: value }))}
-                  className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm aria-selected:bg-accent"
+                  disabled={!!fixedReasoningEffort}
+                  className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm aria-selected:bg-accent data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-60"
                 >
                   <Brain className="size-4 shrink-0 text-muted-foreground" />
                   <span className="flex-1">{label}</span>
