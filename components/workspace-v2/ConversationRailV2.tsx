@@ -29,8 +29,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { GPTLogo } from "@/components/ui/gpt-logo";
 import { useConversations } from "@/hooks/useConversations";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { useDebouncedSearch } from "@/lib/performance/debounce";
 import { useChatStore } from "@/stores/chatStore";
+import { useUIStore } from "@/stores/uiStore";
 import { cn } from "@/lib/utils";
 import type { Conversation } from "@/types";
 
@@ -220,6 +222,20 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
     deleteConversation,
   } = useConversations();
   const { activeConversationId, isStreaming, setActiveConversationId } = useChatStore();
+  const isMobile = useIsMobile();
+  const openSoundCasePanel = useUIStore((state) => state.openSoundCasePanel);
+
+  // No mobile o SoundCase abre como painel lateral direito, dentro do shell do chat;
+  // o href continua valendo para acesso direto, nova aba e long-press.
+  const handleSoundCaseClick = useCallback(
+    (event: React.MouseEvent<HTMLAnchorElement>) => {
+      if (!isMobile) return;
+      event.preventDefault();
+      openSoundCasePanel();
+      onClose?.();
+    },
+    [isMobile, onClose, openSoundCasePanel]
+  );
 
   const showStreamingGuard = useCallback(() => {
     toast.info("Aguarde a resposta terminar para trocar de conversa.");
@@ -397,6 +413,7 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
         <Link
           href="/soundcase"
           title="Abrir SoundCase"
+          onClick={handleSoundCaseClick}
           className={cn(
             "flex size-8 shrink-0 items-center justify-center",
             RAIL_CONTROL_BUTTON_CLASS
@@ -578,7 +595,7 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
           asChild
           className={cn("h-9 w-full justify-start px-2 text-xs", RAIL_CONTROL_BUTTON_CLASS)}
         >
-          <Link href="/soundcase">
+          <Link href="/soundcase" onClick={handleSoundCaseClick}>
             <AudioLines className="mr-2 size-4" />
             Abrir SoundCase
           </Link>

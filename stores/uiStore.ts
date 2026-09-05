@@ -13,6 +13,7 @@ interface UIState extends ArtifactState {
   imageQuality: string;
   activePanelTab: ActivePanelTab;
   contextPanelOpen: boolean;
+  soundCasePanelOpen: boolean;
   activeSelection: ActiveSelection | null;
   setActiveMode: (mode: AppMode) => void;
   setImageSize: (size: string) => void;
@@ -21,6 +22,9 @@ interface UIState extends ArtifactState {
   setContextPanelOpen: (open: boolean) => void;
   openContextPanel: (tab?: ActivePanelTab) => void;
   closeContextPanel: () => void;
+  openSoundCasePanel: () => void;
+  closeSoundCasePanel: () => void;
+  setSoundCasePanelOpen: (open: boolean) => void;
   setActiveSelection: (selection: ActiveSelection | null) => void;
   openArtifact: (artifact: MessageArtifact, messageId?: string) => void;
   closeArtifact: () => void;
@@ -35,6 +39,7 @@ export const useUIStore = create<UIState>((set) => ({
   artifactMessageId: null,
   activePanelTab: "activity",
   contextPanelOpen: false,
+  soundCasePanelOpen: false,
   activeSelection: null,
   setActiveMode: (mode) => set({ activeMode: mode }),
   setImageSize: (size) => set({ imageSize: size }),
@@ -47,6 +52,9 @@ export const useUIStore = create<UIState>((set) => ({
       activePanelTab: tab ?? state.activePanelTab,
     })),
   closeContextPanel: () => set({ contextPanelOpen: false }),
+  openSoundCasePanel: () => set({ soundCasePanelOpen: true }),
+  closeSoundCasePanel: () => set({ soundCasePanelOpen: false }),
+  setSoundCasePanelOpen: (open) => set({ soundCasePanelOpen: open }),
   setActiveSelection: (selection) => set({ activeSelection: selection }),
   openArtifact: (artifact, messageId) =>
     set({

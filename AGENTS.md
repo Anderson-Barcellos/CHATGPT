@@ -1516,3 +1516,38 @@ Details:
 - Validação: 773/773, `tsc`, lint (só o aviso do `Link` órfão, removido), build, restart, health local/público 200. Screenshot 390x844 com Playwright + `/opt/google/chrome/chrome` (browsers do Playwright não estão instalados; o script viveu em `node_modules/.p5-shot.mjs` só durante a execução e foi apagado).
 Notes:
 FRENTE P ativa; P5 `pronta para revisão`, sem commit. `ProductNav` continua em uso nos shells do Studio e do SoundCase. O Studio e o SoundCase seguem acessíveis pela paleta.
+
+### 2026-09-05 00:58 - B1: Parar + reenviar não corrompe mais o envio novo nem a conversa vizinha
+
+Context: Anders comitou a P5 (`b712491`) e aprovou a recomendação de pausar a FRENTE P e atacar a B1 (FRENTE B ativa).
+Details:
+- Três defeitos em `hooks/useChat.ts`: (1) o `finally` do stream antigo anulava `abortControllerRef` e recalculava `isLoading`/`isStreaming` sem checar se ainda era o envio corrente, então depois de Parar + reenviar o envio novo ficava sem botão Parar funcional e com `isLoading=false` (permitindo um terceiro envio concorrente); (2) `stopGeneration` zera `isStreaming` na hora, o que libera a troca de conversa no rail enquanto o `catch` do stream antigo ainda está persistindo; (3) `persistConversationSnapshot` e o auto-save throttled liam `useChatStore.getState().messages` sem checar o dono, gravando as mensagens da conversa nova (inclusive via `saveConversationMessagesAndTitle`) sob o id da antiga.
+- Correção: `AbortController` local por envio (`abortController`) usado nos dois `fetch`; o `finally` só toca flags e ref quando `abortControllerRef.current === abortController`; novo `readOwnedConversationMessages(conversationId)` devolve `null` se o store já pertence a outra conversa, e tanto o auto-save quanto o snapshot final pulam a gravação nesse caso (`console.warn`). `stopGeneration` ficou como estava: com a cerca de identidade, zerar as flags na hora é inofensivo e mantém o composer responsivo.
+- TDD: `hooks/useChat.test.ts` (jsdom, `createRoot` + `act` do React 19, `QueryClientProvider`, mocks de storage/memória/instruções/sonner, `fetch` que só rejeita 20 ms depois do abort para reproduzir a janela real). Dois casos: envio novo continua `isLoading` e abortável depois do stream antigo encerrar; nenhum save sob o id da A carrega mensagens da B. Confirmado vermelho com `git stash` do código antigo.
+- Validação: 775/775, `tsc`, lint (a regra do React Compiler proibiu atribuir variável externa dentro do harness; resolvido com `useEffect` + callback), build, restart, health local/público 200.
+Notes:
+A conversa abandonada no meio do abort fica com o balão `streaming` em disco até ser reaberta; o recovery de `interrupted` (`normalizeStreamingMessages` no load) já cobre isso, por decisão. B2 (`reconcileBackgroundJobs` zera `isStreaming`) e B3 (quick actions/paleta) seguem candidatas. Sem commit.
+
+### 2026-09-05 01:30 - B2–B6: FRENTE B implementada de ponta a ponta
+
+Context: Anders fechou B1 e autorizou tocar B2–B6 em sequência sem parar por revisão a cada ENTREGA; todas ficaram `pronta para revisão`.
+Details:
+- B2 (`useChat.ts`): `reconcileBackgroundJobs` mantém `isLoading`/`isStreaming` quando há stream vivo (`abortControllerRef.current !== null`). Teste em `useChat.test.ts`.
+- B3: `CommandComposerContainerV2.tsx` ganhou `submitMessage(text)`; o listener de `gaucho:send-message` envia direto (o `setTimeout(handleSubmit)` usava a closure velha com input vazio). `hooks/useStartNewConversation.ts` (cria + ativa, trava de stream) substitui o `setActiveConversationId(null)` da paleta. Testes jsdom novos para os dois.
+- B4 (Pulse): claim atômico em `createPulseRun` (dentro do lock, `null` se já roda); `recoverOrphanedPulseRuns(activeRunIds)` no tick e no manual; `startPulseTaskNow` responde na hora (`202`) e completa em background com `activeRunIds` em memória; `PulseRunAlreadyRunningError` → `409`; cliente `waitForPulseRunCompletion` (4 s / 30 min) e painel toasts pelo estado final. Testes `storeRuns`, `runnerStart`, `pulseApi`.
+- B5 (Studio): `instrumentation.ts` chama `stopOrphanedStudioUnits` (`systemctl stop` + `reset-failed` nos três padrões); bridge Python com `read_command()` sobre o fd 0 (`os.read` + `select`, buffer próprio) e `wait_for_input_reply` retornando quando `shell_channel.msg_ready()` (célula acabou sem reply); `stop(unitId)` no runner e na rota de `run`. Testes: `studio_kernel_bridge_test.py` via `studioKernelBridge.test.ts` (venv), `studioOrphanUnits.test.ts`, caso novo em `studioWorkspaceRunner.test.ts`. Smoke real com ipykernel do venv passou (c1 error/KeyboardInterrupt, c2 ok, c3 ok com input).
+- B6: lock do SoundCase com `isLost()` e log em vez de `process.exit(1)`, `withQueueLock` → `soundcase_queue_lock_lost` 503; `patchConversationMessages` (locked RMW) usado por `chatBackgroundJob.ts`; `settingsStore` com `persist` (`gaucho-chat:settings:v1`, partialize modelo/prompt/parâmetros, `skipHydration`, merge com clamp) e `SettingsHydrator` no `QueryProvider`.
+- Validação: 796/796, `tsc`, lint, build, restart, health local/público 200, nenhuma unit `gaucho-studio-*` viva após o boot. Docs: API.md, INFRASTRUCTURE.md, ARCHITECTURE.md.
+Notes:
+`hooks/useChat.test.ts` é o primeiro teste do hook real (jsdom + `createRoot`/`act`); `fetch` mockado rejeita 20 ms depois do abort de propósito. A persistência do `settingsStore` é decisão minha (REVISÃO SUGERIDA). `runPulseTaskNow` do servidor deixou de existir; o cliente mantém o nome mas recebe `202`. Sem commit.
+
+
+### 2026-09-05 17:45 - SoundCase: painel direito no mobile, Realtime persistente e acervo em cartões (P5-layout, P6, P7)
+
+Context: Anders relatou no mobile que fechar/voltar não respeitavam o espaço; escolheu híbrido (rota no desktop, Sheet direito no chat mobile) e reskin Atmosphere Glass; depois aprovou subir o Realtime para fora do painel e trocar as linhas do acervo por cartões com capa.
+Details:
+- `SoundCaseWorkspace` (novo) com `variant` page/panel; `SoundCasePanel` (Sheet direito em `GauchoChatShellV2`); `uiStore.soundCasePanelOpen`; `ConversationRailV2` abre o painel no mobile e navega no desktop; `--sc-*` mapeados nos tokens `gc-*`.
+- `SoundCaseRealtimeProvider` chama `useSoundCaseRealtime` uma vez acima do Sheet; `SoundCaseRealtimeBar` é o controle persistente no chat.
+- `describeSoundCaseVersion` é o contrato único de estado (`audio_ready` tocável, sem status cru); `SoundCaseLibrary` em cartões com capa e badge "Tocando"; `SoundCaseResult` removido; polling do projeto a 4 s para versões ativas não selecionadas.
+- Validação: 822/822 (TDD red→green em todas as entregas), tsc, lint (warning preexistente), build, restart, health 200; Playwright 390×844 e 1600×1000; geração real `9fb16c27` acompanhada ao vivo até `audio_ready`; Realtime E2E com WebRTC real (201 em 464 ms, `response.done` em 1,9 s).
+Notes: `--gc-clinical-card-bg` é gradiente com alpha — sempre `background-color` sólido antes. O React Compiler lint proíbe setState síncrono em effect: guardar id em vez de booleano resolve. Commit autorizado por Anders só para o SoundCase; frentes B/H seguem sem commit.

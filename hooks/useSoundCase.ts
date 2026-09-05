@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ClientApiError } from "@/lib/api/errors";
 import { flushSoundCaseDraftOnExitBestEffort, soundCaseApi, readableSoundCaseError } from "@/lib/soundcase/api";
-import { getSoundCasePollInterval } from "@/lib/soundcase/progress";
+import { getSoundCasePollInterval, getSoundCaseProjectPollInterval } from "@/lib/soundcase/progress";
 import {
   clearSoundCaseDraftRecovery,
   readSoundCaseDraftRecovery,
@@ -231,6 +231,21 @@ export function useSoundCase() {
     }, interval);
     return () => clearInterval(timer);
   }, [loadProject, refreshProjects, selectedVersion]);
+
+  // Outra geração do mesmo projeto (não a selecionada) só avança no acervo se alguém perguntar.
+  // Só o projeto é recarregado: a seleção do usuário não é tocada.
+  const projectPollInterval = getSoundCaseProjectPollInterval(project?.versions ?? [], selectedVersion?.id ?? null);
+  useEffect(() => {
+    if (!projectPollInterval) return;
+    const timer = setInterval(() => {
+      const current = projectRef.current;
+      if (!current) return;
+      void soundCaseApi.getProject(current.id)
+        .then((next) => applyProject(next, true))
+        .catch((cause) => setError(readableSoundCaseError(cause, "Não foi possível atualizar o acervo.")));
+    }, projectPollInterval);
+    return () => clearInterval(timer);
+  }, [applyProject, projectPollInterval]);
 
   useEffect(() => {
     const reconcile = () => {

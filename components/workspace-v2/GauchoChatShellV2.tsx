@@ -10,6 +10,9 @@ import {
 import { ChatRecoveryState } from "@/components/chat/ChatRecoveryState";
 import { SplashScreen } from "@/components/ui/splash-screen";
 import { SettingsDrawer } from "@/components/settings/SettingsDrawer";
+import { SoundCasePanel } from "@/components/soundcase/SoundCasePanel";
+import { SoundCaseRealtimeBar } from "@/components/soundcase/SoundCaseRealtimeBar";
+import { SoundCaseRealtimeProvider } from "@/components/soundcase/SoundCaseRealtimeProvider";
 import { ChatCanvasV2 } from "@/components/workspace-v2/ChatCanvasV2";
 import { CommandComposerContainerV2 } from "@/components/workspace-v2/CommandComposerContainerV2";
 import { ContextPanelV2 } from "@/components/workspace-v2/ContextPanelV2";
@@ -222,6 +225,10 @@ export function GauchoChatShellV2() {
         <SelectionToolbar selection={textSelection} />
       </NotesProvider>
       <SettingsDrawer isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SoundCaseRealtimeProvider>
+        <SoundCasePanel />
+        <SoundCaseRealtimeBar />
+      </SoundCaseRealtimeProvider>
       <CommandPalette />
       </CommandPaletteProvider>
     </>

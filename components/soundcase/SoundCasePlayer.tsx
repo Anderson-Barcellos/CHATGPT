@@ -23,14 +23,21 @@ export interface SoundCasePlayerProps {
     isActive: boolean;
     stop: () => void;
   };
+  /** Avisa o acervo quando o arquivo final começa ou para de tocar. */
+  onPlaybackChange?: (playing: boolean) => void;
 }
 
-export function SoundCasePlayer({ version, audioUrl, realtime }: SoundCasePlayerProps) {
+export function SoundCasePlayer({ version, audioUrl, realtime, onPlaybackChange }: SoundCasePlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [playingFinal, setPlayingFinal] = useState(false);
+  const [playingFinal, setPlayingFinalState] = useState(false);
   const [playError, setPlayError] = useState<string | null>(null);
   const readyAudio = version.audio.status === "ready" ? version.audio : null;
   const finalReady = Boolean(readyAudio);
+
+  const setPlayingFinal = (playing: boolean) => {
+    setPlayingFinalState(playing);
+    onPlaybackChange?.(playing);
+  };
 
   const playFinal = async () => {
     const audio = audioRef.current;

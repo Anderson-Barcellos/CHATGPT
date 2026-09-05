@@ -11,6 +11,8 @@ export interface DirectionSidebarProps {
   settings: SoundCaseGenerationSettings;
   disabled?: boolean;
   busy?: boolean;
+  /** Painel lateral concentra as ações no rodapé fixo; a rota mantém os botões aqui. */
+  showActions?: boolean;
   onChange: (settings: SoundCaseGenerationSettings) => void;
   onGenerate: (mode: "realtime" | "silent") => void;
 }
@@ -19,7 +21,7 @@ function titleCase(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-export function DirectionSidebar({ settings, disabled, busy, onChange, onGenerate }: DirectionSidebarProps) {
+export function DirectionSidebar({ settings, disabled, busy, showActions = true, onChange, onGenerate }: DirectionSidebarProps) {
   const update = (patch: Partial<SoundCaseGenerationSettings>, override = false) => {
     onChange({ ...settings, ...patch, ...(override ? { automatic: false } : {}) });
   };
@@ -82,12 +84,20 @@ export function DirectionSidebar({ settings, disabled, busy, onChange, onGenerat
         />
       </label>
 
-      <button className={styles.primaryAction} type="button" disabled={disabled || busy} onClick={() => onGenerate("realtime")}>
-        <Volume2 /> {busy ? "Preparando…" : "Gerar e ouvir agora"}
-      </button>
-      <button className={styles.secondaryAction} type="button" disabled={disabled || busy} onClick={() => onGenerate("silent")}>
-        <Headphones /> Gerar silenciosamente
-      </button>
+      {showActions ? (
+        <>
+          <button className={styles.primaryAction} type="button" disabled={disabled || busy} onClick={() => onGenerate("realtime")}>
+            <Volume2 /> {busy ? "Preparando…" : "Gerar e ouvir agora"}
+          </button>
+          <button className={styles.secondaryAction} type="button" disabled={disabled || busy} onClick={() => onGenerate("silent")}>
+            <Headphones /> Gerar silenciosamente
+          </button>
+        </>
+      ) : (
+        <button className={styles.secondaryAction} type="button" disabled={disabled || busy} onClick={() => onGenerate("silent")}>
+          <Headphones /> Gerar silenciosamente
+        </button>
+      )}
     </aside>
   );
 }

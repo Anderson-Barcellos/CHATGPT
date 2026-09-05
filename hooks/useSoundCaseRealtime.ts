@@ -185,6 +185,8 @@ export function useSoundCaseRealtime() {
   const [activeSegmentIndex, setActiveSegmentIndex] = useState(0);
   const [firstAudioMs, setFirstAudioMs] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Versão que a sessão está lendo; o acervo usa isso para marcar "Tocando · Realtime".
+  const [versionId, setVersionId] = useState<string | null>(null);
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const channelRef = useRef<RTCDataChannel | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -222,6 +224,7 @@ export function useSoundCaseRealtime() {
       unlockedRef.current = false;
       preparedAudioRef.current = false;
     }
+    setVersionId(null);
   }, []);
 
   const stop = useCallback(() => {
@@ -256,6 +259,7 @@ export function useSoundCaseRealtime() {
     startedAtRef.current = performance.now();
     setFirstAudioMs(null);
     setError(null);
+    setVersionId(input.versionId);
     setStatus("connecting");
     const session = fenceRef.current!.start();
 
@@ -389,7 +393,7 @@ export function useSoundCaseRealtime() {
   }, []);
 
   return {
-    status, activeSegmentIndex, firstAudioMs, error,
+    status, activeSegmentIndex, firstAudioMs, error, versionId,
     isActive: status === "connecting" || status === "ready" || status === "speaking" || status === "paused",
     prime, start, stop, skipToSegment,
   };
