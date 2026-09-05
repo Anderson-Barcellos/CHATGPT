@@ -1,13 +1,14 @@
+import { constants as fsConstants } from "node:fs";
 import {
   chown,
+  lstat,
   mkdir,
+  open,
   readdir,
-  readFile,
   realpath,
   rename,
   rm,
   stat,
-  writeFile,
 } from "node:fs/promises";
 import path from "node:path";
 import {
@@ -104,7 +105,49 @@ export async function resolveWorkspacePath(
     }
   }
 
+  // O componente final nunca pode ser symlink: stat/read/write/chown seguem
+  // o link e o serviço roda como root, então um `ln -s` criado na jail
+  // viraria leitura/escrita arbitrária no host.
+  try {
+    const finalInfo = await lstat(absolutePath);
+    if (finalInfo.isSymbolicLink()) {
+      return { ok: false, reason: "invalid_path" };
+    }
+  } catch {
+    // Destino ainda não existe: seguir.
+  }
+
   return { ok: true, absolutePath };
+}
+
+// Abre sem seguir symlink no último componente (fecha a janela entre o
+// lstat acima e a operação real).
+const OPEN_READ_NOFOLLOW = fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW;
+const OPEN_WRITE_NOFOLLOW =
+  fsConstants.O_WRONLY |
+  fsConstants.O_CREAT |
+  fsConstants.O_TRUNC |
+  fsConstants.O_NOFOLLOW;
+
+async function readFileNoFollow(absolutePath: string): Promise<Buffer> {
+  const handle = await open(absolutePath, OPEN_READ_NOFOLLOW);
+  try {
+    return await handle.readFile();
+  } finally {
+    await handle.close();
+  }
+}
+
+async function writeFileNoFollow(
+  absolutePath: string,
+  data: Buffer
+): Promise<void> {
+  const handle = await open(absolutePath, OPEN_WRITE_NOFOLLOW, 0o644);
+  try {
+    await handle.writeFile(data);
+  } finally {
+    await handle.close();
+  }
 }
 
 async function inheritRootOwnership(
@@ -143,7 +186,12 @@ export async function readWorkspaceFile(
     return { ok: false, reason: "too_large" };
   }
 
-  const buffer = await readFile(resolved.absolutePath);
+  let buffer: Buffer;
+  try {
+    buffer = await readFileNoFollow(resolved.absolutePath);
+  } catch {
+    return { ok: false, reason: "not_found" };
+  }
   if (isBinaryContent(buffer)) return { ok: false, reason: "binary" };
 
   return { ok: true, content: buffer.toString("utf8") };
@@ -177,7 +225,7 @@ export async function writeWorkspaceFile(
 
   try {
     await mkdir(directory, { recursive: true });
-    await writeFile(resolved.absolutePath, encoded);
+    await writeFileNoFollow(resolved.absolutePath, encoded);
   } catch {
     return { ok: false, reason: "write_failed" };
   }
@@ -314,7 +362,7 @@ export async function listWorkspaceTree(
       const info = await stat(absolute);
       let editable = info.size <= STUDIO_WORKSPACE_MAX_EDITABLE_FILE_BYTES;
       if (editable) {
-        const sample = await readFile(absolute);
+        const sample = await readFileNoFollow(absolute);
         editable = !isBinaryContent(sample);
       }
 

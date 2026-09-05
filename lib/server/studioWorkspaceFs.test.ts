@@ -60,6 +60,48 @@ describe("resolveWorkspacePath", () => {
     const resolved = await resolveWorkspacePath(root, "atalho/fuga.py");
     expect(resolved.ok).toBe(false);
   });
+
+  it("rejects a symlink as the final component, even when it points inside", async () => {
+    await writeFile(path.join(outside, "segredo.txt"), "fora");
+    await symlink(path.join(outside, "segredo.txt"), path.join(root, "main.py"));
+    await writeFile(path.join(root, "real.py"), "dentro");
+    await symlink(path.join(root, "real.py"), path.join(root, "alias.py"));
+
+    expect((await resolveWorkspacePath(root, "main.py")).ok).toBe(false);
+    expect((await resolveWorkspacePath(root, "alias.py")).ok).toBe(false);
+  });
+});
+
+describe("symlink hardening on the final component", () => {
+  it("does not read through a symlink to an outside file", async () => {
+    await writeFile(path.join(outside, "segredo.txt"), "fora");
+    await symlink(path.join(outside, "segredo.txt"), path.join(root, "main.py"));
+
+    const result = await readWorkspaceFile(root, "main.py");
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe("invalid_path");
+  });
+
+  it("does not write through a symlink to an outside file", async () => {
+    const target = path.join(outside, "alvo.txt");
+    await writeFile(target, "intacto");
+    await symlink(target, path.join(root, "main.py"));
+
+    const result = await writeWorkspaceFile(root, "main.py", "invadido");
+    expect(result.ok).toBe(false);
+    const { readFile } = await import("node:fs/promises");
+    expect(await readFile(target, "utf8")).toBe("intacto");
+  });
+
+  it("does not delete or rename through a symlink final component", async () => {
+    const target = path.join(outside, "alvo.txt");
+    await writeFile(target, "intacto");
+    await symlink(target, path.join(root, "link.py"));
+
+    expect((await deleteWorkspaceEntry(root, "link.py")).ok).toBe(false);
+    expect((await renameWorkspaceEntry(root, "link.py", "outro.py")).ok).toBe(false);
+    await expect(stat(target)).resolves.toBeTruthy();
+  });
 });
 
 describe("workspace file operations", () => {

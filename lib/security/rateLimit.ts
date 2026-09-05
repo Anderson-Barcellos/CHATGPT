@@ -27,6 +27,10 @@ export const RATE_LIMITS = {
     windowMs: 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_STUDIO_WORKSPACE_RUN_RPM || "30", 10),
   },
+  studioWorkspaceStdin: {
+    windowMs: 60 * 1000,
+    max: parseInt(process.env.RATE_LIMIT_STUDIO_WORKSPACE_STDIN_RPM || "240", 10),
+  },
   transcribe: {
     windowMs: 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_TRANSCRIBE_RPM || "10", 10),
@@ -146,6 +150,12 @@ export function getRateLimitConfig(endpoint: string): { windowMs: number; max: n
 
   if (endpoint === "/api/studio/workspace/run") {
     return RATE_LIMITS.studioWorkspaceRun;
+  }
+
+  // input() interativo manda uma linha por request: não pode cair no
+  // balde genérico "studio" de 20/min.
+  if (endpoint === "/api/studio/workspace/run/stdin") {
+    return RATE_LIMITS.studioWorkspaceStdin;
   }
 
   const normalizedEndpoint = endpoint.replace(/^\/api\//, "").split("/")[0];

@@ -10,7 +10,7 @@ Todas as rotas abaixo são implementadas como Route Handlers do Next em `app/api
 
 ### `POST /api/chat`
 
-Proxy server-side para chat com streaming. Modelos OpenAI usam a `Responses API`; `deepseek-v4-pro` usa o adapter DeepSeek e `gemini-3.7-flash` usa a Interactions API, ambos apenas no chat padrão streaming.
+Proxy server-side para chat com streaming. Modelos OpenAI usam a `Responses API`; `deepseek-v4-pro` usa o adapter DeepSeek e `gemini-3.8-flash` usa a Interactions API, ambos apenas no chat padrão streaming.
 
 **Arquivo:** `app/api/chat/route.ts`
 
@@ -62,7 +62,9 @@ Ferramentas injetadas pelo backend:
 
 Quando `model="deepseek-v4-pro"`, a rota aceita somente `responseMode="default"` com `stream=true`, exige `DEEPSEEK_API_KEY` e usa `fresh_web_context` como tool local. Essa tool consulta a OpenAI com `web_search_preview` quando o DeepSeek pede contexto fresco, mas Documento, Deepsearch e Quiz não usam o provider DeepSeek.
 
-Quando `model="gemini-3.7-flash"`, a rota aceita somente `responseMode="default"` com `stream=true`, exige `GEMINI_API_KEY` e chama a Interactions API com `store=false`, Google Search, URL Context e `thinking_summaries="auto"`. Os níveis aceitos são `low`, `medium` e `high`; Documento, Deepsearch e Quiz permanecem nos fluxos OpenAI.
+Quando `model="gpt-6-astra"`, a rota força `reasoning.effort="medium"` e `verbosity="medium"`, inclusive quando o cliente tenta enviar outro valor ou omite os campos.
+
+Quando `model="gemini-3.8-flash"`, a rota aceita somente `responseMode="default"` com `stream=true`, exige `GEMINI_API_KEY` e chama a Interactions API com `store=false`, Google Search, URL Context e `thinking_summaries="auto"`. Os níveis aceitos são `low`, `medium` e `high`; Documento, Deepsearch e Quiz permanecem nos fluxos OpenAI.
 
 Em `responseMode="quiz"`, as tools são removidas e o backend força:
 
@@ -179,7 +181,7 @@ Todas as rotas exigem a sessão do app **e** (exceto `status`/`unlock`) o token 
 | `folder` | POST | `{ path }` → cria pasta vazia (pais incluídos); `409 studio_workspace_already_exists` se ocupado |
 | `rename` | POST | `{ from, to }` dentro da raiz |
 | `run` | POST | `{ filePath }` → stream SSE de `StudioWorkspaceRunEvent`; evento terminal `status` sempre presente; um run por vez (`409 studio_workspace_run_busy`); rate limit 30 RPM |
-| `run/stdin` | POST | `{ data }` (texto ≤ 8 KiB, com `\n` final) → escreve no stdin do run ativo; eco volta no SSE como `console` nível `command`; `409 studio_workspace_run_not_active` sem run |
+| `run/stdin` | POST | `{ data }` (texto ≤ 8 KiB, com `\n` final) → escreve no stdin do run ativo; eco volta no SSE como `console` nível `command`; `409 studio_workspace_run_not_active` sem run; rate limit próprio de 240/min (`RATE_LIMIT_STUDIO_WORKSPACE_STDIN_RPM`), separado do balde `studio` de 20/min |
 | `stop` | POST | `systemctl stop` da unit transient do run ativo |
 | `save` | POST | `{ name }` → grava `archive/<slug>.zip` e responde o zip como download |
 | `archive` | GET | Lista `{ slug, savedAt, sizeBytes }` |
@@ -195,7 +197,7 @@ Todas as rotas exigem a sessão do app **e** (exceto `status`/`unlock`) o token 
 | `notebook/interrupt` | POST | SIGINT na unit do kernel (KeyboardInterrupt na célula em curso) |
 | `notebook/shutdown` | POST | Encerra o kernel via protocolo Jupyter, com stop forçado da unit após 5 s (idempotente; `{ closed }`) |
 
-Limites e códigos: paths ≤ 320 chars com allowlist de caracteres e validação por `realpath` (`400 studio_workspace_invalid_path`); extração rejeita zip-slip, symlinks, > 2 000 entries ou > 200 MB (`400 studio_workspace_zip_invalid`, `413 studio_workspace_too_large`); token ausente/expirado responde `401 studio_workspace_locked` — o cliente reabre o modal de senha e repete a ação pendente após novo unlock. Console do run com orçamento de 2 000 eventos / 512 KiB (entry ≤ 16 KiB) e truncamento avisado; timeout do run em `STUDIO_RUN_TIMEOUT_MS` (default 120 s) com `RuntimeMaxSec` de backstop na unit. Terminal: uma sessão bash por vez na mesma jail do runner (unit `gaucho-studio-term-*`), idle-kill após 30 min sem input do usuário e `RuntimeMaxSec=8h` de backstop; `exit` no SSE informa `reason` (`exited`/`closed`/`idle`). Notebook: um kernel ipykernel por vez na mesma jail (unit `gaucho-studio-kernel-*`, `MemoryMax=2G`, connection file `.gaucho-kernel-*.json` no workspace, órfãos varridos no próximo spawn), idle-kill após 30 min sem execução e `RuntimeMaxSec=8h`; `kernel_exit` informa `reason` (`closed`/`idle`/`died`); mimes de saída em ordem de preferência `image/png`, `image/jpeg`, `image/svg+xml`, `text/html`, `text/latex`, `text/markdown`, `text/plain`, com cap de 2 MB por mime (texto truncado com aviso, imagem descartada) — HTML/SVG são sanitizados no client (DOMPurify, sem `<style>`) antes do render. O assist (`POST /api/studio/assist`) aceita `cell: { intent: "fix"|"generate", source, error }` para o modo célula do notebook: instrução dedicada que responde um único bloco ```python com o conteúdo completo da célula.
+A jail (runner, terminal e kernel) só recebe `STUDIO_OPENAI_API_KEY` como `OPENAI_API_KEY`, nunca a chave principal do serviço; sem a variável, nenhuma chave é injetada. Limites e códigos: paths ≤ 320 chars com allowlist de caracteres, validação por `realpath` dos ancestrais e rejeição de symlink no último componente, com leitura/escrita via `O_NOFOLLOW` (`400 studio_workspace_invalid_path`); extração rejeita zip-slip, symlinks, > 2 000 entries ou > 200 MB — o orçamento é conferido pelos tamanhos declarados nos cabeçalhos antes de inflar qualquer entrada, e de novo pelo tamanho real durante a escrita (`400 studio_workspace_zip_invalid`, `413 studio_workspace_too_large`); token ausente/expirado responde `401 studio_workspace_locked` — o cliente reabre o modal de senha e repete a ação pendente após novo unlock. Console do run com orçamento de 2 000 eventos / 512 KiB (entry ≤ 16 KiB) e truncamento avisado; timeout do run em `STUDIO_RUN_TIMEOUT_MS` (default 120 s) com `RuntimeMaxSec` de backstop na unit. Terminal: uma sessão bash por vez na mesma jail do runner (unit `gaucho-studio-term-*`), idle-kill após 30 min sem input do usuário e `RuntimeMaxSec=8h` de backstop; `exit` no SSE informa `reason` (`exited`/`closed`/`idle`). Notebook: um kernel ipykernel por vez na mesma jail (unit `gaucho-studio-kernel-*`, `MemoryMax=2G`, connection file `.gaucho-kernel-*.json` no workspace, órfãos varridos no próximo spawn), idle-kill após 30 min sem execução e `RuntimeMaxSec=8h`; `kernel_exit` informa `reason` (`closed`/`idle`/`died`); mimes de saída em ordem de preferência `image/png`, `image/jpeg`, `image/svg+xml`, `text/html`, `text/latex`, `text/markdown`, `text/plain`, com cap de 2 MB por mime (texto truncado com aviso, imagem descartada) — HTML/SVG são sanitizados no client (DOMPurify, sem `<style>`) antes do render. O assist (`POST /api/studio/assist`) aceita `cell: { intent: "fix"|"generate", source, error }` para o modo célula do notebook: instrução dedicada que responde um único bloco ```python com o conteúdo completo da célula.
 
 ## Auth
 
@@ -320,7 +322,7 @@ Notas do PDF:
 | `POST` | `/api/soundcase/realtime-call` | Handshake SDP autenticado com voz/direção persistidas |
 | `POST` | `/api/soundcase/worker/run-next` | Runner interno protegido por bearer dedicado |
 
-O limite editorial inicial é 90 minutos estimados. O default de saída é MP3; FLAC e WAV são overrides. A chegada do arquivo final não interrompe Realtime: a troca de fonte é sempre explícita no player.
+O limite editorial inicial é 90 minutos estimados. O default de saída é MP3; FLAC e WAV são overrides. Cada chunk FLAC é validado por magic `fLaC` + `ffprobe`; como o FLAC do `gpt-4o-mini-tts` vem sem `total_samples` no STREAMINFO (container devolve `N/A`), a duração cai para o último packet (`pts_time + duration_time`) antes de qualquer rejeição. Erros do worker chegam ao cliente só como `code` + `diagnosticId`; o erro real (e a `cause` do chunk) fica no journal/log do serviço com o mesmo `diagnosticId`. O worker é disparado por `chatgpt-soundcase.path` (mudança em `data/soundcase/jobs.json`) e `chatgpt-soundcase.timer` (recovery a cada 1 min). A chegada do arquivo final não interrompe Realtime: a troca de fonte é sempre explícita no player.
 
 ## Google Calendar e Notas Locais
 
@@ -330,7 +332,7 @@ Todas as rotas abaixo são privadas quando `AUTH_ENABLED=true`. O browser nunca 
 
 ## Pulse
 
-Todas as rotas de Pulse são privadas quando `AUTH_ENABLED=true`, exceto o runner interno `/api/pulse/run-due`, protegido por `PULSE_RUNNER_TOKEN` quando configurado e usado pelo timer local do servidor.
+Todas as rotas de Pulse são privadas quando `AUTH_ENABLED=true`, exceto o runner interno `/api/pulse/run-due`, que exige `Authorization: Bearer <PULSE_RUNNER_TOKEN>` (comparação em tempo constante), responde `503` se o token não estiver configurado, passa pelo rate limit do proxy e é usado pelo timer local do servidor. Não há fallback por hostname.
 
 Os resultados do Pulse e as mensagens do chat reutilizam o mesmo mini-player. Ele abre no TTS estável via `/api/tts` (`gpt-4o-mini-tts`) e permite selecionar manualmente o Realtime experimental via `/api/realtime/tts-call`; nenhuma engine inicia apenas ao abrir o player.
 

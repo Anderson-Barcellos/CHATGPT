@@ -117,6 +117,36 @@ describe("SoundCase audio pipeline", () => {
     ))).rejects.toMatchObject({ code: "ENOENT" });
   });
 
+  it("falls back to packet timing when the FLAC container reports no duration", async () => {
+    const calls: string[][] = [];
+    const execFile: SoundCaseExecFile = vi.fn(async (_file, args) => {
+      calls.push(args);
+      if (args.includes("packet=pts_time,duration_time")) {
+        return { stdout: "0.000000,0.170667\n0.170667,0.170667\n2.208000,0.010667\n", stderr: "" };
+      }
+      return {
+        stdout: JSON.stringify({ streams: [{ codec_name: "flac", duration: "N/A" }], format: { duration: "N/A" } }),
+        stderr: "",
+      };
+    });
+
+    const duration = await probeSoundCaseAudio("/tmp/not-used", "flac", execFile);
+
+    expect(duration).toBeCloseTo(2.218667, 5);
+    expect(calls).toHaveLength(2);
+    expect(calls[1]).toContain("packet=pts_time,duration_time");
+  });
+
+  it("rejects when neither the container nor the packets carry a duration", async () => {
+    const execFile: SoundCaseExecFile = async (_file, args) => (
+      args.includes("packet=pts_time,duration_time")
+        ? { stdout: "", stderr: "" }
+        : { stdout: JSON.stringify({ streams: [{ codec_name: "flac" }] }), stderr: "" }
+    );
+    await expect(probeSoundCaseAudio("/tmp/not-used", "flac", execFile))
+      .rejects.toThrow("soundcase_audio_probe_mismatch");
+  });
+
   it("rejects a wrong codec or non-positive duration", async () => {
     const execFile: SoundCaseExecFile = async () => ({
       stdout: JSON.stringify({ streams: [{ codec_name: "flac", duration: "0" }] }), stderr: "",

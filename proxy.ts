@@ -14,6 +14,8 @@ const RATE_LIMITED_PATHS = [
   "/api/integrations/google/auth/start",
   "/api/calendar/events",
   "/api/workspace-notes",
+  "/api/pulse/run-due",
+  "/api/soundcase/worker/run-next",
 ];
 const PUBLIC_PATHS = [
   "/login",

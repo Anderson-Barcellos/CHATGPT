@@ -1,5 +1,6 @@
 import { spawn as nodeSpawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { buildJailParentEnv, hasJailOpenAIKey } from "@/lib/server/studioJailEnv";
 import { readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { StringDecoder } from "node:string_decoder";
@@ -26,9 +27,11 @@ const KERNEL_PYTHON = "/opt/studio-venv/bin/python";
 export function buildKernelCommand({
   unitId,
   connectionFileName,
+  env = process.env,
 }: {
   unitId: string;
   connectionFileName: string;
+  env?: NodeJS.ProcessEnv;
 }): { command: string; args: string[] } {
   return {
     command: "systemd-run",
@@ -49,9 +52,9 @@ export function buildKernelCommand({
       `--setenv=HOME=${KERNEL_WORKSPACE}`,
       "--setenv=LANG=C.UTF-8",
       `--setenv=PATH=${KERNEL_PATH_ENV}`,
-      // Sem "=valor": o systemd-run herda a chave do próprio ambiente e o
-      // valor nunca aparece em argv/ps (mesma paridade do runner/terminal).
-      "--setenv=OPENAI_API_KEY",
+      // Sem "=valor": o systemd-run herda a chave do próprio ambiente (já
+      // trocada pela de escopo restrito) e o valor nunca aparece em argv/ps.
+      ...(hasJailOpenAIKey(env) ? ["--setenv=OPENAI_API_KEY"] : []),
       "--collect",
       "--quiet",
       KERNEL_PYTHON,
@@ -211,7 +214,7 @@ export class StudioNotebookKernelManager {
       let bridge: KernelChildProcess;
       try {
         const kernel = buildKernelCommand({ unitId, connectionFileName });
-        this.spawnImpl(kernel.command, kernel.args, { env: { ...process.env } });
+        this.spawnImpl(kernel.command, kernel.args, { env: buildJailParentEnv(process.env) });
         const bridgeCommand = buildBridgeCommand({ connectionFileName });
         bridge = this.spawnImpl(bridgeCommand.command, bridgeCommand.args, {
           env: { ...process.env },

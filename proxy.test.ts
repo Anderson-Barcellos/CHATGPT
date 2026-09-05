@@ -53,6 +53,11 @@ describe("proxy rate limit routing", () => {
     expect(shouldRateLimitPath("/api/studio/workspace/tree")).toBe(false);
   });
 
+  it("rate limits the public runner endpoints", () => {
+    expect(shouldRateLimitPath("/api/pulse/run-due")).toBe(true);
+    expect(shouldRateLimitPath("/api/soundcase/worker/run-next")).toBe(true);
+  });
+
   it("applies the app content security policy to every route", () => {
     const csp = getSecurityContentSecurityPolicy();
 

@@ -99,15 +99,38 @@ export async function probeSoundCaseAudio(
     throw new Error("soundcase_audio_probe_invalid");
   }
   const stream = parsed.streams?.[0];
-  const duration = Number(stream?.duration ?? parsed.format?.duration);
-  if (
-    stream?.codec_name !== FORMAT_CONFIG[expectedFormat].codec ||
-    !Number.isFinite(duration) ||
-    duration <= 0
-  ) {
+  if (stream?.codec_name !== FORMAT_CONFIG[expectedFormat].codec) {
+    throw new Error("soundcase_audio_probe_mismatch");
+  }
+  let duration = Number(stream?.duration ?? parsed.format?.duration);
+  if (!Number.isFinite(duration) || duration <= 0) {
+    // O FLAC do gpt-4o-mini-tts vem sem total_samples no STREAMINFO, então
+    // stream/format devolvem "N/A". A duração real sai do último packet.
+    duration = await probePacketDuration(filePath, execFile);
+  }
+  if (!Number.isFinite(duration) || duration <= 0) {
     throw new Error("soundcase_audio_probe_mismatch");
   }
   return duration;
+}
+
+async function probePacketDuration(
+  filePath: string,
+  execFile: SoundCaseExecFile
+): Promise<number> {
+  const { stdout } = await execFile(FFPROBE_PATH, [
+    "-v", "error", "-select_streams", "a:0",
+    "-show_entries", "packet=pts_time,duration_time",
+    "-of", "csv=p=0", filePath,
+  ]);
+  let end = 0;
+  for (const line of stdout.split("\n")) {
+    const [pts, packetDuration] = line.trim().split(",").map(Number);
+    if (!Number.isFinite(pts)) continue;
+    const packetEnd = pts + (Number.isFinite(packetDuration) ? packetDuration : 0);
+    if (packetEnd > end) end = packetEnd;
+  }
+  return end;
 }
 
 export async function synthesizeSoundCaseChunk(input: {

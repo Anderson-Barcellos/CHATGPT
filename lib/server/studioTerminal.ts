@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { buildJailParentEnv, hasJailOpenAIKey } from "@/lib/server/studioJailEnv";
 import type {
   StudioTerminalEvent,
   StudioTerminalExitReason,
@@ -14,7 +15,13 @@ const TERMINAL_UNIT_PREFIX = "gaucho-studio-term-";
 const TERMINAL_WORKSPACE = "/workspace";
 const TERMINAL_PATH_ENV = "/opt/studio-venv/bin:/usr/local/bin:/usr/bin:/bin";
 
-export function buildTerminalCommand({ unitId }: { unitId: string }): {
+export function buildTerminalCommand({
+  unitId,
+  env = process.env,
+}: {
+  unitId: string;
+  env?: NodeJS.ProcessEnv;
+}): {
   command: string;
   args: string[];
 } {
@@ -37,9 +44,9 @@ export function buildTerminalCommand({ unitId }: { unitId: string }): {
       "--setenv=LANG=C.UTF-8",
       `--setenv=PATH=${TERMINAL_PATH_ENV}`,
       "--setenv=TERM=xterm-256color",
-      // Sem "=valor": o systemd-run herda a chave do próprio ambiente e o
-      // valor nunca aparece em argv/ps (mesma paridade do runner).
-      "--setenv=OPENAI_API_KEY",
+      // Sem "=valor": o systemd-run herda a chave do próprio ambiente (já
+      // trocada pela de escopo restrito) e o valor nunca aparece em argv/ps.
+      ...(hasJailOpenAIKey(env) ? ["--setenv=OPENAI_API_KEY"] : []),
       "--collect",
       "--pty",
       "--quiet",
@@ -81,7 +88,7 @@ function defaultTerminalSpawn({
     cols,
     rows,
     cwd: "/",
-    env: { ...process.env },
+    env: buildJailParentEnv(process.env) as Record<string, string>,
   });
 }
 

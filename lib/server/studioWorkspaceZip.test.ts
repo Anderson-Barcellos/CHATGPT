@@ -136,6 +136,19 @@ describe("extractWorkspaceArchive", () => {
     expect(result.ok).toBe(false);
   });
 
+  it("rejects an oversized budget by declared sizes before writing any file", async () => {
+    const zip = new AdmZip();
+    zip.addFile("primeiro.bin", Buffer.alloc(100, 65));
+    zip.addFile("segundo.bin", Buffer.alloc(100, 66));
+
+    const result = await extractWorkspaceArchive(zip.toBuffer(), staging, {
+      maxExtractedBytes: 150,
+    });
+
+    expect(result).toEqual({ ok: false, reason: "zip_too_large" });
+    expect(await readdir(staging)).toEqual([]);
+  });
+
   it("rejects archives that extract beyond the size budget", async () => {
     const zip = new AdmZip();
     zip.addFile("gigante.bin", Buffer.alloc(4 * 1024 * 1024, 65));

@@ -1,3 +1,16 @@
+### 2026-09-03 - GPT-6 Astra controlado e Gemini 3.8 Flash
+
+Context:
+Atualização cirúrgica do catálogo do chat padrão com o novo `gpt-6-astra` e migração do provider Gemini para `gemini-3.8-flash`.
+
+Details:
+- `gpt-6-astra` está selecionável via Responses API com reasoning `medium` e verbosity `medium` fixos no store, UI e backend; payloads manuais não conseguem elevar esses valores.
+- `gemini-3.8-flash` substitui o 3.7 no catálogo e adapter Interactions API, preservando thinking `low|medium|high`, ferramentas nativas e streaming SSE.
+- O ID persistido `gemini-3.7-flash` migra para `gemini-3.8-flash`; Luna continua sendo o default e Pulse/Studio não foram alterados.
+
+Notes:
+Validação da rodada: 52 testes focados, 145 arquivos/745 testes, TypeScript, lint, build prefixada em `/chat`, `git diff --check`, smoke Chrome autenticado sem geração paga e health local/público.
+
 ### 2026-08-20 - Adicionado Gemini 3.7 Flash no catalogo do chat (substituindo 3.6)
 
 Context:
@@ -36,7 +49,7 @@ Principais areas:
 
 ## Estado Atual Do Projeto
 
-- Modelo padrao atual do chat: `gpt-5.6-luna` com reasoning `low` e modo `standard`; `gpt-5.4-mini` permanece oculto para fluxos internos; `gemini-3.7-flash` e selecionavel como provider separado no chat padrao
+- Modelo padrao atual do chat: `gpt-5.6-luna` com reasoning `low` e modo `standard`; `gpt-6-astra` é selecionável com reasoning/verbosity `medium` fixos; `gpt-5.4-mini` permanece oculto para fluxos internos; `gemini-3.8-flash` e selecionavel como provider separado no chat padrao
 - Shell ativo: `GauchoChatShellV2` / `WorkspaceFrameV2` — redesign completo (S0-S12)
 - Página separada `/studio`: `GauchoStudioShell` Python-only sobre o workspace do servidor (sandbox systemd + step-up auth); console interativo com stdin (`run/stdin`, eco `command` no SSE, flush parcial de prompt em 150 ms); painéis redimensionáveis (`useStudioLayout`, `gaucho-studio:layout:v1`); preview de markdown em arquivos `.md` (`Código/Dividido/Preview`, `StudioMarkdownPreview` reusando o pipeline do chat, desde 2026-08-13); terminal PTY na jail (bash via `node-pty` + `systemd-run --pty`, xterm.js em view alternável do workbench com Ctrl+`, 1 sessão com idle-kill 30 min e reanexo com replay, desde 2026-08-13); notebook `.ipynb` (view de células no lugar do editor, ipykernel real na jail + helper `jupyter_client` fora dela, nbformat v4 com outputs texto+PNG persistidos, FIM ciente das células anteriores, 1 kernel com idle-kill 30 min, desde 2026-08-13); localStorage guarda só prefs/assistente (snapshot v2); modo Local TS/JS removido em 2026-08-12
 - Sistema visual padrão: Atmosphere Glass — Midnight Glass no dark e Daybreak no light
@@ -52,7 +65,7 @@ Principais areas:
 - Chips do header conectados ao estado real (model, reasoning, responseMode)
 - Aba Persona mostra prévia somente-leitura do prompt principal (`BASE_SYSTEM_PROMPT` + `FIXED_PERSONA_PROMPT`) e edita `contextAboutUser`, `customSystemInstructions` e `responsePreferences`
 - Memory tools (`remember_memory`, `search_memory`) ativas apenas em `responseMode="default"`; document/deepsearch/quiz seguem sem essas tools
-- Gemini 3.7 Flash usa Interactions API stateless com thinking `low|medium|high`, Google Search e URL Context; Documento/Deepsearch/Quiz continuam nos fluxos OpenAI
+- Gemini 3.8 Flash usa Interactions API stateless com thinking `low|medium|high`, Google Search e URL Context; Documento/Deepsearch/Quiz continuam nos fluxos OpenAI
 - Deepsearch/Documento devem seguir o protocolo de pesquisa profunda com neuro-storytelling estruturado: plano validado quando o pedido for aberto, fontes autoritativas, citacoes inline e prosa narrativa clara, sem tom gauchesco em conteudo de pesquisa
 - `image_generation` ativa apenas no modo default; `web_search_preview` entra em modos não-quiz; `code_interpreter` é opt-in
 - Breakpoints: `md=768`, `lg=1024 (sidebar)`, `xl=1280 (painel contextual)`
@@ -1428,3 +1441,66 @@ O Studio mobile foi ocultado no ProductNav abaixo de 768 px em `9d3fe30`. L1 foi
 
 Notes:
 Validação final: 145 arquivos/740 testes, TypeScript, lint com zero warnings, auditoria de produção com zero vulnerabilidades, `git diff --check` e build Next verdes; permanece somente o warning conhecido de NFT tracing do workspace Studio. Smoke isolado em Google Chrome passou 7/7: Chat, SoundCase e Studio em 390x844/1024x844, sem overflow, pageerror ou console error; Studio oculto no mobile e visível no desktop; PDF.js 6 extraiu texto sentinela de PDF em memória sem enviar mensagem nem persistir dados. Deploy: `chatgpt.service` reiniciado, health local `healthy`, público 200, units `chatgpt.service`, `chatgpt-soundcase.path` e `chatgpt-soundcase.timer` ativas, Apache `Syntax OK`. As três worktrees e cinco branches auxiliares foram removidas somente após prova de limpeza/ancestralidade; resta apenas `/root/CHATGPT`. O primeiro push levou `main` até `f00c5cb` e a divergência ficou `0 0`. Anders aprovou o fechamento em 2026-09-03 às 15:43 -03; a entrega Repository Closeout e a L1 integrada estão fechadas, sem nova FRENTE ativa.
+
+### 2026-09-04 22:58 - Auditoria geral e fechamento de H1 (runner Pulse)
+
+Context:
+Anders pediu revisão geral (bugs, layout, drift de docs). Cinco varreduras somente-leitura viraram o MAPA candidato em `BACKLOG.md` (FRENTES H/B/P/D). O único achado confirmado ao vivo foi corrigido na hora: `/api/pulse/run-due` respondia 200 a POST externo sem token porque o fallback por hostname via `nextUrl` sempre parecia local atrás do Apache.
+
+Details:
+- `app/api/pulse/run-due/route.ts`: bearer obrigatório com `timingSafeEqual`, 503 sem `PULSE_RUNNER_TOKEN`, fallback por hostname removido; `route.test.ts` novo (4 casos).
+- `proxy.ts`: `run-due` e `soundcase/worker/run-next` entram em `RATE_LIMITED_PATHS`.
+- `.env.production` ganhou `PULSE_RUNNER_TOKEN`; `docs/API.md` e `docs/INFRASTRUCTURE.md` alinhados.
+- Validação: testes focados 16/16, `tsc`, lint nos arquivos tocados, `git diff --check`, build, restart, health local/público 200, POST externo sem token → 401 (também com `Host: localhost`), timer `chatgpt-pulse.service` executou com sucesso após o restart.
+
+Notes:
+ENTREGA H1 fechada por Anders em 2026-09-04. Nenhuma FRENTE ativa; H2 (symlink do Studio) é a recomendação seguinte. Nada commitado: o lote Astra/Gemini 3.8 de 2026-09-03 segue no working tree junto com esta entrega.
+
+### 2026-09-04 23:30 - H2: symlink no último componente do workspace do Studio
+
+Context:
+FRENTE H (Hardening) ativada por Anders. `resolveWorkspacePath` só canonicalizava o `dirname`; `stat`/`readFile`/`writeFile`/`chown` seguiam symlink no componente final e o serviço roda como root — um `ln -s` criado na jail virava leitura/escrita arbitrária no host via `GET/PUT /api/studio/workspace/file`.
+
+Details:
+- `lib/server/studioWorkspaceFs.ts`: `lstat` do componente final em `resolveWorkspacePath` (symlink → `invalid_path`, mesmo apontando pra dentro); helpers `readFileNoFollow`/`writeFileNoFollow` com `O_NOFOLLOW` substituem `readFile`/`writeFile` em leitura, escrita e amostra da tree.
+- `lib/server/studioWorkspaceFs.test.ts`: 4 testes novos (resolve, read, write, delete/rename via symlink).
+- `docs/API.md`: limite documentado.
+- Validação: 41 testes do Studio, `tsc`, lint, `git diff --check`, build, restart, health local/público 200. Smoke real: symlink criado como usuário `studio` em `/root/studio-projects/active` apontando pra arquivo em `/root` → GET 400, PUT 400, canário intacto; arquivo normal PUT/GET 200.
+
+Notes:
+ENTREGA H2 `pronta para revisão`. Restam H3 (chave OpenAI na jail, decisão de Anders), H4 (zip bomb) e H5 (miúdos). Nada commitado.
+
+### 2026-09-04 23:55 - B7 SoundCase: probe FLAC sem duração no container
+
+Context: "geração silenciosa" falhava em 100% dos chunks com `soundcase_chunk_permanent_failure`. Causa raiz: o FLAC do `gpt-4o-mini-tts` vem sem `total_samples` no STREAMINFO, o `ffprobe` de stream/format devolve `N/A` e o probe classificava como `probe_mismatch` (não-retryable). O mock do teste (`duration: "1.5"`) mascarava.
+Details:
+- `lib/server/soundcase/audio.ts`: codec validado primeiro; se a duração do container não for positiva, `probePacketDuration` lê `packet=pts_time,duration_time` em csv e usa o maior `pts + duration`.
+- `lib/server/soundcase/worker.ts`: `ChunkPermanentError(cause)`; `safeError` agora loga `[soundcase] generation failed` com `diagnosticId`, `code`, erro e causa (antes o `diagnosticId` era gerado e ninguém logava nada).
+- Testes: fallback por packets, rejeição quando nem packets têm duração, log com `diagnosticId` no worker. Suíte 757/757, `tsc`, lint, build, restart, health local/público 200.
+- Validação real: 1 chamada TTS (3.000 s, container N/A, fallback = decode ffmpeg); `POST .../791709a7/resume` → `queued`, `chatgpt-soundcase.path` disparou o worker e os chunks passaram a completar.
+- `docs/API.md`: probe, fallback, log por `diagnosticId` e gatilhos do worker documentados.
+Notes:
+ENTREGA B7 `pronta para revisão`. A versão `63e1bbbf` (mesmo texto) ficou `failed` para Anders decidir. Já existiam `resume` por versão e worker agendado (path + timer); a nota anterior do BACKLOG estava errada nesses dois pontos. Nada commitado.
+
+### 2026-09-05 00:10 - H4 e H5: zip bomb e miúdos do hardening
+
+Context: fim da FRENTE H após B7 fechada por Anders. H3 (chave OpenAI na jail) segue aguardando decisão dele.
+Details:
+- H4 `lib/server/studioWorkspaceZip.ts`: soma `entry.header.size` na passada de validação e recusa `zip_too_large` antes de inflar/escrever; antes o primeiro arquivo já ia pro disco. adm-zip 0.6.0 limita a inflação ao tamanho declarado, e a barreira pelo tamanho real ficou como segunda linha. Teste: staging vazio após rejeição.
+- H5 `app/api/memories/[id]/route.ts`: `content`/`isActive`/`priority` validados com 400 antes do storage; `lib/security/rateLimit.ts`: `run/stdin` com balde próprio de 240/min (`RATE_LIMIT_STUDIO_WORKSPACE_STDIN_RPM`). Testes novos em `route.test.ts` (memories) e `rateLimit.test.ts`.
+- Docs: API.md (zip, stdin), INFRASTRUCTURE.md (env nova). BACKLOG: H4/H5 `pronta para revisão`; P5 registrada (SoundCase três vezes no topo do chat; desejado um botão no rail acima do Studio).
+- Validação: 765/765, `tsc`, lint, build, restart, health local/público 200; smoke `PUT /api/memories/<id>` com `priority: "alta"` → 400 e dado intacto.
+Notes:
+Nada commitado. Restam na FRENTE H apenas a decisão H3.
+
+### 2026-09-05 00:30 - H3: chave OpenAI de escopo restrito na jail do Studio
+
+Context: Anders fechou H4/H5 e decidiu H3: a jail usa a chave com limite de gasto (a universal do fish), não a principal do serviço.
+Details:
+- Novo `lib/server/studioJailEnv.ts`: `buildJailParentEnv` copia o env, apaga `OPENAI_API_KEY` e `STUDIO_OPENAI_API_KEY`, e recoloca `OPENAI_API_KEY` só com a de escopo; `hasJailOpenAIKey`.
+- `studioWorkspaceRunner.ts`, `studioTerminal.ts`, `studioNotebookKernel.ts`: `--setenv=OPENAI_API_KEY` (sem valor, como antes) só entra quando a chave de escopo existe; o spawn do systemd-run/pty recebe o env trocado. Builders aceitam `env` para teste.
+- `.env.production`: `STUDIO_OPENAI_API_KEY` adicionada (0600). Docs: INFRASTRUCTURE.md (env), API.md (contrato da jail). BACKLOG: H3 `pronta para revisão`.
+- Validação: 770/770, `tsc`, lint, build, restart, health local/público 200. Smoke real via `PUT file` + `run`: script na jail imprimiu o hash sha256 da chave que enxerga = hash da `STUDIO_OPENAI_API_KEY`, diferente do hash da principal. Arquivo de smoke removido.
+Notes:
+FRENTE H: H1, H2, H4, H5 fechadas; H3 `pronta para revisão`. Nada commitado. Sessões do terminal/kernel abertas antes do restart já morreram com o serviço; novas nascem com a chave de escopo.
+

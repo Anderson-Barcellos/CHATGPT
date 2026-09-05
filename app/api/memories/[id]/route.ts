@@ -35,8 +35,33 @@ export async function PUT(
       );
     }
 
+    if (
+      body.content !== undefined &&
+      (typeof body.content !== "string" || !body.content.trim())
+    ) {
+      return NextResponse.json(
+        { error: "content must be a non-empty string" },
+        { status: 400 }
+      );
+    }
+    if (body.isActive !== undefined && typeof body.isActive !== "boolean") {
+      return NextResponse.json(
+        { error: "isActive must be a boolean" },
+        { status: 400 }
+      );
+    }
+    if (
+      body.priority !== undefined &&
+      (typeof body.priority !== "number" || !Number.isFinite(body.priority))
+    ) {
+      return NextResponse.json(
+        { error: "priority must be a finite number" },
+        { status: 400 }
+      );
+    }
+
     const updates = {
-      ...(body.content !== undefined && { content: body.content }),
+      ...(body.content !== undefined && { content: body.content.trim() }),
       ...(body.category !== undefined && { category: body.category }),
       ...(body.isActive !== undefined && { isActive: body.isActive }),
       ...(body.priority !== undefined && { priority: body.priority }),

@@ -174,6 +174,37 @@ describe("SoundCase resumable worker", { timeout: 15_000 }, () => {
     expect(speech).toHaveBeenCalledTimes(1);
   });
 
+  it("logs the underlying error with the public diagnosticId on permanent failure", async () => {
+    const project = await createSoundCaseProject({ text: "Resposta inválida." });
+    const created = await createSoundCaseVersion(project.id, settings);
+    const client = {
+      audio: { speech: { create: vi.fn().mockResolvedValue(new Response(Buffer.from("not-flac"))) } },
+      responses: { create: vi.fn() },
+    } as unknown as OpenAI;
+    const logError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    try {
+      const result = await runNextSoundCaseJob({
+        workerId: "worker-log", openai: client, execFile: fakeExec(),
+        sleep: async () => undefined,
+      });
+      const version = await getSoundCaseVersion(project.id, created.version.id);
+
+      expect(result.status).toBe("failed");
+      expect(version.error?.diagnosticId).toBeTruthy();
+      expect(logError).toHaveBeenCalledWith(
+        expect.stringContaining("[soundcase]"),
+        expect.objectContaining({
+          diagnosticId: version.error?.diagnosticId,
+          code: "soundcase_chunk_permanent_failure",
+          cause: expect.stringContaining("soundcase_chunk_flac_invalid"),
+        })
+      );
+    } finally {
+      logError.mockRestore();
+    }
+  });
+
   it("stops publication and does not open a third slot after cancellation", async () => {
     const project = await createSoundCaseProject({ text: "Um.\n\nDois.\n\nTrês." });
     const created = await createSoundCaseVersion(project.id, settings);

@@ -4,7 +4,7 @@
 
 ## Visão Geral
 
-Gaucho Chat é um app Next.js com App Router que roda como BFF local para providers de IA. O fluxo principal usa a OpenAI `Responses API`; o chat padrão também pode usar DeepSeek V4 Pro ou Gemini 3.7 Flash via adapters server-side. O cliente React conversa apenas com rotas do próprio app; essas rotas cuidam de auth, rate limit, persistência local e chamadas server-side.
+Gaucho Chat é um app Next.js com App Router que roda como BFF local para providers de IA. O fluxo principal usa a OpenAI `Responses API`; o chat padrão também pode usar DeepSeek V4 Pro ou Gemini 3.8 Flash via adapters server-side. O cliente React conversa apenas com rotas do próprio app; essas rotas cuidam de auth, rate limit, persistência local e chamadas server-side.
 
 ```text
 Browser/PWA
@@ -85,7 +85,7 @@ Na harmonização mais recente, o contrato mobile ficou ainda mais explícito no
 1. O composer chama `useChat`.
 2. `useChat` monta payload com mensagens, anexos, persona, modelo e opções.
 3. `POST /api/chat` valida auth, body e modelo.
-4. A rota chama `openai.responses.create()` com streaming quando aplicável, ou os adapters dedicados para `deepseek-v4-pro` e `gemini-3.7-flash`.
+4. A rota chama `openai.responses.create()` com streaming quando aplicável, ou os adapters dedicados para `deepseek-v4-pro` e `gemini-3.8-flash`.
 5. Eventos SSE passam pelo reducer em `lib/chat/streamMachine.ts`.
 6. A mensagem do assistente é atualizada incrementalmente e persistida durante o stream.
 
@@ -102,9 +102,9 @@ Detalhes importantes:
 
 O adapter expõe uma tool local `fresh_web_context`. Quando o DeepSeek chama essa tool, o servidor faz uma chamada OpenAI curta com `web_search_preview` usando `DEEPSEEK_WEB_CONTEXT_MODEL` ou `gpt-5.6-luna`, injeta o resultado como mensagem de tool e continua um segundo turno DeepSeek sem expor chaves ao browser.
 
-### Gemini 3.7 Flash
+### Gemini 3.8 Flash
 
-`gemini-3.7-flash` é um provider separado para chat padrão streaming. `lib/server/geminiChat.ts` converte o histórico e imagens para turns da Interactions API, envia `store=false`, Google Search, URL Context e summaries de pensamento, e traduz o stream Gemini para o mesmo contrato SSE usado pelo reducer do chat.
+`gemini-3.8-flash` é um provider separado para chat padrão streaming. `lib/server/geminiChat.ts` converte o histórico e imagens para turns da Interactions API, envia `store=false`, Google Search, URL Context e summaries de pensamento, e traduz o stream Gemini para o mesmo contrato SSE usado pelo reducer do chat.
 
 O adapter exige `GEMINI_API_KEY`, aceita thinking `low`, `medium` e `high`, não envia os parâmetros depreciados `temperature`, `top_p` ou `top_k` e rejeita Documento, Deepsearch e Quiz. Esses modos continuam usando seus modelos OpenAI forçados.
 

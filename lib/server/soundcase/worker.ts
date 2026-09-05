@@ -74,8 +74,8 @@ class ChunkAttemptsExhaustedError extends Error {
 }
 
 class ChunkPermanentError extends Error {
-  constructor() {
-    super("soundcase_chunk_permanent_failure");
+  constructor(cause?: unknown) {
+    super("soundcase_chunk_permanent_failure", { cause });
   }
 }
 
@@ -151,14 +151,31 @@ function resolveEffectiveSettings(
   };
 }
 
+function describeError(error: unknown): string {
+  if (error instanceof Error) {
+    const status = "status" in error ? ` status=${String((error as { status?: unknown }).status)}` : "";
+    return `${error.name}: ${error.message}${status}`;
+  }
+  return String(error);
+}
+
 function safeError(error: unknown): SoundCasePublicError {
   const code = error instanceof Error && /^soundcase_[a-z0-9_]+$/u.test(error.message)
     ? error.message
     : "soundcase_generation_interrupted";
+  const diagnosticId = crypto.randomUUID();
+  // O cliente só vê code + diagnosticId; o erro real fica no journal do serviço.
+  const cause = error instanceof Error && error.cause !== undefined ? error.cause : undefined;
+  console.error("[soundcase] generation failed", {
+    diagnosticId,
+    code,
+    error: describeError(error),
+    cause: cause === undefined ? undefined : describeError(cause),
+  });
   return {
     code,
     message: "A geração foi interrompida com segurança e poderá ser retomada.",
-    diagnosticId: crypto.randomUUID(),
+    diagnosticId,
   };
 }
 
@@ -338,7 +355,7 @@ export async function runNextSoundCaseJob(
             await state.mutate((guard) => updateSoundCaseChunk({
               ...guard, chunkId: chunk.id, status: "failed", errorCode: "soundcase_chunk_failed",
             }, { now: now() }));
-            if (!isRetryableChunkError(error)) throw new ChunkPermanentError();
+            if (!isRetryableChunkError(error)) throw new ChunkPermanentError(error);
             if (attempt < 3) await sleep(jitter(1_000 * 2 ** attempt));
           }
         }

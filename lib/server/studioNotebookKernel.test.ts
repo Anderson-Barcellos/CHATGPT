@@ -113,7 +113,10 @@ describe("buildKernelCommand", () => {
     expect(args).toContain(
       `--property=RuntimeMaxSec=${KERNEL_RUNTIME_MAX_SEC}`
     );
-    expect(args).toContain("--setenv=OPENAI_API_KEY");
+    expect(args).not.toContain("--setenv=OPENAI_API_KEY");
+    expect(
+      buildKernelCommand({ unitId: "u", connectionFileName: "c.json", env: { NODE_ENV: "test", STUDIO_OPENAI_API_KEY: "sk-jail" } }).args
+    ).toContain("--setenv=OPENAI_API_KEY");
     expect(args).not.toContain("--pty");
     expect(args).not.toContain("--wait");
     const launcherIndex = args.indexOf("ipykernel_launcher");

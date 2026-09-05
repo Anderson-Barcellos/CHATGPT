@@ -31,7 +31,7 @@ O `<Location /chat>` mantém `ProxyPassReverseCookiePath / /chat` escopado ao se
 Não transcreva segredos de `.env.production` ou `.env.local` em docs, issues ou commits.
 O nome público do app é `Gaucho Chat`; a descrição `Celer - Cliente IA Multi-Modal` na unit systemd é apenas um rótulo histórico interno.
 O repositório nao usa mais stack de deploy por Docker/Nginx; o runtime valido aqui e Apache + `chatgpt.service`.
-OpenAI, DeepSeek V4 Pro e Gemini 3.7 Flash são acessados apenas server-side; suas chaves não devem aparecer no cliente nem em logs.
+OpenAI, DeepSeek V4 Pro e Gemini 3.8 Flash são acessados apenas server-side; suas chaves não devem aparecer no cliente nem em logs.
 
 A fundação Memory V2 E1/E2 está instalada no código, mas não ativa em produção. Sem `MEMORY_V2_ENABLED=true`, JSON continua como autoridade exclusiva. Com a flag, SQLite passa a ser a autoridade exclusiva; não existe dual-write. O CLI de migração é dry-run por padrão, nenhum dado real foi migrado e qualquer cutover exige uma entrega operacional própria.
 
@@ -111,8 +111,9 @@ Obrigatórias em produção:
 | Variável | Propósito |
 |---|---|
 | `OPENAI_API_KEY` | Chave server-side da OpenAI |
+| `STUDIO_OPENAI_API_KEY` | Chave OpenAI de escopo restrito (limite de gasto próprio) que a jail do Studio recebe como `OPENAI_API_KEY` no runner, terminal e kernel; a chave principal nunca entra na jail. Sem ela, a jail fica sem chave alguma (`openai` dentro do Studio falha com erro de autenticação) |
 | `DEEPSEEK_API_KEY` | Chave server-side do DeepSeek V4 Pro para chat padrão e autocomplete FIM do Studio |
-| `GEMINI_API_KEY` | Chave server-side do Gemini 3.7 Flash para chat padrão |
+| `GEMINI_API_KEY` | Chave server-side do Gemini 3.8 Flash para chat padrão |
 | `NEXT_PUBLIC_BASE_PATH` | Deve ser `/chat` |
 | `NEXT_PUBLIC_APP_URL` | URL pública completa |
 | `PORT` | Deve ser `3040` |
@@ -135,7 +136,7 @@ Pulse:
 
 | Variável | Propósito |
 |---|---|
-| `PULSE_RUNNER_TOKEN` | Token opcional para proteger `/api/pulse/run-due`; usado por `chatgpt-pulse.service` |
+| `PULSE_RUNNER_TOKEN` | Obrigatório: protege `/api/pulse/run-due` (sem ele a rota responde `503`); lido por `chatgpt-pulse.service` via `EnvironmentFile` e enviado como Bearer por `scripts/run-pulse-due.sh` |
 | `PULSE_RUNNER_URL` | Override opcional do endpoint local do runner |
 | `PULSE_EXTRACT_MODEL` | Modelo opcional para interpretar prompts de rotina |
 | `PULSE_RUN_MODEL` | Override opcional global; sem ele, cada rotina escolhe Mini (default), Sol ou Terra |
@@ -197,6 +198,7 @@ Rate limit:
 | `RATE_LIMIT_STUDIO_AUTOCOMPLETE_RPM` | Limite do autocomplete FIM do Studio; default `180` |
 | `RATE_LIMIT_STUDIO_WORKSPACE_UNLOCK_RPM` | Limite do unlock do workspace Python; default `10` |
 | `RATE_LIMIT_STUDIO_WORKSPACE_RUN_RPM` | Limite do run do workspace Python; default `30` |
+| `RATE_LIMIT_STUDIO_WORKSPACE_STDIN_RPM` | Limite do `run/stdin` do console (uma linha por request no `input()`); default `240` |
 | `RATE_LIMIT_TRANSCRIBE_RPM` | Limite específico de transcrição |
 | `RATE_LIMIT_LOGIN_RPM` | Limite específico de login |
 

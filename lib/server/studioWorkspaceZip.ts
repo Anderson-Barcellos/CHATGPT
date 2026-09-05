@@ -96,6 +96,7 @@ export async function extractWorkspaceArchive(
 
   // Valida tudo antes de escrever qualquer byte: falha deixa o alvo intacto.
   const planned: Array<{ entry: AdmZip.IZipEntry; absolutePath: string }> = [];
+  let declaredBytes = 0;
   for (const entry of entries) {
     const mode = (entry.header.attr >>> 16) & 0o170000;
     if (mode === SYMLINK_MODE) {
@@ -110,10 +111,18 @@ export async function extractWorkspaceArchive(
       return { ok: false, reason: "zip_invalid_entry_path" };
     }
     if (!entry.isDirectory) {
+      // Soma o tamanho declarado no cabeçalho antes de inflar qualquer
+      // entrada: um zip bomb é recusado sem custar memória nem disco.
+      declaredBytes += Number(entry.header.size) || 0;
+      if (declaredBytes > maxExtractedBytes) {
+        return { ok: false, reason: "zip_too_large" };
+      }
       planned.push({ entry, absolutePath: resolved.absolutePath });
     }
   }
 
+  // Segunda barreira com o tamanho real: adm-zip limita a inflação ao
+  // tamanho declarado, mas um cabeçalho mentiroso não pode passar do budget.
   let extractedBytes = 0;
   for (const { entry, absolutePath } of planned) {
     const data = entry.getData();

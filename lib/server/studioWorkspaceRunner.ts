@@ -1,6 +1,7 @@
 import { spawn as nodeSpawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { StringDecoder } from "node:string_decoder";
+import { buildJailParentEnv, hasJailOpenAIKey } from "@/lib/server/studioJailEnv";
 import type {
   StudioWorkspaceRunEvent,
   StudioWorkspaceRunStatus,
@@ -24,12 +25,14 @@ interface BuildRunnerCommandOptions {
   filePath: string;
   unitId: string;
   timeoutMs: number;
+  env?: NodeJS.ProcessEnv;
 }
 
 export function buildRunnerCommand({
   filePath,
   unitId,
   timeoutMs,
+  env = process.env,
 }: BuildRunnerCommandOptions): { command: string; args: string[] } {
   // Defesa em profundidade: a rota valida com resolveWorkspacePath antes,
   // mas o builder nunca aceita um caminho fora do workspace.
@@ -62,9 +65,9 @@ export function buildRunnerCommand({
       `--setenv=HOME=${RUNNER_WORKSPACE}`,
       "--setenv=LANG=C.UTF-8",
       `--setenv=PATH=${RUNNER_PATH_ENV}`,
-      // Sem "=valor": o systemd-run herda a chave do próprio ambiente e o
-      // valor nunca aparece em argv/ps.
-      "--setenv=OPENAI_API_KEY",
+      // Sem "=valor": o systemd-run herda a chave do próprio ambiente (já
+      // trocada pela de escopo restrito) e o valor nunca aparece em argv/ps.
+      ...(hasJailOpenAIKey(env) ? ["--setenv=OPENAI_API_KEY"] : []),
       "--collect",
       "--wait",
       "--pipe",
@@ -175,7 +178,7 @@ export class StudioWorkspaceRunnerManager {
     }
 
     const unitId = `${RUNNER_UNIT_PREFIX}${randomUUID().slice(0, 8)}`;
-    const { command, args } = buildRunnerCommand({ filePath, unitId, timeoutMs });
+    const { command, args } = buildRunnerCommand({ filePath, unitId, timeoutMs, env });
 
     this.activeUnitId = unitId;
     this.stopRequested = false;
@@ -244,7 +247,7 @@ export class StudioWorkspaceRunnerManager {
 
     let child: RunnerChildProcess;
     try {
-      child = this.spawnImpl(command, args, { env: { ...env } });
+      child = this.spawnImpl(command, args, { env: buildJailParentEnv(env) });
     } catch {
       clearTimeout(timeout);
       this.activeUnitId = null;

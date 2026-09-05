@@ -104,12 +104,17 @@ describe("buildTerminalCommand", () => {
     expect(seconds * 1000).toBeGreaterThan(DEFAULT_TERMINAL_IDLE_TIMEOUT_MS);
   });
 
-  it("inherits the API key without exposing its value in argv", () => {
-    const { args } = buildTerminalCommand({ unitId: "u" });
+  it("forwards only the scoped Studio key without exposing its value in argv", () => {
+    const { args } = buildTerminalCommand({ unitId: "u", env: { NODE_ENV: "test", STUDIO_OPENAI_API_KEY: "sk-jail" } });
     expect(args).toContain("--setenv=OPENAI_API_KEY");
     expect(args.some((arg) => arg.startsWith("--setenv=OPENAI_API_KEY="))).toBe(
       false
     );
+  });
+
+  it("does not forward any key when STUDIO_OPENAI_API_KEY is unset", () => {
+    const { args } = buildTerminalCommand({ unitId: "u", env: { NODE_ENV: "test", OPENAI_API_KEY: "sk-principal" } });
+    expect(args).not.toContain("--setenv=OPENAI_API_KEY");
   });
 });
 

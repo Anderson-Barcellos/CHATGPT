@@ -4,7 +4,7 @@
 
 ### Nenhuma FRENTE ativa
 
-O fechamento do repositório e a ENTREGA L1 integrada foram fechados por Anders em 2026-09-03. As candidatas abaixo não estão automaticamente autorizadas; uma nova FRENTE só começa por decisão dele.
+O fechamento do repositório e a ENTREGA L1 integrada foram fechados por Anders em 2026-09-03. As candidatas abaixo não estão automaticamente autorizadas; uma nova FRENTE só começa por decisão dele. A FRENTE H (Hardening) foi fechada em 2026-09-05.
 
 #### ENTREGA L1 — Layout confiável, acessível e consistente (`fechada`)
 
@@ -21,6 +21,46 @@ Evidência de conclusão: 113 arquivos/574 testes, TypeScript, lint, build prefi
 SQLite, schema, repositório de conversas, ciclo arquivar/restaurar/excluir permanentemente e CLI de migração estão integrados em `ea9eda7`. `MEMORY_V2_ENABLED` permanece desligada em produção, JSON e SQLite nunca operam como autoridades simultâneas, e nenhum dado real foi migrado. O dry-run em fixtures reconciliou contagens e hashes sem criar o banco de destino. Ativação/cutover é uma futura ENTREGA, não uma frente ativa.
 
 Próxima candidata prioritária, sem ativação automática: blindagem do symlink final do Studio e autenticação/claim/recovery do Pulse descobertos na auditoria de 2026-08-22.
+
+### MAPA candidato — Auditoria geral de 2026-09-04
+
+Cinco varreduras somente-leitura (backend, frontend, layout/perf, docs, superfícies Studio/Pulse/SoundCase). Gates no momento da auditoria: 745/745 testes, tsc, lint, `npm audit` e journal de 7 dias limpos. Nenhuma FRENTE abaixo está ativa; Anders decide a ordem.
+
+#### FRENTE H — Hardening (`fechada` em 2026-09-05: H1–H5 e B7 fechadas por Anders)
+
+- ✅ **H1 fechada em 2026-09-04**: `/api/pulse/run-due` estava público (sem `PULSE_RUNNER_TOKEN` o fallback por hostname passava tudo, confirmado ao vivo com POST externo → 200). Agora exige bearer com `timingSafeEqual`, 503 se não configurado, rate limit no proxy; token gerado em `.env.production`; `run-next` do SoundCase também entrou no rate limit. Teste: `app/api/pulse/run-due/route.test.ts`.
+- ✅ **H2 fechada em 2026-09-04** (Anders): `resolveWorkspacePath` rejeita symlink no último componente (`lstat`), e `readWorkspaceFile`/`writeWorkspaceFile`/tree abrem com `O_NOFOLLOW` (fecha TOCTOU). 4 testes novos em `studioWorkspaceFs.test.ts`; smoke real na jail: symlink criado como `studio` apontando pra `/root` → GET/PUT 400, canário intacto, arquivo normal 200/200.
+- ✅ **H3 fechada em 2026-09-05** (decisão de Anders: chave com limite de gasto): novo `lib/server/studioJailEnv.ts` (`buildJailParentEnv` troca `OPENAI_API_KEY` pela `STUDIO_OPENAI_API_KEY` e apaga a principal; `hasJailOpenAIKey`). Runner, terminal e kernel só emitem `--setenv=OPENAI_API_KEY` quando a chave de escopo existe, e o spawn recebe o env trocado. `.env.production` ganhou `STUDIO_OPENAI_API_KEY` (a chave universal do fish, validada com `GET /v1/models`). Testes: `studioJailEnv.test.ts` + 5 ajustes/novos nos três builders. Docs: INFRASTRUCTURE.md, API.md.
+- ✅ **H4 fechada em 2026-09-05** (Anders): `extractWorkspaceArchive` soma `entry.header.size` na passada de validação e recusa `zip_too_large` antes de inflar ou escrever qualquer entrada (antes o primeiro arquivo já ia pro disco e a memória pagava a inflação); segunda barreira pelo tamanho real mantida. Teste novo em `studioWorkspaceZip.test.ts` (staging vazio após rejeição). adm-zip 0.6.0 já limita a inflação ao tamanho declarado.
+- ✅ **H5 fechada em 2026-09-05** (Anders): `PUT /api/memories/[id]` valida `content` (string não vazia, trim), `isActive` (boolean) e `priority` (número finito) com 400 antes de tocar o storage (teste novo `app/api/memories/[id]/route.test.ts`); `run/stdin` ganhou balde próprio `studioWorkspaceStdin` de 240/min (`RATE_LIMIT_STUDIO_WORKSPACE_STDIN_RPM`) em vez de cair no `studio` de 20/min (teste em `rateLimit.test.ts`). Docs: API.md e INFRASTRUCTURE.md.
+
+#### FRENTE candidata B — Bugs funcionais
+
+- B1 (alta): Parar + reenviar em <1 s — `useChat.ts:1042-1048` anula `abortControllerRef` incondicionalmente no `finally` do stream antigo; `stopGeneration` zera `isLoading` antes do `catch` terminar; auto-save grava mensagens da conversa B no id da A.
+- B2: `reconcileBackgroundJobs` (`useChat.ts:384-392`) zera `isStreaming` com stream normal ativo quando há job pendente de outra conversa (troca de aba do navegador).
+- B3: quick actions "Continuar/Encurtar" mudas (`CommandComposerContainerV2.tsx:323-330`, `handleSubmit` stale); "Nova conversa" na paleta (`CommandPalette.tsx:68-70`) só zera o id e cai na tela de recovery.
+- B4: Pulse sem recovery de run `running` após restart (`lib/pulse/store.ts:201-225`, `runner.ts:480/501`) e sem claim atômico (timer + manual = run duplo). `ProxyTimeout 300` do Apache corta `tasks/[id]/run` síncrono acima de 5 min com 502 falso.
+- B5: restart do serviço deixa units `gaucho-studio-term-*`/`kernel-*` órfãs até `RuntimeMaxSec=8h`; `input()` pendente + Interromper trava a célula (`studio-kernel-bridge.py:99-123`); abort do SSE de `run` mata o run atual e não o da request (`run/route.ts:413-415`).
+- B6: `process.exit(1)` no lock do SoundCase (`jobs.ts:144-147`) derruba o Next inteiro; TOCTOU entre `chatBackgroundJob.ts:681/721` e autosave do cliente pode perder mensagem; `settingsStore` não persiste (modelo/reasoning voltam ao default a cada reload — confirmar se era intenção).
+- Cobertura zero: 23 rotas `app/api/studio/workspace/**`, `studio/assist`, 7 rotas `app/api/pulse/**`, `useRealtimeTtsLab`, `useStudioServerWorkspace`.
+
+#### FRENTE candidata P — Layout e performance
+
+- P1: nenhuma fonte é carregada (Space Grotesk/JetBrains Mono no chat, Lexend no Studio declaradas em CSS; sem `next/font`, sem `@fontsource` no cliente). Cada SO cai num fallback diferente.
+- P2: zero `React.memo` em `components/` (balões re-renderizam e re-parseiam markdown a cada frame do stream); `CodeBlock.tsx` importa `Prism` com 594 gramáticas no chunk inicial (`PrismLight` + ~10 linguagens resolve); jsPDF estático via `useExport`; `prefetchOnIdle(SettingsDrawer)` é no-op.
+- P3: ~300 linhas de tokens oklch mortos em `globals.css:133-518` sobrescritas pelo bloco Atmosphere; Studio com paleta e breakpoints próprios (1120/860/600 vs 768/1024); SoundCase sempre escuro com 121 cores hardcoded e fontes de 8-10px; `CodeBlock` sempre zinc/oneDark inclusive no Daybreak; overrides por seletor estrutural (`> div:first-child`, `.size-10`).
+- P5 (relato de Anders 2026-09-04, mobile): SoundCase aparece três vezes no topo do chat — `ProductNav` compacto (md até 1360px) e completo (≥1360px) em `WorkspaceLayoutV2.tsx:315-316`, mais a aba "Som" da barra mobile (`WorkspaceLayoutV2.tsx:399-405`). Desejado: um único botão "Abrir SoundCase" no rail esquerdo acima de "Abrir Studio" (`ConversationRailV2.tsx:397` no modo compacto e `:570` no rodapé), e nada no topo. A paleta (`CommandPalette.tsx:108`) pode ficar.
+- P4: arquivos de 900-1200 linhas — `StudioNotebook.tsx`, `useChat.ts`, `SettingsDrawer.tsx`, `PulsePanelV2.tsx`, `GauchoStudioShell.tsx`, `WorkspaceLayoutV2.tsx`.
+- ✅ **B7 fechada em 2026-09-04** (Anders) (puxada como exceção durante a FRENTE H): `probeSoundCaseAudio` faz fallback por packets (`packet=pts_time,duration_time`, csv) quando o container devolve `N/A`; `ChunkPermanentError` carrega `cause`; `safeError` loga `[soundcase] generation failed` com `diagnosticId`, `code`, erro e causa. Testes: 2 em `audio.test.ts`, 1 em `worker.test.ts`. Validação real: chunk FLAC de 3.000 s do `gpt-4o-mini-tts` (container N/A → fallback = decode do ffmpeg); resume da versão `791709a7` avançou pelos chunks após restart. A versão `63e1bbbf` (mesmo texto) segue `failed` para Anders decidir (resume ou excluir). Correção: existe rota `resume` por versão, e a geração já é tarefa de servidor (`chatgpt-soundcase.path` + `.timer`), então das lacunas de produto restam capa por conteúdo e visual do chat. Histórico do relato:  "geração silenciosa" falha na aba de gerações; o realtime funciona. Evidência: duas versões `failed` com `soundcase_chunk_permanent_failure`, `progress 0/65`, chunk 0 morre na 1ª tentativa com erro não-retryable (4xx do provider ou validação flac/ffprobe). **Causa raiz confirmada em 2026-09-04 (reprodução real do chunk 0, 100% determinística):** a API responde 200 e o magic `fLaC` passa, mas o FLAC do `gpt-4o-mini-tts` vem sem `total_samples` no STREAMINFO, então o `ffprobe` de `audio.ts:82-111` (`stream=codec_name,duration:format=duration`) devolve `duration=N/A` → `soundcase_audio_probe_mismatch` → classificado como não-retryable → falha permanente em todo chunk, em toda versão. O teste unitário mascarou porque o mock devolve `duration: "1.5"` (`audio.test.ts:51`). Duração real é obtível por último packet (`-show_entries packet=pts_time,duration_time` → 2.208+0.010), por `-count_frames`, ou remuxando lossless com `ffmpeg -c:a flac` (STREAMINFO passa a ter 2.218). Correção sugerida: fallback no probe via packets (ou remux do chunk antes do probe) + `console.error` com `diagnosticId` e erro original em `worker.ts:154-162` (`safeError` hoje não loga nada). Não há rota de resume por versão em `app/api/soundcase/versions/*`. Voz `cedar` é aceita pelo modelo (descartado).
+- Lacunas de produto no SoundCase (Anders, 2026-09-04): cada cartão deveria ter cabeçalho com imagem gerada a partir do conteúdo do áudio ("um Pulse de áudio"; `cover.ts` existe mas fica `pending`); a geração deveria ser tarefa agendada no servidor nos moldes do Pulse; visual deveria se aproximar do chat (hoje paleta própria sempre escura).
+
+#### FRENTE candidata D — Drift de documentação (uma passada)
+
+- SoundCase ausente de CLAUDE.md, AGENTS.md ("Visão Geral"/"Estado Atual") e README; Codestral primário não documentado (README, INFRASTRUCTURE.md, envs `CODESTRAL_API_KEY`/`MISTRAL_API_KEY`).
+- AGENTS.md: três "Próximos Pontos" já resolvidos (rehypeRaw, auto-scroll, normalização de quebras); entradas de 20/08 e 03/09 prependadas acima do título; Notebook ainda descrito como "texto+PNG".
+- API.md/ARCHITECTURE.md: Pulse aceita Sol além de Mini/Terra; listas de rate limit e rotas públicas do proxy incompletas; modelo forçado do modo Documento (`gpt-5.4-mini`) sem doc; Terra suporta modo `pro`.
+- MODELS.md: marcar os 4 ocultos do seletor; 6 helpers exportados sem doc. INFRASTRUCTURE.md: envs `CALENDAR_DRAFT_MODEL`, `NEXT_PUBLIC_APP_VERSION`, `OPENAI_LOG`, `CHROME_PATH` e agora `PULSE_RUNNER_TOKEN` obrigatório.
+- `apache-config/chat.conf` com allowlist que omite `studio/pulse/soundcase/memory` (vhost vivo usa ProxyPass genérico); `design-qa.md` descreve Studio TS/JS aposentado; `docs/superpowers*` guardam planos concluídos; `components/farol`, `lib/farol`, `app/api/farol/propose` são pastas vazias não rastreadas.
 
 ### PACK HISTÓRICO — Notebook modo Colab (2026-08-20)
 

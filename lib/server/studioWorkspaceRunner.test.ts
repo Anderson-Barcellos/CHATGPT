@@ -18,13 +18,14 @@ interface SpawnCall {
   command: string;
   args: string[];
   process: FakeProcess;
+  env?: NodeJS.ProcessEnv;
 }
 
 function createSpawnFake() {
   const calls: SpawnCall[] = [];
-  const spawnImpl = (command: string, args: string[]) => {
+  const spawnImpl = (command: string, args: string[], options?: { env?: NodeJS.ProcessEnv }) => {
     const fake = new FakeProcess();
-    calls.push({ command, args, process: fake });
+    calls.push({ command, args, process: fake, env: options?.env });
     if (command === "systemctl") {
       queueMicrotask(() => fake.emit("close", 0, null));
     }
@@ -70,17 +71,28 @@ describe("buildRunnerCommand", () => {
     expect(args[args.length - 1]).toBe("/workspace/main.py");
   });
 
-  it("inherits the API key without exposing its value in argv", () => {
+  it("forwards only the scoped Studio key without exposing its value in argv", () => {
     const { args } = buildRunnerCommand({
       filePath: "main.py",
       unitId: "u",
       timeoutMs: 1_000,
+      env: { NODE_ENV: "test", STUDIO_OPENAI_API_KEY: "sk-jail" },
     });
 
     expect(args).toContain("--setenv=OPENAI_API_KEY");
     expect(args.some((arg) => arg.startsWith("--setenv=OPENAI_API_KEY="))).toBe(
       false
     );
+  });
+
+  it("does not forward any key to the jail when STUDIO_OPENAI_API_KEY is unset", () => {
+    const { args } = buildRunnerCommand({
+      filePath: "main.py",
+      unitId: "u",
+      timeoutMs: 1_000,
+      env: { NODE_ENV: "test", OPENAI_API_KEY: "sk-principal" },
+    });
+    expect(args).not.toContain("--setenv=OPENAI_API_KEY");
   });
 
   it("refuses unvalidated file paths defensively", () => {
@@ -299,3 +311,18 @@ describe("StudioWorkspaceRunnerManager", () => {
     expect(statusOf(events)).toBe("failed");
   });
 });
+
+describe("runner spawn environment", () => {
+  it("spawns systemd-run with the scoped key in place of the main one", () => {
+    const { calls, spawnImpl } = createSpawnFake();
+    const manager = new StudioWorkspaceRunnerManager({ spawnImpl });
+    manager.startRun({
+      filePath: "main.py",
+      env: { NODE_ENV: "test", OPENAI_API_KEY: "sk-principal", STUDIO_OPENAI_API_KEY: "sk-jail", PATH: "/usr/bin" },
+    });
+    const run = calls.find((call) => call.command === "systemd-run");
+    expect(run?.env?.OPENAI_API_KEY).toBe("sk-jail");
+    expect(run?.env?.STUDIO_OPENAI_API_KEY).toBeUndefined();
+  });
+});
+
