@@ -41,6 +41,28 @@ describe("WorkspaceFrameV2", () => {
     expect(markup).not.toContain(">Salvo<");
     expect(markup).not.toContain(">online<");
   });
+
+  it("keeps the top bar free of product links: SoundCase lives only in the rail", () => {
+    const markup = renderToStaticMarkup(
+      <WorkspaceFrameV2
+        sidebar={<div>Conversas recentes</div>}
+        chat={<div>Transcricao da conversa</div>}
+        composer={<div>Mensagem para o GPT...</div>}
+        contextPanel={<div>Preview do documento</div>}
+        mobileSidebar={<div>Menu mobile</div>}
+        mobileContextPanel={<div>Painel mobile</div>}
+        onNewConversation={() => undefined}
+        onOpenSettings={() => undefined}
+        activeConversationTitle="Workspace Console"
+        currentModelName="gpt-5.3-chat-latest"
+      />
+    );
+
+    expect(markup).not.toContain("Produtos Gaucho");
+    expect(markup).not.toContain("/soundcase");
+    expect(markup).not.toContain(">Som<");
+    expect(markup).toContain("repeat(3,minmax(0,0.58fr))");
+  });
 });
 
 describe("CommandComposerV2", () => {

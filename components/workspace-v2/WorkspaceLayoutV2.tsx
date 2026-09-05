@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   type KeyboardEvent,
   type ClipboardEvent,
@@ -36,7 +35,6 @@ import {
   LoaderCircle,
   Maximize2,
   Minimize2,
-  AudioLines,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,7 +58,6 @@ import {
 import { FadeIn } from "@/components/motion/FadeIn";
 import { SlideIn } from "@/components/motion/SlideIn";
 import { GPTLogo } from "@/components/ui/gpt-logo";
-import { ProductNav } from "@/components/navigation/ProductNav";
 import { useCommandPaletteContext } from "@/components/command/CommandPaletteProvider";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/uiStore";
@@ -312,9 +309,6 @@ export function WorkspaceFrameV2({
                   </div>
                 </div>
 
-                <ProductNav active="chat" compact className="hidden md:flex min-[1360px]:hidden" />
-                <ProductNav active="chat" className="hidden min-[1360px]:flex" />
-
                 <button
                   type="button"
                   onClick={() => openCommandPalette(true)}
@@ -362,7 +356,7 @@ export function WorkspaceFrameV2({
               </div>
 
               <div className="gc-clinical-subheader border-t border-[color:var(--gc-border-soft)] px-2.5 pb-2.5 pt-0.5 md:flex md:min-h-[2.15rem] md:items-center md:justify-between md:px-4 md:py-1">
-                <div className="grid h-[3.2rem] grid-cols-[minmax(0,1.55fr)_repeat(4,minmax(0,0.58fr))] items-center gap-1 rounded-[1.25rem] border border-[color:var(--gc-border-soft)] bg-background/84 p-1 shadow-[0_10px_24px_rgba(15,23,42,0.07)] md:hidden">
+                <div className="grid h-[3.2rem] grid-cols-[minmax(0,1.55fr)_repeat(3,minmax(0,0.58fr))] items-center gap-1 rounded-[1.25rem] border border-[color:var(--gc-border-soft)] bg-background/84 p-1 shadow-[0_10px_24px_rgba(15,23,42,0.07)] md:hidden">
                   <button
                     type="button"
                     onClick={onNewConversation}
@@ -396,13 +390,6 @@ export function WorkspaceFrameV2({
                     <CalendarCheck className="size-4.5" />
                     Rotinas
                   </button>
-                  <Link
-                    href="/soundcase"
-                    className="flex h-full flex-col items-center justify-center gap-0.25 rounded-xl text-[length:var(--gc-mobile-tab-font-size)] font-medium text-muted-foreground"
-                  >
-                    <AudioLines className="size-4.5" />
-                    Som
-                  </Link>
                 </div>
 
                 <div className="hidden min-w-0 items-center gap-1.5 md:flex">

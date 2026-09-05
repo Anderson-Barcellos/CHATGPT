@@ -1504,3 +1504,15 @@ Details:
 Notes:
 FRENTE H: H1, H2, H4, H5 fechadas; H3 `pronta para revisão`. Nada commitado. Sessões do terminal/kernel abertas antes do restart já morreram com o serviço; novas nascem com a chave de escopo.
 
+
+### 2026-09-05 00:40 - P5: SoundCase sai do topo do chat e vira botão único no rail
+
+Context: Anders fechou H3 (FRENTE H inteira fechada), autorizou dois commits (`feat(models)` lote Astra/Gemini de 03/09 e `fix(security)` H1–H5 + B7) e abriu a FRENTE P pela P5.
+Details:
+- Causa raiz do "três SoundCase no topo": `.gc-product-nav { display: flex }` em `globals.css` (CSS sem layer) vence o utilitário `hidden` do Tailwind v4 (em `@layer utilities`), então os dois `ProductNav` de `WorkspaceLayoutV2.tsx` apareciam no mobile junto com a aba "Som".
+- `WorkspaceLayoutV2.tsx`: removidos os dois `ProductNav`, a aba "Som" e os imports `ProductNav`/`AudioLines`/`Link` que ficaram órfãos; grade mobile `repeat(4,…)` → `repeat(3,…)`.
+- `ConversationRailV2.tsx`: `Link /soundcase` "Abrir SoundCase" no rodapé acima de "Abrir Studio" e ícone `AudioLines` no rail compacto acima do `Code2`.
+- TDD: `ConversationRailV2.test.tsx` novo (mock de `useConversations`; um único `href="/soundcase"` e antes de `/studio`, nos dois modos) e caso novo em `WorkspaceLayoutV2.test.tsx` (sem `Produtos Gaucho`, sem `/soundcase`, grade de 3).
+- Validação: 773/773, `tsc`, lint (só o aviso do `Link` órfão, removido), build, restart, health local/público 200. Screenshot 390x844 com Playwright + `/opt/google/chrome/chrome` (browsers do Playwright não estão instalados; o script viveu em `node_modules/.p5-shot.mjs` só durante a execução e foi apagado).
+Notes:
+FRENTE P ativa; P5 `pronta para revisão`, sem commit. `ProductNav` continua em uso nos shells do Studio e do SoundCase. O Studio e o SoundCase seguem acessíveis pela paleta.

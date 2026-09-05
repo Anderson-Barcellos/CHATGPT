@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import {
+  AudioLines,
   Clock,
   Code2,
   FolderClosed,
@@ -394,6 +395,16 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
         </div>
         <div className="h-px w-5 bg-[var(--gc-border-soft)]" />
         <Link
+          href="/soundcase"
+          title="Abrir SoundCase"
+          className={cn(
+            "flex size-8 shrink-0 items-center justify-center",
+            RAIL_CONTROL_BUTTON_CLASS
+          )}
+        >
+          <AudioLines className="size-3.5" />
+        </Link>
+        <Link
           href="/studio"
           title="Abrir Gaucho Studio"
           className={cn(
@@ -562,6 +573,16 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
       </ScrollArea>
 
       <div className="gc-rail-footer grid shrink-0 gap-1.5 border-t border-[color:var(--gc-border-soft)] p-[var(--gc-mobile-panel-content-pad)]">
+        <Button
+          variant="ghost"
+          asChild
+          className={cn("h-9 w-full justify-start px-2 text-xs", RAIL_CONTROL_BUTTON_CLASS)}
+        >
+          <Link href="/soundcase">
+            <AudioLines className="mr-2 size-4" />
+            Abrir SoundCase
+          </Link>
+        </Button>
         <Button
           variant="ghost"
           asChild
