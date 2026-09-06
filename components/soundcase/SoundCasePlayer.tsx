@@ -1,7 +1,7 @@
 "use client";
 
 import { Download, FileAudio, Pause, Play, Radio, Square } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { describeAudioPlayError } from "@/lib/tts/browserAudio";
 import type { SoundCasePublicVersion } from "@/lib/soundcase/types";
 import styles from "./SoundCase.module.css";
@@ -31,8 +31,16 @@ export function SoundCasePlayer({ version, audioUrl, realtime, onPlaybackChange 
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playingFinal, setPlayingFinalState] = useState(false);
   const [playError, setPlayError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
   const readyAudio = version.audio.status === "ready" ? version.audio : null;
   const finalReady = Boolean(readyAudio);
+  const duration = readyAudio?.durationSeconds ?? 0;
+  const timeLabel = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    return () => { audio?.pause(); };
+  }, []);
 
   const setPlayingFinal = (playing: boolean) => {
     setPlayingFinalState(playing);
@@ -53,7 +61,7 @@ export function SoundCasePlayer({ version, audioUrl, realtime, onPlaybackChange 
 
   return (
     <section className={styles.player} aria-label="Player do SoundCase">
-      <audio ref={audioRef} src={finalReady ? audioUrl : undefined} preload="metadata" playsInline onPause={() => setPlayingFinal(false)} onEnded={() => setPlayingFinal(false)} />
+      <audio ref={audioRef} src={finalReady ? audioUrl : undefined} preload="metadata" playsInline onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onPause={() => setPlayingFinal(false)} onEnded={() => setPlayingFinal(false)} />
       <button
         type="button"
         className={styles.playButton}
@@ -77,6 +85,16 @@ export function SoundCasePlayer({ version, audioUrl, realtime, onPlaybackChange 
         </button>
       ) : null}
       {finalReady ? <a className={styles.downloadButton} href={audioUrl} download aria-label="Baixar arquivo final"><Download /></a> : null}
+      {finalReady ? (
+        <div className={styles.playerTimeline}>
+          <input type="range" aria-label="Posição do áudio" min={0} max={duration} step={0.1} value={Math.min(currentTime, duration)} onChange={(event) => {
+            const seconds = Number(event.target.value);
+            if (audioRef.current) audioRef.current.currentTime = seconds;
+            setCurrentTime(seconds);
+          }} />
+          <span>{timeLabel(currentTime)} / {timeLabel(duration)}</span>
+        </div>
+      ) : null}
       {playError ? <p className={styles.playerError} role="alert">{playError}</p> : null}
     </section>
   );

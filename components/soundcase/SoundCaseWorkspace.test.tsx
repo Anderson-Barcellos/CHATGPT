@@ -6,10 +6,6 @@ import {
   type SoundCaseWorkspaceVariant,
 } from "@/components/soundcase/SoundCaseWorkspace";
 
-function countOf(markup: string, needle: string): number {
-  return markup.split(needle).length - 1;
-}
-
 function renderWorkspace(variant: SoundCaseWorkspaceVariant): string {
   return renderToStaticMarkup(
     <SoundCaseRealtimeProvider>
@@ -19,15 +15,17 @@ function renderWorkspace(variant: SoundCaseWorkspaceVariant): string {
 }
 
 describe("SoundCase workspace variants", () => {
-  it("keeps the mobile dock and avoids collapsibles in the page variant", () => {
+  it("opens the page on the library without a persistent editor or mobile dock", () => {
     const markup = renderWorkspace("page");
 
-    expect(markup).toContain('aria-label="Ações do SoundCase"');
-    expect(markup).not.toContain('data-slot="collapsible"');
+    expect(markup).not.toContain('aria-label="Ações do SoundCase"');
+    expect(markup).not.toContain('aria-label="Texto para narração"');
+    expect(markup).toContain("Suas narrações");
+    expect(markup).toContain("Nova narração");
     expect(markup).toContain('data-variant="page"');
   });
 
-  it("uses inline collapsibles and a single generate action in the panel variant", () => {
+  it("opens the panel on the same library without nested sheets", () => {
     const markup = renderWorkspace("panel");
 
     expect(markup).toContain('data-variant="panel"');
@@ -35,7 +33,7 @@ describe("SoundCase workspace variants", () => {
     // Sem dock e sem Sheet aninhado dentro do painel lateral.
     expect(markup).not.toContain('aria-label="Ações do SoundCase"');
     expect(markup).not.toContain('data-slot="sheet-content"');
-    // A ação de gerar vive só no rodapé do painel.
-    expect(countOf(markup, "Gerar e ouvir agora")).toBe(1);
+    expect(markup).toContain("Suas narrações");
+    expect(markup).not.toContain('aria-label="Texto para narração"');
   });
 });

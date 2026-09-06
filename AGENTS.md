@@ -1551,3 +1551,15 @@ Details:
 - `describeSoundCaseVersion` é o contrato único de estado (`audio_ready` tocável, sem status cru); `SoundCaseLibrary` em cartões com capa e badge "Tocando"; `SoundCaseResult` removido; polling do projeto a 4 s para versões ativas não selecionadas.
 - Validação: 822/822 (TDD red→green em todas as entregas), tsc, lint (warning preexistente), build, restart, health 200; Playwright 390×844 e 1600×1000; geração real `9fb16c27` acompanhada ao vivo até `audio_ready`; Realtime E2E com WebRTC real (201 em 464 ms, `response.done` em 1,9 s).
 Notes: `--gc-clinical-card-bg` é gradiente com alpha — sempre `background-color` sólido antes. O React Compiler lint proíbe setState síncrono em effect: guardar id em vez de booleano resolve. Commit autorizado por Anders só para o SoundCase; frentes B/H seguem sem commit.
+
+### 2026-09-06 - SoundCase SC2: acervo primeiro e player por cartão
+
+Context: Anders aprovou e pediu implementação do polimento: retirar editor persistente e duplicação visual de projetos acima dos áudios; expandir reprodução/download no próprio cartão.
+
+Details: página e painel abrem em Suas narrações; Nova narração/textos salvos abrem editor, importação e direção; sucesso da geração recolhe editor. Resumos de todos os projetos via `useSoundCaseLibrary`, rotas existentes e polling; textos/rascunhos em seção recolhida. Player selecionado permanece montado sob `hidden` ao recolher (não trocar por unmount/CollapsibleContent sem forceMount); troca de versão desmonta e pausa o áudio anterior. Seek/tempo/download no cartão; refresh preserva versão escolhida. Testes de interação cobrem áudio, cross-project, falha/sucesso de geração e reconexão.
+
+Notes: SC2 pronta para revisão; evidências e limite de publicação em BACKLOG.md. Suíte 825 testes, interação final 4/4, tsc/lint/build e Chrome desktop/mobile passaram. Build e QA isolados de B2–B6; dados reais, serviços e `.next` de produção preservados. Não publicar todo o WIP como parte deste polimento.
+
+Atualização 2026-09-06: Anders pediu publicação/build/restart. Build isolada SC2 `1TZe6JKGfGAom45Q6MzGh` instalada em `.next` com backup da anterior e assets antigos preservados; `chatgpt.service` reiniciado, health local/público 200 healthy e smoke Chrome autenticado na rota pública aprovou acervo/editor recolhido/player inline sem pageerrors ou overflow. WIP B2–B6 permanece fora do build publicado; próxima build do checkout inteiro deve considerar esse limite. SC2 publicada, ainda pronta para revisão de Anders.
+
+Fechamento 2026-09-06: Anders aprovou o resultado publicado e autorizou commit/push da SC2. Entrega fechada no BACKLOG; alterações de B2–B6 e backup `.next-before-sc2-*` ficam fora do commit.

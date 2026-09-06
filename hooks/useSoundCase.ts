@@ -65,12 +65,14 @@ export function useSoundCase() {
   const persistedTextRef = useRef("");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const projectRef = useRef<SoundCaseProjectDetail | null>(null);
+  const selectedVersionRef = useRef<SoundCasePublicVersion | null>(null);
   const draftRef = useRef("");
   const conflictRef = useRef<SoundCaseDraftConflict | null>(null);
   const saveChainRef = useRef<Promise<SoundCaseProjectDetail | null>>(Promise.resolve(null));
   const savesInFlightRef = useRef(0);
 
   useEffect(() => { projectRef.current = project; }, [project]);
+  useEffect(() => { selectedVersionRef.current = selectedVersion; }, [selectedVersion]);
   useEffect(() => { draftRef.current = draftText; }, [draftText]);
   useEffect(() => { conflictRef.current = conflict; }, [conflict]);
 
@@ -93,7 +95,7 @@ export function useSoundCase() {
     return next;
   }, []);
 
-  const loadProject = useCallback(async (projectId: string, preserveDirty = false) => {
+  const loadProject = useCallback(async (projectId: string, preserveDirty = false, versionId?: string) => {
     const next = await soundCaseApi.getProject(projectId);
     const recovery = readSoundCaseDraftRecovery(projectId);
     const reconciled = reconcileSoundCaseDraftRecovery(recovery, next);
@@ -108,7 +110,8 @@ export function useSoundCase() {
       }
     }
     setActiveProjectIdState(projectId);
-    const activeVersionId = next.activeVersionId;
+    const activeVersionId = versionId ?? (preserveDirty && selectedVersionRef.current?.projectId === projectId && next.versions.some((item) => item.id === selectedVersionRef.current?.id)
+      ? selectedVersionRef.current.id : next.activeVersionId);
     if (activeVersionId) {
       setSelectedVersion(await soundCaseApi.getVersion(projectId, activeVersionId));
     } else {
@@ -218,9 +221,11 @@ export function useSoundCase() {
   useEffect(() => {
     const interval = getSoundCasePollInterval(selectedVersion);
     if (!interval || !selectedVersion) return;
+    let cancelled = false;
     const timer = setInterval(() => {
       void soundCaseApi.getVersion(selectedVersion.projectId, selectedVersion.id)
         .then((next) => {
+          if (cancelled) return;
           setSelectedVersion(next);
           if (!getSoundCasePollInterval(next)) {
             void loadProject(next.projectId, true);
@@ -229,7 +234,7 @@ export function useSoundCase() {
         })
         .catch((cause) => setError(readableSoundCaseError(cause, "Não foi possível atualizar o progresso.")));
     }, interval);
-    return () => clearInterval(timer);
+    return () => { cancelled = true; clearInterval(timer); };
   }, [loadProject, refreshProjects, selectedVersion]);
 
   // Outra geração do mesmo projeto (não a selecionada) só avança no acervo se alguém perguntar.
@@ -314,15 +319,16 @@ export function useSoundCase() {
     if (!saved || !draftRef.current.trim()) throw new Error("soundcase_text_required");
     const result = await soundCaseApi.createVersion(saved.id, settings);
     setSelectedVersion(result.version);
-    await loadProject(saved.id, true);
+    await loadProject(saved.id, true, result.version.id);
     return result.version;
   }, [flushDraft, loadProject]);
 
-  const selectVersion = useCallback(async (versionId: string) => {
+  const selectVersion = useCallback(async (versionId: string, projectId?: string) => {
+    if (projectId && projectId !== projectRef.current?.id) await setActiveProjectId(projectId);
     const current = projectRef.current;
     if (!current) return;
     setSelectedVersion(await soundCaseApi.getVersion(current.id, versionId));
-  }, []);
+  }, [setActiveProjectId]);
 
   const cancelVersion = useCallback(async () => {
     if (!selectedVersion) return;
@@ -330,20 +336,22 @@ export function useSoundCase() {
     setSelectedVersion(await soundCaseApi.getVersion(selectedVersion.projectId, selectedVersion.id));
   }, [selectedVersion]);
 
-  const resumeVersion = useCallback(async (versionId = selectedVersion?.id) => {
+  const resumeVersion = useCallback(async (versionId = selectedVersion?.id, projectId?: string) => {
+    if (projectId && projectId !== projectRef.current?.id) await setActiveProjectId(projectId);
     const current = projectRef.current;
     if (!current || !versionId) return;
     await soundCaseApi.resumeVersion(current.id, versionId);
     setSelectedVersion(await soundCaseApi.getVersion(current.id, versionId));
-  }, [selectedVersion]);
+  }, [selectedVersion, setActiveProjectId]);
 
-  const deleteVersion = useCallback(async (versionId: string) => {
+  const deleteVersion = useCallback(async (versionId: string, projectId?: string) => {
+    if (projectId && projectId !== projectRef.current?.id) await setActiveProjectId(projectId);
     const current = projectRef.current;
     if (!current) return;
     await soundCaseApi.deleteVersion(current.id, versionId);
     if (selectedVersion?.id === versionId) setSelectedVersion(null);
     await loadProject(current.id, true);
-  }, [loadProject, selectedVersion]);
+  }, [loadProject, selectedVersion, setActiveProjectId]);
 
   const deleteProject = useCallback(async (projectId: string) => {
     await soundCaseApi.deleteProject(projectId);

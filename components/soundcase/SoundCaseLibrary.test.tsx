@@ -30,6 +30,7 @@ function render(overrides: Partial<SoundCaseLibraryProps> = {}): string {
   const noop = vi.fn();
   return renderToStaticMarkup(<SoundCaseLibrary
     projects={[project]} project={project} selectedVersionId="v" playback={null}
+    versions={project.versions} expandedVersionId="v" player={null}
     onCreate={noop} onSelectProject={noop} onSelectVersion={noop}
     onResumeVersion={noop} onDeleteVersion={noop} onDeleteProject={noop}
     {...overrides}
@@ -65,7 +66,7 @@ describe("SoundCase library", () => {
   });
 
   it("expands summary and metadata only on the selected card", () => {
-    const markup = render({ selectedVersionId: "v2" });
+    const markup = render({ selectedVersionId: "v2", expandedVersionId: "v2" });
     expect(markup).toContain("Resumo da segunda.");
     expect(markup).not.toContain("Um passeio pelas fases do sono.");
   });

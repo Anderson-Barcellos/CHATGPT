@@ -1,20 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Library, Volume2, X } from "lucide-react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { DirectionSidebar } from "@/components/soundcase/DirectionSidebar";
 import { SoundCaseEditor } from "@/components/soundcase/SoundCaseEditor";
 import { SoundCaseLibrary } from "@/components/soundcase/SoundCaseLibrary";
-import { SoundCaseMobileDock } from "@/components/soundcase/SoundCaseMobileDock";
 import { SoundCasePlayer } from "@/components/soundcase/SoundCasePlayer";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useSoundCaseRealtimeSession } from "@/components/soundcase/SoundCaseRealtimeProvider";
 import { useSoundCase } from "@/hooks/useSoundCase";
+import { useSoundCaseLibrary } from "@/hooks/useSoundCaseLibrary";
 import { buildSoundCaseRealtimeSegments } from "@/hooks/useSoundCaseRealtime";
 import { soundCaseApi } from "@/lib/soundcase/api";
-import { getSoundCaseProgress } from "@/lib/soundcase/progress";
 import type { SoundCaseGenerationSettings } from "@/lib/soundcase/types";
 import styles from "./SoundCase.module.css";
 
@@ -35,7 +33,11 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [generating, setGenerating] = useState(false);
   const [directionOpen, setDirectionOpen] = useState(false);
-  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [expandedVersionId, setExpandedVersionId] = useState<string | null>(null);
+  const [navigating, setNavigating] = useState(false);
+  const navigationRef = useRef(false);
+  const library = useSoundCaseLibrary(soundcase.projects, soundcase.project, soundcase.selectedVersion);
   const [pendingRealtimeVersionId, setPendingRealtimeVersionId] = useState<string | null>(null);
   // Guarda a versão cujo arquivo está tocando: trocar de versão invalida sozinho, sem effect.
   const [playingFinalVersionId, setPlayingFinalVersionId] = useState<string | null>(null);
@@ -55,7 +57,6 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
   }, [soundcase.draftText]);
   const estimate = Math.ceil((words / 150 / (settings.speedOverride ?? 1)) * 60);
   const overLimit = estimate > 90 * 60 || new TextEncoder().encode(soundcase.draftText).byteLength > 1024 * 1024;
-  const progress = soundcase.selectedVersion ? getSoundCaseProgress(soundcase.selectedVersion) : null;
   const actionsDisabled = !words || overLimit || Boolean(soundcase.conflict);
   const selectedVersionId = soundcase.selectedVersion?.id ?? null;
   // Realtime tem precedência: o player interrompe o arquivo antes de iniciar a leitura ao vivo.
@@ -90,6 +91,8 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
     try {
       const version = await soundcase.generate({ ...settings, playbackMode });
       setPendingRealtimeVersionId(playbackMode === "realtime" ? version.id : null);
+      setExpandedVersionId(version.id);
+      setEditorOpen(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível iniciar a geração.");
     } finally { setGenerating(false); }
@@ -101,8 +104,7 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
       text={soundcase.draftText}
       wordCount={words}
       estimatedDurationSeconds={estimate}
-      progress={progress}
-      disabled={soundcase.loading}
+      disabled={soundcase.loading || generating || navigating}
       onChange={soundcase.setDraftText}
       onImport={(file) => soundcase.importText(file).then(() => undefined)}
       onCreate={!soundcase.project ? () => {
@@ -112,116 +114,107 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
     />
   );
 
-  const library = (closeAfterSelect: boolean) => (
-    <SoundCaseLibrary
-      projects={soundcase.projects} project={soundcase.project}
-      selectedVersionId={selectedVersionId}
-      playback={playback} selectedVoice={selectedVoice}
-      onCreate={() => { stopRealtimeContext(); void soundcase.createProject({ title: "Novo SoundCase" }); }}
-      onSelectProject={(id) => { stopRealtimeContext(); if (closeAfterSelect) setLibraryOpen(false); void soundcase.setActiveProjectId(id); }}
-      onSelectVersion={(id) => { stopRealtimeContext(); if (closeAfterSelect) setLibraryOpen(false); void soundcase.selectVersion(id); }}
-      onResumeVersion={(id) => { stopRealtimeContext(); void soundcase.resumeVersion(id); }}
-      onDeleteVersion={(id) => { stopRealtimeContext(); void soundcase.deleteVersion(id); }}
-      onDeleteProject={(id) => { stopRealtimeContext(); void soundcase.deleteProject(id); }}
-    />
-  );
+  const navigate = async (action: () => Promise<unknown>) => {
+    if (navigationRef.current || generating) return;
+    navigationRef.current = true;
+    setNavigating(true);
+    try { await action(); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível abrir a narração."); }
+    finally { navigationRef.current = false; setNavigating(false); }
+  };
 
-  // O cartão com capa vive no acervo desde o início da geração; aqui fica só o player.
   const result = soundcase.selectedVersion ? (
     <SoundCasePlayer
       key={soundcase.selectedVersion.id}
       version={soundcase.selectedVersion}
       audioUrl={soundCaseApi.audioUrl(soundcase.selectedVersion.projectId, soundcase.selectedVersion.id)}
-      realtime={realtime}
-      onPlaybackChange={(playing) => setPlayingFinalVersionId(playing ? soundcase.selectedVersion?.id ?? null : null)}
+      realtime={{ ...realtime, isActive: realtime.isActive && realtime.versionId === selectedVersionId }}
+      onPlaybackChange={(playing) => setPlayingFinalVersionId(playing ? selectedVersionId : null)}
     />
   ) : null;
 
-  const conflictBar = soundcase.conflict ? (
-    <div className={styles.conflictBar} role="alert">
-      <span>Este texto mudou em outra aba. Seu conteúdo local foi preservado.</span>
-      <button onClick={() => void soundcase.resolveConflict("local")}>Manter o meu</button>
-      <button onClick={() => void soundcase.resolveConflict("server")}>Usar o salvo</button>
-    </div>
-  ) : null;
-
-  if (isPanel) {
-    return (
-      <div className={styles.panelBody} data-variant="panel">
-        <div className={styles.panelScroll}>
+  return (
+    <div className={isPanel ? styles.panelBody : styles.acervoBody} data-variant={variant}>
+      <div className={styles.acervoScroll}>
+        {soundcase.error ? <p className={styles.acervoError} role="alert">{soundcase.error}</p> : null}
+        {soundcase.loading ? <p className={styles.libraryEmpty} role="status">Carregando suas narrações…</p> : null}
+        <section hidden={!editorOpen} className={styles.creation} aria-label="Criar narração">
+          <div className={styles.creationHeading}>
+            <button type="button" disabled={generating || navigating} onClick={() => setEditorOpen(false)}><ArrowLeft /> Voltar ao acervo</button>
+            <span>{soundcase.saving ? "Salvando…" : soundcase.isDirty ? "Salvamento pendente" : "Texto salvo"}</span>
+          </div>
+          {editorOpen ? editor : null}
           <Collapsible open={directionOpen} onOpenChange={setDirectionOpen}>
             <CollapsibleTrigger className={styles.panelSectionTrigger} data-open={directionOpen}>
-              <span>Direção de leitura</span>
-              <ChevronDown />
+              <span>Voz e direção de leitura</span><ChevronDown />
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <DirectionSidebar
-                settings={settings} onChange={setSettings}
-                onGenerate={(mode) => void generate(mode)}
-                busy={generating} disabled={actionsDisabled} showActions={false}
-              />
+              <DirectionSidebar settings={settings} onChange={setSettings} onGenerate={(mode) => void generate(mode)}
+                busy={generating} disabled={actionsDisabled} showActions={false} />
             </CollapsibleContent>
           </Collapsible>
-
-          <Collapsible open={libraryOpen} onOpenChange={setLibraryOpen}>
-            <CollapsibleTrigger className={styles.panelSectionTrigger} data-open={libraryOpen}>
-              <span>Acervo</span>
-              <ChevronDown />
-            </CollapsibleTrigger>
-            <CollapsibleContent>{library(false)}</CollapsibleContent>
-          </Collapsible>
-
-          {editor}
-          <div className={styles.panelResult}>{result}</div>
+          <div className={styles.creationActions}>
+            <button className={styles.primaryAction} type="button" disabled={actionsDisabled || generating || navigating} onClick={() => void generate("realtime")}>
+              {generating ? "Preparando…" : "Gerar e ouvir agora"}
+            </button>
+            <button className={styles.secondaryAction} type="button" disabled={actionsDisabled || generating || navigating} onClick={() => void generate("silent")}>Gerar somente arquivo</button>
+          </div>
+        </section>
+        <div hidden={editorOpen}>
+          {library.error ? <p className={styles.acervoError} role="alert">{library.error} <button onClick={library.retry}>Tentar novamente</button></p> : null}
+          {library.loading ? <p className={styles.libraryEmpty} role="status">Atualizando o acervo…</p> : null}
+          <SoundCaseLibrary
+            projects={soundcase.projects} project={soundcase.project} versions={library.versions}
+            selectedVersionId={selectedVersionId} expandedVersionId={expandedVersionId} player={result}
+            playback={playback} selectedVoice={selectedVoice} busy={navigating || generating || soundcase.loading}
+            onCreate={() => void navigate(async () => {
+              stopRealtimeContext();
+              await soundcase.createProject({ title: "Nova narração" });
+              setEditorOpen(true);
+            })}
+            onSelectProject={(id) => void navigate(async () => {
+              if (id !== soundcase.project?.id) {
+                stopRealtimeContext();
+                await soundcase.setActiveProjectId(id);
+              }
+              setEditorOpen(true);
+            })}
+            onSelectVersion={(id, projectId) => {
+              if (id === selectedVersionId) {
+                setExpandedVersionId((current) => current === id ? null : id);
+                return;
+              }
+              void navigate(async () => {
+                stopRealtimeContext();
+                await soundcase.selectVersion(id, projectId);
+                setPlayingFinalVersionId(null);
+                setExpandedVersionId(id);
+              });
+            }}
+            onResumeVersion={(id, projectId) => void navigate(async () => {
+              stopRealtimeContext();
+              await soundcase.resumeVersion(id, projectId);
+              setExpandedVersionId(id);
+            })}
+            onDeleteVersion={(id, projectId) => void navigate(async () => {
+              stopRealtimeContext();
+              await soundcase.deleteVersion(id, projectId);
+              await soundcase.refreshProjects();
+            })}
+            onDeleteProject={(id) => void navigate(async () => {
+              stopRealtimeContext();
+              await soundcase.deleteProject(id);
+            })}
+          />
         </div>
-
-        <div className={styles.panelFooter}>
-          <button type="button" className={styles.primaryAction} disabled={actionsDisabled || generating} onClick={() => void generate("realtime")}>
-            <Volume2 /> {generating ? "Preparando…" : "Gerar e ouvir agora"}
-          </button>
-        </div>
-        {conflictBar}
       </div>
-    );
-  }
-
-  return (
-    <div className={styles.pageBody} data-variant="page">
-      <div className={styles.workspace}>
-        <DirectionSidebar settings={settings} onChange={setSettings} onGenerate={(mode) => void generate(mode)} busy={generating} disabled={actionsDisabled} />
-        {editor}
-        <div className={styles.resultRail}>
-          {result}
-          {library(false)}
+      {soundcase.conflict ? (
+        <div className={styles.conflictBar} role="alert">
+          <span>Este texto mudou em outra aba. Seu conteúdo local foi preservado.</span>
+          <button onClick={() => void soundcase.resolveConflict("local")}>Manter o meu</button>
+          <button onClick={() => void soundcase.resolveConflict("server")}>Usar o salvo</button>
         </div>
-      </div>
-      <SoundCaseMobileDock onDirection={() => setDirectionOpen(true)} onLibrary={() => setLibraryOpen(true)} onGenerate={() => void generate("realtime")} disabled={actionsDisabled || generating} />
-      <button type="button" className={styles.tabletLibraryTrigger} aria-label="Abrir acervo" onClick={() => setLibraryOpen(true)}><Library /></button>
-      <Sheet open={directionOpen} onOpenChange={setDirectionOpen}>
-        <SheetContent side="bottom" showCloseButton={false} className={styles.sheetPanel}>
-          <SheetHeader className={styles.sheetHeader}>
-            <div>
-              <SheetTitle>Direção de leitura</SheetTitle>
-              <SheetDescription>Ajuste voz, ritmo e formato; Luna continua como padrão.</SheetDescription>
-            </div>
-            <button type="button" className={styles.sheetClose} aria-label="Fechar direção de leitura" onClick={() => setDirectionOpen(false)}><X /></button>
-          </SheetHeader>
-          <DirectionSidebar settings={settings} onChange={setSettings} onGenerate={(mode) => { setDirectionOpen(false); void generate(mode); }} busy={generating} disabled={actionsDisabled} />
-        </SheetContent>
-      </Sheet>
-      <Sheet open={libraryOpen} onOpenChange={setLibraryOpen}>
-        <SheetContent side="right" showCloseButton={false} className={styles.sheetPanel}>
-          <SheetHeader className={styles.sheetHeader}>
-            <div>
-              <SheetTitle>Acervo</SheetTitle>
-              <SheetDescription>Projetos e gerações privadas.</SheetDescription>
-            </div>
-            <button type="button" className={styles.sheetClose} aria-label="Fechar acervo" onClick={() => setLibraryOpen(false)}><X /></button>
-          </SheetHeader>
-          {library(true)}
-        </SheetContent>
-      </Sheet>
-      {conflictBar}
+      ) : null}
     </div>
   );
 }

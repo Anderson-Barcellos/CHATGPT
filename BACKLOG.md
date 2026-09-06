@@ -2,6 +2,20 @@
 
 ## Estado operacional
 
+#### ENTREGA SC2 — Polimento do acervo SoundCase (`fechada` por Anders, 2026-09-06)
+
+Contrato aprovado por Anders nesta conversa: acervo de narrações como entrada, texto/importação/direção somente ao criar ou reabrir um texto salvo, player expansível por cartão com tempo/seek/download. Uma expansão por vez; recolher preserva a reprodução. Cartões abrangem todos os projetos via rotas existentes; textos/rascunhos ficam recolhidos.
+
+Limites: polimento do SoundCase na página e painel do chat; preservar autosave/CAS, Realtime, TTS, dados privados e WIP de B2–B6. Sem ativar outras candidatas do MAPA. Evidência prevista: testes focados, suíte, TypeScript/lint/build prefixada e Chrome desktop/mobile com fixtures sem geração paga. Publicação deve distinguir este ajuste do WIP já presente.
+
+Implementado: `SoundCaseWorkspace` abre no acervo, editor somente sob demanda e recolhe após geração aceita. `useSoundCaseLibrary` reúne resumos de todas as narrações nas rotas existentes, com polling das ativas e erro/retry; textos salvos ficam em details. `SoundCaseLibrary` mantém o player selecionado montado ao recolher; `SoundCasePlayer` tem seek/tempo/download. Seleção entre projetos preserva flush/CAS e atualização ao reconectar não troca a versão escolhida.
+
+Validação: suíte completa 167 arquivos/825 testes; teste final de interação 4/4 (inclui reconexão adicionada após a suíte); tsc e lint dos arquivos alterados limpos; build `/chat` com Turbopack passou em snapshot de HEAD + SC2. Chrome 1440×1000 e 390×844: acervo, reprodução real de WAV sintético, recolher sem pausa, seek, troca de projeto, download concluído, criação/salvamento mockados, painel no chat e tema escuro; sem erros de console ou overflow horizontal. Browser plugin indisponível; usado Playwright/Chrome instalado. Não houve geração paga ou escrita em dados privados.
+
+Publicado em 2026-09-06 após Anders pedir build/restart: build validada `1TZe6JKGfGAom45Q6MzGh` (HEAD + SC2) instalada em `.next`, build anterior preservada em `.next-before-sc2-*`, assets antigos mantidos para abas abertas e `chatgpt.service` reiniciado. Health local/público 200 healthy. Chrome autenticado em `https://ultrassom.ai/chat/soundcase`, 390×844: novo acervo, editor ausente, expansão do player real, zero pageerrors/overflow; sem geração paga. Resultado `/tmp/sc2-production-result.json`; caminhos exatos de rollback em `/tmp/sc2-deploy-paths`.
+
+O checkout continua contendo WIP B2–B6, inclusive `instrumentation.ts`; esse lote não foi incluído na build publicada. Snapshot de revisão: `/tmp/soundcase-sc2-review-0sk_16iy` (somente config temporária de raiz do Turbopack ajustada para resolver node_modules compartilhado; webpack alternativo falhou no loader legado do Monaco). Capturas `/tmp/sc2-desktop-player.png`, `/tmp/sc2-panel.png`, `/tmp/sc2-panel-dark.png`; QA `/tmp/sc2-browser-result.json`. Checklist concluído: inspeção, implementação, testes, QA, publicação e health. Anders aprovou o resultado em produção ("Ficou show de bola") e autorizou commit/push somente desta entrega em 2026-09-06; SC2 fechada, sem ativar outra entrega.
+
 ### FRENTE ativa: B — Bugs funcionais (B1 fechada; B2–B6 prontas para revisão)
 
 O fechamento do repositório e a ENTREGA L1 integrada foram fechados por Anders em 2026-09-03. As candidatas abaixo não estão automaticamente autorizadas; uma nova FRENTE só começa por decisão dele. A FRENTE H (Hardening) foi fechada em 2026-09-05; A FRENTE P (Layout e performance) foi pausada em 2026-09-05 após P5 (P1–P4 seguem candidatas); a FRENTE B (Bugs funcionais) está ativa com a ENTREGA B1.
