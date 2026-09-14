@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SoundCaseSegment } from "@/lib/soundcase/types";
 import { apiUrl } from "@/lib/utils";
+import { soundCaseApi } from "@/lib/soundcase/api";
 import {
   describeAudioPlayError,
   primeBrowserAudio,
@@ -15,7 +16,7 @@ export type SoundCaseRealtimeStatus =
 export interface SoundCaseRealtimeInput {
   projectId: string;
   versionId: string;
-  segments: SoundCaseSegment[];
+  segments?: SoundCaseSegment[];
 }
 
 export function buildSoundCaseRealtimeSegments(text: string): SoundCaseSegment[] {
@@ -187,6 +188,7 @@ export function useSoundCaseRealtime() {
   const [error, setError] = useState<string | null>(null);
   // Versão que a sessão está lendo; o acervo usa isso para marcar "Tocando · Realtime".
   const [versionId, setVersionId] = useState<string | null>(null);
+  const [attemptedVersionId, setAttemptedVersionId] = useState<string | null>(null);
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const channelRef = useRef<RTCDataChannel | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -230,6 +232,7 @@ export function useSoundCaseRealtime() {
   const stop = useCallback(() => {
     cleanup(false);
     setStatus("idle");
+    setError(null);
   }, [cleanup]);
 
   const prime = useCallback(() => {
@@ -244,11 +247,6 @@ export function useSoundCaseRealtime() {
   const start = useCallback(async (input: SoundCaseRealtimeInput) => {
     const preparedAudio = preparedAudioRef.current ? audioRef.current : null;
     cleanup(Boolean(preparedAudio));
-    if (!input.segments.length) {
-      setStatus("error");
-      setError("O texto não possui segmentos para leitura.");
-      return;
-    }
     const audio = preparedAudio ?? createSoundCaseAudioElement(document);
     if (!preparedAudio) {
       document.body.appendChild(audio);
@@ -259,11 +257,18 @@ export function useSoundCaseRealtime() {
     startedAtRef.current = performance.now();
     setFirstAudioMs(null);
     setError(null);
+    setAttemptedVersionId(input.versionId);
     setVersionId(input.versionId);
     setStatus("connecting");
     const session = fenceRef.current!.start();
 
     try {
+      // A narração salva usa o snapshot da versão, nunca o rascunho atual do projeto.
+      const segments = input.segments ?? buildSoundCaseRealtimeSegments(
+        await soundCaseApi.getVersionSource(input.projectId, input.versionId, session.signal)
+      );
+      if (!fenceRef.current?.isCurrent(session.id)) return;
+      if (!segments.length) throw new Error("O texto não possui segmentos para leitura.");
       const peer = new RTCPeerConnection();
       peerRef.current = peer;
       peer.addTransceiver("audio", { direction: "recvonly" });
@@ -324,7 +329,7 @@ export function useSoundCaseRealtime() {
         setActiveSegmentIndex,
         () => setStatus("ready")
       );
-      queue.reset(input.segments);
+      queue.reset(segments);
       queueRef.current = queue;
       channel.addEventListener("open", () => {
         if (!fenceRef.current?.isCurrent(session.id)) return;
@@ -394,6 +399,7 @@ export function useSoundCaseRealtime() {
 
   return {
     status, activeSegmentIndex, firstAudioMs, error, versionId,
+    errorVersionId: error ? attemptedVersionId : null,
     isActive: status === "connecting" || status === "ready" || status === "speaking" || status === "paused",
     prime, start, stop, skipToSegment,
   };

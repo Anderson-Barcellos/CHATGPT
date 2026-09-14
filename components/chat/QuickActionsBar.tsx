@@ -81,7 +81,7 @@ export function QuickActionsBar({
     touchTimer.current = window.setTimeout(() => setTouched(false), 2000);
   }, [isMobile]);
   const { appendToNotes } = useNotes();
-  const { openContextPanel } = useUIStore();
+  const openContextPanel = useUIStore((state) => state.openContextPanel);
 
   const handleCopy = useCallback(async () => {
     try {

@@ -200,11 +200,29 @@ function cloneMessagesForStorage(messages: Message[]): Message[] {
   }));
 }
 
+/**
+ * Lê as mensagens do store somente se ele ainda pertence à conversa do envio.
+ * Depois de Parar, o rail libera a troca de conversa antes do stream antigo
+ * terminar de encerrar; sem esta cerca o snapshot da conversa nova iria parar
+ * no id da antiga (B1).
+ */
+function readOwnedConversationMessages(conversationId: string): Message[] | null {
+  const state = useChatStore.getState();
+  return state.activeConversationId === conversationId ? state.messages : null;
+}
+
 async function persistConversationSnapshot(
   conversationId: string,
   queryClient: ReturnType<typeof useQueryClient>
 ) {
-  const finalMessages = useChatStore.getState().messages;
+  const finalMessages = readOwnedConversationMessages(conversationId);
+  if (!finalMessages) {
+    console.warn(
+      "[useChat] Snapshot ignorado: o store já pertence a outra conversa.",
+      conversationId
+    );
+    return;
+  }
   const messagesForStorage = cloneMessagesForStorage(finalMessages);
   const userMessages = finalMessages.filter((message) => message.role === "user");
 
@@ -385,8 +403,11 @@ export function useChat() {
         const hasPendingBackground = useChatStore
           .getState()
           .messages.some(isPendingBackgroundMessage);
-        setIsLoading(hasPendingBackground);
-        setIsStreaming(hasPendingBackground);
+        // Um reconcile disparado por job de outra conversa (troca de aba do
+        // navegador) não pode apagar o loading de um stream normal em curso (B2).
+        const hasLiveStream = abortControllerRef.current !== null;
+        setIsLoading(hasPendingBackground || hasLiveStream);
+        setIsStreaming(hasPendingBackground || hasLiveStream);
         if (!hasPendingBackground) {
           activeBackgroundMessageRef.current = null;
         }
@@ -619,7 +640,8 @@ export function useChat() {
       setIsLoading(true);
       setIsStreaming(true);
       setComposerError(null);
-      abortControllerRef.current = new AbortController();
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
 
       const userMessage: Message = {
         id: crypto.randomUUID(),
@@ -682,9 +704,9 @@ export function useChat() {
       });
 
       const throttledAutoSave = createThrottle(() => {
-        const snapshot = cloneMessagesForStorage(
-          useChatStore.getState().messages
-        );
+        const ownedMessages = readOwnedConversationMessages(activeConversationId);
+        if (!ownedMessages) return;
+        const snapshot = cloneMessagesForStorage(ownedMessages);
         void saveConversationMessages(activeConversationId, snapshot).catch(
           (err) => {
             console.warn("[useChat] Falha em auto-save throttled:", err);
@@ -779,7 +801,7 @@ export function useChat() {
               conversationId: activeConversationId,
               assistantMessageId,
             }),
-            signal: abortControllerRef.current.signal,
+            signal: abortController.signal,
           });
 
           if (!response.ok) {
@@ -816,7 +838,7 @@ export function useChat() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(requestPayload),
-          signal: abortControllerRef.current.signal,
+          signal: abortController.signal,
         });
 
         if (!response.ok) {
@@ -970,12 +992,17 @@ export function useChat() {
       } finally {
         streamPatchScheduler.cancel();
         throttledAutoSave.cancel();
-        const hasPendingBackground = useChatStore
-          .getState()
-          .messages.some(isPendingBackgroundMessage);
-        setIsLoading(hasPendingBackground);
-        setIsStreaming(hasPendingBackground);
-        abortControllerRef.current = null;
+        // Só o envio mais recente decide o estado de loading. Um stream antigo
+        // que encerra depois de Parar + reenviar não pode apagar o controller
+        // nem as flags do envio novo (B1).
+        if (abortControllerRef.current === abortController) {
+          const hasPendingBackground = useChatStore
+            .getState()
+            .messages.some(isPendingBackgroundMessage);
+          setIsLoading(hasPendingBackground);
+          setIsStreaming(hasPendingBackground);
+          abortControllerRef.current = null;
+        }
       }
 
       return sent;

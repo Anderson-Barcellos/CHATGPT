@@ -34,12 +34,16 @@ describe("WorkspaceFrameV2", () => {
     expect(markup).not.toContain("Preview do documento");
     expect(markup).toContain("gc-device-frame");
     expect(markup).toContain("gc-atmosphere-shell");
+    expect(markup).toContain("gc-chat-ui");
     expect(markup).toContain('data-visual-theme="atmosphere-glass"');
     expect(markup).toContain("text-[length:var(--gc-mobile-tab-font-size)]");
     expect(markup).not.toContain("text-[0.6rem]");
     expect(markup).not.toContain('class="dark ');
     expect(markup).not.toContain(">Salvo<");
     expect(markup).not.toContain(">online<");
+    expect(markup).not.toContain("gc-mobile-density");
+    expect(markup).not.toContain("lg:hidden md:hidden");
+    expect(markup).toContain("gc-safe-x");
   });
 
   it("keeps the top bar free of product links: SoundCase lives only in the rail", () => {
@@ -102,6 +106,13 @@ describe("CommandComposerV2", () => {
     expect(markup).toContain("Quiz");
     expect(markup).toContain('aria-label="Gravar áudio"');
     expect(markup).toContain('aria-label="Enviar mensagem"');
+    expect(markup).toContain("py-[var(--gc-mobile-composer-controls-y)]");
+    expect(markup).toContain("flex flex-nowrap items-center justify-between gap-[0.23rem]");
+    expect(markup).toContain("flex shrink-0 items-center gap-[0.23rem]");
+    expect(markup).toContain("gc-composer-controls flex min-w-0 flex-1 flex-wrap items-center min-[390px]:flex-nowrap");
+    expect(markup).not.toContain("overflow-x-auto");
+    expect(markup).toContain("size-[var(--gc-mobile-composer-control-height)]");
+    expect(markup).toContain("size-[var(--gc-mobile-composer-send-size)]");
   });
 });
 
@@ -118,7 +129,7 @@ describe("CommandComposerContainerV2", () => {
 
     expect(markup).toContain('aria-label="Adicionar anexos"');
     expect(markup).toContain('aria-label="Selecionar modelo"');
-    expect(markup).toContain("max-w-[9rem]");
+    expect(markup).toContain("max-w-[var(--gc-mobile-composer-model-width)]");
     expect(markup).toContain("md:max-w-[10rem]");
     expect(markup).toContain(">Rec<");
     expect(markup).not.toContain(">Arquivo<");

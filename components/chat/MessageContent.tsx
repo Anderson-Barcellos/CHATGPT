@@ -66,7 +66,7 @@ function getStreamStatusNotice(streamStatus: Message["streamStatus"]) {
 }
 
 export function MessageContent({ message, className }: MessageContentProps) {
-  const { openArtifact } = useUIStore();
+  const openArtifact = useUIStore((state) => state.openArtifact);
   const persistArtifactSession = useArtifactSessionPersistence();
   const artifact = message.artifact;
   const prefersDocumentMode = message.preferredDisplayMode === "document";

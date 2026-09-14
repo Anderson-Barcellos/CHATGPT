@@ -4,7 +4,7 @@ Este arquivo é a ponte compacta para Claude Code. A autoridade operacional é `
 
 ## Leitura inicial
 
-- `AGENTS.md`: regras locais, estado atual, invariantes e diário append-only.
+- `AGENTS.md`: regras locais, estado atual e invariantes; diário append-only em `docs/DIARIO-AGENTS.md`.
 - `README.md`: visão geral e estrutura.
 - `docs/API.md`: contratos de rotas.
 - `docs/ARCHITECTURE.md`: fluxos e fronteiras.

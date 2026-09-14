@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ArrowLeft, ChevronDown, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { DirectionSidebar } from "@/components/soundcase/DirectionSidebar";
 import { SoundCaseEditor } from "@/components/soundcase/SoundCaseEditor";
@@ -11,15 +11,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useSoundCaseRealtimeSession } from "@/components/soundcase/SoundCaseRealtimeProvider";
 import { useSoundCase } from "@/hooks/useSoundCase";
 import { useSoundCaseLibrary } from "@/hooks/useSoundCaseLibrary";
-import { buildSoundCaseRealtimeSegments } from "@/hooks/useSoundCaseRealtime";
+import { useSoundCaseSettings } from "@/hooks/useSoundCaseSettings";
 import { soundCaseApi } from "@/lib/soundcase/api";
-import type { SoundCaseGenerationSettings } from "@/lib/soundcase/types";
 import styles from "./SoundCase.module.css";
-
-const DEFAULT_SETTINGS: SoundCaseGenerationSettings = {
-  automatic: true, playbackMode: "realtime", format: "mp3",
-  voiceOverride: null, speedOverride: null, instructionsOverride: null,
-};
 
 export type SoundCaseWorkspaceVariant = "page" | "panel";
 
@@ -30,7 +24,7 @@ export function prepareSoundCaseRealtimeGeneration(stop: () => void, prime: () =
 
 export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWorkspaceVariant }) {
   const soundcase = useSoundCase();
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const { settings, setSettings } = useSoundCaseSettings();
   const [generating, setGenerating] = useState(false);
   const [directionOpen, setDirectionOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -41,7 +35,6 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
   const [pendingRealtimeVersionId, setPendingRealtimeVersionId] = useState<string | null>(null);
   // Guarda a versão cujo arquivo está tocando: trocar de versão invalida sozinho, sem effect.
   const [playingFinalVersionId, setPlayingFinalVersionId] = useState<string | null>(null);
-  const realtimeTextRef = useRef("");
   const startedRealtimeVersionRef = useRef<string | null>(null);
   const realtime = useSoundCaseRealtimeSession();
   const isPanel = variant === "panel";
@@ -75,17 +68,15 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
     void realtime.start({
       projectId: version.projectId,
       versionId: version.id,
-      segments: buildSoundCaseRealtimeSegments(realtimeTextRef.current),
     });
   }, [pendingRealtimeVersionId, realtime, soundcase.selectedVersion]);
 
   const generate = async (playbackMode: "realtime" | "silent") => {
     if (playbackMode === "realtime") {
       prepareSoundCaseRealtimeGeneration(stopRealtimeContext, realtime.prime);
-      realtimeTextRef.current = soundcase.draftText;
       startedRealtimeVersionRef.current = null;
     } else {
-      realtime.stop();
+      stopRealtimeContext();
     }
     setGenerating(true);
     try {
@@ -128,7 +119,13 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
       key={soundcase.selectedVersion.id}
       version={soundcase.selectedVersion}
       audioUrl={soundCaseApi.audioUrl(soundcase.selectedVersion.projectId, soundcase.selectedVersion.id)}
-      realtime={{ ...realtime, isActive: realtime.isActive && realtime.versionId === selectedVersionId }}
+      realtime={{ ...realtime, isActive: realtime.isActive && realtime.versionId === selectedVersionId,
+        error: realtime.errorVersionId === selectedVersionId ? realtime.error : null,
+        stop: stopRealtimeContext }}
+      onStartRealtime={() => {
+        prepareSoundCaseRealtimeGeneration(stopRealtimeContext, realtime.prime);
+        void realtime.start({ projectId: soundcase.selectedVersion!.projectId, versionId: soundcase.selectedVersion!.id });
+      }}
       onPlaybackChange={(playing) => setPlayingFinalVersionId(playing ? selectedVersionId : null)}
     />
   ) : null;
@@ -138,21 +135,24 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
       <div className={styles.acervoScroll}>
         {soundcase.error ? <p className={styles.acervoError} role="alert">{soundcase.error}</p> : null}
         {soundcase.loading ? <p className={styles.libraryEmpty} role="status">Carregando suas narrações…</p> : null}
+        <Collapsible className={styles.settingsSection} open={directionOpen} onOpenChange={setDirectionOpen}>
+          <CollapsibleTrigger className={styles.settingsTrigger} aria-label="Configurações do Soundcase" disabled={generating}>
+            <SlidersHorizontal />
+            <span><strong>Configurações do Soundcase</strong><small>{settings.automatic ? "Direção automática · Luna" : "Direção manual"} · {settings.format.toUpperCase()}</small></span>
+            <ChevronDown />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <p className={styles.settingsHint}>Preferências para as próximas gerações, salvas neste navegador. As narrações do acervo mantêm seus ajustes originais.</p>
+            <DirectionSidebar settings={settings} onChange={setSettings} onGenerate={(mode) => void generate(mode)}
+              busy={generating} disabled={actionsDisabled} showActions={false} />
+          </CollapsibleContent>
+        </Collapsible>
         <section hidden={!editorOpen} className={styles.creation} aria-label="Criar narração">
           <div className={styles.creationHeading}>
             <button type="button" disabled={generating || navigating} onClick={() => setEditorOpen(false)}><ArrowLeft /> Voltar ao acervo</button>
             <span>{soundcase.saving ? "Salvando…" : soundcase.isDirty ? "Salvamento pendente" : "Texto salvo"}</span>
           </div>
           {editorOpen ? editor : null}
-          <Collapsible open={directionOpen} onOpenChange={setDirectionOpen}>
-            <CollapsibleTrigger className={styles.panelSectionTrigger} data-open={directionOpen}>
-              <span>Voz e direção de leitura</span><ChevronDown />
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <DirectionSidebar settings={settings} onChange={setSettings} onGenerate={(mode) => void generate(mode)}
-                busy={generating} disabled={actionsDisabled} showActions={false} />
-            </CollapsibleContent>
-          </Collapsible>
           <div className={styles.creationActions}>
             <button className={styles.primaryAction} type="button" disabled={actionsDisabled || generating || navigating} onClick={() => void generate("realtime")}>
               {generating ? "Preparando…" : "Gerar e ouvir agora"}

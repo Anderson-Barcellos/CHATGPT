@@ -1,16 +1,14 @@
 import { useSyncExternalStore } from "react";
-import { MOBILE_BREAKPOINT } from "@/lib/layout/breakpoints";
-
-const QUERY = `(max-width: ${MOBILE_BREAKPOINT - 1}px)`;
+import { MOBILE_MEDIA_QUERY } from "@/lib/layout/breakpoints";
 
 function subscribe(callback: () => void) {
-  const mql = window.matchMedia(QUERY);
+  const mql = window.matchMedia(MOBILE_MEDIA_QUERY);
   mql.addEventListener("change", callback);
   return () => mql.removeEventListener("change", callback);
 }
 
 function getSnapshot() {
-  return window.matchMedia(QUERY).matches;
+  return window.matchMedia(MOBILE_MEDIA_QUERY).matches;
 }
 
 function getServerSnapshot() {

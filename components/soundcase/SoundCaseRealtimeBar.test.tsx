@@ -18,6 +18,7 @@ function makeSession(overrides: Partial<SoundCaseRealtimeSession> = {}): SoundCa
     activeSegmentIndex: 0,
     firstAudioMs: null,
     error: null,
+    errorVersionId: null,
     versionId: "v",
     isActive: true,
     prime: vi.fn(),

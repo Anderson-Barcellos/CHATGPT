@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { memo, useState, useCallback, useRef, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { MessageContent } from "./MessageContent";
 import { ReasoningPanel } from "./ReasoningPanel";
@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { Pencil, X, Send, Globe, ExternalLink, Trash2, MoreHorizontal, FileIcon, FileText, Sparkles } from "lucide-react";
 import {
   DropdownMenu,
@@ -51,12 +52,14 @@ function formatTime(date: Date): string {
   }
 }
 
-export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDelete, onRegenerate }: MessageBubbleProps) {
   const shouldReduceMotion = useReducedMotion();
+  // No celular a animação `layout` por balão custa GPU durante a rolagem e o streaming.
+  const isMobile = useIsMobile();
   const isUser = message.role === "user";
   const webSearchStatus = getWebSearchIndicatorStatus(message);
   const { appendToNotes } = useNotes();
-  const { openContextPanel } = useUIStore();
+  const openContextPanel = useUIStore((state) => state.openContextPanel);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -117,7 +120,7 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
   return (
     <motion.div
       layout={
-        shouldReduceMotion || message.streamStatus === "streaming"
+        shouldReduceMotion || isMobile || message.streamStatus === "streaming"
           ? false
           : "position"
       }
@@ -128,14 +131,14 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
         ease: [0.2, 0, 0, 1],
       }}
       className={cn(
-        "gc-message-row group flex gap-2 md:gap-3",
+        "gc-message-row group flex gap-[0.46rem] md:gap-3",
         isUser ? "justify-end" : "justify-start"
       )}
       data-message-id={message.id}
     >
       {!isUser && (
-        <div className="gc-refined-accent-surface mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl border shadow-[0_10px_28px_rgba(15,118,110,0.12)] md:h-10 md:w-10">
-          <OpenAIIcon className="h-3 w-3 text-primary md:h-4 md:w-4" />
+        <div className="gc-message-avatar gc-refined-accent-surface mt-0.5 flex size-[1.85rem] shrink-0 items-center justify-center rounded-[0.92rem] border shadow-[0_9px_26px_rgba(15,118,110,0.12)] md:size-10 md:rounded-2xl">
+          <OpenAIIcon className="size-[0.6875rem] text-primary md:size-4" />
         </div>
       )}
 
@@ -332,7 +335,7 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
                   <span className="sr-only">Acoes da mensagem</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align={isUser ? "end" : "start"} className="w-52">
+              <DropdownMenuContent align={isUser ? "end" : "start"} className="gc-chat-ui w-52">
                 {isUser && onEdit && (
                   <DropdownMenuItem
                     onClick={() => {
@@ -390,7 +393,12 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
         {!isUser &&
           (message.content ||
             (message.artifact?.kind === "document" ? message.artifact.content : "")) && (
-          <div className="gc-message-quick-actions gc-refined-action-surface mt-2 rounded-2xl border px-2.5 py-2 md:px-3">
+          <div
+            className={cn(
+              "gc-message-quick-actions gc-refined-action-surface mt-[0.46rem] rounded-2xl border px-2.5 py-2 md:mt-2 md:px-3",
+              onRegenerate && "gc-message-quick-actions-wide"
+            )}
+          >
             <QuickActionsBar
               content={
                 message.artifact?.kind === "document"
@@ -408,7 +416,7 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
       </div>
 
       {isUser && (
-        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[color:var(--gc-border)] bg-[var(--gc-surface-control)] shadow-[0_0_14px_rgba(14,116,144,0.10)] md:h-8 md:w-8">
+        <div className="mt-0.5 flex size-[1.6rem] shrink-0 items-center justify-center overflow-hidden rounded-[0.46rem] border border-[color:var(--gc-border)] bg-[var(--gc-surface-control)] shadow-[0_0_13px_rgba(14,116,144,0.10)] md:size-8 md:rounded-lg">
           {/* eslint-disable-next-line @next/next/no-img-element -- small local avatar */}
           <img
             src={USER_AVATAR_SRC}
@@ -430,4 +438,4 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }: Messa
       )}
     </motion.div>
   );
-}
+});

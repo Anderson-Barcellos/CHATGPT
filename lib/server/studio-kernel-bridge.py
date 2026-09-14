@@ -24,7 +24,9 @@ Interrupt não passa por aqui: o Node manda SIGINT direto na unit do kernel
 
 import collections
 import json
+import os
 import queue
+import select
 import sys
 import time
 from pathlib import Path
@@ -33,6 +35,9 @@ from jupyter_client import BlockingKernelClient
 
 CONNECTION_FILE_DEADLINE_S = 30
 HEARTBEAT_CHECK_INTERVAL_S = 5
+# Enquanto uma célula espera input(), o stdin do Node é lido com este passo
+# para que o fim da célula (Interromper → KeyboardInterrupt) seja percebido.
+INPUT_POLL_INTERVAL_S = 0.2
 # Mimes que persistimos/exibimos, em ordem de preferência de render no client.
 # HTML/SVG passam por sanitização (DOMPurify) antes do render na UI.
 ALLOWED_MIMES = (
@@ -95,32 +100,91 @@ def pick_data(bundle: dict) -> dict:
 # o loop principal drena esta fila antes de voltar a ler o stdin.
 pending_ops: collections.deque = collections.deque()
 
+# Leitor de linhas próprio sobre o fd 0: o TextIOWrapper de sys.stdin guarda
+# linhas coalescidas num buffer invisível ao select(), então duas ops escritas
+# juntas pelo Node ficariam presas até a próxima escrita.
+_stdin_buffer = bytearray()
+_stdin_closed = False
 
-def wait_for_input_reply(client: BlockingKernelClient) -> None:
-    """Bloqueia lendo o stdin do Node até chegar o input_reply da UI.
 
-    Executes enfileirados nesse meio-tempo vão para pending_ops; shutdown
-    é honrado na hora (o kernel parado em input() morre junto com a unit).
+def reset_stdin_buffer() -> None:
+    global _stdin_buffer, _stdin_closed
+    _stdin_buffer = bytearray()
+    _stdin_closed = False
+
+
+def _pop_buffered_line():
+    global _stdin_buffer
+    newline = _stdin_buffer.find(b"\n")
+    if newline == -1:
+        return None
+    line = bytes(_stdin_buffer[:newline])
+    del _stdin_buffer[: newline + 1]
+    return line.decode("utf-8", errors="replace")
+
+
+def read_command(timeout=None):
+    """Próximo comando JSON do Node, ou None se `timeout` (segundos) estourar.
+
+    Devolve `False` quando o stdin fechou de vez. Linhas vazias ou inválidas
+    são puladas sem consumir o timeout inteiro.
     """
-    for raw_line in sys.stdin:
-        raw_line = raw_line.strip()
-        if not raw_line:
+    global _stdin_closed
+    deadline = None if timeout is None else time.monotonic() + timeout
+    while True:
+        line = _pop_buffered_line()
+        if line is not None:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                return json.loads(line)
+            except json.JSONDecodeError:
+                emit({"event": "fatal", "message": "comando inválido recebido do Node"})
+                continue
+        if _stdin_closed:
+            return False
+        remaining = None if deadline is None else max(0.0, deadline - time.monotonic())
+        ready, _, _ = select.select([0], [], [], remaining)
+        if not ready:
+            return None
+        chunk = os.read(0, 65536)
+        if not chunk:
+            _stdin_closed = True
+            if _stdin_buffer:
+                _stdin_buffer.extend(b"\n")
             continue
-        try:
-            command = json.loads(raw_line)
-        except json.JSONDecodeError:
+        _stdin_buffer.extend(chunk)
+
+
+def wait_for_input_reply(client) -> bool:
+    """Espera o input_reply da UI sem ficar cego para o fim da célula.
+
+    Devolve True quando o reply foi entregue ao kernel e False quando a célula
+    terminou sozinha (Interromper dispara KeyboardInterrupt dentro do input(),
+    e o execute_reply aparece no shell). Executes enfileirados nesse meio-tempo
+    vão para pending_ops; shutdown é honrado na hora.
+    """
+    while True:
+        if client.shell_channel.msg_ready():
+            return False
+        command = read_command(timeout=INPUT_POLL_INTERVAL_S)
+        if command is None:
+            if not client.is_alive():
+                fatal("kernel morreu aguardando input_reply")
             continue
+        if command is False:
+            fatal("stdin do Node fechou aguardando input_reply")
         op = command.get("op")
         if op == "input_reply":
             client.input(str(command.get("value", "")))
-            return
+            return True
         if op == "shutdown":
             client.shutdown()
             emit({"event": "shutdown_ok"})
             sys.exit(0)
         if op == "execute":
             pending_ops.append(command)
-    fatal("stdin do Node fechou aguardando input_reply")
 
 
 def drain_input_requests(client: BlockingKernelClient, cell_id: str) -> None:
@@ -252,17 +316,9 @@ def main() -> None:
         if pending_ops:
             command = pending_ops.popleft()
         else:
-            raw_line = sys.stdin.readline()
-            if not raw_line:
+            command = read_command()
+            if command is False:
                 break
-            raw_line = raw_line.strip()
-            if not raw_line:
-                continue
-            try:
-                command = json.loads(raw_line)
-            except json.JSONDecodeError:
-                emit({"event": "fatal", "message": "comando inválido recebido do Node"})
-                continue
 
         op = command.get("op")
         if op == "execute":

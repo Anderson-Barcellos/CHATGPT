@@ -64,11 +64,16 @@ describe("QuickActionsBar audio entry point", () => {
         messageId="assistant-1"
         streamStatus="completed"
         alwaysVisible
+        onRegenerate={() => undefined}
       />
     );
 
     expect(markup.match(/title="Abrir player de áudio"/g)).toHaveLength(1);
     expect(markup).not.toContain("Testar Realtime");
     expect(markup).not.toContain("<span>Realtime</span>");
+    expect(markup.match(/gc-touch-target/g)).toHaveLength(8);
+    expect(markup).toContain('aria-label="Copiar"');
+    expect(markup).toContain('aria-label="Regenerar"');
+    expect(markup).toContain('aria-label="Citar no composer"');
   });
 });

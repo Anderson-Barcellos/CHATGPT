@@ -51,14 +51,15 @@ export function GauchoChatShellV2() {
     !window.sessionStorage.getItem("gpt-splash-shown");
 
   useComponentPreloader();
-  const { activeConversationId, messages, isStreaming, setActiveConversationId } = useChatStore();
+  const activeConversationId = useChatStore((state) => state.activeConversationId);
+  const messages = useChatStore((state) => state.messages);
+  const isStreaming = useChatStore((state) => state.isStreaming);
+  const setActiveConversationId = useChatStore((state) => state.setActiveConversationId);
   const { conversations, createConversation } = useConversations();
   const { parameters } = useSettingsStore();
-  const {
-    contextPanelOpen,
-    setContextPanelOpen,
-    closeContextPanel,
-  } = useUIStore();
+  const contextPanelOpen = useUIStore((state) => state.contextPanelOpen);
+  const setContextPanelOpen = useUIStore((state) => state.setContextPanelOpen);
+  const closeContextPanel = useUIStore((state) => state.closeContextPanel);
   const textSelection = useTextSelection();
   const {
     messages: chatMessages,

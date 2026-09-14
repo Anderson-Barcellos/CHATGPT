@@ -111,6 +111,7 @@ export async function deletePulseRun(runId: string): Promise<void> {
   await assertOk(response);
 }
 
+/** Reivindica a execução no servidor; devolve o run ainda `running` (202). */
 export async function runPulseTaskNow(taskId: string): Promise<PulseRun> {
   const response = await fetch(
     apiUrl(`/api/pulse/tasks/${encodeURIComponent(taskId)}/run`),
@@ -119,4 +120,31 @@ export async function runPulseTaskNow(taskId: string): Promise<PulseRun> {
   await assertOk(response);
   const data = await safeJson<{ run: PulseRun }>(response);
   return data.run;
+}
+
+const DEFAULT_RUN_POLL_INTERVAL_MS = 4_000;
+const DEFAULT_RUN_POLL_TIMEOUT_MS = 30 * 60_000;
+
+/**
+ * Acompanha um run até sair de `running`. Devolve o último estado conhecido ao
+ * estourar o timeout e `null` se o run sumiu do feed.
+ */
+export async function waitForPulseRunCompletion(
+  runId: string,
+  options: {
+    listRuns?: () => Promise<PulseRun[]>;
+    intervalMs?: number;
+    timeoutMs?: number;
+  } = {}
+): Promise<PulseRun | null> {
+  const list = options.listRuns ?? (() => listPulseRuns());
+  const intervalMs = options.intervalMs ?? DEFAULT_RUN_POLL_INTERVAL_MS;
+  const deadline = Date.now() + (options.timeoutMs ?? DEFAULT_RUN_POLL_TIMEOUT_MS);
+  let last: PulseRun | null = null;
+  for (;;) {
+    const runs = await list();
+    last = runs.find((run) => run.id === runId) ?? null;
+    if (!last || last.status !== "running" || Date.now() >= deadline) return last;
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
 }

@@ -77,22 +77,22 @@ function WelcomeScreen({
   return (
     <div className="flex flex-1 items-start justify-center px-[var(--gc-mobile-welcome-outer-x)] py-[var(--gc-mobile-welcome-outer-y)] md:items-center md:px-5 md:py-8">
       <div className="w-full max-w-5xl">
-        <div className="space-y-5 md:hidden">
+        <div className="space-y-[1.15rem] md:hidden">
           <section>
-            <div className="mb-2 flex items-center justify-between px-1">
-              <h2 className="text-[0.95rem] font-semibold tracking-[-0.02em] text-foreground">Conversas</h2>
+            <div className="mb-[0.46rem] flex items-center justify-between px-[0.23rem]">
+              <h2 className="text-[0.875rem] font-semibold tracking-[-0.02em] text-foreground">Conversas</h2>
               <button
                 type="button"
-                className="inline-flex items-center gap-1 text-[0.82rem] font-medium text-primary"
+                className="inline-flex items-center gap-[0.23rem] text-[0.75rem] font-medium text-primary"
                 onClick={onOpenConversations}
               >
                 Ver todas
-                <ChevronRight className="size-4" />
+                <ChevronRight className="size-[0.92rem]" />
               </button>
             </div>
-            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="-mx-[0.23rem] flex gap-[0.46rem] overflow-x-auto px-[0.23rem] pb-[0.23rem] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {recentConversations.length === 0 ? (
-                <div className="flex min-h-[4.45rem] min-w-full items-center rounded-[1.05rem] border border-dashed border-[color:var(--gc-border-soft)] bg-background/58 px-3 text-[0.8rem] text-muted-foreground">
+                <div className="flex min-h-[4.1rem] min-w-full items-center rounded-[0.965rem] border border-dashed border-[color:var(--gc-border-soft)] bg-background/58 px-[0.6875rem] text-[0.75rem] text-muted-foreground">
                   Tuas conversas recentes vão aparecer aqui.
                 </div>
               ) : recentConversations.map((conversation) => (
@@ -102,17 +102,17 @@ function WelcomeScreen({
                   aria-current={conversation.id === activeConversationId ? "page" : undefined}
                   onClick={() => onSelectConversation(conversation.id)}
                   className={cn(
-                    "flex min-h-[4.45rem] min-w-[7.9rem] flex-col justify-between rounded-[1.05rem] border bg-background/72 p-2.25 text-left shadow-[0_10px_22px_rgba(15,23,42,0.06)]",
+                    "flex min-h-[4.1rem] min-w-[7.27rem] flex-col justify-between rounded-[0.965rem] border bg-background/72 p-[0.515rem] text-left shadow-[0_9px_20px_rgba(15,23,42,0.06)]",
                     conversation.id === activeConversationId
                       ? "border-primary/60 bg-primary/5"
                       : "border-[color:var(--gc-border-soft)]"
                   )}
                 >
-                  <span className="flex items-start gap-1.5">
-                    <MessageCircle className="mt-0.5 size-3.5 shrink-0 text-primary" />
-                    <span className="line-clamp-2 text-[0.84rem] font-medium leading-snug text-foreground">{conversation.title || "Nova conversa"}</span>
+                  <span className="flex items-start gap-[0.345rem]">
+                    <MessageCircle className="mt-0.5 size-[0.8125rem] shrink-0 text-primary" />
+                    <span className="line-clamp-2 text-[0.78rem] font-medium leading-snug text-foreground">{conversation.title || "Nova conversa"}</span>
                   </span>
-                  <span className="pl-5 text-[0.68rem] text-muted-foreground">{formatConversationDate(conversation.updatedAt)}</span>
+                  <span className="pl-[1.15rem] text-[0.6875rem] text-muted-foreground">{formatConversationDate(conversation.updatedAt)}</span>
                 </button>
               ))}
             </div>
@@ -121,41 +121,41 @@ function WelcomeScreen({
           <button
             type="button"
             onClick={onOpenContextPanel}
-            className="flex w-full items-center gap-2.5 rounded-[1.3rem] border border-[color:var(--gc-border-soft)] bg-background/78 px-3.25 py-2.75 text-left shadow-[0_12px_26px_rgba(15,23,42,0.06)]"
+            className="flex w-full items-center gap-[0.575rem] rounded-[1.2rem] border border-[color:var(--gc-border-soft)] bg-background/78 px-[0.75rem] py-[0.625rem] text-left shadow-[0_11px_24px_rgba(15,23,42,0.06)]"
           >
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-[1rem] border border-[color:var(--gc-border-soft)] bg-muted/48 text-foreground">
-              <PanelRightOpen className="size-5" />
+            <span className="flex size-[2.3rem] shrink-0 items-center justify-center rounded-[0.92rem] border border-[color:var(--gc-border-soft)] bg-muted/48 text-foreground">
+              <PanelRightOpen className="size-[1.15rem]" />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-[0.94rem] font-semibold text-foreground">Painel contextual</span>
-              <span className="block text-[0.78rem] leading-snug text-muted-foreground">Pulse, notas e rotinas</span>
+              <span className="block text-[0.865rem] font-semibold text-foreground">Painel contextual</span>
+              <span className="block text-[0.72rem] leading-snug text-muted-foreground">Pulse, notas e rotinas</span>
             </span>
-            <ChevronRight className="size-4.5 shrink-0 text-foreground" />
+            <ChevronRight className="size-[1.035rem] shrink-0 text-foreground" />
           </button>
 
-          <section className="rounded-[1.35rem] border border-[color:var(--gc-border-soft)] bg-background/78 px-3.25 py-3.5 text-center shadow-[0_15px_34px_rgba(15,23,42,0.06)]">
-            <div className="mx-auto flex size-11 items-center justify-center rounded-[1rem] border border-primary/20 bg-primary/8">
-              <ShieldCheck className="size-6 text-primary" />
+          <section className="rounded-[1.24rem] border border-[color:var(--gc-border-soft)] bg-background/78 px-[0.75rem] py-[0.805rem] text-center shadow-[0_14px_31px_rgba(15,23,42,0.06)]">
+            <div className="mx-auto flex size-[2.5rem] items-center justify-center rounded-[0.92rem] border border-primary/20 bg-primary/8">
+              <ShieldCheck className="size-[1.38rem] text-primary" />
             </div>
-            <h2 className="mt-2.5 text-[1.38rem] font-semibold leading-tight tracking-[-0.04em] text-foreground">
+            <h2 className="mt-[0.575rem] text-[1.27rem] font-semibold leading-tight tracking-[-0.04em] text-foreground">
               Olá, Anders
             </h2>
-            <p className="mt-1 text-[0.9rem] text-muted-foreground">Como posso ajudar você hoje?</p>
-            <div className="mt-3.5 grid grid-cols-4 gap-1">
+            <p className="mt-[0.23rem] text-[0.83rem] text-muted-foreground">Como posso ajudar você hoje?</p>
+            <div className="mt-[0.805rem] grid grid-cols-4 gap-[0.23rem]">
               {MOBILE_ACTIONS.map(({ icon: Icon, label, prompt }) => (
                 <button
                   key={label}
                   type="button"
                   onClick={() => onSuggestionClick(prompt)}
-                  className="inline-flex min-h-[2.8rem] flex-col items-center justify-center gap-0.5 rounded-[0.9rem] border border-[color:var(--gc-border-soft)] bg-background/80 px-1 text-[0.58rem] font-medium leading-tight text-foreground shadow-[0_8px_18px_rgba(15,23,42,0.04)]"
+                  className="inline-flex min-h-[2.575rem] flex-col items-center justify-center gap-[0.115rem] rounded-[0.83rem] border border-[color:var(--gc-border-soft)] bg-background/80 px-[0.23rem] text-[0.6875rem] font-medium leading-tight text-foreground shadow-[0_7px_17px_rgba(15,23,42,0.04)]"
                 >
-                  <Icon className="size-3.25 text-primary" />
+                  <Icon className="size-[0.75rem] text-primary" />
                   <span className="line-clamp-2">{label}</span>
                 </button>
               ))}
             </div>
-            <p className="mt-3.5 flex items-center justify-center gap-1.5 text-[0.78rem] text-muted-foreground">
-              <ShieldCheck className="size-3.5 text-primary" />
+            <p className="mt-[0.805rem] flex items-center justify-center gap-[0.345rem] text-[0.72rem] text-muted-foreground">
+              <ShieldCheck className="size-[0.8125rem] text-primary" />
               Confidencial e seguro.
             </p>
           </section>

@@ -53,7 +53,7 @@ export function ExportDropdown() {
         <TooltipContent>Exportar conversa</TooltipContent>
       </Tooltip>
 
-      <DropdownMenuContent align="end" className="w-44">
+      <DropdownMenuContent align="end" className="gc-chat-ui w-44">
         <DropdownMenuItem
           onSelect={() => activeConversation && exportConversation(activeConversation, "markdown")}
         >

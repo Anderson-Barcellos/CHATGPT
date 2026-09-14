@@ -322,13 +322,11 @@ function MemorySuggestionCard({
 
 export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   const { parameters, updateParameters } = useSettingsStore();
-  const {
-    activeMode,
-    imageQuality,
-    imageSize,
-    setImageQuality,
-    setImageSize,
-  } = useUIStore();
+  const activeMode = useUIStore((state) => state.activeMode);
+  const imageQuality = useUIStore((state) => state.imageQuality);
+  const imageSize = useUIStore((state) => state.imageSize);
+  const setImageQuality = useUIStore((state) => state.setImageQuality);
+  const setImageSize = useUIStore((state) => state.setImageSize);
   const { memories = [], addMemory, updateMemory, deleteMemory } = useMemories();
   const {
     suggestions,
@@ -436,7 +434,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
       <SheetContent
         side="right"
         showCloseButton={false}
-        className="gc-clinical-panel !w-screen !max-w-none gap-0 !border-l-0 border-[color:var(--gc-border-soft)] p-0 pt-[env(safe-area-inset-top)] pb-[max(var(--gc-mobile-panel-content-pad),env(safe-area-inset-bottom))] shadow-none sm:!w-[26.5rem] sm:!max-w-[26.5rem] sm:!border-l sm:shadow-[0_28px_80px_rgba(15,23,42,0.18)]"
+        className="gc-chat-ui gc-clinical-panel !w-screen !max-w-none gap-0 !border-l-0 border-[color:var(--gc-border-soft)] p-0 pt-[env(safe-area-inset-top)] pb-[max(var(--gc-mobile-panel-content-pad),env(safe-area-inset-bottom))] shadow-none sm:!w-[26.5rem] sm:!max-w-[26.5rem] sm:!border-l sm:shadow-[0_28px_80px_rgba(15,23,42,0.18)]"
       >
         <SheetHeader className="sr-only">
           <SheetTitle>Configurações</SheetTitle>

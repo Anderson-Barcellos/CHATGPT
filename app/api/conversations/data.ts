@@ -120,6 +120,39 @@ export function updateConversation(
   });
 }
 
+/**
+ * Read-modify-write das mensagens dentro do lock do arquivo. Quem lê fora do
+ * lock e grava a lista inteira depois (o job em background fazia isso) perde
+ * qualquer autosave do cliente que chegou no meio (B6).
+ */
+export async function patchConversationMessages(
+  id: string,
+  mutator: (messages: Conversation["messages"]) => Conversation["messages"] | null
+): Promise<Conversation | undefined> {
+  if (v2Enabled()) {
+    const current = getV2Conversation(v2Database(), id);
+    if (!current) return undefined;
+    const messages = mutator(current.messages);
+    if (!messages) return undefined;
+    return updateV2Conversation(v2Database(), id, { messages, updatedAt: new Date() });
+  }
+  return withDataFileLock(FILE_NAME, async () => {
+    const conversations = await readAll();
+    const idx = conversations.findIndex((c) => c.id === id);
+    if (idx === -1) return undefined;
+    const messages = mutator(conversations[idx].messages);
+    if (!messages) return undefined;
+    const updated = {
+      ...conversations[idx],
+      messages,
+      updatedAt: new Date(),
+    } as Conversation;
+    conversations[idx] = updated;
+    await writeAll(conversations);
+    return updated;
+  });
+}
+
 export function archiveConversation(
   id: string
 ): Promise<Conversation | undefined> {

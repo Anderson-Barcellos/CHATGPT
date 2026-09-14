@@ -198,12 +198,20 @@ export async function getDuePulseTasks(now = new Date()): Promise<PulseTask[]> {
   );
 }
 
+/**
+ * Reivindica uma execução para a rotina. A checagem de "já está rodando" fica
+ * dentro do lock do arquivo, então timer e disparo manual não conseguem abrir
+ * duas execuções da mesma rotina (B4). Devolve `null` quando perdeu a corrida.
+ */
 export async function createPulseRun(
   task: PulseTask,
   profile?: { model: string; reasoningEffort: PulseRun["reasoningEffort"] }
-): Promise<PulseRun> {
+): Promise<PulseRun | null> {
   return withDataFileLock(RUNS_FILE, async () => {
     const runs = await readRuns();
+    if (runs.some((run) => run.taskId === task.id && run.status === "running")) {
+      return null;
+    }
     const now = new Date().toISOString();
     const run: PulseRun = {
       id: crypto.randomUUID(),
@@ -266,4 +274,38 @@ export async function advancePulseTask(task: PulseTask, runId?: string): Promise
 export async function hasRunningPulseRun(taskId: string): Promise<boolean> {
   const runs = await readRuns();
   return runs.some((run) => run.taskId === taskId && run.status === "running");
+}
+
+export const PULSE_ORPHANED_RUN_ERROR =
+  "Execução interrompida por reinício do servidor. A rotina volta a rodar no próximo horário.";
+
+/**
+ * Marca como falha toda execução `running` que nenhum processo vivo reconhece
+ * (sobrou de um restart). Sem isso a rotina ficava presa para sempre em
+ * "já está em execução" (B4).
+ */
+export async function recoverOrphanedPulseRuns(
+  activeRunIds: ReadonlySet<string>
+): Promise<PulseRun[]> {
+  return withDataFileLock(RUNS_FILE, async () => {
+    const runs = await readRuns();
+    const now = new Date().toISOString();
+    const recovered: PulseRun[] = [];
+    const next = runs.map((run) => {
+      if (run.status !== "running" || activeRunIds.has(run.id)) return run;
+      const failed: PulseRun = {
+        ...run,
+        status: "failed",
+        error: PULSE_ORPHANED_RUN_ERROR,
+        completedAt: now,
+        updatedAt: now,
+      };
+      recovered.push(failed);
+      return failed;
+    });
+    if (recovered.length > 0) {
+      await writeRuns(next);
+    }
+    return recovered;
+  });
 }

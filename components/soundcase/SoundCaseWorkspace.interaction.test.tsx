@@ -4,6 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SoundCaseWorkspace } from "./SoundCaseWorkspace";
 import { soundCaseApi } from "@/lib/soundcase/api";
+import { SOUNDCASE_SETTINGS_KEY } from "@/hooks/useSoundCaseSettings";
 import type { SoundCaseProjectDetail, SoundCasePublicVersion, SoundCaseVersionSummary } from "@/lib/soundcase/types";
 
 const realtime = vi.hoisted(() => ({ stop: vi.fn(), prime: vi.fn(), start: vi.fn(), isActive: false, versionId: null, status: "idle", firstAudioMs: null }));
@@ -44,7 +45,7 @@ async function render() { await act(async () => { root.render(<SoundCaseWorkspac
 
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
+  vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
   vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
   vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => undefined);
   localStorage.clear();
@@ -62,6 +63,46 @@ afterEach(async () => {
 });
 
 describe("SoundCase library interaction", () => {
+  it("persists settings from the library and sends them to the next generation without disabling Luna for a format change", async () => {
+    await render();
+    await click("Configurações do Soundcase");
+    const format = container.querySelector('select[aria-label="Formato do arquivo"]') as HTMLSelectElement;
+    await act(async () => { format.value = "flac"; format.dispatchEvent(new Event("change", { bubbles: true })); });
+    expect(container.querySelector('[aria-label="Direção automática com Luna"]')?.getAttribute("aria-checked")).toBe("true");
+    expect(JSON.parse(localStorage.getItem(SOUNDCASE_SETTINGS_KEY)!)).toMatchObject({ automatic: true, format: "flac" });
+    expect(soundCaseApi.createVersion).not.toHaveBeenCalled();
+    await act(async () => { root.unmount(); root = createRoot(container); });
+    await render();
+    await click("Configurações do Soundcase");
+    expect((container.querySelector('select[aria-label="Formato do arquivo"]') as HTMLSelectElement).value).toBe("flac");
+    await click("Texto p1Consultar texto / criar outra versão");
+    vi.mocked(soundCaseApi.createVersion).mockResolvedValue({ created: false, version: versions[0] });
+    await click("Gerar somente arquivo");
+    expect(soundCaseApi.createVersion).toHaveBeenCalledWith("p1", expect.objectContaining({ automatic: true, format: "flac", playbackMode: "silent" }));
+  });
+
+  it("clears manual direction overrides when returning to automatic while preserving the file format", async () => {
+    localStorage.setItem(SOUNDCASE_SETTINGS_KEY, JSON.stringify({ ...settings, automatic: false, format: "wav", voiceOverride: "cedar", speedOverride: 1.3, instructionsOverride: "Com calma" }));
+    await render();
+    await click("Configurações do Soundcase");
+    await click("Direção automática com Luna");
+    expect(JSON.parse(localStorage.getItem(SOUNDCASE_SETTINGS_KEY)!)).toMatchObject({ automatic: true, format: "wav", voiceOverride: null, speedOverride: null, instructionsOverride: null });
+  });
+
+  it("starts Realtime for a selected saved version without creating another generation", async () => {
+    versions[0].direction = { voice: "marin" } as NonNullable<SoundCasePublicVersion["direction"]>;
+    versions[0].effectiveSettings = { voice: { value: "marin", source: "automatic" } } as NonNullable<SoundCasePublicVersion["effectiveSettings"]>;
+    await render();
+    await click("Ouvir Narração v1");
+    await click("Reproduzir arquivo final");
+    await click("Ouvir com Realtime");
+    expect(realtime.start).toHaveBeenCalledWith({ projectId: "p1", versionId: "v1" });
+    expect(realtime.prime).toHaveBeenCalledOnce();
+    expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
+    expect(vi.mocked(HTMLMediaElement.prototype.pause).mock.invocationCallOrder[0]).toBeLessThan(realtime.start.mock.invocationCallOrder[0]);
+    expect(soundCaseApi.createVersion).not.toHaveBeenCalled();
+  });
+
   it("keeps the chosen older version when reconnecting refreshes the project", async () => {
     const older = version("older", "p1");
     versions.push(older);

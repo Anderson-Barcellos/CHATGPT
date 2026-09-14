@@ -106,6 +106,8 @@ async function releaseFlock(child: ChildProcessWithoutNullStreams): Promise<void
 
 export interface SoundCaseQueueLock {
   holderPid: number;
+  /** True depois que o processo detentor do flock morreu sem `release()`. */
+  isLost: () => boolean;
   release: () => Promise<void>;
 }
 
@@ -141,9 +143,21 @@ export async function acquireSoundCaseQueueLock(
   );
   let acquired = false;
   let releasing = false;
-  const onUnexpectedExit = options.onUnexpectedExit ?? (() => process.exit(1));
+  let lost = false;
+  // Antes era `process.exit(1)`: o detentor do flock morrer derrubava o Next
+  // inteiro (chat, Studio, Pulse). Agora só a operação corrente falha (B6).
+  const onUnexpectedExit =
+    options.onUnexpectedExit ??
+    (() => {
+      console.error("[soundcase] queue lock lost: holder exited unexpectedly", {
+        holderPid: child.pid,
+      });
+    });
   child.on("exit", () => {
-    if (acquired && !releasing) onUnexpectedExit();
+    if (acquired && !releasing) {
+      lost = true;
+      onUnexpectedExit();
+    }
   });
   try {
     await waitForFlock(child);
@@ -158,6 +172,7 @@ export async function acquireSoundCaseQueueLock(
   }
   return {
     holderPid: child.pid!,
+    isLost: () => lost,
     release: async () => {
       releasing = true;
       await releaseFlock(child);
@@ -177,7 +192,11 @@ async function withQueueLock<T>(fn: () => Promise<T>): Promise<T> {
   let queueFileLock: SoundCaseQueueLock | null = null;
   try {
     queueFileLock = await acquireSoundCaseQueueLock();
-    return await fn();
+    const result = await fn();
+    if (queueFileLock.isLost()) {
+      throw new SoundCaseJobError("soundcase_queue_lock_lost", 503);
+    }
+    return result;
   } finally {
     try {
       await queueFileLock?.release();

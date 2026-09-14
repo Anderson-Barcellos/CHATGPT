@@ -24,7 +24,7 @@ import {
   getFixedReasoningEffort,
   getSupportedReasoningEfforts,
 } from "@/lib/models/modelConfig";
-import { useChatStore } from "@/stores/chatStore";
+import { useStartNewConversation } from "@/hooks/useStartNewConversation";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useUIStore } from "@/stores/uiStore";
 import type { ReasoningEffort } from "@/types";
@@ -50,8 +50,8 @@ export function CommandPalette() {
   const router = useRouter();
   const { open, setOpen } = useCommandPaletteContext();
   const { parameters, updateParameters } = useSettingsStore();
-  const { openContextPanel } = useUIStore();
-  const { setActiveConversationId } = useChatStore();
+  const openContextPanel = useUIStore((state) => state.openContextPanel);
+  const startNewConversation = useStartNewConversation();
 
   const chatModels = getChatModels();
   const supportedReasoningEfforts = getSupportedReasoningEfforts(parameters.model);
@@ -66,8 +66,10 @@ export function CommandPalette() {
   );
 
   const handleNewConversation = useCallback(() => {
-    run(() => setActiveConversationId(null));
-  }, [run, setActiveConversationId]);
+    run(() => {
+      void startNewConversation();
+    });
+  }, [run, startNewConversation]);
 
   const handleSetMode = useCallback((mode: string) => {
     window.dispatchEvent(new CustomEvent("gaucho:set-response-mode", { detail: { mode } }));
@@ -76,7 +78,7 @@ export function CommandPalette() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent
-        className="overflow-hidden p-0 shadow-2xl [&>button]:hidden"
+        className="gc-chat-ui overflow-hidden p-0 shadow-2xl [&>button]:hidden"
         style={{ zIndex: 300, maxWidth: "560px", width: "100%" }}
         aria-describedby={undefined}
       >

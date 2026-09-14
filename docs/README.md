@@ -12,7 +12,7 @@ Esta é a superfície documental canônica do Gaucho Chat. Handoffs encerrados, 
 
 Documentos operacionais:
 
-- [AGENTS](../AGENTS.md): instruções locais, invariantes e diário append-only.
+- [AGENTS](../AGENTS.md): instruções locais e invariantes; diário append-only em [DIARIO-AGENTS](DIARIO-AGENTS.md).
 - [BACKLOG](../BACKLOG.md): frente ativa; quando não houver pack ativo, deve dizê-lo explicitamente.
 - [CLAUDE](../CLAUDE.md): ponte compacta para agentes Claude.
 - [.codex_remember/remember.md](../.codex_remember/remember.md): handoff curto da sessão mais recente.

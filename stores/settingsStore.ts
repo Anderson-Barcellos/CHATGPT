@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 import {
   ModelParameters,
   ModelScopedParameters,
@@ -203,7 +204,63 @@ const defaultParameters = mergeModelParameters(
   defaultModelSettings
 );
 
-export const useSettingsStore = create<SettingsState>((set, get) => ({
+export const SETTINGS_STORAGE_KEY = "gaucho-chat:settings:v1";
+
+interface PersistedSettings {
+  model: string;
+  systemPrompt: string;
+  modelSettingsById: ModelSettingsMap;
+}
+
+/**
+ * Só modelo, prompt de sistema e parâmetros por modelo vão para o
+ * localStorage; memórias e instruções vivem no servidor. O merge reconstrói
+ * `parameters` passando pelo mesmo clamp do runtime, então um modelo que
+ * deixou de existir cai no suportado mais próximo (B6).
+ */
+function mergePersistedSettings(
+  persisted: unknown,
+  current: SettingsState
+): SettingsState {
+  const raw = (persisted ?? {}) as Partial<PersistedSettings>;
+  const modelSettingsById: ModelSettingsMap = {
+    ...current.modelSettingsById,
+    ...(raw.modelSettingsById && typeof raw.modelSettingsById === "object"
+      ? raw.modelSettingsById
+      : {}),
+  };
+  const model = resolveSupportedModelId(
+    typeof raw.model === "string" ? raw.model : current.parameters.model
+  );
+  const systemPrompt =
+    typeof raw.systemPrompt === "string" ? raw.systemPrompt : current.parameters.systemPrompt;
+  const scoped = clampModelSettings(model, {
+    ...buildDefaultModelSettings(model),
+    ...sanitizeScopedSettings(modelSettingsById[model]),
+  });
+  modelSettingsById[model] = scoped;
+  return {
+    ...current,
+    modelSettingsById,
+    parameters: mergeModelParameters(model, systemPrompt, scoped),
+  };
+}
+
+function sanitizeScopedSettings(
+  value: Partial<ModelScopedParameters> | undefined
+): Partial<ModelScopedParameters> {
+  if (!value || typeof value !== "object") return {};
+  const numeric = (input: unknown) =>
+    typeof input === "number" && Number.isFinite(input) ? input : undefined;
+  return pickModelScopedUpdates({
+    ...value,
+    maxOutputTokens: numeric(value.maxOutputTokens),
+    temperature: numeric(value.temperature),
+    topP: numeric(value.topP),
+  } as Partial<ModelParameters>);
+}
+
+export const useSettingsStore = create<SettingsState>()(persist((set, get) => ({
   parameters: defaultParameters,
   modelSettingsById: {
     [DEFAULT_MODEL]: defaultModelSettings,
@@ -252,4 +309,16 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   getModelParameters: () => get().parameters,
   getCustomInstructions: () => get().customInstructions,
   getActiveMemories: () => get().memories.filter((m) => m.isActive),
+}), {
+  name: SETTINGS_STORAGE_KEY,
+  version: 1,
+  storage: createJSONStorage(() => localStorage),
+  // Hidratação manual no cliente (SettingsHydrator) para não divergir do SSR.
+  skipHydration: true,
+  partialize: (state): PersistedSettings => ({
+    model: state.parameters.model,
+    systemPrompt: state.parameters.systemPrompt,
+    modelSettingsById: state.modelSettingsById,
+  }),
+  merge: (persisted, current) => mergePersistedSettings(persisted, current),
 }));

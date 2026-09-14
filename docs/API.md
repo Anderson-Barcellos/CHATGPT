@@ -319,10 +319,13 @@ Notas do PDF:
 | `GET/DELETE` | `/api/soundcase/projects/[projectId]/versions/[versionId]` | Lê projeção pública ou exclui versão |
 | `POST` | `.../[versionId]/cancel` / `resume` | Cancela ou retoma geração durável |
 | `GET` | `.../[versionId]/audio` / `cover` | Serve asset privado; áudio aceita Range |
+| `GET` | `.../[versionId]/source` | Retorna `{ text }` do snapshot imutável autenticado, com `Cache-Control: private, no-store`, para reiniciar Realtime |
 | `POST` | `/api/soundcase/realtime-call` | Handshake SDP autenticado com voz/direção persistidas |
 | `POST` | `/api/soundcase/worker/run-next` | Runner interno protegido por bearer dedicado |
 
 O limite editorial inicial é 90 minutos estimados. O default de saída é MP3; FLAC e WAV são overrides. Cada chunk FLAC é validado por magic `fLaC` + `ffprobe`; como o FLAC do `gpt-4o-mini-tts` vem sem `total_samples` no STREAMINFO (container devolve `N/A`), a duração cai para o último packet (`pts_time + duration_time`) antes de qualquer rejeição. Erros do worker chegam ao cliente só como `code` + `diagnosticId`; o erro real (e a `cause` do chunk) fica no journal/log do serviço com o mesmo `diagnosticId`. O worker é disparado por `chatgpt-soundcase.path` (mudança em `data/soundcase/jobs.json`) e `chatgpt-soundcase.timer` (recovery a cada 1 min). A chegada do arquivo final não interrompe Realtime: a troca de fonte é sempre explícita no player.
+
+As configurações próprias do SoundCase ficam em `gaucho-soundcase:settings:v1` no navegador, compartilhadas pela página e painel. Valem para próximas gerações; formato não altera a direção automática. O player inicia Realtime sobre `/source` da versão selecionada e reutiliza sua direção persistida, sem criar outra versão/job TTS. A busca do snapshot participa do cancelamento da sessão.
 
 ## Google Calendar e Notas Locais
 
@@ -332,7 +335,7 @@ Todas as rotas abaixo são privadas quando `AUTH_ENABLED=true`. O browser nunca 
 
 ## Pulse
 
-Todas as rotas de Pulse são privadas quando `AUTH_ENABLED=true`, exceto o runner interno `/api/pulse/run-due`, que exige `Authorization: Bearer <PULSE_RUNNER_TOKEN>` (comparação em tempo constante), responde `503` se o token não estiver configurado, passa pelo rate limit do proxy e é usado pelo timer local do servidor. Não há fallback por hostname.
+Todas as rotas de Pulse são privadas quando `AUTH_ENABLED=true`, exceto o runner interno `/api/pulse/run-due`, que exige `Authorization: Bearer <PULSE_RUNNER_TOKEN>` (comparação em tempo constante), responde `503` se o token não estiver configurado, passa pelo rate limit do proxy e é usado pelo timer local do servidor. Não há fallback por hostname. A reivindicação de execução é atômica dentro do lock de `pulse-runs.json` (timer e disparo manual nunca abrem dois runs da mesma rotina), e todo run `running` que nenhum processo vivo reconhece (sobra de restart) é marcado `failed` com aviso no próximo tick do runner ou disparo manual; a rotina segue vencida e roda de novo no tick seguinte.
 
 Os resultados do Pulse e as mensagens do chat reutilizam o mesmo mini-player. Ele abre no TTS estável via `/api/tts` (`gpt-4o-mini-tts`) e permite selecionar manualmente o Realtime experimental via `/api/realtime/tts-call`; nenhuma engine inicia apenas ao abrir o player.
 
@@ -347,7 +350,7 @@ As execuções do Pulse usam `gpt-5.4-mini` + reasoning `medium` por padrão e p
 | `DELETE` | `/api/pulse/tasks/[id]` | Remove rotina |
 | `GET` | `/api/pulse/runs` | Lista execuções e aceita filtro `taskId` |
 | `DELETE` | `/api/pulse/runs/[id]` | Remove uma geração/execução do feed Pulse |
-| `POST` | `/api/pulse/tasks/[id]/run` | Executa uma rotina manualmente |
+| `POST` | `/api/pulse/tasks/[id]/run` | Reivindica uma execução manual e responde `202` com o run ainda `running`; o trabalho segue no servidor e o cliente acompanha por `GET /api/pulse/runs`. `409` se a rotina já está em execução |
 | `POST` | `/api/pulse/run-due` | Runner interno que executa rotinas vencidas |
 
 Arquivos runtime privados ignorados pelo Git: `data/pulse-tasks.json` e `data/pulse-runs.json`.

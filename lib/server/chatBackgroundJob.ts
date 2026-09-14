@@ -2,7 +2,7 @@ import type OpenAI from "openai";
 import type { BackgroundJobStatus, Message, ResponseMode } from "@/types";
 import { createMessageArtifact } from "@/lib/artifacts/messageArtifacts";
 import { responseToMessagePatch } from "@/lib/chat/responseToMessagePatch";
-import { getConversation, updateConversation } from "@/app/api/conversations/data";
+import { patchConversationMessages } from "@/app/api/conversations/data";
 
 export type BackgroundResponseMode = Extract<
   ResponseMode,
@@ -59,14 +59,15 @@ export async function applyBackgroundResponseToConversation(params: {
   response: OpenAI.Responses.Response;
 }) {
   const { conversationId, assistantMessageId, response } = params;
-  const conversation = await getConversation(conversationId);
-  if (!conversation) return null;
-
   const now = new Date().toISOString();
   const status = toBackgroundJobStatus(response.status);
   let updatedMessage: Message | undefined;
 
-  const messages = conversation.messages.map((message) => {
+  // Mutação dentro do lock do arquivo: o autosave do cliente pode gravar
+  // mensagens novas entre a leitura e a escrita (B6).
+  await patchConversationMessages(conversationId, (current) => {
+    updatedMessage = undefined;
+    const messages = current.map((message) => {
     if (message.id !== assistantMessageId) return message;
 
     const responsePatch =
@@ -95,10 +96,9 @@ export async function applyBackgroundResponseToConversation(params: {
     };
 
     return updatedMessage;
+    });
+    return updatedMessage ? messages : null;
   });
 
-  if (!updatedMessage) return null;
-
-  await updateConversation(conversationId, { messages });
-  return updatedMessage;
+  return updatedMessage ?? null;
 }

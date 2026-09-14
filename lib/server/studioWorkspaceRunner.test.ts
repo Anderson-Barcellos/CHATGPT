@@ -182,6 +182,29 @@ describe("StudioWorkspaceRunnerManager", () => {
     expect(statusOf(await pending)).toBe("aborted");
   });
 
+  it("ignores a stop addressed to a unit that is no longer the active run", async () => {
+    const { calls, spawnImpl } = createSpawnFake();
+    const manager = new StudioWorkspaceRunnerManager({ spawnImpl });
+
+    const first = manager.startRun({ filePath: "main.py", timeoutMs: 5_000 });
+    if (!first.ok) return;
+    const firstEvents = collectEvents(first.events);
+    calls[0].process.emit("close", 0, null);
+    await firstEvents;
+
+    const second = manager.startRun({ filePath: "main.py", timeoutMs: 5_000 });
+    if (!second.ok) return;
+    const secondEvents = collectEvents(second.events);
+
+    // O abort do SSE da primeira request chega depois que a segunda começou.
+    expect(await manager.stop(first.unitId)).toBe(false);
+    expect(calls.some((call) => call.command === "systemctl")).toBe(false);
+
+    expect(await manager.stop(second.unitId)).toBe(true);
+    calls[1].process.emit("close", null, "SIGTERM");
+    expect(statusOf(await secondEvents)).toBe("aborted");
+  });
+
   it("stops the run and reports timeout when the deadline passes", async () => {
     const { calls, spawnImpl } = createSpawnFake();
     const manager = new StudioWorkspaceRunnerManager({ spawnImpl });

@@ -150,8 +150,11 @@ export class StudioWorkspaceRunnerManager {
     return this.stdinWriter?.(data) ?? false;
   }
 
-  async stop(): Promise<boolean> {
+  // `unitId` amarra o stop à execução que o chamador observa: o abort do SSE
+  // de uma request antiga não pode derrubar a execução seguinte (B5).
+  async stop(unitId?: string): Promise<boolean> {
     if (!this.activeUnitId) return false;
+    if (unitId !== undefined && unitId !== this.activeUnitId) return false;
     this.stopRequested = true;
     this.systemctlStop(this.activeUnitId);
     return true;

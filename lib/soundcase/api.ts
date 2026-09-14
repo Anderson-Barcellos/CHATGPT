@@ -140,6 +140,13 @@ export const soundCaseApi = {
     await request(versionPath(projectId, versionId), { method: "DELETE" });
   },
 
+  async getVersionSource(projectId: string, versionId: string, signal?: AbortSignal): Promise<string> {
+    const data = await request<{ text: string }>(`${versionPath(projectId, versionId)}/source`, {
+      cache: "no-store", signal,
+    });
+    return data.text;
+  },
+
   cancelVersion(projectId: string, versionId: string): Promise<SoundCaseActionResponse> {
     return request(`${versionPath(projectId, versionId)}/cancel`, { method: "POST" });
   },

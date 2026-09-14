@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { jsonError } from "@/lib/api/errors";
 import { requireAppAuth } from "@/lib/server/routeAuth";
 import { getPulseTask } from "@/lib/pulse/store";
-import { runPulseTaskNow } from "@/lib/pulse/runner";
+import { PulseRunAlreadyRunningError, startPulseTaskNow } from "@/lib/pulse/runner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,10 +23,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const run = await runPulseTaskNow(task);
-    return NextResponse.json({ run }, { status: 201 });
+    // 202: a execução foi reivindicada e segue no servidor; o cliente acompanha
+    // pelo feed de runs (GET /api/pulse/runs).
+    const run = await startPulseTaskNow(task);
+    return NextResponse.json({ run }, { status: 202 });
   } catch (error) {
-    return jsonError(409, "Pulse run failed", {
+    return jsonError(error instanceof PulseRunAlreadyRunningError ? 409 : 500, "Pulse run failed", {
       message:
         error instanceof Error ? error.message : "Nao consegui executar essa rotina.",
       code: "pulse_run_failed",

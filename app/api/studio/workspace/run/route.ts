@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
 
   // Aba fechada ou request abortado: execução sem observador não tem valor.
   request.signal.addEventListener("abort", () => {
-    void studioWorkspaceRunner.stop();
+    void studioWorkspaceRunner.stop(started.unitId);
   });
 
   const encoder = new TextEncoder();

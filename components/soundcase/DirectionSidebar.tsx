@@ -11,7 +11,7 @@ export interface DirectionSidebarProps {
   settings: SoundCaseGenerationSettings;
   disabled?: boolean;
   busy?: boolean;
-  /** Painel lateral concentra as ações no rodapé fixo; a rota mantém os botões aqui. */
+  /** O workspace concentra as ações junto ao texto; configurações só exibem controles. */
   showActions?: boolean;
   onChange: (settings: SoundCaseGenerationSettings) => void;
   onGenerate: (mode: "realtime" | "silent") => void;
@@ -25,7 +25,7 @@ export function DirectionSidebar({ settings, disabled, busy, showActions = true,
   const update = (patch: Partial<SoundCaseGenerationSettings>, override = false) => {
     onChange({ ...settings, ...patch, ...(override ? { automatic: false } : {}) });
   };
-  const voice = settings.voiceOverride ?? "marin";
+  const voice = settings.voiceOverride ?? "";
   const speed = settings.speedOverride ?? 1;
 
   return (
@@ -40,19 +40,24 @@ export function DirectionSidebar({ settings, disabled, busy, showActions = true,
         <Switch
           aria-label="Direção automática com Luna"
           checked={settings.automatic}
-          onCheckedChange={(automatic) => update({ automatic })}
+          disabled={busy}
+          onCheckedChange={(automatic) => update({ automatic, ...(automatic ? {
+            voiceOverride: null, speedOverride: null, instructionsOverride: null,
+          } : {}) })}
         />
       </label>
 
       <label className={styles.controlCard}>
         <span className={styles.controlIcon}><Mic2 /></span>
-        <span className={styles.controlCopy}><strong>Voz · {titleCase(voice)}</strong><small>{settings.automatic ? "Recomendada pelo diretor" : "Escolha manual"}</small></span>
+        <span className={styles.controlCopy}><strong>Voz</strong><small>{settings.automatic ? "Luna escolhe ao gerar" : "Escolha manual"}</small></span>
         <select
           className={styles.compactSelect}
           aria-label="Voz da narração"
           value={voice}
-          onChange={(event) => update({ voiceOverride: event.target.value as typeof voice }, true)}
+          disabled={busy}
+          onChange={(event) => update({ voiceOverride: (event.target.value || null) as typeof settings.voiceOverride }, true)}
         >
+          <option value="">{settings.automatic ? "Automática" : "Padrão"}</option>
           {TTS_VOICES.map((item) => <option key={item} value={item}>{titleCase(item)}</option>)}
         </select>
       </label>
@@ -60,15 +65,15 @@ export function DirectionSidebar({ settings, disabled, busy, showActions = true,
       <div className={styles.sliderCard}>
         <span className={styles.controlIcon}><Gauge /></span>
         <div className={styles.sliderBody}>
-          <div><strong>Ritmo · {speed === 1 ? "Natural" : `${speed.toFixed(2)}×`}</strong></div>
-          <Slider aria-label="Velocidade da narração" min={0.75} max={1.5} step={0.05} value={[speed]} onValueChange={([value]) => update({ speedOverride: value }, true)} />
+          <div><strong>Ritmo · {settings.automatic && settings.speedOverride === null ? "Luna escolhe" : speed === 1 ? "Natural" : `${speed.toFixed(2)}×`}</strong></div>
+          <Slider aria-label="Velocidade da narração" disabled={busy} min={0.75} max={1.5} step={0.05} value={[speed]} onValueChange={([value]) => update({ speedOverride: value }, true)} />
         </div>
       </div>
 
       <label className={styles.controlCard}>
         <span className={styles.controlIcon}><SlidersHorizontal /></span>
-        <span className={styles.controlCopy}><strong>Saída · {settings.format.toUpperCase()}</strong><small>Arquivo final para baixar</small></span>
-        <select className={styles.compactSelect} aria-label="Formato do arquivo" value={settings.format} onChange={(event) => update({ format: event.target.value as SoundCaseGenerationSettings["format"] }, true)}>
+        <span className={styles.controlCopy}><strong>Formato</strong><small>Arquivo final para baixar</small></span>
+        <select className={styles.compactSelect} aria-label="Formato do arquivo" disabled={busy} value={settings.format} onChange={(event) => update({ format: event.target.value as SoundCaseGenerationSettings["format"] })}>
           <option value="mp3">MP3</option><option value="flac">FLAC</option><option value="wav">WAV</option>
         </select>
       </label>
@@ -77,6 +82,7 @@ export function DirectionSidebar({ settings, disabled, busy, showActions = true,
         <span>Direção personalizada</span>
         <textarea
           aria-label="Instruções de leitura"
+          disabled={busy}
           value={settings.instructionsOverride ?? ""}
           placeholder="Ex.: leitura íntima, com pausas longas…"
           onChange={(event) => update({ instructionsOverride: event.target.value || null }, true)}
@@ -93,11 +99,7 @@ export function DirectionSidebar({ settings, disabled, busy, showActions = true,
             <Headphones /> Gerar silenciosamente
           </button>
         </>
-      ) : (
-        <button className={styles.secondaryAction} type="button" disabled={disabled || busy} onClick={() => onGenerate("silent")}>
-          <Headphones /> Gerar silenciosamente
-        </button>
-      )}
+      ) : null}
     </aside>
   );
 }

@@ -15,7 +15,7 @@ import {
   createPulseRun,
   finishPulseRun,
   getDuePulseTasks,
-  hasRunningPulseRun,
+  recoverOrphanedPulseRuns,
 } from "@/lib/pulse/store";
 import { derivePulseRunTitle } from "@/lib/pulse/runTitle";
 
@@ -24,6 +24,26 @@ const DEFAULT_PULSE_MAX_OUTPUT_TOKENS = 25_000;
 const MIN_PULSE_MAX_OUTPUT_TOKENS = 8_000;
 const MAX_PULSE_MAX_OUTPUT_TOKENS = 32_000;
 const MAX_DUE_TASKS_PER_TICK = 2;
+const PULSE_ALREADY_RUNNING_MESSAGE = "Essa rotina Pulse ja esta em execucao.";
+
+// Execuções vivas neste processo. Depois de um restart o conjunto nasce vazio,
+// então toda execução `running` no arquivo é órfã e pode ser recuperada (B4).
+const activeRunIds = new Set<string>();
+
+export class PulseRunAlreadyRunningError extends Error {
+  constructor() {
+    super(PULSE_ALREADY_RUNNING_MESSAGE);
+    this.name = "PulseRunAlreadyRunningError";
+  }
+}
+
+async function claimTask(task: PulseTask) {
+  const profile = resolvePulseExecutionProfile(task);
+  const run = await createPulseRun(task, profile);
+  if (!run) throw new PulseRunAlreadyRunningError();
+  activeRunIds.add(run.id);
+  return { run, profile };
+}
 function getPulseMaxOutputTokens(): number {
   const configured = Number.parseInt(process.env.PULSE_MAX_OUTPUT_TOKENS ?? "", 10);
   if (!Number.isFinite(configured)) return DEFAULT_PULSE_MAX_OUTPUT_TOKENS;
@@ -108,9 +128,20 @@ function buildPulseInput(task: PulseTask): OpenAI.Responses.ResponseInput {
 }
 
 async function executeTask(task: PulseTask, openai: OpenAI): Promise<PulseRun> {
-  const profile = resolvePulseExecutionProfile(task);
-  const run = await createPulseRun(task, profile);
+  const { run, profile } = await claimTask(task);
+  try {
+    return await completeClaimedRun(task, run, profile, openai);
+  } finally {
+    activeRunIds.delete(run.id);
+  }
+}
 
+async function completeClaimedRun(
+  task: PulseTask,
+  run: PulseRun,
+  profile: PulseExecutionProfile,
+  openai: OpenAI
+): Promise<PulseRun> {
   try {
     const instructions = await buildPulseSystemPrompt(task);
     const response = await openai.responses.create({
@@ -203,16 +234,21 @@ export async function runDuePulseTasks(now = new Date()) {
     throw new Error("OPENAI_API_KEY nao configurada no servidor.");
   }
 
+  await recoverOrphanedPulseRuns(activeRunIds);
   const dueTasks = (await getDuePulseTasks(now)).slice(0, MAX_DUE_TASKS_PER_TICK);
   const runs: PulseRun[] = [];
   const skipped: string[] = [];
 
   for (const task of dueTasks) {
-    if (await hasRunningPulseRun(task.id)) {
-      skipped.push(task.id);
-      continue;
+    try {
+      runs.push(await executeTask(task, openai));
+    } catch (error) {
+      if (error instanceof PulseRunAlreadyRunningError) {
+        skipped.push(task.id);
+        continue;
+      }
+      throw error;
     }
-    runs.push(await executeTask(task, openai));
   }
 
   return {
@@ -224,13 +260,24 @@ export async function runDuePulseTasks(now = new Date()) {
   };
 }
 
-export async function runPulseTaskNow(task: PulseTask) {
+/**
+ * Disparo manual: reivindica a execução e devolve o run `running` na hora; o
+ * trabalho segue em background no servidor. Antes a rota esperava o run inteiro
+ * e o `ProxyTimeout 300` do Apache devolvia 502 falso acima de 5 min (B4).
+ */
+export async function startPulseTaskNow(task: PulseTask): Promise<PulseRun> {
   const openai = createOpenAIClient();
   if (!openai) {
     throw new Error("OPENAI_API_KEY nao configurada no servidor.");
   }
-  if (await hasRunningPulseRun(task.id)) {
-    throw new Error("Essa rotina Pulse ja esta em execucao.");
-  }
-  return executeTask(task, openai);
+  await recoverOrphanedPulseRuns(activeRunIds);
+  const { run, profile } = await claimTask(task);
+  void completeClaimedRun(task, run, profile, openai)
+    .catch((error) => {
+      console.error("[pulse] manual run failed", { runId: run.id, taskId: task.id }, error);
+    })
+    .finally(() => {
+      activeRunIds.delete(run.id);
+    });
+  return run;
 }

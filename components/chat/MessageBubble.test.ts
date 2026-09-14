@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { getWebSearchIndicatorStatus } from "./MessageBubble";
+import { getWebSearchIndicatorStatus, MessageBubble } from "./MessageBubble";
+
+describe("MessageBubble rendering", () => {
+  it("memoizes stable history while the newest response streams", () => {
+    expect(MessageBubble).toHaveProperty("$$typeof", Symbol.for("react.memo"));
+  });
+});
 
 describe("getWebSearchIndicatorStatus", () => {
   it("keeps completed web searches visible after the transient state ends", () => {

@@ -80,6 +80,8 @@ systemctl is-active apache2
 
 `chatgpt.service` roda `npm start` em `/root/CHATGPT`.
 
+Publicação atual (2026-09-09): `.next` contém a build isolada SoundCase SC3 `ZvnMJP226jtiS-Y0va9fo`, produzida a partir de HEAD + SC3 em `/root/.cache/soundcase-sc3-review-rd4pjy52`. O checkout ainda possui WIP B2–B6, fora dessa build; um novo build do checkout inteiro mudaria esse escopo. A versão anterior está em `/root/.cache/chatgpt-next-before-sc3-20260909T042041Z`, com 450 assets antigos também preservados na versão nova para abas abertas. Para retornar, parar o serviço, preservar a `.next` atual, recolocar esse backup em `.next` e iniciar o serviço; conferir `/chat/api/health` local/público. Evidência da troca: `/root/.cache/sc3-deploy-result.json`.
+
 Configuração relevante:
 
 ```ini
@@ -209,7 +211,7 @@ Workspace Python do Studio:
 | `STUDIO_WORKSPACE_PASSWORD` | Senha do step-up auth; sem ela o modo servidor fica desabilitado (rollback = remover e reiniciar) |
 | `STUDIO_RUN_TIMEOUT_MS` | Timeout do run sandboxed; default `120000` |
 
-O host do workspace é provisionado por `scripts/studio-workspace-setup.sh` (idempotente): usuário de sistema `studio` sem shell, `/root/studio-projects/{active,archive}`, venv base em `/opt/studio-venv` (fora de `/root` — o `systemd-run` valida o executável antes de montar o namespace) com dependências congeladas em `scripts/studio-venv-requirements.txt`, e template inicial versionado em `templates/studio-python/`. As execuções rodam como units transient `gaucho-studio-run-<id>` com `--collect`; elas morrem sozinhas por `RuntimeMaxSec` e não sobrevivem a restart do serviço.
+O host do workspace é provisionado por `scripts/studio-workspace-setup.sh` (idempotente): usuário de sistema `studio` sem shell, `/root/studio-projects/{active,archive}`, venv base em `/opt/studio-venv` (fora de `/root` — o `systemd-run` valida o executável antes de montar o namespace) com dependências congeladas em `scripts/studio-venv-requirements.txt`, e template inicial versionado em `templates/studio-python/`. As execuções rodam como units transient `gaucho-studio-run-<id>` com `--collect`; o terminal e o kernel do notebook usam `gaucho-studio-term-<id>` e `gaucho-studio-kernel-<id>`. Um restart do `chatgpt.service` não derruba units transient: por isso `instrumentation.ts` (hook de boot do Next) roda `systemctl stop` e `reset-failed` nos três padrões assim que o servidor sobe, e `RuntimeMaxSec` (8 h) fica só como backstop.
 
 ## Deploy e Validação
 

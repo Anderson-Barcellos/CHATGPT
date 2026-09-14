@@ -32,6 +32,7 @@ import {
   proposePulseTask,
   readablePulseError,
   runPulseTaskNow,
+  waitForPulseRunCompletion,
   updatePulseTaskStatus,
 } from "@/lib/pulse/pulseApi";
 import type {
@@ -669,8 +670,16 @@ export function PulsePanelV2() {
     async (taskId: string) => {
       setRunningTaskId(taskId);
       try {
-        await runPulseTaskNow(taskId);
-        toast.success("Execucao Pulse concluida.");
+        const started = await runPulseTaskNow(taskId);
+        await loadPulse();
+        const finished = await waitForPulseRunCompletion(started.id);
+        if (finished?.status === "completed") {
+          toast.success("Execucao Pulse concluida.");
+        } else if (finished?.status === "failed") {
+          toast.error(finished.error || "A execucao Pulse falhou.");
+        } else if (finished) {
+          toast.info("A execucao Pulse segue no servidor; o feed atualiza quando terminar.");
+        }
         await loadPulse();
       } catch (error) {
         toast.error(readablePulseError(error, "Nao consegui rodar essa rotina."));

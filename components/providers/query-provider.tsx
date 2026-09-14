@@ -1,7 +1,17 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSettingsStore } from "@/stores/settingsStore";
+
+// Reidrata modelo/parâmetros do localStorage só no cliente, depois do primeiro
+// paint, para o HTML do servidor e o do cliente baterem.
+function SettingsHydrator() {
+  useEffect(() => {
+    void useSettingsStore.persist.rehydrate();
+  }, []);
+  return null;
+}
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -33,6 +43,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <SettingsHydrator />
       {children}
     </QueryClientProvider>
   );

@@ -22,12 +22,14 @@ export interface SoundCasePlayerProps {
     firstAudioMs: number | null;
     isActive: boolean;
     stop: () => void;
+    error?: string | null;
   };
+  onStartRealtime?: () => void;
   /** Avisa o acervo quando o arquivo final começa ou para de tocar. */
   onPlaybackChange?: (playing: boolean) => void;
 }
 
-export function SoundCasePlayer({ version, audioUrl, realtime, onPlaybackChange }: SoundCasePlayerProps) {
+export function SoundCasePlayer({ version, audioUrl, realtime, onStartRealtime, onPlaybackChange }: SoundCasePlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playingFinal, setPlayingFinalState] = useState(false);
   const [playError, setPlayError] = useState<string | null>(null);
@@ -70,7 +72,7 @@ export function SoundCasePlayer({ version, audioUrl, realtime, onPlaybackChange 
         onClick={() => {
           if (realtime.isActive) realtime.stop();
           else if (playingFinal) audioRef.current?.pause();
-          else void playFinal();
+          else void switchToFinalAudio({ stopRealtime: realtime.stop, playFinal });
         }}
       >
         {realtime.isActive ? <Square /> : playingFinal ? <Pause /> : <Play />}
@@ -85,7 +87,18 @@ export function SoundCasePlayer({ version, audioUrl, realtime, onPlaybackChange 
         </button>
       ) : null}
       {finalReady ? <a className={styles.downloadButton} href={audioUrl} download aria-label="Baixar arquivo final"><Download /></a> : null}
-      {finalReady ? (
+      {onStartRealtime && !realtime.isActive ? (
+        <div className={styles.realtimeAction}>
+          <button type="button" disabled={!version.direction || !version.effectiveSettings} onClick={() => {
+            audioRef.current?.pause();
+            setPlayingFinal(false);
+            setPlayError(null);
+            onStartRealtime();
+          }}><Radio /> Ouvir com Realtime</button>
+          <span>{version.direction && version.effectiveSettings ? "Leitura ao vivo com os ajustes desta narração. Não cria outro arquivo." : "Realtime disponível quando a direção de leitura estiver pronta."}</span>
+        </div>
+      ) : null}
+      {finalReady && !realtime.isActive ? (
         <div className={styles.playerTimeline}>
           <input type="range" aria-label="Posição do áudio" min={0} max={duration} step={0.1} value={Math.min(currentTime, duration)} onChange={(event) => {
             const seconds = Number(event.target.value);
@@ -96,6 +109,7 @@ export function SoundCasePlayer({ version, audioUrl, realtime, onPlaybackChange 
         </div>
       ) : null}
       {playError ? <p className={styles.playerError} role="alert">{playError}</p> : null}
+      {realtime.error ? <p className={styles.playerError} role="alert">{realtime.error}</p> : null}
     </section>
   );
 }

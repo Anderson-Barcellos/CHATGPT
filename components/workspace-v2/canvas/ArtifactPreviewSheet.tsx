@@ -80,7 +80,7 @@ export function ArtifactPreviewSheet({ artifact, onClose }: ArtifactPreviewSheet
           event.preventDefault();
           restoreOpeningFocus();
         }}
-        className="max-h-[calc(100dvh-0.5rem)] gap-0 border-0 bg-transparent p-0 shadow-none md:inset-x-2 md:bottom-2 md:max-h-[calc(100dvh-1rem)]"
+        className="gc-chat-ui max-h-[calc(100dvh-0.5rem)] gap-0 border-0 bg-transparent p-0 shadow-none md:inset-x-2 md:bottom-2 md:max-h-[calc(100dvh-1rem)]"
       >
         <div className="mx-auto flex h-full w-full max-w-3xl px-3 md:max-w-3xl md:px-4 lg:max-w-5xl">
           <div className="pointer-events-auto flex max-h-[calc(100dvh-0.5rem)] w-full flex-col overflow-hidden rounded-2xl border border-[color:var(--gc-border)] bg-[var(--gc-surface-panel)] shadow-[0_-12px_60px_rgba(15,23,42,0.28)] md:max-h-[calc(100dvh-1rem)]">

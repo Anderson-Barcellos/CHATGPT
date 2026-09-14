@@ -27,7 +27,9 @@ export function ChatCanvasV2({
   onSelectConversation,
   onOpenConversations,
 }: ChatCanvasV2Props) {
-  const { artifactOpen, activeArtifact, closeArtifact } = useUIStore();
+  const artifactOpen = useUIStore((state) => state.artifactOpen);
+  const activeArtifact = useUIStore((state) => state.activeArtifact);
+  const closeArtifact = useUIStore((state) => state.closeArtifact);
 
   return (
     <div className="gc-clinical-canvas relative flex h-full min-h-0 flex-col">

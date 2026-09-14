@@ -178,7 +178,7 @@ function ConversationRowV2({
             <MoreVertical className="size-3.5" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="gc-chat-ui">
           <DropdownMenuItem onClick={onTogglePin}>
             {isPinned ? (
               <PinOff className="mr-2 size-3.5" />
@@ -258,7 +258,10 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
 
   const handleSelectConversation = useCallback(
     (id: string) => {
-      if (id === activeConversationId) return;
+      if (id === activeConversationId) {
+        onClose?.();
+        return;
+      }
       if (isStreaming) {
         showStreamingGuard();
         return;

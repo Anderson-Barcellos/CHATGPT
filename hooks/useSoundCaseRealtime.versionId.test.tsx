@@ -66,6 +66,43 @@ afterEach(async () => {
 });
 
 describe("useSoundCaseRealtime session identity", () => {
+  it("loads the chosen version snapshot before connecting, without creating a TTS version", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(Response.json({ text: "Texto original da versão." }))
+      .mockResolvedValueOnce(new Response("v=0 answer", { status: 201 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await act(async () => { root!.render(createElement(Probe)); });
+    await act(async () => { await latest!.start({ projectId: "p", versionId: "v1" }); });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0][0]).toContain("/projects/p/versions/v1/source");
+    expect(fetchMock.mock.calls[1][0]).toContain("/realtime-call?projectId=p&versionId=v1");
+    expect(latest!.versionId).toBe("v1");
+  });
+
+  it("does not connect when a stopped snapshot request returns late", async () => {
+    let resolveSource!: (response: Response) => void;
+    const fetchMock = vi.fn(() => new Promise<Response>((resolve) => { resolveSource = resolve; }));
+    vi.stubGlobal("fetch", fetchMock);
+    await act(async () => { root!.render(createElement(Probe)); });
+    let starting!: Promise<void>;
+    await act(async () => { starting = latest!.start({ projectId: "p", versionId: "v1" }); });
+    await act(async () => { latest!.stop(); });
+    await act(async () => { resolveSource(Response.json({ text: "Resposta atrasada." })); await starting; });
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(latest!.status).toBe("idle");
+    expect(latest!.versionId).toBeNull();
+  });
+
+  it("attributes a source-loading error to its version and allows stopping to clear it", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ error: "Snapshot indisponível" }, { status: 404 })));
+    await act(async () => { root!.render(createElement(Probe)); });
+    await act(async () => { await latest!.start({ projectId: "p", versionId: "v1" }); });
+    expect(latest!.status).toBe("error");
+    expect(latest!.errorVersionId).toBe("v1");
+    await act(async () => { latest!.stop(); });
+    expect(latest!.error).toBeNull();
+  });
+
   it("exposes the version being read and clears it on stop", async () => {
     await act(async () => {
       root!.render(createElement(Probe));

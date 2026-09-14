@@ -226,6 +226,28 @@ describe("SoundCase version queue", () => {
     await lock.release();
   });
 
+  it("marks the lock lost instead of exiting the process when the holder dies (B6)", async () => {
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => undefined) as never);
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      const lock = await acquireSoundCaseQueueLock();
+      expect(lock.isLost()).toBe(false);
+
+      process.kill(lock.holderPid, "SIGKILL");
+
+      await vi.waitFor(() => expect(lock.isLost()).toBe(true));
+      expect(exitSpy).not.toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("[soundcase] queue lock lost"),
+        expect.anything()
+      );
+      await lock.release();
+    } finally {
+      exitSpy.mockRestore();
+      errorSpy.mockRestore();
+    }
+  });
+
   it("rejects a stale lease guard after renewal", async () => {
     const project = await createSoundCaseProject({ text: "Texto." });
     await createSoundCaseVersion(project.id, settings);

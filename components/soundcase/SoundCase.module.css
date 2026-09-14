@@ -81,7 +81,7 @@
 .controlCopy { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
 .controlCopy strong, .sliderBody strong { font-family: Georgia, "Times New Roman", serif; font-size: 14px; color: var(--sc-text); }
 .controlCopy small { font-size: 10px; color: var(--sc-muted); }
-.compactSelect { width: 24px; color: transparent; cursor: pointer; background: transparent; border: 0; outline: 0; }
+.compactSelect { max-width: 46%; min-height: 44px; padding: 0 8px; color: var(--sc-text); cursor: pointer; background: var(--gc-surface-control); border: 1px solid var(--sc-line); border-radius: 8px; font-size: 13px; }
 .compactSelect option { color: var(--sc-text); background: var(--sc-card); }
 .sliderBody { flex: 1; min-width: 0; display: grid; gap: 12px; }
 .sliderBody [data-slot="slider-track"] { background: rgba(122, 166, 201, .2); }
@@ -280,6 +280,26 @@
 .acervoScroll { flex: 1; min-height: 0; overflow-y: auto; padding: 28px max(20px, calc((100% - 1120px) / 2)) max(24px, env(safe-area-inset-bottom)); }
 .acervoScroll [hidden] { display: none !important; }
 .acervoScroll .library { padding: 0; background: transparent; }
+.settingsSection { margin-bottom: 24px; border: 1px solid var(--sc-line); border-radius: 14px; background: var(--sc-panel); }
+.settingsTrigger { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 72px; padding: 14px 18px; text-align: left; }
+.settingsTrigger svg { flex-shrink: 0; width: 20px; color: var(--sc-blue); }
+.settingsTrigger > span { display: grid; gap: 4px; flex: 1; }
+.settingsTrigger strong { font-size: 14px; }
+.settingsTrigger small { font-size: 12px; color: var(--sc-muted); }
+.settingsTrigger[data-state="open"] > svg:last-child { transform: rotate(180deg); }
+.settingsHint { padding: 0 18px; max-width: 680px; color: var(--sc-muted); font-size: 13px; line-height: 1.5; }
+.settingsSection .direction { max-width: 680px; padding: 18px; border: 0; background: transparent; }
+.settingsSection .sideHeading { display: none; }
+@media (min-width: 900px) {
+  .acervoBody .settingsSection .direction { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-width: none; }
+  .acervoBody .settingsSection .controlCard, .acervoBody .settingsSection .sliderCard { margin-bottom: 0; }
+  .acervoBody .settingsSection .instructionsLabel { grid-column: 1 / -1; margin: 4px 0 0; }
+}
+.realtimeAction { display: grid; gap: 8px; flex: 1 0 100%; }
+.realtimeAction button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 1px solid var(--sc-line); border-radius: 10px; color: var(--sc-blue); background: var(--sc-panel); font-size: 13px; font-weight: 600; }
+.realtimeAction button:disabled { opacity: .55; }
+.realtimeAction svg { width: 16px; }
+.realtimeAction > span { font-size: 11px; line-height: 1.5; color: var(--sc-muted); }
 .libraryHeading { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 26px; }
 .libraryHeading h1 { font: 700 28px/1.2 Georgia, serif; }
 .libraryHeading p { margin-top: 8px; color: var(--sc-muted); font-size: 13px; }

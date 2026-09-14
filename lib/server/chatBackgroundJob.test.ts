@@ -8,6 +8,16 @@ const updateConversationMock = vi.fn();
 vi.mock("@/app/api/conversations/data", () => ({
   getConversation: getConversationMock,
   updateConversation: updateConversationMock,
+  patchConversationMessages: async (
+    id: string,
+    mutator: (messages: Conversation["messages"]) => Conversation["messages"] | null
+  ) => {
+    const current = await getConversationMock(id);
+    if (!current) return undefined;
+    const messages = mutator(current.messages);
+    if (!messages) return undefined;
+    return updateConversationMock(id, { messages });
+  },
 }));
 
 function response(overrides: Partial<OpenAI.Responses.Response>) {

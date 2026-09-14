@@ -171,33 +171,36 @@ export function CommandComposerContainerV2({
     ? "Adicione uma mensagem sobre os arquivos..."
     : "Mensagem para o modelo...";
 
+  const submitMessage = useCallback(
+    async (content: string) => {
+      const contentHasText = content.trim().length > 0 || attachments.length > 0;
+      if (!canSubmitComposerMessage({ hasContent: contentHasText, isProcessing })) {
+        return false;
+      }
+
+      const sent = await sendMessage(content, {
+        responseMode,
+        attachments: attachments.length > 0 ? attachments : undefined,
+      });
+
+      if (sent) {
+        setResponseMode("default");
+        clearFiles();
+        if (textareaRef.current) {
+          textareaRef.current.style.height = "auto";
+        }
+        textareaRef.current?.focus();
+      }
+      return sent;
+    },
+    [attachments, clearFiles, isProcessing, responseMode, sendMessage, setResponseMode]
+  );
+
   const handleSubmit = useCallback(async () => {
     if (!canSubmitComposerMessage({ hasContent, isProcessing })) return;
-
-    const sent = await sendMessage(input, {
-      responseMode,
-      attachments: attachments.length > 0 ? attachments : undefined,
-    });
-
-    if (sent) {
-      setInput("");
-      setResponseMode("default");
-      clearFiles();
-      if (textareaRef.current) {
-        textareaRef.current.style.height = "auto";
-      }
-      textareaRef.current?.focus();
-    }
-  }, [
-    attachments,
-    clearFiles,
-    hasContent,
-    input,
-    isProcessing,
-    responseMode,
-    sendMessage,
-    setResponseMode,
-  ]);
+    const sent = await submitMessage(input);
+    if (sent) setInput("");
+  }, [hasContent, input, isProcessing, submitMessage]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -321,14 +324,15 @@ export function CommandComposerContainerV2({
   }, [setResponseMode]);
 
   useEffect(() => {
+    // Quick actions (Continuar/Encurtar) enviam o texto direto: setInput +
+    // handleSubmit num setTimeout chamava a closure antiga com o input vazio (B3).
     const handler = (e: Event) => {
       const { text } = (e as CustomEvent<{ text: string }>).detail;
-      setInput(text);
-      window.setTimeout(() => void handleSubmit(), 0);
+      void submitMessage(text);
     };
     window.addEventListener("gaucho:send-message", handler);
     return () => window.removeEventListener("gaucho:send-message", handler);
-  }, [handleSubmit]);
+  }, [submitMessage]);
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -355,13 +359,13 @@ export function CommandComposerContainerV2({
             disabled={isLoading || isTranscribing || isDeepsearchMode}
             aria-label="Selecionar modelo"
             title={isDeepsearchMode ? `Deepsearch usa modelo fixo (${deepsearchModelLabel}).` : undefined}
-            className="h-[var(--gc-mobile-control-height)] max-w-[9rem] gap-1 rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-2.5 text-[length:var(--gc-mobile-control-font-size)] font-medium text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:h-8 md:max-w-[10rem] md:rounded-lg md:px-2.5 md:text-nano"
+            className="h-[var(--gc-mobile-composer-control-height)] max-w-[var(--gc-mobile-composer-model-width)] gap-[0.1875rem] rounded-lg border border-[color:var(--gc-composer-control-border)] bg-[var(--gc-composer-control-bg)] px-[0.375rem] text-[length:var(--gc-mobile-control-font-size)] font-medium text-[var(--gc-composer-control-fg)] has-[>svg]:px-[0.375rem] hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:h-8 md:max-w-[10rem] md:gap-1 md:rounded-lg md:px-2.5 md:text-nano md:has-[>svg]:px-2.5"
           >
             <span className="truncate">{displayModel?.name || parameters.model}</span>
-            <ChevronDown className="size-3.5 shrink-0" />
+            <ChevronDown className="size-[0.8125rem] shrink-0 md:size-3.5" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-64">
+        <DropdownMenuContent align="start" collisionPadding={isMobile ? 12 : undefined} className="gc-chat-ui gc-composer-menu gc-composer-model-menu w-64">
           <DropdownMenuLabel>Modelo</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {modelList.map((model) => (
@@ -374,7 +378,7 @@ export function CommandComposerContainerV2({
               )}
             >
               <div className="flex w-full items-center justify-between gap-2">
-                <span className="text-xs font-medium">{model.name}</span>
+                <span className="text-[0.6875rem] font-medium md:text-xs">{model.name}</span>
                 {model.badge && (
                   <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-nano font-semibold text-primary">
                     {model.badge}
@@ -419,9 +423,9 @@ export function CommandComposerContainerV2({
               size="sm"
               disabled={isLoading || isTranscribing || isDeepSeekSelected}
               aria-label="Ajustar nível de raciocínio"
-              className="size-[var(--gc-mobile-control-height)] rounded-lg border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] p-0 text-[length:var(--gc-mobile-control-font-size)] text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:h-8 md:w-8 md:rounded-lg md:text-nano"
+              className="size-[var(--gc-mobile-composer-control-height)] rounded-lg border border-[color:var(--gc-composer-control-border)] bg-[var(--gc-composer-control-bg)] p-0 text-[length:var(--gc-mobile-control-font-size)] text-[var(--gc-composer-control-fg)] hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:h-8 md:w-8 md:rounded-lg md:text-nano"
             >
-              <Brain className="size-3.5" style={{ opacity: reasoningOpacity }} />
+              <Brain className="size-[0.8125rem] md:size-3.5" style={{ opacity: reasoningOpacity }} />
             </Button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
@@ -433,7 +437,7 @@ export function CommandComposerContainerV2({
             : `Raciocínio: ${currentReasoning?.label || "Medio"}`}
         </TooltipContent>
       </Tooltip>
-      <DropdownMenuContent align="start" className="w-48">
+      <DropdownMenuContent align="start" collisionPadding={isMobile ? 12 : undefined} className="gc-chat-ui gc-composer-menu w-48">
         <DropdownMenuLabel>Raciocinio</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {REASONING_OPTIONS.filter((option) =>
@@ -448,7 +452,7 @@ export function CommandComposerContainerV2({
               parameters.reasoningEffort === option.value && "bg-primary/10 text-foreground"
             )}
           >
-            <span className="text-xs font-medium">{option.label}</span>
+            <span className="text-[0.6875rem] font-medium md:text-xs">{option.label}</span>
             <span className="text-nano text-muted-foreground">{option.desc}</span>
           </DropdownMenuItem>
         ))}
@@ -472,13 +476,13 @@ export function CommandComposerContainerV2({
             })
           }
           className={cn(
-            "size-[var(--gc-mobile-control-height)] rounded-lg border p-0 md:h-8 md:w-8",
+            "size-[var(--gc-mobile-composer-control-height)] rounded-lg border p-0 md:h-8 md:w-8",
             parameters.reasoningMode === "pro"
               ? "border-amber-500/45 bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 dark:text-amber-300"
-              : "border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground"
+              : "border-[color:var(--gc-composer-control-border)] bg-[var(--gc-composer-control-bg)] text-[var(--gc-composer-control-fg)] hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground"
           )}
         >
-          <Zap className="size-3.5" />
+          <Zap className="size-[0.8125rem] md:size-3.5" />
         </Button>
       </TooltipTrigger>
       <TooltipContent>

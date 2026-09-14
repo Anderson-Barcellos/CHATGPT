@@ -59,6 +59,8 @@ import { FadeIn } from "@/components/motion/FadeIn";
 import { SlideIn } from "@/components/motion/SlideIn";
 import { GPTLogo } from "@/components/ui/gpt-logo";
 import { useCommandPaletteContext } from "@/components/command/CommandPaletteProvider";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { useVisualViewport } from "@/hooks/useVisualViewport";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/uiStore";
 import type { FileAttachment, ResponseMode } from "@/types";
@@ -189,7 +191,7 @@ function formatFileSize(bytes: number): string {
 }
 
 const COMPOSER_CONTROL_BUTTON_CLASS =
-  "border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] text-muted-foreground hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground";
+  "border border-[color:var(--gc-composer-control-border)] bg-[var(--gc-composer-control-bg)] text-[var(--gc-composer-control-fg)] hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground";
 
 export function WorkspaceFrameV2({
   sidebar,
@@ -214,6 +216,8 @@ export function WorkspaceFrameV2({
 }: WorkspaceFrameV2Props) {
   const { setOpen: openCommandPalette } = useCommandPaletteContext();
   const openContextPanel = useUIStore((state) => state.openContextPanel);
+  const isMobile = useIsMobile();
+  useVisualViewport(isMobile);
   const [internalSidebarOpen, setInternalSidebarOpen] = useState(false);
   const sidebarOpen = mobileSidebarOpen ?? internalSidebarOpen;
   const setSidebarOpen = onMobileSidebarOpenChange ?? setInternalSidebarOpen;
@@ -231,7 +235,7 @@ export function WorkspaceFrameV2({
 
   return (
     <div
-      className="gc-atmosphere-shell gc-dynamic-bg gc-device-frame gc-mobile-density relative overflow-hidden text-foreground"
+      className="gc-chat-ui gc-atmosphere-shell gc-dynamic-bg gc-device-frame relative overflow-hidden text-foreground"
       data-visual-theme="atmosphere-glass"
     >
       <div
@@ -243,7 +247,7 @@ export function WorkspaceFrameV2({
         className="gc-subtle-grid pointer-events-none absolute inset-0 opacity-35"
       />
       <div className="relative z-10 flex h-full flex-col p-[var(--gc-shell-gutter)]">
-        <div className="gc-clinical-shell flex min-h-0 flex-1 overflow-hidden border border-[color:var(--gc-border-soft)] backdrop-blur-xl md:rounded-[1.65rem]">
+        <div className="gc-clinical-shell gc-safe-x flex min-h-0 flex-1 overflow-hidden border border-[color:var(--gc-border-soft)] backdrop-blur-xl md:rounded-[1.65rem]">
           <aside
             data-workspace-region="sidebar"
             className="gc-clinical-rail hidden min-h-0 w-[var(--gc-shell-rail-width)] shrink-0 overflow-hidden border-r border-[color:var(--gc-border)] lg:block"
@@ -270,16 +274,16 @@ export function WorkspaceFrameV2({
                 <IconButton
                   label="Abrir conversas"
                   onClick={() => setSidebarOpen(true)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 border-transparent bg-transparent shadow-none lg:hidden md:hidden"
+                  className="absolute left-[0.6875rem] top-1/2 -translate-y-1/2 border-transparent bg-transparent shadow-none md:hidden"
                 >
-                  <Menu className="size-5" />
+                  <Menu className="size-[1.15rem]" />
                 </IconButton>
 
-                <div className="flex items-center gap-3 md:hidden">
-                  <div className="flex size-9 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 shadow-[0_8px_18px_rgba(15,118,110,0.12)]">
-                    <GPTLogo size={20} />
+                <div className="flex items-center gap-[0.6875rem] md:hidden">
+                  <div className="flex size-[var(--gc-mobile-brand-size)] items-center justify-center rounded-[0.6875rem] border border-primary/20 bg-primary/10 shadow-[0_7px_17px_rgba(15,118,110,0.12)]">
+                    <GPTLogo size={18} />
                   </div>
-                  <h1 className="text-[1.15rem] font-semibold tracking-[-0.03em] text-foreground">
+                  <h1 className="text-[1.0625rem] font-semibold tracking-[-0.03em] text-foreground">
                     Gaucho Chat
                   </h1>
                 </div>
@@ -321,7 +325,7 @@ export function WorkspaceFrameV2({
                   </span>
                 </button>
 
-                <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-0.5 md:static md:translate-y-0 md:gap-1.5">
+                <div className="absolute right-[0.6875rem] top-1/2 flex -translate-y-1/2 items-center gap-0.5 md:static md:translate-y-0 md:gap-1.5">
                   <span className="hidden md:inline-flex">{exportControl ?? null}</span>
                   <IconButton
                     label="Buscar comandos"
@@ -355,14 +359,14 @@ export function WorkspaceFrameV2({
                 </div>
               </div>
 
-              <div className="gc-clinical-subheader border-t border-[color:var(--gc-border-soft)] px-2.5 pb-2.5 pt-0.5 md:flex md:min-h-[2.15rem] md:items-center md:justify-between md:px-4 md:py-1">
-                <div className="grid h-[3.2rem] grid-cols-[minmax(0,1.55fr)_repeat(3,minmax(0,0.58fr))] items-center gap-1 rounded-[1.25rem] border border-[color:var(--gc-border-soft)] bg-background/84 p-1 shadow-[0_10px_24px_rgba(15,23,42,0.07)] md:hidden">
+              <div className="gc-clinical-subheader border-t border-[color:var(--gc-border-soft)] px-[0.575rem] pb-[0.575rem] pt-[0.115rem] md:flex md:min-h-[2.15rem] md:items-center md:justify-between md:px-4 md:py-1">
+                <div className="grid h-[var(--gc-mobile-primary-nav-height)] grid-cols-[minmax(0,1.55fr)_repeat(3,minmax(0,0.58fr))] items-center gap-[0.23rem] rounded-[1.15rem] border border-[color:var(--gc-border-soft)] bg-background/84 p-[0.23rem] shadow-[0_9px_22px_rgba(15,23,42,0.07)] md:hidden">
                   <button
                     type="button"
                     onClick={onNewConversation}
-                    className="flex h-full items-center justify-center gap-1 rounded-[0.95rem] bg-primary px-2 text-[0.75rem] font-semibold text-primary-foreground shadow-[0_10px_22px_rgba(15,118,110,0.18)]"
+                    className="flex h-full items-center justify-center gap-[0.23rem] rounded-[0.875rem] bg-primary px-[0.46rem] text-[0.6875rem] font-semibold text-primary-foreground shadow-[0_9px_20px_rgba(15,118,110,0.18)]"
                   >
-                    <Plus className="size-4.5" />
+                    <Plus className="size-[1.035rem]" />
                     <span className="truncate">Nova conversa</span>
                   </button>
                   <button
@@ -370,8 +374,8 @@ export function WorkspaceFrameV2({
                     onClick={() => openContextPanel("activity")}
                     className="relative flex h-full flex-col items-center justify-center gap-0.25 rounded-xl text-[length:var(--gc-mobile-tab-font-size)] font-medium text-muted-foreground"
                   >
-                    <span className="absolute top-1.5 size-1.5 rounded-full bg-primary" />
-                    <Activity className="size-4.5" />
+                    <span className="absolute top-[0.345rem] size-[0.345rem] rounded-full bg-primary" />
+                    <Activity className="size-[1.035rem]" />
                     Pulse
                   </button>
                   <button
@@ -379,7 +383,7 @@ export function WorkspaceFrameV2({
                     onClick={() => openContextPanel("notes")}
                     className="flex h-full flex-col items-center justify-center gap-0.25 rounded-xl text-[length:var(--gc-mobile-tab-font-size)] font-medium text-muted-foreground"
                   >
-                    <StickyNote className="size-4.5" />
+                    <StickyNote className="size-[1.035rem]" />
                     Notas
                   </button>
                   <button
@@ -387,7 +391,7 @@ export function WorkspaceFrameV2({
                     onClick={() => openContextPanel("pulse")}
                     className="flex h-full flex-col items-center justify-center gap-0.25 rounded-xl text-[length:var(--gc-mobile-tab-font-size)] font-medium text-muted-foreground"
                   >
-                    <CalendarCheck className="size-4.5" />
+                    <CalendarCheck className="size-[1.035rem]" />
                     Rotinas
                   </button>
                 </div>
@@ -483,7 +487,7 @@ export function WorkspaceFrameV2({
         <SheetContent
           side="left"
           showCloseButton={false}
-          className="gc-clinical-rail w-[92vw] max-w-[20rem] gap-0 border-[color:var(--gc-border)] p-0 gc-safe-top"
+          className="gc-chat-ui gc-clinical-rail w-[92vw] max-w-[20rem] gap-0 border-[color:var(--gc-border)] p-0 gc-safe-top gc-safe-left"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Conversas</SheetTitle>
@@ -497,7 +501,7 @@ export function WorkspaceFrameV2({
         <SheetContent
           side="right"
           showCloseButton={false}
-          className="gc-clinical-panel w-[100vw] max-w-none gap-0 border-0 p-0 gc-safe-top sm:w-[96vw] sm:border sm:border-[color:var(--gc-border)] sm:max-w-[34rem]"
+          className="gc-chat-ui gc-clinical-panel w-full max-w-none gap-0 border-0 p-0 gc-safe-top gc-safe-right sm:w-[96vw] sm:border sm:border-[color:var(--gc-border)] sm:max-w-[34rem]"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Painel contextual</SheetTitle>
@@ -627,8 +631,8 @@ export function CommandComposerV2({
             </div>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-1.5 border-t border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)]/48 px-[var(--gc-mobile-composer-footer-x)] pb-[var(--gc-mobile-composer-footer-bottom)] pt-[var(--gc-mobile-composer-footer-top)] md:gap-2 md:px-3 md:py-1.75">
-            <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto [scrollbar-width:none] md:flex-wrap md:gap-1.5 md:overflow-visible [&::-webkit-scrollbar]:hidden">
+          <div className="flex flex-nowrap items-center justify-between gap-[0.23rem] border-t border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)]/48 px-[var(--gc-mobile-composer-footer-x)] py-[var(--gc-mobile-composer-controls-y)] md:flex-wrap md:gap-2 md:px-3 md:py-1.75">
+            <div className="gc-composer-controls flex min-w-0 flex-1 flex-wrap items-center min-[390px]:flex-nowrap md:flex-wrap md:gap-1.5">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -638,18 +642,18 @@ export function CommandComposerV2({
                     disabled={disabled || isProcessing}
                     aria-label="Adicionar anexos"
                     className={cn(
-                      "size-[var(--gc-mobile-control-height)] rounded-lg md:size-8 md:rounded-lg",
+                      "size-[var(--gc-mobile-composer-control-height)] rounded-lg md:size-8 md:rounded-lg",
                       COMPOSER_CONTROL_BUTTON_CLASS
                     )}
                   >
                     {isProcessing ? (
-                      <LoaderCircle className="size-4 animate-spin" />
+                      <LoaderCircle className="size-[0.92rem] animate-spin" />
                     ) : (
-                      <Paperclip className="size-4" />
+                      <Paperclip className="size-[0.92rem]" />
                     )}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" side="top" className="min-w-[11rem]">
+                <DropdownMenuContent align="start" side="top" collisionPadding={12} className="gc-chat-ui gc-composer-menu min-w-[10.125rem] md:min-w-[11rem]">
                   <DropdownMenuItem onClick={onFileSelect}>
                     <Paperclip className="mr-2 size-3.5 text-muted-foreground" />
                     Arquivo
@@ -665,7 +669,7 @@ export function CommandComposerV2({
                 <button
                   type="button"
                   className={cn(
-                    "flex h-[var(--gc-mobile-control-height)] max-w-[6rem] items-center gap-1 rounded-lg px-1.5 text-[length:var(--gc-mobile-control-font-size)] font-medium md:h-8 md:max-w-[6.5rem] md:text-nano",
+                    "flex h-[var(--gc-mobile-composer-control-height)] max-w-[6rem] items-center gap-1 rounded-lg px-1.5 text-[length:var(--gc-mobile-control-font-size)] font-medium md:h-8 md:max-w-[6.5rem] md:text-nano",
                     COMPOSER_CONTROL_BUTTON_CLASS
                   )}
                 >
@@ -680,7 +684,7 @@ export function CommandComposerV2({
                     type="button"
                     aria-label="Ajustar nível de raciocínio"
                     className={cn(
-                      "flex size-[var(--gc-mobile-control-height)] items-center justify-center rounded-lg p-0 md:h-8 md:w-8 md:rounded-lg",
+                      "flex size-[var(--gc-mobile-composer-control-height)] items-center justify-center rounded-lg p-0 md:h-8 md:w-8 md:rounded-lg",
                       COMPOSER_CONTROL_BUTTON_CLASS
                     )}
                   >
@@ -702,7 +706,7 @@ export function CommandComposerV2({
                   boxShadow: `0 0 ${5 + audioLevel * 10}px rgba(251,113,133,${(0.22 + audioLevel * 0.5).toFixed(2)})`,
                 } : undefined}
                 className={cn(
-                  "flex h-[var(--gc-mobile-control-height)] items-center gap-1 rounded-lg border px-2 text-[length:var(--gc-mobile-control-font-size)] font-medium transition-shadow md:hidden",
+                  "flex h-[var(--gc-mobile-composer-control-height)] items-center gap-[0.23rem] rounded-lg border px-[0.46rem] text-[length:var(--gc-mobile-control-font-size)] font-medium transition-shadow has-[>svg]:px-[0.46rem] md:hidden",
                   isRecording
                     ? "border-rose-500/35 bg-rose-500/12 text-rose-700 dark:text-rose-300"
                     : isTranscribing
@@ -711,9 +715,9 @@ export function CommandComposerV2({
                 )}
               >
                 {isTranscribing ? (
-                  <LoaderCircle className="size-3.5 animate-spin" />
+                  <LoaderCircle className="size-[0.8125rem] animate-spin" />
                 ) : (
-                  <Mic className={cn("size-3.5", isRecording && "animate-pulse")} />
+                  <Mic className={cn("size-[0.8125rem]", isRecording && "animate-pulse")} />
                 )}
                 <span>Rec</span>
               </Button>
@@ -726,7 +730,7 @@ export function CommandComposerV2({
                     size="sm"
                     disabled={disabled}
                     className={cn(
-                      "flex h-[var(--gc-mobile-control-height)] rounded-lg border px-1.5 text-[length:var(--gc-mobile-control-font-size)] md:hidden",
+                      "flex h-[var(--gc-mobile-composer-control-height)] gap-0 rounded-lg border px-1 text-[length:var(--gc-mobile-control-font-size)] has-[>svg]:px-1 md:hidden",
                       responseMode === "document" ||
                         responseMode === "deepsearch_medium" ||
                         responseMode === "deepsearch_high"
@@ -734,12 +738,12 @@ export function CommandComposerV2({
                         : COMPOSER_CONTROL_BUTTON_CLASS
                     )}
                   >
-                    <Search className="mr-1 size-3.5" />
+                    <Search className="mr-1 size-[0.8125rem]" />
                     Pesquisa
-                    <ChevronDown className="ml-1 size-3" />
+                    <ChevronDown className="ml-1 hidden size-3 min-[430px]:block" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" side="top" className="min-w-[12rem]">
+                <DropdownMenuContent align="start" side="top" collisionPadding={12} className="gc-chat-ui gc-composer-menu min-w-[11rem] md:min-w-[12rem]">
                   <DropdownMenuItem onClick={() => onSelectDocumentMode("document")}>
                     <FileText
                       className={cn(
@@ -797,7 +801,7 @@ export function CommandComposerV2({
                     <ChevronDown className="ml-1 size-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" side="top" className="min-w-[14rem]">
+                <DropdownMenuContent align="start" side="top" className="gc-chat-ui min-w-[14rem]">
                   <DropdownMenuItem onClick={() => onSelectDocumentMode("deepsearch_medium")}>
                     <FileText
                       className={cn(
@@ -871,7 +875,7 @@ export function CommandComposerV2({
               </Button>
             </div>
 
-            <div className="flex items-center gap-1 md:gap-1.5">
+            <div className="flex shrink-0 items-center gap-[0.23rem] md:gap-1.5">
               {isLoading || isTranscribing ? (
                 <Button
                   type="button"
@@ -879,7 +883,7 @@ export function CommandComposerV2({
                   size="sm"
                   onClick={onStop}
                   aria-label="Parar geração"
-                  className="h-[var(--gc-mobile-control-height)] rounded-lg px-2.5 text-[length:var(--gc-mobile-send-font-size)] md:h-8 md:px-3 md:text-xs"
+                  className="h-[var(--gc-mobile-composer-control-height)] rounded-lg px-2.5 text-[length:var(--gc-mobile-send-font-size)] md:h-8 md:px-3 md:text-xs"
                 >
                   <Square className="mr-1.5 size-3.5" />
                   Parar
@@ -891,9 +895,9 @@ export function CommandComposerV2({
                   disabled={!hasContent || isRecording || isProcessing}
                   onClick={onSubmit}
                   aria-label="Enviar mensagem"
-                  className="size-[var(--gc-mobile-icon-button-size)] rounded-full bg-primary p-0 text-primary-foreground shadow-[0_10px_22px_rgba(15,118,110,0.22)] hover:bg-primary/90 disabled:opacity-30 md:h-8 md:w-auto md:rounded-lg md:px-3 md:text-xs"
+                  className="size-[var(--gc-mobile-composer-send-size)] rounded-full bg-primary p-0 text-primary-foreground shadow-[0_10px_22px_rgba(15,118,110,0.22)] hover:bg-primary/90 disabled:opacity-30 md:h-8 md:w-auto md:rounded-lg md:px-3 md:text-xs"
                 >
-                  <Send className="size-4.5 md:size-3.5" />
+                  <Send className="size-4 md:size-3.5" />
                 </Button>
               )}
             </div>

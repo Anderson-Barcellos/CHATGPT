@@ -80,6 +80,12 @@ A compactação mobile atual foi implementada como uma passada paralela ao fluxo
 
 Na harmonização mais recente, o contrato mobile ficou ainda mais explícito no composer: header, footer e textarea usam tokens semânticos (`--gc-mobile-header-*`, `--gc-mobile-composer-*`, `--gc-mobile-textarea-*`), e a linha principal concentra anexos, modelo, reasoning, pesquisa, `Rec` e envio. Em vez de uma segunda faixa fixa de anexos, o mobile agora usa um menu único de paperclip com `Arquivo` e `Imagem`, liberando mais área útil para a sessão do chat.
 
+No refinamento de 2026-09-12, os controles do composer medem 33 px, o envio 36 px e o seletor de modelo tem teto de 7,25 rem no mobile. O grupo quebra linha quando necessário, sem rolagem horizontal nem opções escondidas. Os balões usam largura conforme o conteúdo com limite de 100% e padding de 8 × 10 px; menus de modelo/raciocínio recebem a classe própria `gc-composer-menu` para compactação em portal, com margem lateral de 12 px. Tipografia de leitura, textarea de 16 px e layout desktop permanecem preservados.
+
+### Reatividade no iPhone (2026-09-13)
+
+Três mecanismos garantem fluência no iPhone 17 Pro Max (440 × 956 pt, Dynamic Island, Safari 26). **Teclado:** o Safari do iOS não encolhe o layout viewport quando o teclado abre; `hooks/useVisualViewport.ts` acompanha `window.visualViewport`, grava `--gc-visual-viewport-height` e `data-keyboard-open` no `<html>` e devolve o scroll da janela a zero; `.gc-device-frame` usa essa altura no mobile e o `gc-composer-dock` dispensa a safe-area inferior enquanto o teclado está aberto. **Paisagem:** a definição de mobile (`MOBILE_MEDIA_QUERY` em `lib/layout/breakpoints.ts`) inclui paisagem curta com toque (altura ≤ 500 px e `pointer: coarse`); o variant `md` do Tailwind é redefinido em `app/globals.css` com a mesma condição negada e os blocos `@media` crus usam a lista equivalente, de modo que o celular deitado nunca recebe o layout de tablet. **Safe-area lateral:** utilitários `gc-safe-x`, `gc-safe-left` e `gc-safe-right` aplicam `env(safe-area-inset-left/right)` no shell e nos sheets. Em mobile os balões do assistente dispensam `backdrop-filter` e a animação `layout` do framer-motion, o viewport de rolagem usa `overscroll-behavior: contain` e os controles do chat recebem `touch-action: manipulation` sob `pointer: coarse`.
+
 ## Fluxo de Chat
 
 1. O composer chama `useChat`.
@@ -172,7 +178,7 @@ Camadas principais:
 - `app/api/memory/*` e `lib/server/memory/*`: indexação semântica com `text-embedding-3-small`, busca RAG, sugestões e execução das memory tools.
 - `lib/storage/conversationPersistence.ts`: retry/normalização de writes.
 
-O cliente também usa stores Zustand e cache local. Em produção, `MEMORY_V2_ENABLED` permanece desligada e o estado canônico continua no servidor JSON.
+O cliente também usa stores Zustand e cache local. Em produção, `MEMORY_V2_ENABLED` permanece desligada e o estado canônico continua no servidor JSON. O `settingsStore` persiste no `localStorage` (`gaucho-chat:settings:v1`) apenas modelo, prompt de sistema e parâmetros por modelo; a reidratação acontece no cliente depois do primeiro paint (`SettingsHydrator` em `components/providers/query-provider.tsx`) e passa pelo mesmo clamp do runtime, então modelo removido cai no suportado mais próximo. Memórias e instruções nunca vão para o navegador.
 
 ### Fundação Memory V2 E1/E2
 

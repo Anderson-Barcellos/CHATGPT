@@ -14,11 +14,9 @@ import { useUIStore } from "@/stores/uiStore";
 import type { ActivePanelTab } from "@/types";
 
 export function ContextPanelV2() {
-  const {
-    activePanelTab,
-    setActivePanelTab,
-    closeContextPanel,
-  } = useUIStore();
+  const activePanelTab = useUIStore((state) => state.activePanelTab);
+  const setActivePanelTab = useUIStore((state) => state.setActivePanelTab);
+  const closeContextPanel = useUIStore((state) => state.closeContextPanel);
   const { activeConversationId } = useChatStore();
 
   return (

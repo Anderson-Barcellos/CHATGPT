@@ -73,4 +73,61 @@ describe("conversation storage authority", () => {
     expect(listed[0]).toMatchObject({ id: "legacy-1", title: "Legado" });
     expect(readDataFileMock).toHaveBeenCalledOnce();
   });
+
+  it("patches messages under the file lock so a concurrent autosave is not lost (B6)", async () => {
+    delete process.env.MEMORY_V2_ENABLED;
+    const now = "2026-09-05T03:00:00.000Z";
+    let stored: unknown[] = [
+      {
+        id: "conv-1",
+        title: "Teste",
+        createdAt: now,
+        updatedAt: now,
+        messages: [
+          { id: "u1", role: "user", content: "oi", timestamp: now },
+          { id: "a1", role: "assistant", content: "Processando", timestamp: now, streamStatus: "streaming" },
+        ],
+      },
+    ];
+    readDataFileMock.mockImplementation(async () => structuredClone(stored));
+    writeDataFileMock.mockImplementation(async (_file: string, value: unknown[]) => {
+      stored = structuredClone(value);
+    });
+    let chain: Promise<unknown> = Promise.resolve();
+    withDataFileLockMock.mockImplementation((_file: string, fn: () => Promise<unknown>) => {
+      const next = chain.then(fn, fn);
+      chain = next.catch(() => undefined);
+      return next;
+    });
+    const data = await import("./data");
+
+    const autosave = data.updateConversation("conv-1", {
+      messages: [
+        { id: "u1", role: "user", content: "oi", timestamp: new Date(now) },
+        { id: "a1", role: "assistant", content: "Processando", timestamp: new Date(now), streamStatus: "streaming" },
+        { id: "u2", role: "user", content: "segunda pergunta", timestamp: new Date(now) },
+      ],
+    });
+    const patched = data.patchConversationMessages("conv-1", (messages) =>
+      messages.map((message) =>
+        message.id === "a1"
+          ? { ...message, content: "Resposta pronta", streamStatus: "completed" as const }
+          : message
+      )
+    );
+    await Promise.all([autosave, patched]);
+
+    const final = await data.getConversation("conv-1");
+    expect(final?.messages.map((message) => message.id)).toEqual(["u1", "a1", "u2"]);
+    expect(final?.messages[1]).toMatchObject({ content: "Resposta pronta", streamStatus: "completed" });
+  });
+
+  it("patchConversationMessages returns undefined when the mutator declines", async () => {
+    delete process.env.MEMORY_V2_ENABLED;
+    readDataFileMock.mockResolvedValue([]);
+    withDataFileLockMock.mockImplementation((_file: string, fn: () => Promise<unknown>) => fn());
+    const data = await import("./data");
+    expect(await data.patchConversationMessages("missing", (messages) => messages)).toBeUndefined();
+    expect(writeDataFileMock).not.toHaveBeenCalled();
+  });
 });
