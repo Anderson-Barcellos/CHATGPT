@@ -2,7 +2,7 @@
 
 ## Estado operacional
 
-#### Reatividade mobile para iPhone 17 Pro Max — teclado, paisagem e safe-area (`pronta para revisão`, 2026-09-13)
+#### Reatividade mobile para iPhone 17 Pro Max — teclado, paisagem e safe-area (`fechada` por Anders, 2026-09-13)
 
 Context: Anders pediu que o layout mobile seguisse boas práticas de reatividade e fluência no iPhone 17 Pro Max, suspeitando de redundâncias nos polimentos anteriores. Auditoria confirmou: nenhum tratamento de `visualViewport` (o Safari empurra a página ao abrir o teclado), paisagem de 956 × 440 pt caindo no layout de tablet, `viewportFit: cover` sem safe-area lateral, `backdrop-filter` e animação `layout` por balão, e sujeira (classe `gc-mobile-density` sem CSS, `lg:hidden md:hidden`, tokens `--gc-shell-*` mobile duplicados e mortos em `:root`, fallbacks triplos em `gc-device-frame`). Bloco aprovado por Anders sem alterar densidade, cores ou desktop.
 
@@ -10,7 +10,7 @@ Details: `lib/layout/breakpoints.ts` ganha `SHORT_LANDSCAPE_MAX_HEIGHT` e `MOBIL
 
 Notes: testes novos `hooks/useIsMobile.test.ts` e `hooks/useVisualViewport.test.ts`; contratos em `app/globals.visual.test.ts` e `WorkspaceLayoutV2.test.tsx`. QA Chrome/Playwright emulando iPhone (440 × 956 e 956 × 440, claro/escuro, welcome, rail, painel, foco no composer): antes/depois em `/root/.cache/chat-mobile-iphone-evidence` (harness no scratchpad da sessão, cópia em `/root/.cache/chat-mobile-iphone-qa.mjs`). Depois: paisagem sem rail de tablet, thread visível 244 px (antes 210), balão sem blur, `overscroll-behavior: contain`, `touch-action: manipulation`, zero overflow e zero pageerror; retrato pixel-idêntico. O teclado do iOS não é emulável no harness: conferir no aparelho após deploy. Gates completos registrados em `TEST_LOGS.md`. Sem commit ou push.
 
-Publicação 2026-09-13: após autorização de Anders, build do checkout gerada (`8ndcAnvQfhPrcaqYHYT8V1`) e `chatgpt.service` reiniciado; build anterior `d4RKONEnNLmGGtDQDtGUA` preservada por hardlinks em `/root/.cache/chatgpt-next-before-iphone-20260913T2112Z`. Health local e público `healthy`; o chunk CSS publicado contém `--gc-visual-viewport-height`, `max-height:500px` e `touch-action:manipulation`. Apache, dados privados, commit e push intactos. Validação do teclado no aparelho pendente com Anders.
+Publicação 2026-09-13: após autorização de Anders, build do checkout gerada (`8ndcAnvQfhPrcaqYHYT8V1`) e `chatgpt.service` reiniciado; build anterior `d4RKONEnNLmGGtDQDtGUA` preservada por hardlinks em `/root/.cache/chatgpt-next-before-iphone-20260913T2112Z`. Health local e público `healthy`; o chunk CSS publicado contém `--gc-visual-viewport-height`, `max-height:500px` e `touch-action:manipulation`. Apache, dados privados, commit e push intactos. Anders validou no aparelho e fechou a entrega. Commit `607539a` em `main` (inclui, por decisão de Anders, o trabalho não versionado do Codex: P8, densidade 92%, SoundCase source, Pulse, Studio) e push para `origin/main` feito com a credencial gravada do `gh` (o `GITHUB_TOKEN` do ambiente da sessão não tem escrita neste repositório).
 
 #### Refinamento mobile da P8 — densidade responsiva de 92% (`pronta para revisão`, 2026-09-12)
 
