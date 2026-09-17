@@ -2,6 +2,14 @@
 
 ## Estado operacional
 
+#### Barra de ações do assistente contida no mobile (`pronta para revisão`, 2026-09-17)
+
+Context: após os retratos entrarem nos balões e a resposta do assistente ocupar 100% da largura mobile, a barra de oito ações continuava aplicando `margin-left: -2.31rem`, compensação da antiga coluna externa do avatar. O primeiro botão ficava cortado à esquerda no celular.
+
+Details: o commit local `f446849` remove o modificador `gc-message-quick-actions-wide` do markup e a regra CSS que expandia/deslocava a barra. `width: fit-content`, `max-width: 100%`, quebra natural, sete ações fixas mais `Regenerar` condicional e alvos táteis de 40 px foram preservados. `app/globals.visual.test.ts` fixa a ausência da compensação negativa. `DECISÃO:` o QA de browser usou Chrome/Playwright com `page.setContent()`, DOM sintético e o CSS real da build isolada, sem subir outra instância Next, porque `instrumentation.ts` executaria o cleanup por wildcard das units Studio vivas.
+
+Notes: 172 arquivos/861 testes passaram; TypeScript exit 0. O lint bruto confirmou a contaminação conhecida do snapshot `.next-before-sc2-20260906T170822Z` (4.446 erros/88.384 warnings, exit 1); excluindo somente esse caminho, terminou com zero erros, um warning anterior de `_content` e exit 0. Build `/chat` em cópia isolada com hardlinks passou, 41/41 páginas, com o warning conhecido de NFT tracing do Studio. QA Chrome/Playwright: 10/10 cenários em 320/390/430/767 e 956×440, claro/escuro; 320 quebra em duas linhas, 390/430 mantêm oito ações em uma, primeiro/último botão inteiros, 40×40 px, zero overflow em documento/thread/balão/barra e zero pageerror/console error. Evidências em `/root/.cache/chat-mobile-actions-qa-uiiYST`; produção, serviços, `.next` viva, provider e dados privados não foram tocados.
+
 #### Reatividade mobile para iPhone 17 Pro Max — teclado, paisagem e safe-area (`fechada` por Anders, 2026-09-13)
 
 Context: Anders pediu que o layout mobile seguisse boas práticas de reatividade e fluência no iPhone 17 Pro Max, suspeitando de redundâncias nos polimentos anteriores. Auditoria confirmou: nenhum tratamento de `visualViewport` (o Safari empurra a página ao abrir o teclado), paisagem de 956 × 440 pt caindo no layout de tablet, `viewportFit: cover` sem safe-area lateral, `backdrop-filter` e animação `layout` por balão, e sujeira (classe `gc-mobile-density` sem CSS, `lg:hidden md:hidden`, tokens `--gc-shell-*` mobile duplicados e mortos em `:root`, fallbacks triplos em `gc-device-frame`). Bloco aprovado por Anders sem alterar densidade, cores ou desktop.
