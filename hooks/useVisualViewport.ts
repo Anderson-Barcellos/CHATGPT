@@ -14,6 +14,7 @@ import { useEffect } from "react";
  */
 
 export const VISUAL_VIEWPORT_HEIGHT_VAR = "--gc-visual-viewport-height";
+export const VISUAL_VIEWPORT_OFFSET_TOP_VAR = "--gc-visual-viewport-offset-top";
 export const KEYBOARD_OPEN_ATTR = "data-keyboard-open";
 /** Diferença mínima (px) entre a janela e o visual viewport pra considerar teclado aberto. */
 export const KEYBOARD_THRESHOLD_PX = 100;
@@ -34,10 +35,12 @@ export function applyVisualViewport(
 ): void {
   if (!snapshot) {
     root.style.removeProperty(VISUAL_VIEWPORT_HEIGHT_VAR);
+    root.style.removeProperty(VISUAL_VIEWPORT_OFFSET_TOP_VAR);
     root.removeAttribute(KEYBOARD_OPEN_ATTR);
     return;
   }
   root.style.setProperty(VISUAL_VIEWPORT_HEIGHT_VAR, `${Math.round(snapshot.height)}px`);
+  root.style.setProperty(VISUAL_VIEWPORT_OFFSET_TOP_VAR, `${Math.round(snapshot.offsetTop)}px`);
   if (isKeyboardOpen(snapshot)) {
     root.setAttribute(KEYBOARD_OPEN_ATTR, "true");
   } else {

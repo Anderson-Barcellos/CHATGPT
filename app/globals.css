@@ -951,7 +951,9 @@ body {
     --gc-mobile-welcome-panel-x: 0.515rem;
     --gc-mobile-welcome-panel-y: 0.575rem;
     --gc-mobile-welcome-grid-gap: 0.6875rem;
-    --gc-mobile-welcome-title-size: 1.36rem;
+    --gc-mobile-welcome-title-size: 1.22rem;
+    --gc-mobile-welcome-subtitle-size: 0.74rem;
+    --gc-mobile-welcome-action-font-size: 0.625rem;
     --gc-mobile-welcome-suggestion-min-height: 5.1rem;
     --gc-mobile-welcome-suggestion-gap: 0.345rem;
     --gc-mobile-welcome-suggestion-pad: 0.515rem;
@@ -1457,9 +1459,14 @@ body {
   /* Teclado do iOS: o shell encolhe junto com o visual viewport (useVisualViewport). */
   .gc-device-frame {
     height: var(--gc-visual-viewport-height, 100dvh);
+    transform: translateY(var(--gc-visual-viewport-offset-top, 0));
   }
 
   html[data-keyboard-open] .gc-composer-dock {
+    padding-bottom: var(--gc-mobile-composer-footer-bottom);
+  }
+
+  .gc-composer-dock {
     padding-bottom: var(--gc-mobile-composer-footer-bottom);
   }
 

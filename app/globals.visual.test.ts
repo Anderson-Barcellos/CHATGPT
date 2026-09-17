@@ -52,7 +52,15 @@ describe("Gaucho Chat visual contract", () => {
 
   it("follows the iOS visual viewport so the keyboard shrinks the shell instead of pushing it", () => {
     expect(css).toMatch(/\.gc-device-frame[\s\S]*height: var\(--gc-visual-viewport-height, 100dvh\)/);
+    expect(css).toMatch(/\.gc-device-frame[\s\S]*transform: translateY\(var\(--gc-visual-viewport-offset-top, 0\)\)/);
     expect(css).toMatch(/html\[data-keyboard-open\] \.gc-composer-dock[\s\S]*padding-bottom: var\(--gc-mobile-composer-footer-bottom\)/);
+    expect(css).toMatch(/\.gc-composer-dock[\s\S]*padding-bottom: var\(--gc-mobile-composer-footer-bottom\)/);
+  });
+
+  it("keeps the iPhone welcome card compact enough for the splash actions", () => {
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-welcome-title-size:\s*1\.22rem;/);
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-welcome-subtitle-size:\s*0\.74rem;/);
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-welcome-action-font-size:\s*0\.625rem;/);
   });
 
   it("respects lateral safe areas for the Dynamic Island in landscape", () => {

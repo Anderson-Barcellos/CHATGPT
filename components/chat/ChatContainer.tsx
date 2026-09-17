@@ -137,17 +137,17 @@ function WelcomeScreen({
             <div className="mx-auto flex size-[2.5rem] items-center justify-center rounded-[0.92rem] border border-primary/20 bg-primary/8">
               <ShieldCheck className="size-[1.38rem] text-primary" />
             </div>
-            <h2 className="mt-[0.575rem] text-[1.27rem] font-semibold leading-tight tracking-[-0.04em] text-foreground">
+            <h2 className="mt-[0.575rem] text-[length:var(--gc-mobile-welcome-title-size)] font-semibold leading-tight tracking-normal text-foreground">
               Olá, Anders
             </h2>
-            <p className="mt-[0.23rem] text-[0.83rem] text-muted-foreground">Como posso ajudar você hoje?</p>
+            <p className="mt-[0.23rem] text-[length:var(--gc-mobile-welcome-subtitle-size)] text-muted-foreground">Como posso ajudar você hoje?</p>
             <div className="mt-[0.805rem] grid grid-cols-4 gap-[0.23rem]">
               {MOBILE_ACTIONS.map(({ icon: Icon, label, prompt }) => (
                 <button
                   key={label}
                   type="button"
                   onClick={() => onSuggestionClick(prompt)}
-                  className="inline-flex min-h-[2.575rem] flex-col items-center justify-center gap-[0.115rem] rounded-[0.83rem] border border-[color:var(--gc-border-soft)] bg-background/80 px-[0.23rem] text-[0.6875rem] font-medium leading-tight text-foreground shadow-[0_7px_17px_rgba(15,23,42,0.04)]"
+                  className="inline-flex min-h-[2.575rem] flex-col items-center justify-center gap-[0.115rem] rounded-[0.83rem] border border-[color:var(--gc-border-soft)] bg-background/80 px-[0.23rem] text-[length:var(--gc-mobile-welcome-action-font-size)] font-medium leading-tight text-foreground shadow-[0_7px_17px_rgba(15,23,42,0.04)]"
                 >
                   <Icon className="size-[0.75rem] text-primary" />
                   <span className="line-clamp-2">{label}</span>

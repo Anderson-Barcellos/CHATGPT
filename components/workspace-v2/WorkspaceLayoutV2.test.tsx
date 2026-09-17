@@ -106,6 +106,8 @@ describe("CommandComposerV2", () => {
     expect(markup).toContain("Quiz");
     expect(markup).toContain('aria-label="Gravar áudio"');
     expect(markup).toContain('aria-label="Enviar mensagem"');
+    expect(markup).toContain("pb-[var(--gc-mobile-composer-footer-bottom)]");
+    expect(markup).not.toContain("pb-[calc(env(safe-area-inset-bottom)+var(--gc-mobile-composer-footer-bottom))]");
     expect(markup).toContain("py-[var(--gc-mobile-composer-controls-y)]");
     expect(markup).toContain("flex flex-nowrap items-center justify-between gap-[0.23rem]");
     expect(markup).toContain("flex shrink-0 items-center gap-[0.23rem]");

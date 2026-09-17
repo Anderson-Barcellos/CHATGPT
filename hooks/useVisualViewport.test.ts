@@ -6,6 +6,7 @@ import {
   KEYBOARD_OPEN_ATTR,
   KEYBOARD_THRESHOLD_PX,
   VISUAL_VIEWPORT_HEIGHT_VAR,
+  VISUAL_VIEWPORT_OFFSET_TOP_VAR,
   applyVisualViewport,
   isKeyboardOpen,
   useVisualViewport,
@@ -60,6 +61,7 @@ afterEach(async () => {
   root = null;
   container = null;
   document.documentElement.style.removeProperty(VISUAL_VIEWPORT_HEIGHT_VAR);
+  document.documentElement.style.removeProperty(VISUAL_VIEWPORT_OFFSET_TOP_VAR);
   document.documentElement.removeAttribute(KEYBOARD_OPEN_ATTR);
   vi.unstubAllGlobals();
 });
@@ -77,10 +79,12 @@ describe("applyVisualViewport", () => {
     const el = document.createElement("div");
     applyVisualViewport(el, { height: 560.4, offsetTop: 0, innerHeight: 956 });
     expect(el.style.getPropertyValue(VISUAL_VIEWPORT_HEIGHT_VAR)).toBe("560px");
+    expect(el.style.getPropertyValue(VISUAL_VIEWPORT_OFFSET_TOP_VAR)).toBe("0px");
     expect(el.getAttribute(KEYBOARD_OPEN_ATTR)).toBe("true");
 
-    applyVisualViewport(el, { height: 956, offsetTop: 0, innerHeight: 956 });
+    applyVisualViewport(el, { height: 956, offsetTop: 12.4, innerHeight: 956 });
     expect(el.style.getPropertyValue(VISUAL_VIEWPORT_HEIGHT_VAR)).toBe("956px");
+    expect(el.style.getPropertyValue(VISUAL_VIEWPORT_OFFSET_TOP_VAR)).toBe("12px");
     expect(el.hasAttribute(KEYBOARD_OPEN_ATTR)).toBe(false);
   });
 
@@ -89,6 +93,7 @@ describe("applyVisualViewport", () => {
     applyVisualViewport(el, { height: 560, offsetTop: 0, innerHeight: 956 });
     applyVisualViewport(el, null);
     expect(el.style.getPropertyValue(VISUAL_VIEWPORT_HEIGHT_VAR)).toBe("");
+    expect(el.style.getPropertyValue(VISUAL_VIEWPORT_OFFSET_TOP_VAR)).toBe("");
     expect(el.hasAttribute(KEYBOARD_OPEN_ATTR)).toBe(false);
   });
 });
@@ -104,6 +109,7 @@ describe("useVisualViewport", () => {
     await mount(true);
     await flush();
     expect(document.documentElement.style.getPropertyValue(VISUAL_VIEWPORT_HEIGHT_VAR)).toBe("956px");
+    expect(document.documentElement.style.getPropertyValue(VISUAL_VIEWPORT_OFFSET_TOP_VAR)).toBe("0px");
     expect(document.documentElement.hasAttribute(KEYBOARD_OPEN_ATTR)).toBe(false);
 
     viewport.height = 560;
@@ -114,6 +120,7 @@ describe("useVisualViewport", () => {
     await flush();
 
     expect(document.documentElement.style.getPropertyValue(VISUAL_VIEWPORT_HEIGHT_VAR)).toBe("560px");
+    expect(document.documentElement.style.getPropertyValue(VISUAL_VIEWPORT_OFFSET_TOP_VAR)).toBe("120px");
     expect(document.documentElement.getAttribute(KEYBOARD_OPEN_ATTR)).toBe("true");
     expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
   });
@@ -126,6 +133,7 @@ describe("useVisualViewport", () => {
     });
     root = null;
     expect(document.documentElement.style.getPropertyValue(VISUAL_VIEWPORT_HEIGHT_VAR)).toBe("");
+    expect(document.documentElement.style.getPropertyValue(VISUAL_VIEWPORT_OFFSET_TOP_VAR)).toBe("");
     expect(document.documentElement.hasAttribute(KEYBOARD_OPEN_ATTR)).toBe(false);
   });
 });
