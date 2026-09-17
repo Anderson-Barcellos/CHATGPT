@@ -661,16 +661,17 @@ export function StudioNotebook({
         if (!response.ok) throw await parseApiErrorResponse(response);
         if (!response.body) throw new Error("Stream indisponível.");
 
-        const accumulated = await consumeStudioAssistantStream(
+        const completed = await consumeStudioAssistantStream(
           response.body,
-          (content) => {
+          (update) => {
             setAssist((previous) =>
               previous?.cellId === cell.id
-                ? { ...previous, responseText: content }
+                ? { ...previous, responseText: update.content }
                 : previous
             );
           }
         );
+        const accumulated = completed.content;
         if (!accumulated.trim()) {
           throw new Error("O modelo não retornou conteúdo.");
         }

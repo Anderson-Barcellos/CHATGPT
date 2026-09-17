@@ -4,6 +4,8 @@ import Image from "next/image";
 import {
   AlertTriangle,
   ChevronDown,
+  Globe2,
+  LoaderCircle,
   MoreHorizontal,
   Send,
   Square,
@@ -20,6 +22,7 @@ import {
 import andersAvatar from "@/public/images/anders-avatar.png";
 import { GPTLogo } from "@/components/ui/gpt-logo";
 import { StreamingMarkdown } from "@/components/chat/StreamingMarkdown";
+import { cleanCitationMarkers } from "@/lib/artifacts/messageArtifacts";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +34,7 @@ import { MODELS } from "@/lib/models/modelConfig";
 import {
   consumeStudioAssistantStream,
   StudioAssistantStreamInterruptedError,
+  type StudioAssistantStreamUpdate,
 } from "@/lib/studio/assistantStream";
 import { getStudioModels } from "@/lib/studio/models";
 import type {
@@ -67,6 +71,27 @@ function formatMessageTime(createdAt: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function safeCitations(citations: StudioAssistantMessage["citations"]) {
+  return (citations ?? []).flatMap((citation) => {
+    try {
+      const url = new URL(citation.url);
+      if (url.protocol !== "http:" && url.protocol !== "https:") return [];
+      return [{ ...citation, url: url.toString() }];
+    } catch {
+      return [];
+    }
+  });
+}
+
+function citationLabel(title: string, url: string) {
+  if (title.trim()) return title;
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "Fonte";
+  }
 }
 
 export function StudioAssistantPanel({
@@ -118,7 +143,12 @@ export function StudioAssistantPanel({
     setIsStreaming(true);
     const controller = new AbortController();
     abortRef.current = controller;
-    let accumulated = "";
+    let latest: StudioAssistantStreamUpdate = {
+      content: "",
+      citations: [],
+      isSearching: false,
+      didSearch: false,
+    };
 
     try {
       const response = await fetch(apiUrl("/api/studio/assist"), {
@@ -139,40 +169,49 @@ export function StudioAssistantPanel({
 
       if (!response.ok) throw await parseApiErrorResponse(response);
       if (!response.body) throw new Error("Stream indisponível.");
-      accumulated = await consumeStudioAssistantStream(
+      latest = await consumeStudioAssistantStream(
         response.body,
-        (content) => {
-          accumulated = content;
+        (update) => {
+          latest = update;
           onUpdateMessage(assistantMessageId, {
-            content,
+            content: update.content,
             status: "streaming",
+            citations: update.citations,
+            isSearching: update.isSearching,
+            didSearch: update.didSearch,
           });
         }
       );
 
-      if (!accumulated.trim()) {
+      if (!latest.content.trim()) {
         throw new Error("O modelo não retornou conteúdo.");
       }
 
       onUpdateMessage(assistantMessageId, {
-        content: accumulated,
+        content: latest.content,
         status: "completed",
+        citations: latest.citations,
+        isSearching: false,
+        didSearch: latest.didSearch,
       });
     } catch (error) {
       const aborted = error instanceof DOMException && error.name === "AbortError";
       const interrupted =
         aborted || error instanceof StudioAssistantStreamInterruptedError;
-      const partialContent =
+      const partial =
         error instanceof StudioAssistantStreamInterruptedError
-          ? error.partialContent
-          : accumulated;
+          ? error.partialUpdate
+          : latest;
       onUpdateMessage(assistantMessageId, {
         content: interrupted
-          ? partialContent || "Resposta interrompida."
+          ? partial.content || "Resposta interrompida."
           : `Não consegui responder agora. ${
               error instanceof Error ? error.message : "Tente novamente."
             }`,
         status: interrupted ? "interrupted" : "failed",
+        citations: partial.citations,
+        isSearching: false,
+        didSearch: partial.didSearch,
       });
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
@@ -255,7 +294,9 @@ export function StudioAssistantPanel({
             O arquivo ativo entra automaticamente como contexto somente-leitura.
           </div>
         ) : null}
-        {messages.map((message) => (
+        {messages.map((message) => {
+          const citations = safeCitations(message.citations);
+          return (
           <article
             key={message.id}
             className={cn(
@@ -284,10 +325,36 @@ export function StudioAssistantPanel({
               {message.role === "assistant" ? (
                 <>
                   <StreamingMarkdown
-                    content={message.content}
+                    content={cleanCitationMarkers(message.content, citations)}
                     streamStatus={message.status}
                     className={styles.studioMarkdown}
                   />
+                  {message.isSearching ? (
+                    <div className={styles.searchStatus} role="status">
+                      <LoaderCircle size={13} className="animate-spin" />
+                      Pesquisando na web…
+                    </div>
+                  ) : null}
+                  {citations.length > 0 ? (
+                    <div className={styles.citations}>
+                      <div className={styles.citationsTitle}>
+                        <Globe2 size={12} />
+                        Referências
+                      </div>
+                      <div className={styles.citationLinks}>
+                        {citations.map((citation, index) => (
+                          <a
+                            key={`${citation.url}-${index}`}
+                            href={citation.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {index + 1}. {citationLabel(citation.title, citation.url)}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                   {message.status === "interrupted" ? (
                     <div className={styles.interruptedMessage}>
                       <AlertTriangle size={13} />
@@ -300,7 +367,8 @@ export function StudioAssistantPanel({
               )}
             </div>
           </article>
-        ))}
+          );
+        })}
       </div>
 
       <div className={styles.assistantComposer}>

@@ -125,7 +125,7 @@ abrir, ao voltar para aba visível e ao carregar conversas com job pendente.
 
 ### `POST /api/studio/assist`
 
-Assistente contextual do editor em `/studio`. A rota usa a OpenAI Responses API com streaming SSE, `store=false`, reasoning baixo e `tools: []`. Ela não recebe autorização para editar arquivos, executar código, navegar na web, consultar memórias ou acionar o fluxo agente.
+Assistente contextual do editor em `/studio`. A rota usa a OpenAI Responses API com streaming SSE e `store=false`, sem sobrescrever os defaults de reasoning ou verbosity do modelo. No painel lateral, expõe somente `web_search_preview` com contexto `medium` e localização aproximada `BR`; status de busca e citações acompanham o stream e ficam no histórico local. O modo de assistência por célula continua com `tools: []`. Nenhum dos dois recebe autorização para editar arquivos automaticamente, executar código, consultar memórias, usar terminal/filesystem ou acionar o fluxo agente.
 
 ```json
 {

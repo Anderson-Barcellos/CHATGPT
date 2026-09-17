@@ -19,7 +19,7 @@ const validRequest = {
 };
 
 describe("Studio assistant request", () => {
-  it("builds a strictly tool-free Responses request with the active file", () => {
+  it("builds a read-only Responses request with web search and the active file", () => {
     const parsed = parseStudioAssistantRequest(validRequest);
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
@@ -27,10 +27,19 @@ describe("Studio assistant request", () => {
     const params = buildStudioResponseParams(parsed.value);
     expect(params.model).toBe("gpt-5.6-luna");
     expect(params.store).toBe(false);
-    expect(params.tools).toEqual([]);
+    expect(params.tools).toEqual([
+      {
+        type: "web_search_preview",
+        search_context_size: "medium",
+        user_location: { type: "approximate", country: "BR" },
+      },
+    ]);
+    expect(params.reasoning).toBeUndefined();
+    expect(params.text).toBeUndefined();
     expect(JSON.stringify(params.input)).toContain("src/calculadora.ts");
     expect(JSON.stringify(params.input)).toContain("Revise esta função.");
     expect(params.instructions).toContain("somente-leitura");
+    expect(params.instructions).toContain("Use pesquisa web");
     expect(params.instructions).toContain("Não diga que editou");
   });
 
@@ -71,6 +80,8 @@ describe("Studio assistant request", () => {
     expect(serialized).toContain("import pandas as pd");
     expect(params.instructions).toContain("bloco de código Python");
     expect(params.tools).toEqual([]);
+    expect(params.reasoning).toBeUndefined();
+    expect(params.text).toBeUndefined();
   });
 
   it("ignora cell malformada sem derrubar a requisição", () => {

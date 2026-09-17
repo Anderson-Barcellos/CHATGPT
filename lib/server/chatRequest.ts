@@ -16,6 +16,7 @@ import {
   QUIZ_FORCED_REASONING_EFFORT,
   quizResponseSchema,
 } from "@/lib/artifacts/quizArtifacts";
+import { buildWebSearchTool } from "@/lib/server/webSearchTool";
 
 export type ChatRequestBody = {
   input?: OpenAI.Responses.ResponseInput;
@@ -174,11 +175,7 @@ function buildTools(
     tools.push(...buildMemoryTools());
   }
 
-  tools.push({
-    type: "web_search_preview",
-    search_context_size: "medium",
-    user_location: { type: "approximate", country: "BR" },
-  });
+  tools.push(buildWebSearchTool());
 
   if (codeInterpreterEnabled && modelSupportsCodeInterpreter(model)) {
     tools.push({

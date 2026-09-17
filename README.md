@@ -14,7 +14,7 @@ Alguns artefatos internos antigos ainda usam o rótulo histórico `Celer`, mas o
 - Artefatos de documento/quiz com preview, download de fonte e PDF A4 server-side.
 - Auth simples do app por usuário/senha, sessão JWT e cookie `auth-token`.
 - Shell `workspace-v2` com o sistema visual **Atmosphere Glass** como padrão: Midnight Glass no escuro, Daybreak no claro e densidade mobile compacta por tokens, sem `zoom` ou escala global.
-- **Gaucho Studio** em `/studio`: IDE Python separada com Monaco sobre o workspace do servidor, Explorer com criação/exclusão e pastas recolhíveis, run sandboxed com stdin, terminal PTY, notebooks `.ipynb` com kernel persistente, preview Markdown, autocomplete FIM DeepSeek e assistente contextual somente leitura.
+- **Gaucho Studio** em `/studio`: IDE Python separada com Monaco sobre o workspace do servidor, Explorer com criação/exclusão e pastas recolhíveis, run sandboxed com stdin, terminal PTY, notebooks `.ipynb` com kernel persistente, preview Markdown, autocomplete FIM DeepSeek e assistente contextual somente leitura com pesquisa web e citações no painel lateral.
 
 ## Stack
 

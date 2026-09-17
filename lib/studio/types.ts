@@ -1,3 +1,5 @@
+import type { UrlCitation } from "@/types";
+
 export type StudioFileLanguage =
   | "typescript"
   | "javascript"
@@ -26,6 +28,9 @@ export interface StudioAssistantMessage {
   content: string;
   createdAt: string;
   status: StudioAssistantMessageStatus;
+  citations?: UrlCitation[];
+  isSearching?: boolean;
+  didSearch?: boolean;
 }
 
 export interface StudioWorkspaceSnapshot {

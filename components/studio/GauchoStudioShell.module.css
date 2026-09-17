@@ -1561,6 +1561,55 @@
   background: #070f19;
 }
 
+.searchStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+  color: var(--studio-accent);
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.citations {
+  margin-top: 0.7rem;
+  border: 1px solid var(--studio-border);
+  border-radius: 0.55rem;
+  padding: 0.58rem 0.65rem;
+  background: color-mix(in srgb, var(--studio-panel) 82%, transparent);
+}
+
+.citationsTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.32rem;
+  color: var(--studio-muted);
+  font-size: 0.65rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.citationLinks {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 0.45rem;
+}
+
+.citationLinks a {
+  overflow: hidden;
+  color: var(--studio-accent);
+  font-size: 0.69rem;
+  line-height: 1.35;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.citationLinks a:hover {
+  text-decoration: underline;
+}
+
 .interruptedMessage {
   display: flex;
   align-items: center;

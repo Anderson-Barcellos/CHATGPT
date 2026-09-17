@@ -1,23 +1,48 @@
-import { extractSsePayloads } from "@/lib/chat/streamMachine";
+import {
+  createInitialAssistantStreamState,
+  extractSsePayloads,
+  finalizeAssistantStreamState,
+  reduceAssistantStreamEvent,
+  type AssistantStreamEvent,
+  type AssistantStreamState,
+} from "@/lib/chat/streamMachine";
+
+export type StudioAssistantStreamUpdate = Pick<
+  AssistantStreamState,
+  "content" | "citations" | "isSearching" | "didSearch"
+>;
+
+function toStudioUpdate(
+  state: AssistantStreamState
+): StudioAssistantStreamUpdate {
+  return {
+    content: state.content,
+    citations: state.citations,
+    isSearching: state.isSearching,
+    didSearch: state.didSearch,
+  };
+}
 
 export class StudioAssistantStreamInterruptedError extends Error {
   readonly partialContent: string;
+  readonly partialUpdate: StudioAssistantStreamUpdate;
 
-  constructor(partialContent: string) {
+  constructor(partialUpdate: StudioAssistantStreamUpdate) {
     super("A resposta do Studio foi interrompida antes da confirmação final.");
     this.name = "StudioAssistantStreamInterruptedError";
-    this.partialContent = partialContent;
+    this.partialContent = partialUpdate.content;
+    this.partialUpdate = partialUpdate;
   }
 }
 
 export async function consumeStudioAssistantStream(
   stream: ReadableStream<Uint8Array>,
-  onContent?: (content: string) => void
-): Promise<string> {
+  onUpdate?: (update: StudioAssistantStreamUpdate) => void
+): Promise<StudioAssistantStreamUpdate> {
   const reader = stream.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-  let accumulated = "";
+  let state = createInitialAssistantStreamState(false);
   let terminalReceived = false;
 
   try {
@@ -36,22 +61,17 @@ export async function consumeStudioAssistantStream(
         }
 
         try {
-          const event = JSON.parse(payload) as {
-            type?: string;
-            delta?: string;
-          };
+          const event = JSON.parse(payload) as AssistantStreamEvent;
           if (event.type === "response.completed") {
             terminalReceived = true;
           }
-          if (
-            event.type === "response.output_text.delta" &&
-            typeof event.delta === "string"
-          ) {
-            accumulated += event.delta;
-            onContent?.(accumulated);
+          const nextState = reduceAssistantStreamEvent(state, event);
+          if (nextState !== state) {
+            state = nextState;
+            onUpdate?.(toStudioUpdate(state));
           }
         } catch {
-          // Eventos não textuais ou incompletos não entram no Studio.
+          // Um evento SSE malformado não deve derrubar o restante do stream.
         }
       }
     }
@@ -60,8 +80,11 @@ export async function consumeStudioAssistantStream(
   }
 
   if (!terminalReceived) {
-    throw new StudioAssistantStreamInterruptedError(accumulated);
+    throw new StudioAssistantStreamInterruptedError(toStudioUpdate(state));
   }
 
-  return accumulated;
+  state = finalizeAssistantStreamState(state, "completed", false);
+  const completed = toStudioUpdate(state);
+  onUpdate?.(completed);
+  return completed;
 }

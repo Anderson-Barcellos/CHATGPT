@@ -12,6 +12,30 @@ interface StudioStorage {
   setItem(key: string, value: string): void;
 }
 
+function normalizeCitations(
+  value: StudioAssistantMessage["citations"]
+): NonNullable<StudioAssistantMessage["citations"]> {
+  if (!Array.isArray(value)) return [];
+
+  return value.slice(0, 20).flatMap((citation) => {
+    if (
+      !citation ||
+      typeof citation.title !== "string" ||
+      typeof citation.url !== "string"
+    ) {
+      return [];
+    }
+
+    try {
+      const url = new URL(citation.url);
+      if (url.protocol !== "http:" && url.protocol !== "https:") return [];
+      return [{ title: citation.title.slice(0, 300), url: url.toString() }];
+    } catch {
+      return [];
+    }
+  });
+}
+
 export function createInitialStudioWorkspace(): StudioWorkspaceSnapshot {
   return {
     version: 2,
@@ -47,6 +71,7 @@ function normalizeMessages(value: unknown): StudioAssistantMessage[] {
     const wasInterrupted =
       message.role === "assistant" &&
       (message.status === "streaming" || message.status === "interrupted");
+    const citations = normalizeCitations(message.citations);
 
     return [
       {
@@ -62,6 +87,9 @@ function normalizeMessages(value: unknown): StudioAssistantMessage[] {
           : wasInterrupted
             ? "interrupted"
             : "completed",
+        ...(citations.length > 0 ? { citations } : {}),
+        ...(message.didSearch === true ? { didSearch: true } : {}),
+        isSearching: false,
       } satisfies StudioAssistantMessage,
     ];
   }).slice(-STUDIO_MAX_ASSISTANT_MESSAGES);

@@ -145,6 +145,40 @@ describe("Studio prefs persistence", () => {
     ]);
   });
 
+  it("restores safe web citations and clears transient search progress", () => {
+    const restored = parseStudioWorkspace(
+      JSON.stringify({
+        ...createInitialStudioWorkspace(),
+        assistantMessages: [
+          {
+            id: "searched-response",
+            role: "assistant",
+            content: "Resposta com fonte.",
+            createdAt: "2026-09-16T20:00:00.000Z",
+            status: "completed",
+            isSearching: true,
+            didSearch: true,
+            citations: [
+              { title: "Documentação", url: "https://docs.example.com/api" },
+              { title: "Inválida", url: "javascript:alert(1)" },
+            ],
+          },
+        ],
+      })
+    );
+
+    expect(restored.assistantMessages).toEqual([
+      expect.objectContaining({
+        id: "searched-response",
+        isSearching: false,
+        didSearch: true,
+        citations: [
+          { title: "Documentação", url: "https://docs.example.com/api" },
+        ],
+      }),
+    ]);
+  });
+
   it("keeps only the latest bounded assistant history", () => {
     const initial = createInitialStudioWorkspace();
     const restored = parseStudioWorkspace(
