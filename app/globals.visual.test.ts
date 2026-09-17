@@ -67,6 +67,24 @@ describe("Gaucho Chat visual contract", () => {
     expect(css).toMatch(/@media \(pointer: coarse\)[\s\S]*touch-action: manipulation/);
   });
 
+  it("keeps every mobile assistant state at the normal full response width", () => {
+    expect(css).toMatch(
+      /@media \(max-width: 767px\), \(\(max-height: 500px\) and \(pointer: coarse\)\)[\s\S]*\.gc-atmosphere-shell \.gc-assistant-bubble\s*\{[\s\S]*width: 100%;[\s\S]*max-width: 100% !important;/
+    );
+    expect(css).not.toContain("gc-assistant-bubble-active");
+  });
+
+  it("keeps mobile quick actions inside the assistant bubble", () => {
+    const quickActionsBlock = css.match(
+      /\.gc-atmosphere-shell \.gc-message-quick-actions\s*\{([^}]*)\}/g
+    )?.at(-1) ?? "";
+
+    expect(quickActionsBlock).toContain("width: fit-content;");
+    expect(quickActionsBlock).toContain("max-width: 100%;");
+    expect(quickActionsBlock).not.toMatch(/margin-(?:inline|left|right):\s*-/);
+    expect(css).not.toContain("gc-message-quick-actions-wide");
+  });
+
   it("does not keep dead mobile shell tokens duplicated on :root", () => {
     const rootMobile = css.match(/@media \(max-width: 767px\), \(\(max-height: 500px\) and \(pointer: coarse\)\) \{\s*:root \{([\s\S]*?)\n  \}/)?.[1] ?? "";
     expect(rootMobile).not.toContain("--gc-shell-rail-width");

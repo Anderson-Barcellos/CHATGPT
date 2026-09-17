@@ -1366,6 +1366,7 @@ body {
 }
 
 .gc-atmosphere-shell .gc-user-bubble {
+  display: flow-root;
   align-self: flex-end;
   width: min(100%, 42rem);
   max-width: min(76%, 42rem) !important;
@@ -1394,6 +1395,7 @@ body {
 }
 
 .gc-atmosphere-shell .gc-assistant-bubble {
+  display: flow-root;
   align-self: flex-start;
   width: min(100%, 46rem);
   max-width: min(88%, 46rem) !important;
@@ -1487,9 +1489,14 @@ body {
     padding-bottom: 0.825rem;
   }
 
-  .gc-atmosphere-shell .gc-user-bubble,
-  .gc-atmosphere-shell .gc-assistant-bubble {
+  .gc-atmosphere-shell .gc-user-bubble {
     width: fit-content;
+    max-width: 100% !important;
+    padding: 0.46rem 0.575rem;
+  }
+
+  .gc-atmosphere-shell .gc-assistant-bubble {
+    width: 100%;
     max-width: 100% !important;
     padding: 0.46rem 0.575rem;
   }
@@ -1499,11 +1506,6 @@ body {
     max-width: 100%;
     border-radius: 0.66rem;
     padding: 0.46rem 0.575rem;
-  }
-
-  .gc-atmosphere-shell .gc-message-quick-actions-wide {
-    max-width: calc(100% + 2.31rem);
-    margin-left: -2.31rem;
   }
 
   .gc-atmosphere-shell .gc-message-quick-actions button svg {

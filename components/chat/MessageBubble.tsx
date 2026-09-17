@@ -136,12 +136,6 @@ export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDe
       )}
       data-message-id={message.id}
     >
-      {!isUser && (
-        <div className="gc-message-avatar gc-refined-accent-surface mt-0.5 flex size-[1.85rem] shrink-0 items-center justify-center rounded-[0.92rem] border shadow-[0_9px_26px_rgba(15,118,110,0.12)] md:size-10 md:rounded-2xl">
-          <OpenAIIcon className="size-[0.6875rem] text-primary md:size-4" />
-        </div>
-      )}
-
       <div className={cn("gc-message-frame w-full max-w-full min-w-0", isUser && "order-first")}>
         <Card
           className={cn(
@@ -155,6 +149,22 @@ export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDe
           onTouchMove={handleTouchEnd}
           onContextMenu={(onEdit || onDelete) ? (e) => { e.preventDefault(); setMenuOpen(true); } : undefined}
         >
+          {isUser ? (
+            <div className="gc-message-avatar-inside float-left mr-2 flex size-[1.6rem] items-center justify-center overflow-hidden rounded-[0.46rem] border border-[color:var(--gc-border)] bg-[var(--gc-surface-control)] shadow-[0_0_13px_rgba(14,116,144,0.10)] md:size-8 md:rounded-lg">
+              {/* eslint-disable-next-line @next/next/no-img-element -- small local avatar */}
+              <img
+                src={USER_AVATAR_SRC}
+                alt="Anders"
+                className="h-full w-full object-cover"
+              />
+            </div>
+          ) : (
+            <div className="gc-message-avatar gc-message-avatar-inside gc-refined-accent-surface float-right ml-2 flex size-[1.6rem] items-center justify-center rounded-[0.8rem] border shadow-[0_9px_26px_rgba(15,118,110,0.12)] md:size-8 md:rounded-xl">
+              <OpenAIIcon className="size-[0.6875rem] text-primary md:size-3.5" />
+              <span className="sr-only">Gaucho Chat</span>
+            </div>
+          )}
+
           {message.attachments && message.attachments.length > 0 && !isEditing && (
             <div className="mb-2 space-y-1.5 md:space-y-2">
               {message.attachments.some((a) => a.type === "image") && (
@@ -394,10 +404,7 @@ export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDe
           (message.content ||
             (message.artifact?.kind === "document" ? message.artifact.content : "")) && (
           <div
-            className={cn(
-              "gc-message-quick-actions gc-refined-action-surface mt-[0.46rem] rounded-2xl border px-2.5 py-2 md:mt-2 md:px-3",
-              onRegenerate && "gc-message-quick-actions-wide"
-            )}
+            className="gc-message-quick-actions gc-refined-action-surface mt-[0.46rem] rounded-2xl border px-2.5 py-2 md:mt-2 md:px-3"
           >
             <QuickActionsBar
               content={
@@ -414,17 +421,6 @@ export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDe
           </div>
         )}
       </div>
-
-      {isUser && (
-        <div className="mt-0.5 flex size-[1.6rem] shrink-0 items-center justify-center overflow-hidden rounded-[0.46rem] border border-[color:var(--gc-border)] bg-[var(--gc-surface-control)] shadow-[0_0_13px_rgba(14,116,144,0.10)] md:size-8 md:rounded-lg">
-          {/* eslint-disable-next-line @next/next/no-img-element -- small local avatar */}
-          <img
-            src={USER_AVATAR_SRC}
-            alt="Anders"
-            className="h-full w-full object-cover"
-          />
-        </div>
-      )}
 
       {onDelete && (
         <ConfirmDialog
