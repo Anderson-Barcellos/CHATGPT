@@ -1457,6 +1457,34 @@ Notes: TDD red→green com `hooks/useIsMobile.test.ts`, `hooks/useVisualViewport
 
 Publicação 2026-09-13: build `8ndcAnvQfhPrcaqYHYT8V1` no checkout e restart de `chatgpt.service` autorizados por Anders; anterior `d4RKONEnNLmGGtDQDtGUA` em `/root/.cache/chatgpt-next-before-iphone-20260913T2112Z`. Health local/público 200 `healthy`; CSS publicado confere. Sem commit/push.
 
+### 2026-09-16 - Retratos incorporados aos balões e largura estável durante a elaboração
+
+Context: Anders mostrou no iPhone que os retratos externos consumiam a largura útil das mensagens e que o balão do assistente ficava estreito enquanto raciocinava ou pesquisava, antes de receber texto.
+
+Details: `MessageBubble` passou a renderizar os dois retratos dentro do balão, com o retrato de Anders no canto superior esquerdo e o do Gaucho Chat no superior direito. Os cartões usam `flow-root`, permitindo que as primeiras linhas contornem o retrato e que as seguintes recuperem a largura inteira. No mobile, apenas o balão transitório do assistente (`streaming`, raciocínio `thinking` ou busca ativa) ocupa 100% da largura; respostas concluídas curtas preservam `fit-content`.
+
+Notes: 860/860 testes passaram; teste focado 7/7, TypeScript e lint sem erros (um warning anterior no teste do composer). Build e QA em cópia isolada, com Playwright em 320 × 844 e 390 × 844: largura de espera igual à resposta preenchida, retratos contidos nos cantos combinados, zero overflow horizontal, pageerror ou erro de console. O lint do checkout foi interrompido porque percorre o backup compilado `.next-before-sc2-*`; a suíte completa na cópia limpa passou. Produção, `.next` viva, dados privados, `BACKLOG.md`, serviço, commit e push não foram tocados.
+
+Publicação 2026-09-16: Anders autorizou o restart que faltava. Build `tWe1LWfCIH5j1oD0nkk64` compilada no checkout e `chatgpt.service` reiniciado; a build anterior `8ndcAnvQfhPrcaqYHYT8V` ficou preservada em `/root/.cache/chatgpt-next-before-message-layout-20260916T1646`. Após duas tentativas transitórias durante a subida, health local e público responderam 200 `healthy`; serviço ativo na porta 3040. Apache, dados privados, commit e push permaneceram intactos.
+
+### 2026-09-16 - Correção da largura intrínseca do balão recolhido
+
+Context: após a publicação, Anders confirmou no DOM vivo que o retrato interno estava presente, mas o balão só alargava ao clicar no trigger do raciocínio. A causa era `width: fit-content`: o conteúdo oculto do `Collapsible` não contribuía para a largura intrínseca; ao expandir, o navegador recalculava a caixa.
+
+Details: no mobile, `.gc-user-bubble` preserva `fit-content`, enquanto `.gc-assistant-bubble` agora usa permanentemente `width: 100%` e `max-width: 100%`, independentemente de raciocínio fechado/aberto, streaming, conclusão ou falha. A classe transitória e o helper por estado foram removidos; `app/globals.visual.test.ts` fixa o novo contrato.
+
+Notes: testes focados 15/15, TypeScript, ESLint e diff-check passaram; build `VY3VCF6u0_IQ7Aqugat6X` publicada e `chatgpt.service` reiniciado. Health local/público 200; CSS compilado contém a regra mobile `width:100%; max-width:100%!important`. A build imediatamente anterior `tWe1LWfCIH5j1oD0nkk64` está em `/root/.cache/chatgpt-next-before-message-width-fix-20260916T1912`. Sem mudança no Apache, dados privados, commit ou push.
+
+### 2026-09-16 - Web search e citações no assistente do Studio
+
+Context: Anders suspeitou que o tooling de web search não estava declarado na chamada OpenAI do Studio. O código, os testes e os documentos confirmaram que o painel e as células estavam deliberadamente com `tools: []` e prompts proibindo web.
+
+Details: o painel lateral agora recebe a mesma configuração `web_search_preview` do chat por `buildWebSearchTool()` (`medium`, `BR`), enquanto o caminho `cell` permanece sem tools. A chamada do Studio deixou de enviar reasoning/verbosity explícitos. `assistantStream` reutiliza o redutor de eventos do chat, preservando busca e `url_citation`; tipos/persistência/UI guardam citações HTTP(S), mostram progresso e renderizam Referências. A fronteira segue somente-leitura, sem memória, terminal, filesystem, execução ou aplicação automática no painel.
+
+Notes: testes focados 36/36, suite completa 860/860, TypeScript, lint limpo em worktree (0 erros; um warning anterior), build `/chat` isolada e smoke Playwright passaram. O smoke provou progresso, texto citado, href HTTPS e zero erro de console/página. Uma primeira instância isolada revelou que `instrumentation.ts` limpa units do Studio por wildcard e encerrou uma sessão PTY viva; produção continuou healthy e Anders confirmou que a sessão não continha trabalho importante. A correção de ownership por `INVOCATION_ID` + lock/role de instância ficou registrada como frente separada. Sem deploy, restart da produção, commit ou push.
+
+Fechamento: Anders revisou e declarou a entrega fechada. Relatou degradação de performance corrente na OpenAI, portanto latência upstream não deve ser confundida com regressão do fluxo local. O fechamento não incluiu deploy, restart, commit ou push.
+
 ### 2026-09-17 07:49 - Barra de ações mobile contida no balão
 
 Context: a barra de ações do assistente ainda compensava a antiga coluna externa do avatar com `margin-left: -2.31rem`. Depois que os retratos foram incorporados aos balões e a resposta passou a usar toda a largura mobile, essa regra cortava o primeiro botão à esquerda.
