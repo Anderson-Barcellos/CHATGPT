@@ -58,9 +58,10 @@ describe("Gaucho Chat visual contract", () => {
   });
 
   it("keeps the iPhone welcome card compact enough for the splash actions", () => {
-    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-welcome-title-size:\s*1\.22rem;/);
-    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-welcome-subtitle-size:\s*0\.74rem;/);
-    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-welcome-action-font-size:\s*0\.625rem;/);
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-welcome-title-size:\s*1\.1rem;/);
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-welcome-subtitle-size:\s*0\.68rem;/);
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-welcome-action-font-size:\s*0\.56rem;/);
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-welcome-footnote-size:\s*0\.64rem;/);
   });
 
   it("respects lateral safe areas for the Dynamic Island in landscape", () => {

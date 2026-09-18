@@ -951,9 +951,10 @@ body {
     --gc-mobile-welcome-panel-x: 0.515rem;
     --gc-mobile-welcome-panel-y: 0.575rem;
     --gc-mobile-welcome-grid-gap: 0.6875rem;
-    --gc-mobile-welcome-title-size: 1.22rem;
-    --gc-mobile-welcome-subtitle-size: 0.74rem;
-    --gc-mobile-welcome-action-font-size: 0.625rem;
+    --gc-mobile-welcome-title-size: 1.1rem;
+    --gc-mobile-welcome-subtitle-size: 0.68rem;
+    --gc-mobile-welcome-action-font-size: 0.56rem;
+    --gc-mobile-welcome-footnote-size: 0.64rem;
     --gc-mobile-welcome-suggestion-min-height: 5.1rem;
     --gc-mobile-welcome-suggestion-gap: 0.345rem;
     --gc-mobile-welcome-suggestion-pad: 0.515rem;
