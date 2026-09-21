@@ -2,6 +2,12 @@
 
 ## Fundação Electron e prova de empacotamento
 
+**DECISÃO (CI em checkout limpo):** o gate TypeScript do PR executa
+`next typegen` antes de `tsc --noEmit`. O GitHub não possui o
+`next-env.d.ts` ignorado pelo repositório, enquanto as validações locais já o
+tinham gerado; usar o gerador oficial preserva o ignore atual e torna o gate
+reproduzível sem alterar Studio ou código de produto.
+
 **Resultado observável:** existe agora um target Electron isolado. Ele inicia o
 Next standalone somente em `127.0.0.1` numa porta efêmera, instala um token
 aleatório por execução como cookie HttpOnly, não expõe Node ao renderer, mantém
