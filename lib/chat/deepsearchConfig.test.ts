@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { resolveDeepsearchProfile } from "./deepsearchConfig";
 
 describe("Deepsearch profiles", () => {
-  it("uses GPT-5.4 mini with high reasoning for Medium", () => {
+  it("uses Grok 4.7 with fixed medium reasoning for Medium", () => {
     expect(resolveDeepsearchProfile("deepsearch_medium")).toEqual({
-      model: "gpt-5.4-mini",
-      reasoningEffort: "high",
+      model: "grok-4.7",
+      reasoningEffort: "medium",
     });
   });
 

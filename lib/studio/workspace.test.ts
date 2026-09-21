@@ -119,6 +119,26 @@ describe("Studio prefs persistence", () => {
     expect(restored.selectedModelId).toBe("gpt-5.6-luna");
   });
 
+  it("resolve o mini persistido para Grok e preserva o histórico", () => {
+    const message = {
+      id: "history-kept",
+      role: "user",
+      content: "Histórico real preservado.",
+      createdAt: "2026-09-20T12:00:00.000Z",
+      status: "completed",
+    };
+    const restored = parseStudioWorkspace(JSON.stringify({
+      ...createInitialStudioWorkspace(),
+      selectedModelId: "gpt-5.4-mini",
+      assistantMessages: [message],
+    }));
+
+    expect(restored.selectedModelId).toBe("grok-4.7");
+    expect(restored.assistantMessages).toEqual([
+      expect.objectContaining(message),
+    ]);
+  });
+
   it("restores an in-flight assistant response with an explicit interrupted status", () => {
     const initial = createInitialStudioWorkspace();
     const restored = parseStudioWorkspace(

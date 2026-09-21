@@ -290,6 +290,11 @@
 .settingsHint { padding: 0 18px; max-width: 680px; color: var(--sc-muted); font-size: 13px; line-height: 1.5; }
 .settingsSection .direction { max-width: 680px; padding: 18px; border: 0; background: transparent; }
 .settingsSection .sideHeading { display: none; }
+.realtimeSettings { display: grid; gap: 14px; padding: 18px; border-top: 1px solid var(--sc-line); }
+.realtimeField { display: grid; min-width: 0; gap: 7px; font-size: 13px; color: var(--sc-text); }
+.realtimeSelect { width: 100%; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--sc-line); border-radius: 8px; color: var(--sc-text); background: var(--gc-surface-control); font: inherit; cursor: pointer; }
+.realtimeHint { margin: 0; color: var(--sc-muted); font-size: 12px; line-height: 1.5; }
+.realtimeSpeed { width: 100%; min-height: 44px; margin: 0; accent-color: var(--sc-blue); cursor: pointer; }
 @media (min-width: 900px) {
   .acervoBody .settingsSection .direction { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-width: none; }
   .acervoBody .settingsSection .controlCard, .acervoBody .settingsSection .sliderCard { margin-bottom: 0; }

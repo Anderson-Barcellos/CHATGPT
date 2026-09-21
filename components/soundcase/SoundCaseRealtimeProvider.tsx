@@ -2,8 +2,11 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 import { useSoundCaseRealtime } from "@/hooks/useSoundCaseRealtime";
+import { useSoundCaseGrokRealtime } from "@/hooks/useSoundCaseGrokRealtime";
 
-export type SoundCaseRealtimeSession = ReturnType<typeof useSoundCaseRealtime>;
+export type SoundCaseRealtimeSession = ReturnType<typeof useSoundCaseRealtime> & {
+  grok: ReturnType<typeof useSoundCaseGrokRealtime>;
+};
 
 export const SoundCaseRealtimeContext = createContext<SoundCaseRealtimeSession | null>(null);
 
@@ -13,7 +16,9 @@ export const SoundCaseRealtimeContext = createContext<SoundCaseRealtimeSession |
  * por isso a sessão nasce aqui, acima do painel, e é consumida por contexto.
  */
 export function SoundCaseRealtimeProvider({ children }: { children: ReactNode }) {
-  const session = useSoundCaseRealtime();
+  const openai = useSoundCaseRealtime();
+  const grok = useSoundCaseGrokRealtime();
+  const session: SoundCaseRealtimeSession = { ...openai, grok };
 
   return (
     <SoundCaseRealtimeContext.Provider value={session}>

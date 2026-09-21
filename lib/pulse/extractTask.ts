@@ -1,7 +1,7 @@
-import OpenAI from "openai";
 import { PulseTaskProposal, PulseRecurrenceType } from "@/lib/pulse/types";
+import { createXAIClient } from "@/lib/server/xaiChat";
 
-const DEFAULT_MODEL = "gpt-5.4-mini";
+const DEFAULT_MODEL = "grok-4.7";
 
 interface RawPulseProposal {
   canCreate?: unknown;
@@ -146,10 +146,28 @@ Regras:
 - Preserve a intencao do prompt original; nao execute a tarefa agora.`;
 }
 
+function resolvePulseExtractionModel(): string {
+  const configured = process.env.PULSE_EXTRACT_MODEL?.trim();
+  if (!configured || configured === "gpt-5.4-mini") return DEFAULT_MODEL;
+  if (configured === DEFAULT_MODEL) return configured;
+  throw new PulseTaskExtractionError(
+    "PULSE_EXTRACT_MODEL precisa usar grok-4.7 neste provider.",
+    "pulse_task_model_not_supported",
+    500
+  );
+}
+
 export async function extractPulseTaskFromText(
   input: { text?: unknown; now?: unknown },
-  client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  client = createXAIClient()
 ): Promise<PulseTaskProposal> {
+  if (!client) {
+    throw new PulseTaskExtractionError(
+      "XAI_API_KEY não configurada no servidor.",
+      "pulse_task_xai_api_key_missing",
+      503
+    );
+  }
   const text = cleanString(input.text);
   if (!text) {
     throw new PulseTaskExtractionError(
@@ -162,10 +180,11 @@ export async function extractPulseTaskFromText(
   const nowRaw = cleanString(input.now);
   const now = nowRaw ? new Date(nowRaw) : new Date();
   const response = await client.responses.create({
-    model: process.env.PULSE_EXTRACT_MODEL?.trim() || DEFAULT_MODEL,
+    model: resolvePulseExtractionModel(),
     instructions: buildInstructions(Number.isNaN(now.getTime()) ? new Date() : now),
     input: [{ role: "user", content: [{ type: "input_text", text }] }],
     max_output_tokens: 1200,
+    reasoning: { effort: "medium" },
     text: { format: pulseTaskExtractionSchema },
   });
 

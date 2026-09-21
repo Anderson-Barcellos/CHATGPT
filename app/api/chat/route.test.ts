@@ -5,6 +5,11 @@ const geminiMocks = vi.hoisted(() => ({
   createClient: vi.fn(),
   createEventStream: vi.fn(),
 }));
+const xaiMocks = vi.hoisted(() => ({
+  createClient: vi.fn(),
+  createEventStream: vi.fn(),
+  createResponse: vi.fn(),
+}));
 
 vi.mock("@/lib/server/auth", () => ({
   isAuthEnabled: () => false,
@@ -20,6 +25,12 @@ vi.mock("@/lib/server/geminiChat", () => ({
 vi.mock("@/lib/server/chatToolOrchestrator", () => ({
   createMemoryToolEventStream: vi.fn(),
   createResponseWithMemoryTools: vi.fn(),
+}));
+vi.mock("@/lib/server/xaiChat", () => ({
+  GROK_MODEL: "grok-4.7",
+  createXAIClient: xaiMocks.createClient,
+  createXAIEventStream: xaiMocks.createEventStream,
+  createXAIResponse: xaiMocks.createResponse,
 }));
 
 import { POST } from "@/app/api/chat/route";
@@ -93,5 +104,62 @@ describe("Gemini chat route", () => {
 
     expect(response.status).toBe(400);
     expect(await response.json()).toMatchObject({ code });
+  });
+});
+
+describe("Grok chat route", () => {
+  beforeEach(() => {
+    xaiMocks.createClient.mockReset();
+    xaiMocks.createEventStream.mockReset();
+    xaiMocks.createResponse.mockReset();
+  });
+
+  it("resolve o mini legado e encaminha stream ao adaptador xAI", async () => {
+    const client = {};
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) { controller.close(); },
+    });
+    xaiMocks.createClient.mockReturnValue(client);
+    xaiMocks.createEventStream.mockReturnValue(stream);
+    const response = await POST(requestFor({ model: "gpt-5.4-mini" }));
+    expect(response.status).toBe(200);
+    expect(xaiMocks.createEventStream).toHaveBeenCalledWith(
+      client,
+      expect.objectContaining({ model: "grok-4.7" }),
+      expect.any(AbortSignal)
+    );
+  });
+
+  it("expõe erro explícito quando a credencial xAI não está disponível", async () => {
+    xaiMocks.createClient.mockReturnValue(null);
+    const response = await POST(requestFor({ model: "grok-4.7" }));
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({ code: "chat_xai_api_key_missing" });
+  });
+
+  it("preserva o contrato nonstream do mini legado pelo adaptador xAI", async () => {
+    const client = {};
+    const providerResponse = {
+      id: "xai-nonstream",
+      status: "completed",
+      output_text: "Resposta sem stream",
+      output: [],
+    };
+    xaiMocks.createClient.mockReturnValue(client);
+    xaiMocks.createResponse.mockResolvedValue(providerResponse);
+
+    const response = await POST(requestFor({
+      model: "gpt-5.4-mini",
+      stream: false,
+    }));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual(providerResponse);
+    expect(xaiMocks.createResponse).toHaveBeenCalledWith(
+      client,
+      expect.objectContaining({ model: "grok-4.7", stream: false }),
+      expect.any(AbortSignal)
+    );
+    expect(xaiMocks.createEventStream).not.toHaveBeenCalled();
   });
 });

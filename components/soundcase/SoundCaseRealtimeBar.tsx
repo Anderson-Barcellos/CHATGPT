@@ -18,10 +18,11 @@ const STATUS_LABEL: Record<string, string> = {
  */
 export function SoundCaseRealtimeBar() {
   const realtime = useSoundCaseRealtimeSession();
+  const activeRealtime = realtime.grok?.isActive ? realtime.grok : realtime;
   const soundCasePanelOpen = useUIStore((state) => state.soundCasePanelOpen);
   const openSoundCasePanel = useUIStore((state) => state.openSoundCasePanel);
 
-  if (!realtime.isActive || soundCasePanelOpen) return null;
+  if (!activeRealtime.isActive || soundCasePanelOpen) return null;
 
   return (
     <div
@@ -31,7 +32,7 @@ export function SoundCaseRealtimeBar() {
     >
       <AudioLines className="size-4 shrink-0 text-[color:var(--primary)]" aria-hidden />
       <span className="max-w-[9rem] truncate text-xs font-medium">
-        {STATUS_LABEL[realtime.status] ?? "SoundCase"}
+        {activeRealtime.status === "speaking" && realtime.grok?.isActive ? "Grok está lendo" : STATUS_LABEL[activeRealtime.status] ?? "SoundCase"}
       </span>
       <Button
         variant="ghost"
@@ -47,7 +48,7 @@ export function SoundCaseRealtimeBar() {
         size="icon"
         aria-label="Parar leitura"
         className="size-8"
-        onClick={realtime.stop}
+        onClick={activeRealtime.stop}
       >
         <Square className="size-4" />
       </Button>

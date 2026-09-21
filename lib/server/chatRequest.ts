@@ -59,6 +59,9 @@ const LEGACY_MODEL_FALLBACKS: Record<string, string> = {
   "gpt-5.1": DEFAULT_CHAT_MODEL,
   "gpt-4.1": DEFAULT_CHAT_MODEL,
   o3: DEFAULT_CHAT_MODEL,
+  // Conversas, rascunhos e rotinas já persistidos com o mini seguem abrindo;
+  // a execução nova é sempre encaminhada ao Grok, sem reescrever dados runtime.
+  "gpt-5.4-mini": "grok-4.7",
 };
 
 export function createOpenAIClient(): OpenAI | null {

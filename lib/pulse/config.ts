@@ -33,8 +33,12 @@ function resolveReasoningEffort(): PulseExecutionReasoningEffort {
 export function resolvePulseExecutionProfile(
   task: Pick<PulseTask, "model">
 ): PulseExecutionProfile {
+  const requestedModel = process.env.PULSE_RUN_MODEL?.trim() || task.model || DEFAULT_PULSE_MODEL;
+  const model = requestedModel === "gpt-5.4-mini" ? "grok-4.7" : requestedModel;
   return {
-    model: process.env.PULSE_RUN_MODEL?.trim() || task.model || DEFAULT_PULSE_MODEL,
-    reasoningEffort: resolveReasoningEffort(),
+    model,
+    reasoningEffort: model === "grok-4.7"
+      ? "medium"
+      : resolveReasoningEffort(),
   };
 }

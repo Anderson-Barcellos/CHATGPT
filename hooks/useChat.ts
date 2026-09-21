@@ -60,7 +60,7 @@ import {
 
 const STREAM_AUTO_SAVE_INTERVAL_MS = 2000;
 const BACKGROUND_POLL_INTERVAL_MS = 5000;
-const DOCUMENT_FORCED_MODEL = "gpt-5.4-mini";
+const DOCUMENT_FORCED_MODEL = "grok-4.7";
 
 function isPendingBackgroundMessage(message: Message): boolean {
   return (

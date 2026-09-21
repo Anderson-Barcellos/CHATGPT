@@ -7,11 +7,13 @@ import { DirectionSidebar } from "@/components/soundcase/DirectionSidebar";
 import { SoundCaseEditor } from "@/components/soundcase/SoundCaseEditor";
 import { SoundCaseLibrary } from "@/components/soundcase/SoundCaseLibrary";
 import { SoundCasePlayer } from "@/components/soundcase/SoundCasePlayer";
+import { SoundCaseGrokRealtimeSettings } from "@/components/soundcase/SoundCaseGrokRealtimeSettings";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useSoundCaseRealtimeSession } from "@/components/soundcase/SoundCaseRealtimeProvider";
 import { useSoundCase } from "@/hooks/useSoundCase";
 import { useSoundCaseLibrary } from "@/hooks/useSoundCaseLibrary";
 import { useSoundCaseSettings } from "@/hooks/useSoundCaseSettings";
+import { useSoundCaseGrokSettings } from "@/hooks/useSoundCaseGrokSettings";
 import { soundCaseApi } from "@/lib/soundcase/api";
 import styles from "./SoundCase.module.css";
 
@@ -25,6 +27,7 @@ export function prepareSoundCaseRealtimeGeneration(stop: () => void, prime: () =
 export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWorkspaceVariant }) {
   const soundcase = useSoundCase();
   const { settings, setSettings } = useSoundCaseSettings();
+  const { settings: grokSettings, setSettings: setGrokSettings } = useSoundCaseGrokSettings();
   const [generating, setGenerating] = useState(false);
   const [directionOpen, setDirectionOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -37,12 +40,20 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
   const [playingFinalVersionId, setPlayingFinalVersionId] = useState<string | null>(null);
   const startedRealtimeVersionRef = useRef<string | null>(null);
   const realtime = useSoundCaseRealtimeSession();
+  // Os testes legados mockam somente a sessão OpenAI; em produto o provider sempre entrega Grok.
+  const grokRealtime = realtime.grok ?? null;
   const isPanel = variant === "panel";
 
   const stopRealtimeContext = () => {
     realtime.stop();
+    grokRealtime?.stop();
     setPendingRealtimeVersionId(null);
     startedRealtimeVersionRef.current = null;
+  };
+  const updateGrokSettings = (next: typeof grokSettings) => {
+    // Trocar de engine é uma troca de fonte de áudio: encerra a anterior antes de persistir a preferência.
+    if (next.engine !== grokSettings.engine) stopRealtimeContext();
+    setGrokSettings(next);
   };
   const words = useMemo(() => {
     const text = soundcase.draftText.trim();
@@ -52,9 +63,16 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
   const overLimit = estimate > 90 * 60 || new TextEncoder().encode(soundcase.draftText).byteLength > 1024 * 1024;
   const actionsDisabled = !words || overLimit || Boolean(soundcase.conflict);
   const selectedVersionId = soundcase.selectedVersion?.id ?? null;
+  const activeRealtime = grokSettings.engine === "grok" && grokRealtime ? grokRealtime : realtime;
+  const startRealtime = (version: { projectId: string; id: string }) => {
+    if (grokSettings.engine === "grok") {
+      return grokRealtime?.start({ projectId: version.projectId, versionId: version.id, voice: grokSettings.voice, speed: grokSettings.speed });
+    }
+    return realtime.start({ projectId: version.projectId, versionId: version.id });
+  };
   // Realtime tem precedência: o player interrompe o arquivo antes de iniciar a leitura ao vivo.
-  const playback = realtime.isActive && realtime.versionId
-    ? { versionId: realtime.versionId, source: "realtime" as const }
+  const playback = (realtime.isActive || Boolean(grokRealtime?.isActive)) && (realtime.isActive ? realtime.versionId : grokRealtime?.versionId)
+    ? { versionId: realtime.isActive ? realtime.versionId! : grokRealtime!.versionId!, source: "realtime" as const }
     : playingFinalVersionId && playingFinalVersionId === selectedVersionId
       ? { versionId: selectedVersionId, source: "file" as const }
       : null;
@@ -65,15 +83,15 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
     if (!version || version.id !== pendingRealtimeVersionId || !version.direction || !version.effectiveSettings || startedRealtimeVersionRef.current === version.id) return;
     startedRealtimeVersionRef.current = version.id;
     setPendingRealtimeVersionId(null);
-    void realtime.start({
-      projectId: version.projectId,
-      versionId: version.id,
-    });
-  }, [pendingRealtimeVersionId, realtime, soundcase.selectedVersion]);
+    void startRealtime(version);
+  // A versão pendente é consumida uma vez; mudanças nas preferências não relêem um snapshot.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingRealtimeVersionId, soundcase.selectedVersion]);
 
   const generate = async (playbackMode: "realtime" | "silent") => {
     if (playbackMode === "realtime") {
-      prepareSoundCaseRealtimeGeneration(stopRealtimeContext, realtime.prime);
+      if (grokSettings.engine === "openai") prepareSoundCaseRealtimeGeneration(stopRealtimeContext, realtime.prime);
+      else { stopRealtimeContext(); grokRealtime?.prime(); }
       startedRealtimeVersionRef.current = null;
     } else {
       stopRealtimeContext();
@@ -119,12 +137,13 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
       key={soundcase.selectedVersion.id}
       version={soundcase.selectedVersion}
       audioUrl={soundCaseApi.audioUrl(soundcase.selectedVersion.projectId, soundcase.selectedVersion.id)}
-      realtime={{ ...realtime, isActive: realtime.isActive && realtime.versionId === selectedVersionId,
-        error: realtime.errorVersionId === selectedVersionId ? realtime.error : null,
+      realtime={{ ...activeRealtime, isActive: activeRealtime.isActive && activeRealtime.versionId === selectedVersionId,
+        error: activeRealtime.errorVersionId === selectedVersionId ? activeRealtime.error : null,
         stop: stopRealtimeContext }}
       onStartRealtime={() => {
-        prepareSoundCaseRealtimeGeneration(stopRealtimeContext, realtime.prime);
-        void realtime.start({ projectId: soundcase.selectedVersion!.projectId, versionId: soundcase.selectedVersion!.id });
+        if (grokSettings.engine === "openai") prepareSoundCaseRealtimeGeneration(stopRealtimeContext, realtime.prime);
+        else { stopRealtimeContext(); grokRealtime?.prime(); }
+        void startRealtime(soundcase.selectedVersion!);
       }}
       onPlaybackChange={(playing) => setPlayingFinalVersionId(playing ? selectedVersionId : null)}
     />
@@ -145,6 +164,7 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
             <p className={styles.settingsHint}>Preferências para as próximas gerações, salvas neste navegador. As narrações do acervo mantêm seus ajustes originais.</p>
             <DirectionSidebar settings={settings} onChange={setSettings} onGenerate={(mode) => void generate(mode)}
               busy={generating} disabled={actionsDisabled} showActions={false} />
+            <SoundCaseGrokRealtimeSettings settings={grokSettings} onChange={updateGrokSettings} />
           </CollapsibleContent>
         </Collapsible>
         <section hidden={!editorOpen} className={styles.creation} aria-label="Criar narração">

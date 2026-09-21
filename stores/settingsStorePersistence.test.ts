@@ -65,4 +65,30 @@ describe("settings store persistence (B6)", () => {
     expect(Number.isFinite(parameters.maxOutputTokens)).toBe(true);
     expect(parameters.reasoningEffort).toBeTruthy();
   });
+
+  it("hidrata a preferência mini legada como Grok sem tocar em dados de conversa", async () => {
+    localStorage.setItem(
+      SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        state: {
+          model: "gpt-5.4-mini",
+          systemPrompt: "",
+          modelSettingsById: {
+            "gpt-5.4-mini": {
+              maxOutputTokens: 8_000,
+              reasoningEffort: "none",
+            },
+          },
+        },
+        version: 1,
+      })
+    );
+
+    await useSettingsStore.persist.rehydrate();
+
+    expect(useSettingsStore.getState().parameters).toMatchObject({
+      model: "grok-4.7",
+      reasoningEffort: "medium",
+    });
+  });
 });

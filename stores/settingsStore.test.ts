@@ -59,11 +59,11 @@ describe("settings store model defaults", () => {
     }
   );
 
-  it("allows GPT-5.4 mini with reasoning disabled by default", () => {
+  it("resolve o mini legado para Grok com reasoning medium fixo", () => {
     useSettingsStore.getState().updateParameters({ model: "gpt-5.4-mini" });
 
-    expect(useSettingsStore.getState().parameters.model).toBe("gpt-5.4-mini");
-    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("none");
+    expect(useSettingsStore.getState().parameters.model).toBe("grok-4.7");
+    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("medium");
   });
 
   it("falls legacy removed models back to the current default", () => {

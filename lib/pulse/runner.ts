@@ -6,6 +6,7 @@ import {
 } from "@/lib/pulse/config";
 import { buildPulseSystemPrompt } from "@/lib/pulse/context";
 import { createOpenAIClient } from "@/lib/server/chatRequest";
+import { createXAIClient, GROK_MODEL } from "@/lib/server/xaiChat";
 import {
   extractResponseOutput,
   responseToMessagePatch,
@@ -20,6 +21,7 @@ import {
 import { derivePulseRunTitle } from "@/lib/pulse/runTitle";
 
 const DEFAULT_IMAGE_MODEL = "gpt-image-2";
+const DEFAULT_IMAGE_REQUEST_MODEL = "gpt-5.6-luna";
 const DEFAULT_PULSE_MAX_OUTPUT_TOKENS = 25_000;
 const MIN_PULSE_MAX_OUTPUT_TOKENS = 8_000;
 const MAX_PULSE_MAX_OUTPUT_TOKENS = 32_000;
@@ -83,7 +85,7 @@ async function generatePulseOpeningImage(params: {
   ].join("\n\n");
 
   const response = await params.openai.responses.create({
-    model: params.profile.model,
+    model: DEFAULT_IMAGE_REQUEST_MODEL,
     instructions:
       "Tu geras somente uma imagem de abertura para um card Pulse. Nao escrevas explicacao textual.",
     input: [
@@ -127,10 +129,30 @@ function buildPulseInput(task: PulseTask): OpenAI.Responses.ResponseInput {
   ];
 }
 
-async function executeTask(task: PulseTask, openai: OpenAI): Promise<PulseRun> {
+function clientForProfile(profile: PulseExecutionProfile): OpenAI | null {
+  return profile.model === GROK_MODEL ? createXAIClient() : createOpenAIClient();
+}
+
+async function executeTask(task: PulseTask): Promise<PulseRun> {
   const { run, profile } = await claimTask(task);
   try {
-    return await completeClaimedRun(task, run, profile, openai);
+    const client = clientForProfile(profile);
+    if (!client) {
+      const message = profile.model === GROK_MODEL
+        ? "XAI_API_KEY nao configurada no servidor."
+        : "OPENAI_API_KEY nao configurada no servidor.";
+      const failed = await finishPulseRun(run.id, {
+        status: "failed",
+        title: task.title,
+        taskTitle: task.title,
+        content: "",
+        error: message,
+        completedAt: new Date().toISOString(),
+      });
+      await advancePulseTask(task, run.id);
+      return failed ?? run;
+    }
+    return await completeClaimedRun(task, run, profile, client);
   } finally {
     activeRunIds.delete(run.id);
   }
@@ -150,22 +172,24 @@ async function completeClaimedRun(
       input: buildPulseInput(task),
       max_output_tokens: getPulseMaxOutputTokens(),
       reasoning: { effort: profile.reasoningEffort },
-      text: { verbosity: "high" },
-      tools: [
-        {
-          type: "web_search_preview",
-          search_context_size: "medium",
-          user_location: { type: "approximate", country: "BR" },
-        },
-        {
-          type: "image_generation",
-          model: DEFAULT_IMAGE_MODEL,
-          quality: "high",
-          size: "auto",
-          background: "auto",
-          output_format: "png",
-        },
-      ],
+      ...(profile.model === GROK_MODEL ? {} : { text: { verbosity: "high" } }),
+      tools: profile.model === GROK_MODEL
+        ? ([{ type: "web_search" }] as never)
+        : [
+            {
+              type: "web_search_preview",
+              search_context_size: "medium",
+              user_location: { type: "approximate", country: "BR" },
+            },
+            {
+              type: "image_generation",
+              model: DEFAULT_IMAGE_MODEL,
+              quality: "high",
+              size: "auto",
+              background: "auto",
+              output_format: "png",
+            },
+          ],
     });
 
     const patch = responseToMessagePatch(response);
@@ -174,7 +198,12 @@ async function completeClaimedRun(
       output.content || (patch.streamStatus === "completed" ? patch.content || "" : "");
     const fallbackImage: { imageBase64?: string; imageMimeType?: string } =
       patch.streamStatus === "completed" && !output.imageBase64 && finalContent.trim()
-        ? await generatePulseOpeningImage({ openai, task, content: finalContent, profile }).catch(
+        ? await (async () => {
+            const imageClient = createOpenAIClient();
+            return imageClient
+              ? generatePulseOpeningImage({ openai: imageClient, task, content: finalContent, profile })
+              : {};
+          })().catch(
             (error) => {
               console.warn("[pulse] Falha ao gerar imagem fallback:", error);
               return {};
@@ -229,11 +258,6 @@ async function completeClaimedRun(
 }
 
 export async function runDuePulseTasks(now = new Date()) {
-  const openai = createOpenAIClient();
-  if (!openai) {
-    throw new Error("OPENAI_API_KEY nao configurada no servidor.");
-  }
-
   await recoverOrphanedPulseRuns(activeRunIds);
   const dueTasks = (await getDuePulseTasks(now)).slice(0, MAX_DUE_TASKS_PER_TICK);
   const runs: PulseRun[] = [];
@@ -241,7 +265,7 @@ export async function runDuePulseTasks(now = new Date()) {
 
   for (const task of dueTasks) {
     try {
-      runs.push(await executeTask(task, openai));
+      runs.push(await executeTask(task));
     } catch (error) {
       if (error instanceof PulseRunAlreadyRunningError) {
         skipped.push(task.id);
@@ -266,13 +290,19 @@ export async function runDuePulseTasks(now = new Date()) {
  * e o `ProxyTimeout 300` do Apache devolvia 502 falso acima de 5 min (B4).
  */
 export async function startPulseTaskNow(task: PulseTask): Promise<PulseRun> {
-  const openai = createOpenAIClient();
-  if (!openai) {
-    throw new Error("OPENAI_API_KEY nao configurada no servidor.");
-  }
   await recoverOrphanedPulseRuns(activeRunIds);
   const { run, profile } = await claimTask(task);
-  void completeClaimedRun(task, run, profile, openai)
+  const client = clientForProfile(profile);
+  if (!client) {
+    activeRunIds.delete(run.id);
+    await finishPulseRun(run.id, {
+      status: "failed",
+      error: profile.model === GROK_MODEL ? "XAI_API_KEY nao configurada no servidor." : "OPENAI_API_KEY nao configurada no servidor.",
+      completedAt: new Date().toISOString(),
+    });
+    throw new Error(profile.model === GROK_MODEL ? "XAI_API_KEY nao configurada no servidor." : "OPENAI_API_KEY nao configurada no servidor.");
+  }
+  void completeClaimedRun(task, run, profile, client)
     .catch((error) => {
       console.error("[pulse] manual run failed", { runId: run.id, taskId: task.id }, error);
     })

@@ -26,8 +26,11 @@ function cleanEmoji(value: unknown): string {
 
 function parsePulseModel(value: unknown): PulseModel {
   if (value === undefined || value === null || value === "") return DEFAULT_PULSE_MODEL;
-  if (typeof value === "string" && PULSE_MODELS.includes(value as PulseModel)) {
-    return value as PulseModel;
+  // Compatibilidade de dados já persistidos: a leitura os executa no novo
+  // provider sem migrar nem regravar os JSONs privados do Anders.
+  if (value === "gpt-5.4-mini") return "grok-4.7";
+  if (typeof value === "string" && PULSE_MODELS.includes(value as (typeof PULSE_MODELS)[number])) {
+    return value as (typeof PULSE_MODELS)[number];
   }
   throw new Error("Modelo Pulse invalido.");
 }

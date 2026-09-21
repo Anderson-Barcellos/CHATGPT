@@ -160,6 +160,7 @@ describe("/api/chat/background/reconcile route", () => {
 
     expect(result.status).toBe(200);
     expect(upsertBackgroundJobMock).toHaveBeenCalledWith({
+      provider: "openai",
       responseId: "resp-legacy",
       conversationId: "conv-legacy",
       assistantMessageId: "msg-legacy",

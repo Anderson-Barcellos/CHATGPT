@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DEFAULT_STUDIO_MODEL_ID, isStudioModelId } from "@/lib/studio/models";
+import { resolveStudioModelId } from "@/lib/studio/models";
 import type {
   StudioAssistantMessage,
   StudioWorkspaceSnapshot,
@@ -134,9 +134,7 @@ export function useStudioPrefs() {
     (modelId: string) => {
       mutatePrefs((current) => ({
         ...current,
-        selectedModelId: isStudioModelId(modelId)
-          ? modelId
-          : DEFAULT_STUDIO_MODEL_ID,
+        selectedModelId: resolveStudioModelId(modelId),
       }));
     },
     [mutatePrefs]

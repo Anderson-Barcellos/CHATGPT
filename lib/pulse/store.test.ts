@@ -10,8 +10,8 @@ const baseInput = {
 };
 
 describe("Pulse task model selection", () => {
-  it("defaults existing and new tasks to GPT-5.4 mini", () => {
-    expect(normalizePulseTaskInput(baseInput).model).toBe("gpt-5.4-mini");
+  it("defaults new tasks to Grok 4.7", () => {
+    expect(normalizePulseTaskInput(baseInput).model).toBe("grok-4.7");
   });
 
   it.each(["gpt-5.6-sol", "gpt-5.6-terra"] as const)(

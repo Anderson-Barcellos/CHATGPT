@@ -8,6 +8,9 @@ import {
   toBackgroundJobStatus,
 } from "@/lib/server/chatBackgroundJob";
 import { updateBackgroundJobByResponseId } from "@/lib/server/chatBackgroundJobStore";
+import { getBackgroundJobByResponseId } from "@/lib/server/chatBackgroundJobStore";
+import { getConversation } from "@/app/api/conversations/data";
+import { isXAIBackgroundJobActive, recoverInterruptedXAIBackgroundJob } from "@/lib/server/xaiBackground";
 
 type BackgroundSyncBody = {
   conversationId?: string;
@@ -36,6 +39,29 @@ export async function POST(request: NextRequest) {
         message: "Conversa, mensagem e response_id sao obrigatorios.",
         code: "background_sync_identifiers_required",
       });
+    }
+
+    const job = await getBackgroundJobByResponseId(responseId);
+    if (!job && responseId.startsWith("xai-")) {
+      return jsonError(404, "Background job not found", { code: "background_job_not_found" });
+    }
+    if (
+      job &&
+      (job.conversationId !== conversationId || job.assistantMessageId !== assistantMessageId)
+    ) {
+      return jsonError(404, "Background job not found", {
+        message: "Não encontrei um job vinculado a esta conversa e mensagem.",
+        code: "background_job_binding_mismatch",
+      });
+    }
+    if (job?.provider === "xai") {
+      if ((job.status === "queued" || job.status === "in_progress") && !isXAIBackgroundJobActive(responseId)) {
+        await recoverInterruptedXAIBackgroundJob(job);
+      }
+      const conversation = await getConversation(conversationId);
+      const message = conversation?.messages.find((item) => item.id === assistantMessageId);
+      if (!message || message.backgroundJob?.responseId !== responseId) return jsonError(404, "Conversation message not found", { message: "Não encontrei a mensagem vinculada a esse job.", code: "background_message_not_found" });
+      return NextResponse.json({ responseId, status: message.backgroundJob.status, message });
     }
 
     const openai = createOpenAIClient();

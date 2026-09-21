@@ -25,12 +25,12 @@ describe("Pulse execution profile", () => {
   });
 
   it("keeps environment overrides as the operational escape hatch", () => {
-    process.env.PULSE_RUN_MODEL = "gpt-5.4-mini";
+    process.env.PULSE_RUN_MODEL = "grok-4.7";
     process.env.PULSE_REASONING_EFFORT = "high";
 
     expect(resolvePulseExecutionProfile(task)).toEqual({
-      model: "gpt-5.4-mini",
-      reasoningEffort: "high",
+      model: "grok-4.7",
+      reasoningEffort: "medium",
     });
   });
 });

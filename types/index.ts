@@ -123,6 +123,7 @@ export interface Message {
   reasoningTokens?: number;
   backgroundJob?: {
     responseId?: string;
+    provider?: "openai" | "xai";
     status: BackgroundJobStatus;
     startedAt: string;
     updatedAt: string;
@@ -316,6 +317,7 @@ export type ModelFamily =
   | "gpt-6"
   | "deepseek"
   | "gemini"
+  | "grok"
   | "dall-e"
   | "gpt-image";
 
@@ -323,6 +325,12 @@ export interface ModelPricing {
   input: number;
   output: number;
   cachedInput?: number;
+  longContext?: {
+    threshold: number;
+    input: number;
+    output: number;
+    cachedInput?: number;
+  };
 }
 
 export interface ModelInfo {

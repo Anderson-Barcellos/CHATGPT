@@ -2,12 +2,12 @@ import "server-only";
 
 import OpenAI from "openai";
 import {
-  DEFAULT_STUDIO_MODEL_ID,
-  isStudioModelId,
+  resolveStudioModelId,
   type StudioModelId,
 } from "@/lib/studio/models";
 import type { StudioAssistantRole, StudioFileLanguage } from "@/lib/studio/types";
 import { buildWebSearchTool } from "@/lib/server/webSearchTool";
+import { GROK_MODEL } from "@/lib/server/xaiChat";
 
 const MAX_PROMPT_LENGTH = 12_000;
 const MAX_FILE_CONTENT_LENGTH = 160_000;
@@ -139,9 +139,7 @@ export function parseStudioAssistantRequest(
     };
   }
 
-  const model = isStudioModelId(input.model)
-    ? input.model
-    : DEFAULT_STUDIO_MODEL_ID;
+  const model = resolveStudioModelId(input.model);
 
   return {
     ok: true,
@@ -174,7 +172,8 @@ function normalizeCell(
 }
 
 export function buildStudioResponseParams(
-  request: StudioAssistantRequest
+  request: StudioAssistantRequest,
+  provider: "openai" | "xai" = "openai"
 ): Omit<OpenAI.Responses.ResponseCreateParamsStreaming, "stream"> {
   const historyInput = request.history.map((message) => ({
     role: message.role,
@@ -220,7 +219,7 @@ ${request.prompt}`;
     OpenAI.Responses.ResponseCreateParamsStreaming,
     "stream"
   > = {
-    model: request.model,
+    model: provider === "xai" ? GROK_MODEL : request.model,
     instructions: request.cell
       ? STUDIO_CELL_INSTRUCTIONS
       : STUDIO_ASSISTANT_INSTRUCTIONS,
@@ -230,8 +229,16 @@ ${request.prompt}`;
     ],
     max_output_tokens: 8_000,
     store: false,
-    tools: request.cell ? [] : [buildWebSearchTool()],
+    tools: request.cell
+      ? []
+      : provider === "xai"
+      ? ([{ type: "web_search" }] as never)
+      : [buildWebSearchTool()],
   };
+
+  if (provider === "xai") {
+    params.reasoning = { effort: "medium" };
+  }
 
   return params;
 }

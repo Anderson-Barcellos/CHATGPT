@@ -55,6 +55,28 @@ describe("Studio assistant request", () => {
     }
   });
 
+  it("resolve o mini persistido para Grok sem reescrever a preferência", () => {
+    const parsed = parseStudioAssistantRequest({
+      ...validRequest,
+      model: "gpt-5.4-mini",
+    });
+
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.value.model).toBe("grok-4.7");
+
+    const params = buildStudioResponseParams(parsed.value, "xai");
+    expect(params).toMatchObject({
+      model: "grok-4.7",
+      store: false,
+      reasoning: { effort: "medium" },
+      tools: [{ type: "web_search" }],
+    });
+    expect(params.text).toBeUndefined();
+    expect(params.instructions).toContain("somente-leitura");
+    expect(params.instructions).toContain("Não diga que editou");
+  });
+
   it("aceita o modo célula com intent, código e erro", () => {
     const parsed = parseStudioAssistantRequest({
       ...validRequest,
@@ -82,6 +104,14 @@ describe("Studio assistant request", () => {
     expect(params.tools).toEqual([]);
     expect(params.reasoning).toBeUndefined();
     expect(params.text).toBeUndefined();
+
+    const xaiParams = buildStudioResponseParams(
+      { ...parsed.value, model: "grok-4.7" },
+      "xai"
+    );
+    expect(xaiParams.model).toBe("grok-4.7");
+    expect(xaiParams.tools).toEqual([]);
+    expect(xaiParams.reasoning).toEqual({ effort: "medium" });
   });
 
   it("ignora cell malformada sem derrubar a requisição", () => {

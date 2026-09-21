@@ -26,6 +26,12 @@ import {
   createResponseWithMemoryTools,
 } from "@/lib/server/chatToolOrchestrator";
 import { QUIZ_FORCED_MODEL } from "@/lib/artifacts/quizArtifacts";
+import {
+  GROK_MODEL,
+  createXAIClient,
+  createXAIEventStream,
+  createXAIResponse,
+} from "@/lib/server/xaiChat";
 
 const CHAT_REQUEST_BODY_LIMIT_BYTES = 10 * 1024 * 1024;
 
@@ -145,6 +151,34 @@ export async function POST(request: NextRequest) {
         request.signal
       );
 
+      return new Response(readableStream, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache, no-transform",
+          Connection: "keep-alive",
+        },
+      });
+    }
+
+    if (effectiveModel === GROK_MODEL) {
+      const xai = createXAIClient();
+      if (!xai) {
+        return jsonError(503, "xAI API key is missing", {
+          message: "XAI_API_KEY não configurada no servidor.",
+          code: "chat_xai_api_key_missing",
+        });
+      }
+
+      if (!stream) {
+        const response = await createXAIResponse(
+          xai,
+          { ...body, model: GROK_MODEL },
+          request.signal
+        );
+        return Response.json(response);
+      }
+
+      const readableStream = createXAIEventStream(xai, { ...body, model: GROK_MODEL }, request.signal);
       return new Response(readableStream, {
         headers: {
           "Content-Type": "text/event-stream",

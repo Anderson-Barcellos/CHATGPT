@@ -21,6 +21,7 @@ import type {
   ChatBackgroundJobRecord,
 } from "@/lib/server/chatBackgroundJobStore";
 import { listConversations } from "@/app/api/conversations/data";
+import { isXAIBackgroundJobActive, recoverInterruptedXAIBackgroundJob } from "@/lib/server/xaiBackground";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -81,6 +82,7 @@ async function collectLegacyBackgroundJobs(
         conversationId: conversation.id,
         assistantMessageId: message.id,
         responseMode: message.responseMode as BackgroundResponseMode,
+        provider: backgroundJob.provider ?? (responseId.startsWith("xai-") ? "xai" : "openai"),
         status: backgroundJob.status,
         error: backgroundJob.error,
       };
@@ -96,10 +98,29 @@ async function collectLegacyBackgroundJobs(
 }
 
 async function reconcileJob(
-  openai: OpenAI,
+  openai: OpenAI | null,
   job: ChatBackgroundJobRecord
 ): Promise<ReconcileResult> {
   try {
+    if (job.provider === "xai") {
+      if (isXAIBackgroundJobActive(job.responseId)) {
+        return {
+          responseId: job.responseId,
+          conversationId: job.conversationId,
+          assistantMessageId: job.assistantMessageId,
+          status: job.status,
+        };
+      }
+      const message = await recoverInterruptedXAIBackgroundJob(job);
+      return {
+        responseId: job.responseId,
+        conversationId: job.conversationId,
+        assistantMessageId: job.assistantMessageId,
+        status: message ? "failed" : "failed",
+        ...(message ? { message } : { error: "Mensagem vinculada não encontrada." }),
+      };
+    }
+    if (!openai) throw new Error("OPENAI_API_KEY não configurada no servidor.");
     const response = await openai.responses.retrieve(job.responseId);
     const status = toBackgroundJobStatus(response.status);
     const message = await applyBackgroundResponseToConversation({
@@ -148,13 +169,6 @@ export async function POST(request: NextRequest) {
   }
 
   const openai = createOpenAIClient();
-  if (!openai) {
-    return jsonError(503, "OpenAI API key is missing", {
-      message: "OPENAI_API_KEY nao configurada no servidor.",
-      code: "chat_openai_api_key_missing",
-    });
-  }
-
   const body = (await request.json().catch(() => ({}))) as { limit?: unknown };
   const limit = clampLimit(body.limit);
   const storedJobs = await listPendingBackgroundJobs(limit);
@@ -164,6 +178,12 @@ export async function POST(request: NextRequest) {
     limit - storedJobs.length
   );
   const jobs = [...storedJobs, ...legacyJobs].slice(0, limit);
+  if (!openai && jobs.some((job) => job.provider !== "xai")) {
+    return jsonError(503, "OpenAI API key is missing", {
+      message: "OPENAI_API_KEY nao configurada no servidor.",
+      code: "chat_openai_api_key_missing",
+    });
+  }
   const results: ReconcileResult[] = [];
 
   for (const job of jobs) {

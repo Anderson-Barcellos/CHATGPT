@@ -141,7 +141,7 @@ export function CommandComposerContainerV2({
     responseMode !== "quiz" &&
     !isDeepsearchMode;
   const deepsearchModelId =
-    responseMode === "deepsearch_high" ? "gpt-5.4" : "gpt-5.4-mini";
+    responseMode === "deepsearch_high" ? "gpt-5.4" : "grok-4.7";
   const displayModel = isDeepsearchMode ? MODELS[deepsearchModelId] : currentModel;
   const deepsearchModelLabel = MODELS[deepsearchModelId]?.name ?? deepsearchModelId;
   const currentReasoning = REASONING_OPTIONS.find(

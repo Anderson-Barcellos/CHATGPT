@@ -25,6 +25,7 @@ function makeSession(overrides: Partial<SoundCaseRealtimeSession> = {}): SoundCa
     start: vi.fn(async () => undefined),
     stop: vi.fn(),
     skipToSegment: vi.fn(async () => undefined),
+    grok: { isActive: false } as SoundCaseRealtimeSession["grok"],
     ...overrides,
   };
 }

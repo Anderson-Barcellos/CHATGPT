@@ -85,6 +85,46 @@ describe("chatBackgroundJob", () => {
     }));
   });
 
+  it("confere abort depois de adquirir o lock da conversa", async () => {
+    const { applyBackgroundResponseToConversation } = await import("./chatBackgroundJob");
+    const controller = new AbortController();
+    getConversationMock.mockImplementationOnce(async () => {
+      controller.abort();
+      return conversation();
+    });
+    const result = await applyBackgroundResponseToConversation({
+      conversationId: "conv-1", assistantMessageId: "msg-assistant", response: response({}),
+      expectedResponseId: "resp-test", shouldApply: () => !controller.signal.aborted,
+    });
+    expect(result).toBeNull();
+    expect(updateConversationMock).not.toHaveBeenCalled();
+  });
+
+  it("não troca vínculo de uma mensagem que já iniciou outra tentativa", async () => {
+    const { applyBackgroundResponseToConversation } = await import("./chatBackgroundJob");
+    const result = await applyBackgroundResponseToConversation({
+      conversationId: "conv-1", assistantMessageId: "msg-assistant", response: response({}),
+      expectedResponseId: "outro-response-id",
+    });
+    expect(result).toBeNull();
+    expect(updateConversationMock).not.toHaveBeenCalled();
+  });
+
+  it("preserva resposta terminal durante recuperação de índice pendente", async () => {
+    const { applyBackgroundResponseToConversation } = await import("./chatBackgroundJob");
+    const saved = conversation();
+    saved.messages[0].content = "Resultado concluído e preservado.";
+    saved.messages[0].streamStatus = "completed";
+    saved.messages[0].backgroundJob!.status = "completed";
+    getConversationMock.mockResolvedValue(saved);
+    const result = await applyBackgroundResponseToConversation({
+      conversationId: "conv-1", assistantMessageId: "msg-assistant",
+      response: response({ status: "incomplete" }), expectedResponseId: "resp-test", preserveTerminal: true,
+    });
+    expect(result?.content).toBe(saved.messages[0].content);
+    expect(result?.streamStatus).toBe("completed");
+  });
+
   it("keeps queued and in-progress jobs pending", async () => {
     const { applyBackgroundResponseToConversation } = await import("./chatBackgroundJob");
 

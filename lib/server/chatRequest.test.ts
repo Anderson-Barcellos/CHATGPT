@@ -142,4 +142,15 @@ describe("buildResponseCreateParams", () => {
   it("maps the previous Gemini Flash id to Gemini 3.8 Flash", () => {
     expect(resolveRequestedModel("gemini-3.7-flash")).toBe("gemini-3.8-flash");
   });
+
+  it("maps the persisted GPT-5.4 mini id to Grok 4.7", () => {
+    expect(resolveRequestedModel("gpt-5.4-mini")).toBe("grok-4.7");
+    const params = buildResponseCreateParams({
+      input: [{ role: "user", content: "Teste" }],
+      model: "gpt-5.4-mini",
+      reasoning: { effort: "high" },
+    });
+    expect(params.model).toBe("grok-4.7");
+    expect(params.reasoning).toEqual({ effort: "medium" });
+  });
 });

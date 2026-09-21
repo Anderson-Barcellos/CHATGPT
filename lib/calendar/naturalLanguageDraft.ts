@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { createXAIClient } from "@/lib/server/xaiChat";
 import {
   CalendarDraftValidationError,
   CalendarEventDraft,
@@ -8,7 +8,7 @@ import {
 } from "@/lib/calendar/eventDrafts";
 
 const DEFAULT_TIME_ZONE = "America/Sao_Paulo";
-const DEFAULT_MODEL = "gpt-5.4-mini";
+const DEFAULT_MODEL = "grok-4.7";
 
 export type CalendarDraftTextSource = "chat" | "stt";
 
@@ -166,6 +166,17 @@ Regras:
 - Nao inventes convidados, links ou dados externos.`;
 }
 
+function resolveCalendarDraftModel(): string {
+  const configured = process.env.CALENDAR_DRAFT_MODEL?.trim();
+  if (!configured || configured === "gpt-5.4-mini") return DEFAULT_MODEL;
+  if (configured === DEFAULT_MODEL) return configured;
+  throw new CalendarDraftExtractionError(
+    "CALENDAR_DRAFT_MODEL precisa usar grok-4.7 neste provider.",
+    "calendar_draft_model_not_supported",
+    500
+  );
+}
+
 function buildDraftInput(
   extracted: ExtractedCalendarDraft,
   input: CalendarDraftFromTextInput,
@@ -213,8 +224,15 @@ function buildDraftInput(
 
 export async function createCalendarDraftFromNaturalLanguage(
   input: CalendarDraftFromTextInput,
-  client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  client = createXAIClient()
 ): Promise<CalendarDraftExtractionResult> {
+  if (!client) {
+    throw new CalendarDraftExtractionError(
+      "XAI_API_KEY não configurada no servidor.",
+      "calendar_draft_xai_api_key_missing",
+      503
+    );
+  }
   const text = cleanString(input.text);
   if (!text) {
     throw new CalendarDraftExtractionError(
@@ -226,7 +244,7 @@ export async function createCalendarDraftFromNaturalLanguage(
 
   const now = parseNow(input.now);
   const response = await client.responses.create({
-    model: process.env.CALENDAR_DRAFT_MODEL?.trim() || DEFAULT_MODEL,
+    model: resolveCalendarDraftModel(),
     instructions: buildInstructions(now),
     input: [
       {
@@ -235,6 +253,7 @@ export async function createCalendarDraftFromNaturalLanguage(
       },
     ],
     max_output_tokens: 900,
+    reasoning: { effort: "medium" },
     text: { format: calendarDraftExtractionSchema },
   });
 

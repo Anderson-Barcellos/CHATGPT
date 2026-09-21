@@ -38,7 +38,7 @@ const LEGACY_MODEL_FALLBACKS: Record<string, string> = {
   "gpt-5-chat-latest": "chat-latest",
   "gpt-5.1-chat-latest": DEFAULT_MODEL,
   "gpt-5.3-chat-latest": DEFAULT_MODEL,
-  "gpt-5.4-mini": DEFAULT_MODEL,
+  "gpt-5.4-mini": "grok-4.7",
   "gpt-5.1": DEFAULT_MODEL,
   "gpt-4.1": DEFAULT_MODEL,
   o3: DEFAULT_MODEL,
@@ -46,8 +46,9 @@ const LEGACY_MODEL_FALLBACKS: Record<string, string> = {
 
 function resolveSupportedModelId(modelId: string | undefined): string {
   if (!modelId) return DEFAULT_MODEL;
+  if (LEGACY_MODEL_FALLBACKS[modelId]) return LEGACY_MODEL_FALLBACKS[modelId];
   if (MODELS[modelId] && MODELS[modelId].selectable !== false) return modelId;
-  return LEGACY_MODEL_FALLBACKS[modelId] ?? DEFAULT_MODEL;
+  return DEFAULT_MODEL;
 }
 
 function usesNoReasoningByDefault(modelId: string): boolean {

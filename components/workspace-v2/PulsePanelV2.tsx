@@ -68,7 +68,7 @@ function proposalToForm(proposal: PulseTaskProposal): ProposalForm {
     emoji: proposal.emoji,
     prompt: proposal.prompt,
     executionPrompt: proposal.executionPrompt,
-    model: "gpt-5.4-mini",
+    model: "grok-4.7",
     recurrenceType: proposal.recurrenceType,
     time: proposal.time || "09:00",
     weekday: String(proposal.weekday ?? 1),
@@ -884,7 +884,7 @@ export function PulsePanelV2() {
                   }
                   className="h-8 w-full rounded-md border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-2 text-xs text-foreground"
                 >
-                  <option value="gpt-5.4-mini">GPT-5.4 Mini — padrao</option>
+                  <option value="grok-4.7">Grok 4.7 — padrão</option>
                   <option value="gpt-5.6-sol">GPT-5.6 Sol</option>
                   <option value="gpt-5.6-terra">GPT-5.6 Terra — experimental</option>
                 </select>

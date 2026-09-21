@@ -6,12 +6,13 @@ export type PulseRecurrenceType = "daily" | "weekly" | "monthly";
 export type PulseTaskStatus = "active" | "paused";
 export type PulseRunStatus = "queued" | "running" | "completed" | "failed";
 export const PULSE_MODELS = [
-  "gpt-5.4-mini",
+  "grok-4.7",
   "gpt-5.6-sol",
   "gpt-5.6-terra",
 ] as const;
-export type PulseModel = (typeof PULSE_MODELS)[number];
-export const DEFAULT_PULSE_MODEL: PulseModel = "gpt-5.4-mini";
+/** Identificador legado aceito ao ler rotinas já persistidas; nunca é oferecido. */
+export type PulseModel = (typeof PULSE_MODELS)[number] | "gpt-5.4-mini";
+export const DEFAULT_PULSE_MODEL: PulseModel = "grok-4.7";
 export type PulseExecutionReasoningEffort = "low" | "medium" | "high";
 
 export interface PulseSchedule {

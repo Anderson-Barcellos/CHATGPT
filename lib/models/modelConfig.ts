@@ -19,6 +19,8 @@ const GEMINI_FLASH_REASONING_EFFORTS: ReasoningEffort[] = [
   "low", "medium", "high",
 ];
 
+const GROK_47_REASONING_EFFORTS: ReasoningEffort[] = ["medium"];
+
 export const MODELS: Record<string, ModelInfo> = {
   "gpt-6-astra": {
     id: "gpt-6-astra",
@@ -93,6 +95,34 @@ export const MODELS: Record<string, ModelInfo> = {
     recommendedFor: ["Uso diario", "Baixa latencia", "Alto volume"],
     badge: "Default",
   },
+  "grok-4.7": {
+    id: "grok-4.7",
+    name: "Grok 4.7",
+    family: "grok",
+    description: "Modelo xAI para pesquisa, código e saídas estruturadas com raciocínio médio fixo",
+    contextWindow: 500_000,
+    maxOutput: 128_000,
+    pricing: {
+      input: 2,
+      output: 6,
+      cachedInput: 0.5,
+      longContext: {
+        threshold: 200_000,
+        input: 4,
+        output: 12,
+        cachedInput: 1,
+      },
+    },
+    capabilities: ["chat", "reasoning", "vision", "function-calling", "json-mode"],
+    supportsStreaming: true,
+    supportsTemperature: false,
+    supportsVerbosity: false,
+    supportsCodeInterpreter: true,
+    supportedReasoningEfforts: GROK_47_REASONING_EFFORTS,
+    fixedReasoningEffort: "medium",
+    recommendedFor: ["Pesquisa web", "Código", "Saídas estruturadas"],
+    badge: "xAI",
+  },
   "chat-latest": {
     id: "chat-latest",
     name: "GPT-5.5 Instant",
@@ -161,6 +191,7 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsTemperature: false,
     supportsVerbosity: true,
     supportsCodeInterpreter: true,
+    hiddenFromChatSelector: true,
     recommendedFor: ["Uso diario", "Coding economico", "Raciocinio com menor custo"],
     badge: "Eficiente",
   },
@@ -264,6 +295,10 @@ export function isGeminiModel(modelId: string): boolean {
   return modelId === "gemini-3.8-flash";
 }
 
+export function isGrokModel(modelId: string): boolean {
+  return modelId === "grok-4.7";
+}
+
 export function getFixedReasoningEffort(modelId: string): ReasoningEffort | undefined {
   return MODELS[modelId]?.fixedReasoningEffort;
 }
@@ -326,12 +361,16 @@ export function calculateCost(
     return { inputTokens, outputTokens, cachedTokens, totalCost: 0 };
   }
 
+  const pricing = model.pricing.longContext &&
+    inputTokens >= model.pricing.longContext.threshold
+    ? model.pricing.longContext
+    : model.pricing;
   const uncachedInput = inputTokens - cachedTokens;
-  const inputCost = (uncachedInput / 1_000_000) * model.pricing.input;
-  const cachedCost = model.pricing.cachedInput
-    ? (cachedTokens / 1_000_000) * model.pricing.cachedInput
+  const inputCost = (uncachedInput / 1_000_000) * pricing.input;
+  const cachedCost = pricing.cachedInput
+    ? (cachedTokens / 1_000_000) * pricing.cachedInput
     : 0;
-  const outputCost = (outputTokens / 1_000_000) * model.pricing.output;
+  const outputCost = (outputTokens / 1_000_000) * pricing.output;
 
   return {
     inputTokens,

@@ -13,6 +13,7 @@ export interface ChatBackgroundJobRecord {
   conversationId: string;
   assistantMessageId: string;
   responseMode: BackgroundResponseMode;
+  provider: "openai" | "xai";
   status: BackgroundJobStatus;
   createdAt: string;
   updatedAt: string;
@@ -24,6 +25,7 @@ export type ChatBackgroundJobCreateInput = Pick<
   ChatBackgroundJobRecord,
   "responseId" | "conversationId" | "assistantMessageId" | "responseMode"
 > & {
+  provider?: "openai" | "xai";
   status?: BackgroundJobStatus;
   error?: string;
 };
@@ -49,6 +51,7 @@ function parseJob(value: unknown): ChatBackgroundJobRecord | null {
     typeof raw.conversationId !== "string" ||
     typeof raw.assistantMessageId !== "string" ||
     !isBackgroundResponseMode(raw.responseMode) ||
+    (raw.provider !== undefined && raw.provider !== "openai" && raw.provider !== "xai") ||
     (raw.status !== "queued" &&
       raw.status !== "in_progress" &&
       raw.status !== "completed" &&
@@ -60,7 +63,7 @@ function parseJob(value: unknown): ChatBackgroundJobRecord | null {
     return null;
   }
 
-  return raw as ChatBackgroundJobRecord;
+  return { ...raw, provider: raw.provider ?? "openai" } as ChatBackgroundJobRecord;
 }
 
 async function readJobs(): Promise<ChatBackgroundJobRecord[]> {
@@ -105,6 +108,7 @@ export async function upsertBackgroundJob(
       conversationId: input.conversationId,
       assistantMessageId: input.assistantMessageId,
       responseMode: input.responseMode,
+      provider: input.provider ?? existing?.provider ?? "openai",
       status: input.status ?? existing?.status ?? "queued",
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
@@ -145,6 +149,13 @@ export async function updateBackgroundJobByResponseId(
     await writeJobs(pruneJobs(jobs));
     return next;
   });
+}
+
+export async function getBackgroundJobByResponseId(
+  responseId: string
+): Promise<ChatBackgroundJobRecord | null> {
+  const jobs = await readJobs();
+  return jobs.find((job) => job.responseId === responseId) ?? null;
 }
 
 export async function listPendingBackgroundJobs(

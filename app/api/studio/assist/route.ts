@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { jsonError } from "@/lib/api/errors";
 import { isAuthenticatedRequest, isAuthEnabled } from "@/lib/server/auth";
 import { createOpenAIClient } from "@/lib/server/chatRequest";
+import { createXAIClient, GROK_MODEL } from "@/lib/server/xaiChat";
 import { readJsonWithLimit } from "@/lib/server/readJsonWithLimit";
 import {
   buildStudioResponseParams,
@@ -45,17 +46,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const openai = createOpenAIClient();
+    const provider = studioRequest.value.model === GROK_MODEL ? "xai" : "openai";
+    const openai = provider === "xai" ? createXAIClient() : createOpenAIClient();
     if (!openai) {
-      return jsonError(503, "OpenAI API key is missing", {
-        message: "OPENAI_API_KEY não configurada no servidor.",
-        code: "studio_openai_api_key_missing",
+      return jsonError(503, `${provider === "xai" ? "xAI" : "OpenAI"} API key is missing`, {
+        message: provider === "xai" ? "XAI_API_KEY não configurada no servidor." : "OPENAI_API_KEY não configurada no servidor.",
+        code: provider === "xai" ? "studio_xai_api_key_missing" : "studio_openai_api_key_missing",
       });
     }
 
     const stream = createStudioAssistantEventStream(
       openai,
-      buildStudioResponseParams(studioRequest.value),
+      buildStudioResponseParams(studioRequest.value, provider),
       request.signal
     );
 

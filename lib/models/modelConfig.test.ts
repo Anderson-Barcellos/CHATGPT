@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  calculateCost,
   getChatModels,
   getFixedReasoningEffort,
   getFixedVerbosity,
@@ -10,7 +11,7 @@ import {
 } from "./modelConfig";
 
 describe("chat model capabilities", () => {
-  it("shows GPT-6 Astra and Gemini 3.8 Flash alongside the current selectable chat models", () => {
+  it("shows Grok 4.7 and keeps the mini only as a hidden legacy alias", () => {
     const ids = getChatModels().map((model) => model.id);
 
     expect(ids).toEqual([
@@ -18,10 +19,22 @@ describe("chat model capabilities", () => {
       "gpt-5.6-sol",
       "gpt-5.6-terra",
       "gpt-5.6-luna",
-      "gpt-5.4-mini",
+      "grok-4.7",
       "deepseek-v4-pro",
       "gemini-3.8-flash",
     ]);
+  });
+
+  it("locks Grok 4.7 reasoning to medium", () => {
+    expect(getFixedReasoningEffort("grok-4.7")).toBe("medium");
+    expect(getSupportedReasoningEfforts("grok-4.7")).toEqual(["medium"]);
+  });
+
+  it("aplica a tarifa longa do Grok a partir de 200 mil tokens de entrada", () => {
+    expect(calculateCost(199_999, 1_000, "grok-4.7", 50_000).totalCost)
+      .toBeCloseTo(0.330998, 6);
+    expect(calculateCost(200_000, 1_000, "grok-4.7", 50_000).totalCost)
+      .toBeCloseTo(0.662, 6);
   });
 
   it("offers max reasoning to Astra and GPT-5.6 models", () => {

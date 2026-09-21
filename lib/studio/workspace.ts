@@ -1,4 +1,4 @@
-import { DEFAULT_STUDIO_MODEL_ID, isStudioModelId } from "@/lib/studio/models";
+import { DEFAULT_STUDIO_MODEL_ID, resolveStudioModelId } from "@/lib/studio/models";
 import type {
   StudioAssistantMessage,
   StudioWorkspaceSnapshot,
@@ -135,9 +135,7 @@ export function parseStudioWorkspace(
           ? candidate.autocompleteEnabled
           : true,
       assistantMessages: normalizeMessages(candidate.assistantMessages),
-      selectedModelId: isStudioModelId(candidate.selectedModelId)
-        ? candidate.selectedModelId
-        : DEFAULT_STUDIO_MODEL_ID,
+      selectedModelId: resolveStudioModelId(candidate.selectedModelId),
     };
   } catch {
     return fallback;
