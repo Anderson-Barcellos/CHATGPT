@@ -1,20 +1,30 @@
 # Arquitetura
 
-**Última atualização:** 2026-09-03
+**Última atualização:** 2026-09-21
 
 ## Visão Geral
 
-Gaucho Chat é um app Next.js com App Router que roda como BFF local para providers de IA. O fluxo principal usa a OpenAI `Responses API`; o chat padrão também pode usar DeepSeek V4 Pro ou Gemini 3.8 Flash via adapters server-side. O cliente React conversa apenas com rotas do próprio app; essas rotas cuidam de auth, rate limit, persistência local e chamadas server-side.
+Gaucho Chat é um app Next.js com App Router que roda como BFF local para providers de IA. O fluxo principal usa a OpenAI `Responses API`; Grok 4.7, DeepSeek V4 Pro e Gemini 3.8 Flash usam adapters server-side. O cliente React conversa com rotas do próprio app, que cuidam de auth, rate limit, persistência e chamadas aos modelos de texto. A voz Realtime usa conexão direta com token efêmero emitido pelo servidor.
 
 ```text
 Browser/PWA
   -> Next.js UI em /chat
   -> proxy.ts: auth, rate limit e headers
   -> app/api/*: BFF server-side
-  -> OpenAI/DeepSeek/Gemini APIs e autoridade de persistência selecionada no servidor
+  -> OpenAI/xAI/DeepSeek/Gemini APIs e autoridade de persistência selecionada no servidor
 ```
 
 ## Entrada e Shell
+
+### Provider xAI e leitura experimental
+
+Grok 4.7 substitui os usos ativos do mini, usando Responses API própria, reasoning `medium` e adaptação das ferramentas. A fonte de verdade continua nos módulos atuais de cada produto; não há migração em massa dos dados privados. Busca usa a ferramenta xAI; memória continua local; geração de imagem continua OpenAI. O fluxo OpenAI permanece em Responses API.
+
+Documento/Deepsearch médio com Grok usam execução no processo servidor, independente da aba, e metadados persistidos com provider. A xAI não implementa `background=true`; jobs OpenAI mantêm retrieve/cancel originais. Reinício do executor Grok marca interrupção recuperável, sem repetição automática de chamada cobrada.
+
+SoundCase mantém TTS/worker/arquivos existentes. A engine de leitura Grok usa token efêmero obtido em rota autenticada, WebSocket direto do browser e PCM por Web Audio, sempre sobre o snapshot imutável da versão. Fechar o painel não desmonta a sessão; parar ou sair encerra áudio/conexão. Preferências de engine/voz/velocidade Grok são separadas da direção e formato dos arquivos. A chave permanente nunca entra no browser.
+
+QA isolado usa `GAUCHO_ISOLATED_RUNTIME=true` para impedir o cleanup de units Studio do serviço principal durante o boot de outra instância. Não substitui a futura revisão de ownership das units; é a fronteira explícita de execução de testes.
 
 - `app/page.tsx` é a entrada autenticada e renderiza `GauchoChatShellV2`.
 - `app/studio/page.tsx` é uma página autenticada independente e renderiza `GauchoStudioShell`.
@@ -32,7 +42,7 @@ O Studio é uma mudança de página, não um modo interno da conversa. Chat e St
 - o Studio é Python-only desde 2026-08-12: o antigo modo Local (TS/JS transpilado no Monaco + Web Worker em `/api/studio/runner`) foi removido; a fonte de verdade dos arquivos é sempre o workspace no servidor;
 - o `localStorage` sob `gaucho-studio:workspace:v1` guarda apenas preferências e histórico do assistente (snapshot `version: 2` — autocomplete on/off, modelo selecionado, mensagens); snapshots v1 antigos migram preservando esses campos e descartando os arquivos TS locais;
 - `lib/studio/autocompleteProvider.ts` registra o inline completion provider nativo do Monaco em desktop, coordena debounce, cancelamento, deduplicação, descarte de respostas obsoletas e recuperação silenciosa; `/api/studio/autocomplete` limita e encaminha somente prefix/suffix ao endpoint FIM do provider ativo (Codestral via Mistral por padrão, DeepSeek como fallback legado — ver docs/API.md);
-- `/api/studio/assist` recebe somente arquivo ativo, pergunta e histórico curto e usa `store=false`, sem forçar reasoning ou verbosity. O painel lateral compartilha com o chat a configuração `web_search_preview` (`medium`, localização aproximada `BR`) e o redutor de eventos SSE para preservar progresso e citações; o modo de assistência por célula permanece com `tools: []`;
+- `/api/studio/assist` recebe somente arquivo ativo, pergunta e histórico curto e usa `store=false`. OpenAI preserva defaults de reasoning/verbosity; Grok fixa reasoning `medium` e omite verbosity. O painel lateral usa `web_search_preview` no OpenAI (`medium`, localização aproximada `BR`) ou `web_search` na xAI, com o redutor SSE comum para progresso/citações; a assistência por célula permanece com `tools: []`;
 - a resposta do modelo permanece no painel lateral para cópia manual, sem edição automática, aplicação de patch ou modo agente; streams sem marcador terminal são preservados como interrompidos, não concluídos;
 - o autocomplete insere ghost text apenas após aceitação explícita pelo usuário e não concede ao chat contextual autorização para editar; o toggle persiste nas prefs locais e o recurso não faz chamadas em viewport móvel ou ponteiro coarse;
 - os painéis do shell (explorador, assistente e console) são redimensionáveis por splitters no layout largo de desktop (≥ 1121 px, ponteiro fino): `hooks/useStudioLayout.ts` aplica CSS variables no shell, restringe pelos limites de `lib/studio/layout.ts` (editor nunca abaixo de 460 px), persiste em `gaucho-studio:layout:v1` e reseta o eixo com duplo clique no divisor;
@@ -112,7 +122,7 @@ O adapter expõe uma tool local `fresh_web_context`. Quando o DeepSeek chama ess
 
 `gemini-3.8-flash` é um provider separado para chat padrão streaming. `lib/server/geminiChat.ts` converte o histórico e imagens para turns da Interactions API, envia `store=false`, Google Search, URL Context e summaries de pensamento, e traduz o stream Gemini para o mesmo contrato SSE usado pelo reducer do chat.
 
-O adapter exige `GEMINI_API_KEY`, aceita thinking `low`, `medium` e `high`, não envia os parâmetros depreciados `temperature`, `top_p` ou `top_k` e rejeita Documento, Deepsearch e Quiz. Esses modos continuam usando seus modelos OpenAI forçados.
+O adapter exige `GEMINI_API_KEY`, aceita thinking `low`, `medium` e `high`, não envia os parâmetros depreciados `temperature`, `top_p` ou `top_k` e rejeita Documento, Deepsearch e Quiz. Esses modos usam seus presets próprios: Grok para Documento/Deepsearch médio e OpenAI para Deepsearch alto/Quiz.
 
 ## Reasoning
 
@@ -222,7 +232,7 @@ A aba Rotinas substitui a superfície visível de Agenda. Ela cria rotinas recor
 - `POST /api/pulse/tasks/propose` usa Responses API com JSON schema para transformar linguagem natural em proposta de rotina.
 - `POST /api/pulse/tasks` persiste rotinas `daily`, `weekly` ou `monthly` em `data/pulse-tasks.json`.
 - `POST /api/pulse/run-due` é chamado pelo `chatgpt-pulse.timer` e executa tarefas vencidas.
-- Cada rotina Pulse escolhe `gpt-5.4-mini` (padrão) ou `gpt-5.6-terra` (experimental), ambos com reasoning `medium`, verbosity `high`, `web_search_preview` e `image_generation`. O modelo/effort efetivos ficam gravados no run; `PULSE_RUN_MODEL` e `PULSE_REASONING_EFFORT` ainda podem sobrepor operacionalmente. O orçamento padrão é `PULSE_MAX_OUTPUT_TOKENS=25000`, com clamp do runner entre 8k e 32k; `none` e `minimal` sobem para `low` com tools.
+- Cada rotina Pulse escolhe Grok 4.7 (padrão), Sol ou Terra. Grok usa reasoning `medium` fixo e `web_search`; OpenAI mantém verbosity `high` e suas ferramentas. Imagens permanecem em chamada OpenAI. Modelo/effort efetivos ficam gravados no run; IDs mini antigos resolvem para Grok. O orçamento padrão é `PULSE_MAX_OUTPUT_TOKENS=25000`, com clamp do runner entre 8k e 32k.
 - O prompt de execução do Pulse usa um contexto enxuto proprio: instruções da rotina, preferencias uteis de `persona.json`, ate 5 memorias ativas compactadas e 3 trechos relevantes do histórico via `searchMemoryContext`. Ele evita injetar o prompt global completo do chat para reduzir latencia e tokens.
 - Se a resposta principal não trouxer `image_generation`, o runner tenta uma segunda chamada curta para gerar a imagem conceitual de abertura do card.
 - Resultados de Pulse e balões do chat reutilizam `MiniAudioPlayer`, que abre com `useAssistantTts` e `/api/tts` (`gpt-4o-mini-tts`) selecionados, mas não inicia áudio automaticamente.
@@ -266,7 +276,7 @@ O TTS padrão usa `/api/tts` com `gpt-4o-mini-tts`.
 
 ## Modelos
 
-O catálogo vive em `lib/models/modelConfig.ts`. O default do chat é `gpt-5.6-luna` com reasoning `low` e modo `standard`; modelos removidos conhecidos caem para Luna, enquanto uma seleção válida de `gpt-5.4-mini` é preservada. `gpt-5.6-sol` inicia em `medium/standard`; Sol e Luna aceitam modo `pro` independente do effort e effort `max`. O Mini permanece registrado para compatibilidade e fluxos internos, porque Pulse e Deepsearch ainda o usam. `responseMode="quiz"` força `gpt-5.4/high`; Deepsearch Medium usa `gpt-5.4-mini/high` e High usa `gpt-5.4/high`. O contexto web auxiliar do DeepSeek usa `gpt-5.6-luna/low` antes da síntese no DeepSeek V4 Pro.
+O catálogo vive em `lib/models/modelConfig.ts`. O default do chat continua Luna (`low/standard`); o mini resolve para Grok 4.7 (`medium` fixo), preservando os registros históricos. Sol e Luna mantêm modo `pro` e effort `max`. Documento/Deepsearch médio usam Grok; Quiz e Deepsearch alto continuam `gpt-5.4/high`. O contexto web auxiliar do DeepSeek mantém Luna/low. Capacidades, parâmetros e preços ficam documentados em `docs/MODELS.md`.
 
 Tools padrão:
 

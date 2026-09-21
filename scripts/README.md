@@ -4,6 +4,16 @@ Scripts utilitários locais do Gaucho Chat. O runtime oficial de produção é A
 
 ## Disponíveis
 
+### `qa-grok-soundcase.mjs` e `qa-grok-catalog.mjs`
+
+QA Playwright desktop/mobile com APIs interceptadas, dados sintéticos e sem cobrança. O primeiro cobre preferências e reprodução Realtime do SoundCase; o segundo cobre Luna default, ausência do mini, seleção/persistência do Grok e reasoning medium fixo. Usam `GROK_QA_BASE_URL` (default `http://127.0.0.1:3147/chat`) e `CHROME_PATH`; o SoundCase salva evidências em `GROK_QA_OUTPUT_DIR`. Executar contra instância isolada com `GAUCHO_ISOLATED_RUNTIME=true`, nunca contra dados reais.
+
+### `smoke-grok-real.mjs`
+
+Smoke **pago e explícito** de Grok 4.7 (`medium`) e texto → voz Realtime, sempre com texto sintético. Usa `XAI_API_KEY` ou `GROK_API_KEY` já exportada; não carrega arquivos de segredos nem imprime credenciais. `--text-only` e `--voice-only` limitam a rodada; `GROK_SMOKE_OUTPUT_DIR` permite salvar áudio WAV sintético. O teste encerra a conexão ao terminar/errar e limita áudio recebido a dois minutos. Os resultados distinguem latência, duração e custo estimado; escuta humana continua necessária para avaliar qualidade.
+
+Executar somente em ambiente autorizado para chamadas reais; gates automatizados da entrega usam mocks.
+
 ### `pre-deploy.sh`
 
 Checklist local mais amplo antes de rodada sensível.

@@ -2,6 +2,12 @@
 
 ## Estado operacional
 
+#### Grok 4.7 e Realtime experimental no SoundCase (`pronta para revisão`, 2026-09-21)
+
+Anders aprovou substituir todos os usos ativos do GPT-5.4 mini por Grok 4.7 com reasoning `medium`, mantendo Luna como default do chat, e experimentar texto → voz Grok Realtime somente no SoundCase. O TTS/arquivo OpenAI permanece preservado. Execução isolada na branch `codex/grok-chat-soundcase`; plano em `docs/plans/2026-09-21-grok-chat-soundcase.md`, evidências em `docs/plans/2026-09-21-grok-chat-soundcase-report.md`. Publicação não autorizada por esta implementação.
+
+Implementação `d452d83`: provider xAI, compatibilidade de IDs mini, stream/nonstream e ferramentas, background local com cancelamento/recovery sem repetição cobrada, Pulse/Studio/extrações e leitura Grok por token efêmero. Gates: 183 arquivos/928 testes, TypeScript, lint sem erros (um warning anterior), build isolada 41/41 e 34 verificações Playwright desktop/mobile. Voz real: 28 vozes disponíveis, primeiro áudio em 2029 ms e transcrição fiel do trecho sintético; WAV nas evidências. Ressalva: duas chamadas reais de texto retornaram 200, mas recusaram a instrução artificial `PRONTO`; smoke de obediência textual falhou e não deve ser apresentado como aprovado. Revisão local pronta; qualidade da voz e essa limitação upstream ficam explícitas para aceitação. Produção e dados privados preservados.
+
 #### Barra de ações do assistente contida no mobile (`pronta para revisão`, 2026-09-17)
 
 Context: após os retratos entrarem nos balões e a resposta do assistente ocupar 100% da largura mobile, a barra de oito ações continuava aplicando `margin-left: -2.31rem`, compensação da antiga coluna externa do avatar. O primeiro botão ficava cortado à esquerda no celular.

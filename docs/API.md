@@ -1,6 +1,6 @@
 # API
 
-**Última atualização:** 2026-09-03
+**Última atualização:** 2026-09-21
 **Base URL pública:** `https://ultrassom.ai/chat`
 **Base path interno:** `NEXT_PUBLIC_BASE_PATH=/chat`
 
@@ -11,6 +11,8 @@ Todas as rotas abaixo são implementadas como Route Handlers do Next em `app/api
 ### `POST /api/chat`
 
 Proxy server-side para chat com streaming. Modelos OpenAI usam a `Responses API`; `deepseek-v4-pro` usa o adapter DeepSeek e `gemini-3.8-flash` usa a Interactions API, ambos apenas no chat padrão streaming.
+
+`grok-4.7` usa Responses API xAI com reasoning `medium` fixo. O identificador legado `gpt-5.4-mini` resolve para Grok nas novas chamadas. As ferramentas são traduzidas por provider: `web_search` e `code_execution` na xAI, memória local e ponte para geração de imagem OpenAI no chat padrão. O contrato SSE do app permanece o mesmo; falha do provider é explícita, sem fallback silencioso de modelo.
 
 **Arquivo:** `app/api/chat/route.ts`
 
@@ -104,7 +106,7 @@ Esse comportamento vale para o fluxo streaming normal.
 
 Os modos `document`, `deepsearch_medium` e `deepsearch_high` usam rotas curtas
 de background para sobreviver a troca de aba, reload ou suspensão do navegador.
-O app cria a resposta com `background: true`, persiste o `response_id` na
+No provider OpenAI, o app cria a resposta com `background: true`, persiste o `response_id` na
 mensagem do assistente e sincroniza quando a aba volta ou durante polling leve.
 
 | Método | Rota | Função |
@@ -121,11 +123,15 @@ melhor à suspensão agressiva de navegador mobile, o app também mantém metada
 de jobs pendentes em `data/chat-background-jobs.json` e chama `/reconcile` ao
 abrir, ao voltar para aba visível e ao carregar conversas com job pendente.
 
+No provider xAI, a rota cria um identificador local `xai-*`, persiste o vínculo/provider e inicia a chamada no processo servidor sem vincular sua duração ao navegador. Sync consulta o resultado local; cancel aborta o executor e impede aplicação tardia. Reconcile distingue job vivo de execução perdida por restart. Reinício não reenvia a chamada automaticamente: a mensagem termina com indicação de interrupção, permitindo tentativa explícita. Jobs legados sem provider continuam sendo OpenAI.
+
 ## Gaucho Studio
+
+O seletor inclui Grok 4.7 no lugar do mini, com reasoning `medium` no caminho xAI. Preferências antigas do mini resolvem para Grok. OpenAI mantém seus defaults de reasoning/verbosity; ambos preservam assistência somente leitura, pesquisa apenas no painel lateral e células sem tools.
 
 ### `POST /api/studio/assist`
 
-Assistente contextual do editor em `/studio`. A rota usa a OpenAI Responses API com streaming SSE e `store=false`, sem sobrescrever os defaults de reasoning ou verbosity do modelo. No painel lateral, expõe somente `web_search_preview` com contexto `medium` e localização aproximada `BR`; status de busca e citações acompanham o stream e ficam no histórico local. O modo de assistência por célula continua com `tools: []`. Nenhum dos dois recebe autorização para editar arquivos automaticamente, executar código, consultar memórias, usar terminal/filesystem ou acionar o fluxo agente.
+Assistente contextual do editor em `/studio`. A rota usa Responses API do provider selecionado, com streaming SSE e `store=false`. OpenAI preserva defaults de reasoning/verbosity e oferece `web_search_preview` com contexto `medium` e localização aproximada `BR`; Grok usa reasoning `medium`, sem verbosity, e `web_search`. Status de busca e citações acompanham o stream e ficam no histórico local. O modo de assistência por célula continua com `tools: []`. Nenhum dos dois recebe autorização para editar arquivos automaticamente, executar código, consultar memórias, usar terminal/filesystem ou acionar o fluxo agente.
 
 ```json
 {
@@ -321,11 +327,15 @@ Notas do PDF:
 | `GET` | `.../[versionId]/audio` / `cover` | Serve asset privado; áudio aceita Range |
 | `GET` | `.../[versionId]/source` | Retorna `{ text }` do snapshot imutável autenticado, com `Cache-Control: private, no-store`, para reiniciar Realtime |
 | `POST` | `/api/soundcase/realtime-call` | Handshake SDP autenticado com voz/direção persistidas |
+| `GET` | `/api/soundcase/grok-realtime/voices` | Lista vozes xAI normalizadas em `{ voices: [{ id, name }] }`; autenticado, `no-store` |
+| `POST` | `/api/soundcase/grok-realtime/session?projectId=…&versionId=…` | Valida projeto/versão/direção e retorna `{ token }` efêmero de 300 s; autenticado, `private, no-store` |
 | `POST` | `/api/soundcase/worker/run-next` | Runner interno protegido por bearer dedicado |
 
 O limite editorial inicial é 90 minutos estimados. O default de saída é MP3; FLAC e WAV são overrides. Cada chunk FLAC é validado por magic `fLaC` + `ffprobe`; como o FLAC do `gpt-4o-mini-tts` vem sem `total_samples` no STREAMINFO (container devolve `N/A`), a duração cai para o último packet (`pts_time + duration_time`) antes de qualquer rejeição. Erros do worker chegam ao cliente só como `code` + `diagnosticId`; o erro real (e a `cause` do chunk) fica no journal/log do serviço com o mesmo `diagnosticId`. O worker é disparado por `chatgpt-soundcase.path` (mudança em `data/soundcase/jobs.json`) e `chatgpt-soundcase.timer` (recovery a cada 1 min). A chegada do arquivo final não interrompe Realtime: a troca de fonte é sempre explícita no player.
 
 As configurações próprias do SoundCase ficam em `gaucho-soundcase:settings:v1` no navegador, compartilhadas pela página e painel. Valem para próximas gerações; formato não altera a direção automática. O player inicia Realtime sobre `/source` da versão selecionada e reutiliza sua direção persistida, sem criar outra versão/job TTS. A busca do snapshot participa do cancelamento da sessão.
+
+Grok Realtime é uma opção experimental independente: `grok-voice-latest`, texto → áudio sem microfone. O browser usa exclusivamente o token temporário no subprotocolo `xai-client-secret.*`; a credencial permanente permanece no servidor. Preferências próprias de engine/voz/velocidade não alteram configurações de geração do arquivo. Abrir/configurar o painel não inicia sessão de voz; parada e retry são explícitos.
 
 ## Google Calendar e Notas Locais
 
@@ -339,7 +349,7 @@ Todas as rotas de Pulse são privadas quando `AUTH_ENABLED=true`, exceto o runne
 
 Os resultados do Pulse e as mensagens do chat reutilizam o mesmo mini-player. Ele abre no TTS estável via `/api/tts` (`gpt-4o-mini-tts`) e permite selecionar manualmente o Realtime experimental via `/api/realtime/tts-call`; nenhuma engine inicia apenas ao abrir o player.
 
-As execuções do Pulse usam `gpt-5.4-mini` + reasoning `medium` por padrão e podem selecionar `gpt-5.6-terra` + `medium` em cada rotina. O modelo e effort efetivos ficam registrados em cada execução. O prompt continua enxuto, com preferências úteis, memórias ativas e histórico relevante. `PULSE_RUN_MODEL`, `PULSE_MAX_OUTPUT_TOKENS` e `PULSE_REASONING_EFFORT` permanecem overrides operacionais; `PULSE_MAX_OUTPUT_TOKENS` é limitado pelo runner entre 8k e 32k; `none` e `minimal` são coeridos para `low` quando há tools.
+As execuções do Pulse usam `grok-4.7` + reasoning `medium` por padrão e mantêm Sol/Terra como opções. Rotinas antigas com mini resolvem para Grok; execuções históricas preservam o modelo gravado. O modelo e effort efetivos ficam registrados em cada execução. Grok força `medium` e não recebe verbosity; modelos OpenAI mantêm suas configurações. O prompt continua enxuto e a imagem continua OpenAI em chamada separada quando necessário. Overrides operacionais permanecem; identificadores incompatíveis com o provider devem falhar explicitamente.
 
 | Método | Rota | Função |
 |---|---|---|

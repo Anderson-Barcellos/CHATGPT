@@ -116,6 +116,7 @@ Obrigatórias em produção:
 | `STUDIO_OPENAI_API_KEY` | Chave OpenAI de escopo restrito (limite de gasto próprio) que a jail do Studio recebe como `OPENAI_API_KEY` no runner, terminal e kernel; a chave principal nunca entra na jail. Sem ela, a jail fica sem chave alguma (`openai` dentro do Studio falha com erro de autenticação) |
 | `DEEPSEEK_API_KEY` | Chave server-side do DeepSeek V4 Pro para chat padrão e autocomplete FIM do Studio |
 | `GEMINI_API_KEY` | Chave server-side do Gemini 3.8 Flash para chat padrão |
+| `XAI_API_KEY` / `GROK_API_KEY` | Chave server-side xAI para Grok 4.7 e SoundCase Realtime experimental; `XAI_API_KEY` tem precedência. Nunca enviar a chave permanente ao browser |
 | `NEXT_PUBLIC_BASE_PATH` | Deve ser `/chat` |
 | `NEXT_PUBLIC_APP_URL` | URL pública completa |
 | `PORT` | Deve ser `3040` |
@@ -123,6 +124,10 @@ Obrigatórias em produção:
 | `JWT_SECRET` | Segredo para assinar sessão |
 
 Overrides opcionais:
+
+Para QA em worktree, iniciar o Next com `GAUCHO_ISOLATED_RUNTIME=true`: a instrumentação não executará o cleanup global de units do Studio. A flag não deve ser aplicada ao serviço principal. Usar porta loopback livre verificada por `/etc/apache2/check-port.sh`, diretórios de dados sintéticos e base path `/chat`.
+
+A configuração em `.bashrc` serve ao shell que a carrega; não disponibiliza automaticamente a variável no `chatgpt.service`. Na publicação autorizada, fornecer a chave no ambiente server-side do serviço pelo mecanismo existente, sem colocá-la em `NEXT_PUBLIC_*`, logs ou repositório. A implementação isolada desta entrega não altera o ambiente do serviço.
 
 | Variável | Propósito |
 |---|---|
