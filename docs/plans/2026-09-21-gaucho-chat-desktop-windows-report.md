@@ -8,6 +8,12 @@
 tinham gerado; usar o gerador oficial preserva o ignore atual e torna o gate
 reproduzível sem alterar Studio ou código de produto.
 
+**DECISÃO (runtime do CI):** os gates de PR e da branch principal usam Node
+22, igual ao workflow Windows e ao runtime local de validação. Node 20 não é
+suportado por `better-sqlite3@13` nem por Electron 44 e fez o processo nativo
+da migração encerrar com status 139 no checkout limpo. O gate da branch
+principal também gera os tipos do Next antes de executar o TypeScript.
+
 **Resultado observável:** existe agora um target Electron isolado. Ele inicia o
 Next standalone somente em `127.0.0.1` numa porta efêmera, instala um token
 aleatório por execução como cookie HttpOnly, não expõe Node ao renderer, mantém
