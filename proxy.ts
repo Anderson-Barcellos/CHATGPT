@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addRateLimitHeaders, checkRateLimit } from "@/lib/security/rateLimit";
 import { isAuthEnabled, isAuthenticatedRequest } from "@/lib/server/auth";
+import {
+  DESKTOP_SESSION_COOKIE,
+  isDesktopEdition,
+  isDesktopUnavailablePath,
+  isValidDesktopSession,
+  type GauchoEdition,
+} from "@/lib/runtime/edition";
 
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 const RATE_LIMITED_PATHS = [
@@ -93,13 +100,24 @@ const APP_CONTENT_SECURITY_POLICY = [
   "upgrade-insecure-requests",
 ].join("; ");
 
-export function getSecurityContentSecurityPolicy(): string {
+export function getSecurityContentSecurityPolicy(
+  edition: GauchoEdition = "web"
+): string {
+  if (edition === "desktop") {
+    return APP_CONTENT_SECURITY_POLICY.replace(
+      "; upgrade-insecure-requests",
+      ""
+    );
+  }
+
   return APP_CONTENT_SECURITY_POLICY;
 }
 
 function addSecurityHeaders(response: NextResponse): NextResponse {
   const headers = response.headers;
-  const csp = getSecurityContentSecurityPolicy();
+  const csp = getSecurityContentSecurityPolicy(
+    isDesktopEdition() ? "desktop" : "web"
+  );
 
   headers.set("Content-Security-Policy", csp);
   headers.set("X-DNS-Prefetch-Control", "on");
@@ -124,6 +142,32 @@ function finalizeResponse(response: NextResponse): NextResponse {
 
 export async function proxy(request: NextRequest) {
   const pathname = stripBasePath(request.nextUrl.pathname);
+
+  if (isDesktopEdition()) {
+    const token = request.cookies.get(DESKTOP_SESSION_COOKIE)?.value;
+    if (
+      !(await isValidDesktopSession(
+        token,
+        process.env.GAUCHO_DESKTOP_SESSION_TOKEN
+      ))
+    ) {
+      return finalizeResponse(
+        NextResponse.json(
+          { error: "Sessão desktop local inválida." },
+          { status: 401 }
+        )
+      );
+    }
+
+    if (isDesktopUnavailablePath(pathname)) {
+      return finalizeResponse(
+        NextResponse.json(
+          { error: "Este recurso não está disponível na edição desktop." },
+          { status: 404 }
+        )
+      );
+    }
+  }
 
   if (pathname === "/api/auth/login" && shouldRateLimitPath(pathname)) {
     return applyRateLimit(request, pathname);
