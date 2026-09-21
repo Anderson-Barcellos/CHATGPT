@@ -1,6 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import Database from "better-sqlite3";
+import { getRuntimeDataDir } from "@/lib/runtime/edition";
 import { migrateMemorySchema } from "./schema";
 
 export interface MemoryDatabase {
@@ -15,7 +16,7 @@ export interface OpenMemoryDatabaseOptions {
 export function openMemoryDatabase(
   options: OpenMemoryDatabaseOptions = {}
 ): MemoryDatabase {
-  const databasePath = options.path ?? join(process.cwd(), "data", "memory-v2.sqlite");
+  const databasePath = options.path ?? join(getRuntimeDataDir(), "memory-v2.sqlite");
   mkdirSync(dirname(databasePath), { recursive: true });
 
   const raw = new Database(databasePath);

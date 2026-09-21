@@ -4,12 +4,12 @@ import path from "path";
 import * as lancedb from "@lancedb/lancedb";
 import type { Conversation, RetrievedMemoryContext } from "@/types";
 import { createOpenAIClient } from "@/lib/server/chatRequest";
+import { getRuntimeDataDir } from "@/lib/runtime/edition";
 import {
   chunkConversation,
   getConversationContentHash,
 } from "@/lib/server/memory/chunking";
 
-const MEMORY_INDEX_DIR = path.join(process.cwd(), "data", "memory-index");
 const CHUNKS_TABLE = "conversation_chunks";
 const EMBEDDING_MODEL = "text-embedding-3-small";
 const DEFAULT_TOP_K = 5;
@@ -48,7 +48,7 @@ function sqlString(value: string): string {
 
 async function getConnection() {
   if (!connectionPromise) {
-    connectionPromise = lancedb.connect(MEMORY_INDEX_DIR);
+    connectionPromise = lancedb.connect(path.join(getRuntimeDataDir(), "memory-index"));
   }
   return connectionPromise;
 }

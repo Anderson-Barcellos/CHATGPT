@@ -1,0 +1,53 @@
+name: Desktop Windows
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "desktop/**"
+      - "app/api/health/route.ts"
+      - "lib/runtime/**"
+      - "lib/server/jsonFileStore.ts"
+      - "lib/server/auth.ts"
+      - "lib/server/memory/indexStore.ts"
+      - "lib/server/memory-v2/**"
+      - "next.config.ts"
+      - "vitest.config.ts"
+      - "proxy.ts"
+      - ".gitignore"
+      - "eslint.config.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/desktop-windows.yml"
+
+jobs:
+  package-windows-x64:
+    name: Pacote Windows x64
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run desktop:make:win
+      - name: Confere o instalador e o ZIP x64
+        shell: pwsh
+        run: |
+          $artifacts = Get-ChildItem -Path out\make -Recurse -File -Include *.exe, *.zip
+          $installer = $artifacts | Where-Object Extension -eq ".exe"
+          $zip = $artifacts | Where-Object Extension -eq ".zip"
+          if ($installer.Count -eq 0 -or $zip.Count -eq 0) {
+            throw "Electron Forge não gerou simultaneamente instalador .exe e ZIP x64."
+          }
+          $artifacts | Select-Object FullName, Length
+      - name: Publica instalador e ZIP x64
+        uses: actions/upload-artifact@v4
+        with:
+          name: gaucho-chat-desktop-windows-x64
+          path: |
+            out/make/**/*.exe
+            out/make/**/*.zip
+          if-no-files-found: error

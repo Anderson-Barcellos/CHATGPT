@@ -1,6 +1,24 @@
 import type { NextConfig } from "next";
 
+const isDesktopBuild = process.env.GAUCHO_DESKTOP_BUILD === "true";
+const desktopTraceExcludes = [
+  "./.env*",
+  "./data/**",
+  "./docs/**",
+  "./.git/**",
+  "./.worktrees/**",
+  "./out/**",
+  "./desktop/.next/**",
+  "./.vite/**",
+];
+
 const nextConfig: NextConfig = {
+  // A compilação desktop é produzida em uma worktree isolada e inicia apenas
+  // em loopback. A build web mantém seu output e basePath atuais.
+  output: isDesktopBuild ? "standalone" : undefined,
+  // O NFT atual do Studio pode alcançar a raiz do projeto. Dados runtime e
+  // segredos jamais podem atravessar para o recurso standalone do desktop.
+  outputFileTracingExcludes: isDesktopBuild ? { "/*": desktopTraceExcludes } : undefined,
   basePath: process.env.NEXT_PUBLIC_BASE_PATH || "",
   assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || "",
   reactStrictMode: true,
@@ -9,7 +27,7 @@ const nextConfig: NextConfig = {
 
   compress: true,
 
-  serverExternalPackages: ["@lancedb/lancedb"],
+  serverExternalPackages: ["@lancedb/lancedb", "better-sqlite3"],
 
   turbopack: {
     root: __dirname,

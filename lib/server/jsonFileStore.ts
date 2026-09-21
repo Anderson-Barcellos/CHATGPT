@@ -1,11 +1,11 @@
 import { promises as fs } from "fs";
 import path from "path";
+import { getRuntimeDataDir } from "@/lib/runtime/edition";
 
-const DATA_DIR = path.join(process.cwd(), "data");
 const lockChains = new Map<string, Promise<void>>();
 
 function resolveDataFile(fileName: string): string {
-  return path.join(DATA_DIR, fileName);
+  return path.join(getRuntimeDataDir(), fileName);
 }
 
 async function writeFileAtomic<T>(filePath: string, value: T): Promise<void> {
@@ -15,7 +15,7 @@ async function writeFileAtomic<T>(filePath: string, value: T): Promise<void> {
 }
 
 async function ensureDataFile<T>(filePath: string, defaultValue: T): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.mkdir(getRuntimeDataDir(), { recursive: true });
 
   try {
     await fs.access(filePath);
@@ -56,7 +56,7 @@ export async function readDataFile<T>(fileName: string, defaultValue: T): Promis
 
 export async function writeDataFile<T>(fileName: string, value: T): Promise<void> {
   const filePath = resolveDataFile(fileName);
-  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.mkdir(getRuntimeDataDir(), { recursive: true });
   await writeFileAtomic(filePath, value);
 }
 

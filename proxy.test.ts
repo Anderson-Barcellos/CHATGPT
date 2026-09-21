@@ -62,5 +62,13 @@ describe("proxy rate limit routing", () => {
     const csp = getSecurityContentSecurityPolicy();
 
     expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("upgrade-insecure-requests");
+  });
+
+  it("preserva assets HTTP loopback na edição desktop", () => {
+    const csp = getSecurityContentSecurityPolicy("desktop");
+
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).not.toContain("upgrade-insecure-requests");
   });
 });
