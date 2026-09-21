@@ -14,6 +14,12 @@ suportado por `better-sqlite3@13` nem por Electron 44 e fez o processo nativo
 da migração encerrar com status 139 no checkout limpo. O gate da branch
 principal também gera os tipos do Next antes de executar o TypeScript.
 
+**DECISÃO (metadados do instalador):** `package.json` declara Anderson
+Barcellos como autor e descreve o produto como `Gaucho Chat desktop
+application`. Esses campos são obrigatórios para o NuGet/Squirrel; sem eles o
+runner Windows concluía o pacote do aplicativo, mas recusava criar o
+instalador.
+
 **Resultado observável:** existe agora um target Electron isolado. Ele inicia o
 Next standalone somente em `127.0.0.1` numa porta efêmera, instala um token
 aleatório por execução como cookie HttpOnly, não expõe Node ao renderer, mantém

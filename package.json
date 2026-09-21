@@ -1,6 +1,8 @@
 {
   "name": "chatgpt",
   "productName": "Gaucho Chat",
+  "description": "Gaucho Chat desktop application",
+  "author": "Anderson Barcellos",
   "version": "0.1.0",
   "private": true,
   "main": ".vite/build/main.js",
