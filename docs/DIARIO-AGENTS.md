@@ -1516,3 +1516,9 @@ Produção sem auth configurada e segundo processo sobre o mesmo armazenamento a
 Validação final: 189 arquivos/976 testes; TypeScript/lint exit 0 (um warning anterior); build isolada 42/42 exit 0; 9 verificações HTTP/login/build e 5 de processos/systemd sintéticos passaram. Capturas desktop/mobile inspecionadas com composer pronto. O smoke encontrou a rejeição de hook absorvida pelo Next: corrigido com fail-stop explícito, revisado e testado na build. Aviso estático Edge sobre process.exit guardado e tracing Studio estão descritos no relatório, sem falha de gate. Cópia independente de node_modules necessária porque Turbopack recusou symlink externo; versões preservadas.
 
 Registro completo: `docs/plans/2026-09-22-review-seguranca-operacao-report.md`; evidências em `/root/.cache/gaucho-review-20260922`. Checkout produtivo limpo, serviço existente preservado, sem segredos/dados pessoais, chamadas pagas, merge, push, deploy ou restart de produção. Estado: pronta para revisão de Anders.
+
+### 2026-09-22 — Review de segurança publicado para revisão
+
+Codex: Anders autorizou publicação. Main recebeu fast-forward `2584921`; build validada `fQ5aGOE2G9BIiCdmil9-L` publicada com backup e retenção de 20 assets antigos. Unit sem fuser instalada e serviço reiniciado, após conferir auth e propriedade Studio por preflight seguro. Não havia sessões Studio nem workers ativos; agendadores pausados no corte e restaurados.
+
+Readiness/liveness local e público 200, anônimo 401, auth e Studio habilitado confirmados. Smoke público desktop/mobile com dados sintéticos passou, sem pageerrors; capturas inspecionadas. Sem chamadas pagas, push ou alteração de domínio/vhost. APACHE.md atualizado. Evidências e backup: `/root/.cache/gaucho-security-deploy-20260922`; relatório canônico atualizado. Estado: publicada e pronta para revisão de Anders.

@@ -1,10 +1,12 @@
 # Infraestrutura
 
-**Última atualização:** 2026-09-22 (contratos de segurança preparados na branch de revisão; publicação separada)
+**Última atualização:** 2026-09-22 (contratos de segurança publicados com autorização de Anders)
 **Produção:** `https://ultrassom.ai/chat`
 **Porta local:** `3040`
 
 ## Topologia
+
+Publicação de segurança: fonte `2584921`, build `fQ5aGOE2G9BIiCdmil9-L`, unit instalada sem `fuser`, serviço reiniciado e readiness/liveness local e público 200. Autenticação obrigatória, locks exclusivos e propriedade das novas sessões Studio estão ativos. Agendadores restaurados após o corte, sem sessões legadas ativas. Backup da build anterior e da unit em `/root/.cache/gaucho-security-deploy-20260922`; 20 assets anteriores retidos. Domínio, proxy e cookies preservados. Evidência detalhada no relatório `docs/plans/2026-09-22-review-seguranca-operacao-report.md`.
 
 ```text
 Internet

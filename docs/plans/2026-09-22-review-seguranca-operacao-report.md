@@ -46,3 +46,17 @@ Sem bloqueios de implementação pendentes. Fechamento e publicação pertencem 
 Commits locais de implementação: `ef390d5` (auth/health), `83390ea` (runtime/Studio/QA), `afbb378` (ferramentas/unit/Pulse). Aprovação: `3cbeea7`; documentação de fechamento em commit posterior. `git diff --check` e lint focado final do QA: exit 0 (`qa-lint-final.log`).
 
 Produção preservada: sem leitura de segredos/dados pessoais, chamadas pagas, merge, push, deploy ou restart de serviços existentes.
+
+## Publicação autorizada — 2026-09-22
+
+Anders autorizou publicar para revisão: “Podemos publicar e eu reviso?”. Esta autorização posterior permite a integração e o restart descritos abaixo; o estado da entrega permanece pronta para revisão.
+
+- Pré-checagem em unit efêmera com EnvironmentFile carregado pelo systemd, sem expor valores: auth válida, Studio configurado/proprietário verificado, Memory V2 desligada; exit 0 (`preflight.log`). Nenhuma sessão Studio ou worker Pulse/SoundCase ativo no corte.
+- `git merge --ff-only codex/review-seguranca-operacao`: exit 0, main `2584921`. Build isolada já validada `fQ5aGOE2G9BIiCdmil9-L` publicada, sem recompilar; 20 assets antigos retidos. Backup da build `raY9v6DYHbbAxp2R0PApb` em `next-before`, unit anterior em `chatgpt.service.before`.
+- `publish.sh`: exit 0 (`publish.log`). Pausa dos timers/path Pulse/SoundCase, parada controlada do app, troca recuperável de build, instalação da unit versionada sem fuser, `systemctl daemon-reload` e `systemctl restart chatgpt.service`. Readiness local healthy, database/openai/memory/auth ok. Agendadores restaurados active/waiting; app active/running. Rollback preparado e não acionado.
+- `systemd-run ... public-smoke.mjs`: exit 0 (`public-smoke.log`). Readiness e liveness local/público 200; conversas sem sessão 401; sessão efêmera autenticada; Studio real `{enabled:true,unlocked:false}`. Browser público em 1440/390 px com APIs de dados simuladas, shell/composer visíveis, zero pageerrors, capturas `public-1440.png` e `public-390.png` inspecionadas. JWT apenas em memória, browser com ambiente limitado, nenhuma consulta a conversas reais ou chamada paga. Não testa disponibilidade dos providers.
+- Evidências, scripts e backups: `/root/.cache/gaucho-security-deploy-20260922`. APACHE.md atualizado com readiness/liveness e publicação; sem mudança de vhost, reload Apache, domínio ou push. Suites completas já aprovadas na build publicada; somente documentação alterada após a publicação.
+
+DECISÃO: reutilizar a build isolada aprovada, mantendo assets antigos para abas abertas e backup recuperável, evita compilar no checkout que serve produção e preserva exatamente o artefato validado.
+
+Validação documental pós-publicação: `git diff --check`, exit 0.
