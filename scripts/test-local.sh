@@ -1,45 +1,72 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Script para testar o Gaucho Chat localmente na porta 3040
+# Sobe um runtime de QA sem tocar no checkout ou na porta de produção.
+set -euo pipefail
 
-echo "🧪 Testando Gaucho Chat na porta 3040 com basePath /chat..."
-echo "=============================================="
+script_source="${BASH_SOURCE[0]}"
+while [[ -h "$script_source" ]]; do
+  script_directory="$(cd -P "$(dirname "$script_source")" && pwd)"
+  script_source="$(readlink "$script_source")"
+  [[ "$script_source" != /* ]] && script_source="$script_directory/$script_source"
+done
+script_directory="$(cd -P "$(dirname "$script_source")" && pwd)"
+project_directory="$(cd "$script_directory/.." && pwd -P)"
 
-# Diretório da aplicação
-APP_DIR="/root/CHATGPT"
-cd $APP_DIR
+# shellcheck source=lib/runtime-safety.sh
+source "$script_directory/lib/runtime-safety.sh"
 
-# Configurar variáveis de ambiente para teste
-export NEXT_PUBLIC_BASE_PATH=/chat
-export NEXT_PUBLIC_APP_URL=http://localhost:3040/chat
-export PORT=3040
-export NODE_ENV=production
+port=""
+while (($# > 0)); do
+  case "$1" in
+    --port)
+      (($# >= 2)) || runtime_safety_die "--port exige um valor."
+      port="$2"
+      shift 2
+      ;;
+    *) runtime_safety_die "Argumento desconhecido: $1" ;;
+  esac
+done
 
-# Verificar porta
-echo "📍 Verificando porta 3040..."
-if lsof -i:3040 > /dev/null 2>&1; then
-    echo "❌ Porta 3040 já está em uso!"
-    echo "   Execute: lsof -i:3040"
-    exit 1
-else
-    echo "✅ Porta 3040 está livre"
-fi
+[[ "$port" =~ ^[0-9]+$ ]] || runtime_safety_die "Informe uma porta válida com --port."
+port=$((10#$port))
+((port >= 1 && port <= 65535)) || runtime_safety_die "Informe uma porta válida com --port."
 
-# Build
-echo ""
-echo "📦 Criando build de produção..."
-npm run build
+# Confirma o isolamento antes de consultar a porta, criar o build ou iniciar Node.
+runtime_safety_require_isolated_checkout "$project_directory"
 
-# Iniciar servidor
-echo ""
-echo "🚀 Iniciando servidor..."
-echo "=============================================="
-echo ""
-echo "📍 URL Local: http://localhost:3040/chat"
-echo "📍 URL Apache: https://ultrassom.ai/chat (após instalação)"
-echo ""
-echo "Pressione Ctrl+C para parar"
-echo ""
+ss_bin="${GAUCHO_SS_BIN:-ss}"
+npm_bin="${GAUCHO_NPM_BIN:-npm}"
 
-# Iniciar com npm start
-npm start
+require_free_port() {
+  local listeners
+
+  if ! listeners="$("$ss_bin" -H -ltn "sport = :$port")"; then
+    runtime_safety_die "Não foi possível verificar a porta loopback $port."
+  fi
+
+  if [[ -n "$listeners" ]]; then
+    runtime_safety_die "A porta loopback $port já está em uso; nenhum processo foi sinalizado."
+  fi
+}
+
+require_free_port
+cd "$project_directory"
+
+printf '→ Build isolado em http://127.0.0.1:%s/chat\n' "$port"
+GAUCHO_ISOLATED_RUNTIME=true \
+  NEXT_PUBLIC_BASE_PATH=/chat \
+  NEXT_PUBLIC_APP_URL="http://127.0.0.1:$port/chat" \
+  PORT="$port" \
+  NODE_ENV=production \
+  "$npm_bin" run build
+
+# O build pode durar bastante; verifica novamente antes de reservar a porta.
+require_free_port
+printf '→ Iniciando QA isolado em http://127.0.0.1:%s/chat\n' "$port"
+exec env \
+  GAUCHO_ISOLATED_RUNTIME=true \
+  NEXT_PUBLIC_BASE_PATH=/chat \
+  NEXT_PUBLIC_APP_URL="http://127.0.0.1:$port/chat" \
+  PORT="$port" \
+  NODE_ENV=production \
+  "$npm_bin" start -- --hostname 127.0.0.1 --port "$port"
