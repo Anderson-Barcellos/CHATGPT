@@ -1,6 +1,6 @@
 # Infraestrutura
 
-**Última atualização:** 2026-09-03
+**Última atualização:** 2026-09-21
 **Produção:** `https://ultrassom.ai/chat`
 **Porta local:** `3040`
 
@@ -11,7 +11,7 @@ Internet
   -> Apache2 HTTPS :443
   -> /chat, /chat/studio e /chat/api/* proxy para http://localhost:3040/chat
   -> Next.js 16 via chatgpt.service
-  -> OpenAI/DeepSeek/Gemini APIs + store local selecionado no servidor
+  -> OpenAI/xAI/DeepSeek/Gemini APIs + store local selecionado no servidor
 ```
 
 O `<Location /chat>` mantém `ProxyPassReverseCookiePath / /chat` escopado ao serviço e alinha a CSP do Apache à política emitida pelo Next. `script-src blob:` e `worker-src 'self' blob:` continuam necessários para Monaco/Mermaid e seus workers; não mover essas diretivas para o nível global do vhost. O antigo runner local em `/chat/api/studio/runner` foi removido quando o Studio virou Python-only; execução, terminal e notebook passam pelas rotas autenticadas `/chat/api/studio/workspace/*` e por processos sandboxed no host.
@@ -127,7 +127,7 @@ Overrides opcionais:
 
 Para QA em worktree, iniciar o Next com `GAUCHO_ISOLATED_RUNTIME=true`: a instrumentação não executará o cleanup global de units do Studio. A flag não deve ser aplicada ao serviço principal. Usar porta loopback livre verificada por `/etc/apache2/check-port.sh`, diretórios de dados sintéticos e base path `/chat`.
 
-A configuração em `.bashrc` serve ao shell que a carrega; não disponibiliza automaticamente a variável no `chatgpt.service`. Na publicação autorizada, fornecer a chave no ambiente server-side do serviço pelo mecanismo existente, sem colocá-la em `NEXT_PUBLIC_*`, logs ou repositório. A implementação isolada desta entrega não altera o ambiente do serviço.
+A configuração em `.bashrc` serve ao shell que a carrega; não disponibiliza automaticamente a variável no `chatgpt.service`. Desde a publicação autorizada de 2026-09-21, a credencial xAI é provisionada como `XAI_API_KEY` em `/etc/chatgpt/xai.env` (`root:root`, modo `0600`). O drop-in `/etc/systemd/system/chatgpt.service.d/20-xai.conf` carrega esse arquivo depois do env principal; fonte sem segredo em `systemd/chatgpt.service.d/20-xai.conf`. Provisionar o arquivo protegido antes de instalar o drop-in e executar `systemctl daemon-reload`; reiniciar o serviço somente no deploy autorizado. A chave não entra em `NEXT_PUBLIC_*`, logs ou Git. Pulse chama o backend desse mesmo serviço, portanto não precisa de outra cópia da chave.
 
 | Variável | Propósito |
 |---|---|

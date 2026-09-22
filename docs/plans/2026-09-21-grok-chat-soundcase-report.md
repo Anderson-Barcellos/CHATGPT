@@ -46,3 +46,16 @@ Entrega pronta para revisão local em worktree `/root/CHATGPT/.worktrees/grok-ch
 ## Pendências
 
 Avaliação subjetiva da voz pertence a Anders; o WAV sintético está disponível. A falha real de obediência textual está registrada acima: transporte/modelo acessíveis não significam qualidade de resposta aprovada. A entrega pode ser revisada localmente, mas essa limitação deve ser considerada antes de publicar/substituir os fluxos vivos. `.bashrc` não garante credencial no systemd; configuração do ambiente e publicação permanecem fora da autorização desta entrega. Não houve nova chamada paga após os smokes registrados.
+
+## Publicação autorizada — 2026-09-21, após a revisão local
+
+Anders autorizou explicitamente publicar e reiniciar para revisar no produto. Esta autorização posterior substitui a restrição de publicação registrada nas etapas anteriores; não significa fechamento da entrega nem autorização de push.
+
+- Preflight: `main` limpo em `102f672`, worktree limpa em `bc8dd1d`; `git merge --ff-only codex/grok-chat-soundcase` exit 0. Nenhuma unit Studio em execução antes do restart.
+- DECISÃO: publicar o artefato já compilado e testado, sem recompilar fonte inalterado. HEADs idênticos e manifest `basePath=/chat` verificados; build `raY9v6DYHbbAxp2R0PApb`, gate anterior exit 0. Staging sem cache/dev, retenção de 17 assets antigos e troca recuperável de `.next`; backup em `/root/.cache/grok-deploy-20260922/next-before`.
+- DECISÃO: carregar a chave já exportada pelo shell e provisionar `XAI_API_KEY` em arquivo novo `/etc/chatgpt/xai.env`, root:root 0600, por processo que não imprime valores. Nenhum arquivo de credenciais foi lido pelo agente; `.env.production` ficou intacto. Drop-in `/etc/systemd/system/chatgpt.service.d/20-xai.conf` e fonte versionada equivalente. `systemctl daemon-reload`: exit 0.
+- `systemctl restart chatgpt.service`: exit 0; serviço active/running. Health `http://127.0.0.1:3040/chat/api/health` e `https://ultrassom.ai/chat/api/health`: HTTP 200/healthy. Novas rotas voices/session sem cookie: HTTP 401.
+- Smoke público autenticado por sessão efêmera de cinco minutos gerada em processo isolado com ambiente carregado pelo próprio systemd: catálogo real de vozes HTTP 200, 28 vozes, `private, no-store`. Não houve nova geração paga, alteração de conversa/rotina ou acesso a conteúdo pessoal.
+- Playwright contra URL pública: 34 verificações desktop/mobile, exit 0, mesmos scripts validados com cookie efêmero injetado em memória e APIs/áudio sintéticos. Evidência em `/root/.cache/grok-deploy-20260922/public-smoke.log` e capturas adjacentes. Unit temporária de smoke encerrada e coletada.
+- `/etc/apache2/APACHE.md` atualizado; backup `APACHE-before.md` no diretório de evidências. Sem alteração de proxy/CSP/cookies/porta e sem reload Apache; configtest não se aplica a alteração somente documental.
+- Sem mudança de código de aplicação nesta publicação; suítes completas já aprovadas foram preservadas, sem repetição. Documentação/drop-in recebem `git diff --check` e validação do consumo pelo serviço em execução. Sem push; Anders revisa a entrega publicada, inclusive a ressalva do smoke real de texto.
