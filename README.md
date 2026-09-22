@@ -80,10 +80,10 @@ O tema padrão vive em `app/globals.css` e é identificado por
 
 ```bash
 npm install
-npm run dev
+AUTH_ENABLED=false GAUCHO_ISOLATED_RUNTIME=true npm run dev
 ```
 
-Por padrão, o dev server usa a porta `3040`. Em produção, o app depende de `NEXT_PUBLIC_BASE_PATH=/chat`.
+Executar em checkout isolado; por padrão, o dev server usa a porta `3040`, que deve ser alterada via `PORT` se ocupada. QA usa dados sintéticos exclusivos e Studio real indisponível. Em produção, o app depende de `NEXT_PUBLIC_BASE_PATH=/chat`, `AUTH_ENABLED=true` e usuário/senha/JWT configurados. Configuração incompleta impede boot; duas instâncias não podem compartilhar os recursos de armazenamento.
 
 ## Validação
 
@@ -91,12 +91,13 @@ Use estes comandos conforme o risco da mudança:
 
 ```bash
 npm test
+npx next typegen
 npx tsc --noEmit
 npm run build
 npm run lint
 ```
 
-Para mudanças de runtime/deploy, valide também:
+Build/gates devem ocorrer fora do checkout de produção. Somente após publicação explicitamente autorizada, reinicie o serviço afetado e valide:
 
 ```bash
 systemctl restart chatgpt.service

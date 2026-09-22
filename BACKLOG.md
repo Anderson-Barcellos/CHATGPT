@@ -2,6 +2,12 @@
 
 ## Estado operacional
 
+#### Segurança e operação — sete achados do review (`pronta para revisão`, 2026-09-22)
+
+Plano aprovado por Anders em `docs/plans/2026-09-22-review-seguranca-operacao.md`; implementação isolada em `codex/review-seguranca-operacao`, base `0adcfe3`. Inclui auth obrigatória em produção, readiness sem mutações/liveness separado, exclusividade de runtime, propriedade de sessões Studio, scripts seguros, remoção de fuser da unit e token Pulse por stdin. Domínio `sonaris.us`, migração, merge, push e publicação ficam fora. Registro técnico em `docs/plans/2026-09-22-review-seguranca-operacao-report.md`.
+
+Validação integrada: 189 arquivos/976 testes; TypeScript e lint exit 0 (um warning anterior), build isolada 42/42 exit 0. Nove verificações de build/HTTP/login desktop-mobile e cinco de processos/systemd sintéticos passaram; capturas conferidas com shell/composer carregados. Revisão independente aprovada. O smoke revelou que Next absorvia falhas do hook sem encerrar: corrigido com fail-stop explícito, testado na build. Units Studio legadas não são paradas automaticamente; transição de sessões e versões antigas sem locks exige drenagem no futuro deploy autorizado. Sem publicação, push, dados privados ou alteração do domínio.
+
 #### Grok 4.7 e Realtime experimental no SoundCase (`pronta para revisão`, 2026-09-21)
 
 Anders aprovou substituir todos os usos ativos do GPT-5.4 mini por Grok 4.7 com reasoning `medium`, mantendo Luna como default do chat, e experimentar texto → voz Grok Realtime somente no SoundCase. O TTS/arquivo OpenAI permanece preservado. Execução isolada na branch `codex/grok-chat-soundcase`; plano em `docs/plans/2026-09-21-grok-chat-soundcase.md`, evidências em `docs/plans/2026-09-21-grok-chat-soundcase-report.md`. Publicação não autorizada por esta implementação.

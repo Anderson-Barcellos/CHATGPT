@@ -24,7 +24,9 @@ Documento/Deepsearch médio com Grok usam execução no processo servidor, indep
 
 SoundCase mantém TTS/worker/arquivos existentes. A engine de leitura Grok usa token efêmero obtido em rota autenticada, WebSocket direto do browser e PCM por Web Audio, sempre sobre o snapshot imutável da versão. Fechar o painel não desmonta a sessão; parar ou sair encerra áudio/conexão. Preferências de engine/voz/velocidade Grok são separadas da direção e formato dos arquivos. A chave permanente nunca entra no browser.
 
-QA isolado usa `GAUCHO_ISOLATED_RUNTIME=true` para impedir o cleanup de units Studio do serviço principal durante o boot de outra instância. Não substitui a futura revisão de ownership das units; é a fronteira explícita de execução de testes.
+O boot Node valida autenticação e reserva os recursos de armazenamento por locks `flock`, resolvendo caminhos canônicos e symlinks. Uma segunda instância com recursos compartilhados falha antes de atender. Build não adquire locks. Perda inesperada da exclusividade encerra o servidor. Não há suporte a cluster ou dois escritores sobre JSON/Pulse.
+
+QA isolado usa `GAUCHO_ISOLATED_RUNTIME=true`, dados sintéticos próprios e Studio real indisponível; a flag não desliga auth nem locks. Novas units Studio recebem `BindsTo`, `PartOf` e `After` do serviço proprietário, cuja unit, invocação e cgroup são verificados. A limpeza por wildcard foi removida; units legadas sem propriedade comprovada ficam para transição operacional explícita.
 
 - `app/page.tsx` é a entrada autenticada e renderiza `GauchoChatShellV2`.
 - `app/studio/page.tsx` é uma página autenticada independente e renderiza `GauchoStudioShell`.
@@ -156,14 +158,16 @@ Eventos de stream reconhecidos para reasoning:
 
 `app/page.tsx` faz uma segunda checagem server-side antes de renderizar o shell.
 
-Auth é controlada por:
+Produção exige `AUTH_ENABLED=true` e as três credenciais abaixo não vazias. Fora de produção, apenas `false` explícito desliga auth. Configuração inválida impede boot e nunca permite bypass nos helpers/rotas. Build não depende de credenciais. Auth é controlada por:
 
 - `AUTH_ENABLED`
 - `AUTH_USERNAME`
 - `AUTH_PASSWORD`
 - `JWT_SECRET`
 
-O cookie de sessão é `auth-token`, assinado com JWT HS256, `HttpOnly`, `SameSite=Lax`, TTL de 7 dias e path derivado de `NEXT_PUBLIC_BASE_PATH`.
+O cookie de sessão é `auth-token`, assinado com JWT HS256, `HttpOnly`, `SameSite=Lax`, TTL de 7 dias e `Path=/` emitido pelo Next. O Apache reescreve para `/chat` somente dentro do `<Location /chat>`.
+
+`/api/health` verifica prontidão com leitura estrita da autoridade de storage (JSON ou conversas SQLite readonly), sem criar/recuperar arquivos; erro retorna 503. `/api/health/live` só indica processo respondendo, sem ler dados ou consultar providers. Nenhum deles comprova restauração integral de backup ou autenticação junto ao provider.
 
 ## Persistência
 

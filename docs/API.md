@@ -4,7 +4,7 @@
 **Base URL pública:** `https://ultrassom.ai/chat`
 **Base path interno:** `NEXT_PUBLIC_BASE_PATH=/chat`
 
-Todas as rotas abaixo são implementadas como Route Handlers do Next em `app/api/*`. Quando `AUTH_ENABLED=true`, o `proxy.ts` protege as rotas privadas com cookie JWT `auth-token`.
+Todas as rotas abaixo são implementadas como Route Handlers do Next em `app/api/*`. Produção exige `AUTH_ENABLED=true`, usuário, senha e segredo JWT configurados; `proxy.ts` protege rotas privadas com cookie JWT `auth-token`. Configuração inválida impede boot e nunca abre acesso; rotas auth retornam 503 se chamadas nesse estado. Fora de produção, desativação exige `AUTH_ENABLED=false` explícito.
 
 ## Chat
 
@@ -407,7 +407,11 @@ Arquivos runtime privados ignorados pelo Git: `data/google-calendar-token.json`,
 
 ### `GET /api/health`
 
-Checa storage local, presença de chave OpenAI e uso de memória. Retorna status `healthy`, `degraded` ou `unhealthy`.
+Readiness: checa autenticação configurada, storage local, presença de chave OpenAI e memória. Retorna `healthy`/200, `degraded`/200 para aviso de memória ou `unhealthy`/503 para falha de configuração/storage. Leitura não cria arquivos nem recupera JSON inválido. Conversas seguem JSON ou SQLite readonly conforme `MEMORY_V2_ENABLED`; memórias/persona seguem JSON. A estrutura anterior de checks e metadata permanece, com check de autenticação. Não chama providers nem comprova completude de restauração.
+
+### `GET /api/health/live`
+
+Liveness pública: confirma somente que o processo responde, sem acesso a storage ou providers e sem mutações. HTTP 200, `Cache-Control: no-store`.
 
 ## Erros comuns
 

@@ -1,6 +1,6 @@
 # Infraestrutura
 
-**Última atualização:** 2026-09-21
+**Última atualização:** 2026-09-22 (contratos de segurança preparados na branch de revisão; publicação separada)
 **Produção:** `https://ultrassom.ai/chat`
 **Porta local:** `3040`
 
@@ -80,7 +80,7 @@ systemctl is-active apache2
 
 `chatgpt.service` roda `npm start` em `/root/CHATGPT`.
 
-Publicação atual (2026-09-09): `.next` contém a build isolada SoundCase SC3 `ZvnMJP226jtiS-Y0va9fo`, produzida a partir de HEAD + SC3 em `/root/.cache/soundcase-sc3-review-rd4pjy52`. O checkout ainda possui WIP B2–B6, fora dessa build; um novo build do checkout inteiro mudaria esse escopo. A versão anterior está em `/root/.cache/chatgpt-next-before-sc3-20260909T042041Z`, com 450 assets antigos também preservados na versão nova para abas abertas. Para retornar, parar o serviço, preservar a `.next` atual, recolocar esse backup em `.next` e iniciar o serviço; conferir `/chat/api/health` local/público. Evidência da troca: `/root/.cache/sc3-deploy-result.json`.
+Registro histórico (2026-09-09): a publicação SoundCase SC3 usou a build isolada `ZvnMJP226jtiS-Y0va9fo`, produzida em `/root/.cache/soundcase-sc3-review-rd4pjy52`, com backup em `/root/.cache/chatgpt-next-before-sc3-20260909T042041Z` e evidência em `/root/.cache/sc3-deploy-result.json`. Esses caminhos descrevem aquela rodada, não a publicação atual; consultar o estado operacional no `BACKLOG.md` antes de qualquer rollback.
 
 Configuração relevante:
 
@@ -90,7 +90,6 @@ Environment="NODE_ENV=production"
 Environment="PORT=3040"
 Environment="NEXT_PUBLIC_BASE_PATH=/chat"
 EnvironmentFile=/root/CHATGPT/.env.production
-ExecStartPre=/bin/bash -c 'fuser -k 3040/tcp 2>/dev/null; sleep 1; exit 0'
 ExecStart=/usr/bin/npm start
 Restart=always
 RestartSec=15
@@ -125,7 +124,9 @@ Obrigatórias em produção:
 
 Overrides opcionais:
 
-Para QA em worktree, iniciar o Next com `GAUCHO_ISOLATED_RUNTIME=true`: a instrumentação não executará o cleanup global de units do Studio. A flag não deve ser aplicada ao serviço principal. Usar porta loopback livre verificada por `/etc/apache2/check-port.sh`, diretórios de dados sintéticos e base path `/chat`.
+Para QA em worktree, iniciar o Next com `GAUCHO_ISOLATED_RUNTIME=true`, credenciais sintéticas explícitas e dados sintéticos exclusivos. A flag desabilita o Studio real, sem dispensar autenticação ou exclusividade. Usar porta loopback livre verificada por `/etc/apache2/check-port.sh` e base path `/chat`. Não aplicar a flag ao serviço principal.
+
+O boot valida autenticação e adquire locks `flock` nos recursos canônicos de armazenamento (JSON, SoundCase, SQLite selecionado e Studio habilitado). Outro processo com um recurso compartilhado falha; saída do proprietário libera locks e perda inesperada do holder encerra o runtime. Não remover arquivos de lock enquanto o servidor estiver ativo. Cópias em hosts diferentes não compartilham locks: o corte operacional ainda exige um único agendador ativo e drenagem das execuções.
 
 A configuração em `.bashrc` serve ao shell que a carrega; não disponibiliza automaticamente a variável no `chatgpt.service`. Desde a publicação autorizada de 2026-09-21, a credencial xAI é provisionada como `XAI_API_KEY` em `/etc/chatgpt/xai.env` (`root:root`, modo `0600`). O drop-in `/etc/systemd/system/chatgpt.service.d/20-xai.conf` carrega esse arquivo depois do env principal; fonte sem segredo em `systemd/chatgpt.service.d/20-xai.conf`. Provisionar o arquivo protegido antes de instalar o drop-in e executar `systemctl daemon-reload`; reiniciar o serviço somente no deploy autorizado. A chave não entra em `NEXT_PUBLIC_*`, logs ou Git. Pulse chama o backend desse mesmo serviço, portanto não precisa de outra cópia da chave.
 
@@ -191,9 +192,11 @@ Auth do app:
 
 | Variável | Propósito |
 |---|---|
-| `AUTH_ENABLED` | Liga/desliga gate do app |
+| `AUTH_ENABLED` | Obrigatoriamente `true` em produção; fora dela, apenas `false` explícito desliga |
 | `AUTH_USERNAME` | Usuário aceito pelo login |
 | `AUTH_PASSWORD` | Senha aceita pelo login |
+
+`AUTH_USERNAME`, `AUTH_PASSWORD` e `JWT_SECRET` devem estar presentes e não vazios quando auth estiver ligada. Configuração inválida impede inicialização; build não exige credenciais. `/api/health` é readiness sem mutações e responde 503 para falha de auth/storage; `/api/health/live` indica apenas processo respondendo. Health não cria um armazenamento novo nem comprova restauração integral.
 
 Rate limit:
 
@@ -215,22 +218,28 @@ Workspace Python do Studio:
 |---|---|
 | `STUDIO_WORKSPACE_PASSWORD` | Senha do step-up auth; sem ela o modo servidor fica desabilitado (rollback = remover e reiniciar) |
 | `STUDIO_RUN_TIMEOUT_MS` | Timeout do run sandboxed; default `120000` |
+| `GAUCHO_SERVICE_UNIT` | Unit proprietária a verificar no systemd; default `chatgpt.service`. Não é prova de propriedade por si só |
 
-O host do workspace é provisionado por `scripts/studio-workspace-setup.sh` (idempotente): usuário de sistema `studio` sem shell, `/root/studio-projects/{active,archive}`, venv base em `/opt/studio-venv` (fora de `/root` — o `systemd-run` valida o executável antes de montar o namespace) com dependências congeladas em `scripts/studio-venv-requirements.txt`, e template inicial versionado em `templates/studio-python/`. As execuções rodam como units transient `gaucho-studio-run-<id>` com `--collect`; o terminal e o kernel do notebook usam `gaucho-studio-term-<id>` e `gaucho-studio-kernel-<id>`. Um restart do `chatgpt.service` não derruba units transient: por isso `instrumentation.ts` (hook de boot do Next) roda `systemctl stop` e `reset-failed` nos três padrões assim que o servidor sobe, e `RuntimeMaxSec` (8 h) fica só como backstop.
+O host do workspace é provisionado por `scripts/studio-workspace-setup.sh` (idempotente): usuário de sistema `studio` sem shell, `/root/studio-projects/{active,archive}`, venv base em `/opt/studio-venv` com dependências congeladas em `scripts/studio-venv-requirements.txt`, e template inicial versionado em `templates/studio-python/`. Units `gaucho-studio-run-<id>`, `gaucho-studio-term-<id>` e `gaucho-studio-kernel-<id>` mantêm sandbox e limites. Novas units recebem `BindsTo`, `PartOf` e `After` da unit proprietária; unit, invocação e cgroup do processo são conferidos antes de habilitar Studio. Sem proprietário comprovado, configuração que habilita Studio impede boot. QA não habilita o workspace real.
+
+DECISÃO de transição: o boot não executa mais stop/reset-failed por wildcard. Units legadas sem vínculo não são encerradas automaticamente; conferir sessões e combinar eventual limpeza individual no deploy autorizado. Seus limites anteriores continuam como backstop. Nenhuma adaptação para `sonaris.us` integra esta entrega.
 
 ## Deploy e Validação
 
-Fluxo comum:
+Gates em worktree isolada, nunca no checkout servido por produção:
 
 ```bash
-cd /root/CHATGPT
+cd /caminho/da/worktree-isolada
+npx next typegen
 npm test
 npx tsc --noEmit
+npm run lint
 npm run build
-systemctl restart chatgpt.service
-curl -s http://127.0.0.1:3040/chat/api/health
-curl -s https://ultrassom.ai/chat/api/health
 ```
+
+`scripts/pre-deploy.sh` recusa o WorkingDirectory do serviço antes de gates, não remove `.next`, não instala dependências e não lê envs/segredos. `--skip-build` não certifica entrega completa. `scripts/test-local.sh --port <porta>` exige isolamento e porta livre, escuta em loopback, usa QA e não inicia após build falho. Fornecer credenciais sintéticas ao runtime de QA por ambiente.
+
+Publicação depende de autorização própria: instalar a build validada com backup recuperável, atualizar somente a unit necessária e então reiniciar `chatgpt.service`. Validar readiness local e pública em `/chat/api/health`, além do fluxo afetado. Porta ocupada deve falhar sem matar seu ocupante. O runner Pulse envia token por stdin ao curl, sem Bearer no argv.
 
 Para mudanças no Apache:
 
@@ -259,7 +268,7 @@ Nunca coloque as credenciais reais nesses comandos quando eles forem virar docum
 |---|---|
 | `/chat` retorna 503 | `systemctl status chatgpt.service --no-pager` e health local |
 | Loop `/chat` e `/chat/login` | Confirmar `Set-Cookie: Path=/chat`, sem barra final |
-| Porta 3040 ocupada | `fuser -k 3040/tcp` ou reiniciar `chatgpt.service` |
+| Porta 3040 ocupada | Identificar o ocupante com `ss -ltnp`; não sinalizar processo alheio automaticamente |
 | API retorna 401 | Verificar `AUTH_ENABLED`, cookie `auth-token` e `/api/auth/check` |
 | Áudio/TTS falha | Conferir `/chat/api/tts`, console do browser e política de autoplay |
 
