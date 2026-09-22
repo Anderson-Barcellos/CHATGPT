@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("./runtimeOwnership", () => ({ studioRuntimeAvailable: vi.fn(() => true) }));
+import { studioRuntimeAvailable } from "./runtimeOwnership";
 import { NextRequest } from "next/server";
 import { signAuthToken } from "@/lib/server/auth";
 import {
@@ -32,12 +34,16 @@ describe("studio workspace auth", () => {
   const originalJwtSecret = process.env.JWT_SECRET;
 
   beforeEach(() => {
+    vi.mocked(studioRuntimeAvailable).mockReturnValue(true);
+    vi.stubEnv("AUTH_USERNAME", "synthetic");
+    vi.stubEnv("AUTH_PASSWORD", "synthetic-password");
     process.env.STUDIO_WORKSPACE_PASSWORD = "chimarrao-do-workspace";
     process.env.AUTH_ENABLED = "true";
     process.env.JWT_SECRET = "jwt-super-seguro";
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     process.env.STUDIO_WORKSPACE_PASSWORD = originalPassword;
     process.env.AUTH_ENABLED = originalAuthEnabled;
     process.env.JWT_SECRET = originalJwtSecret;
@@ -47,6 +53,14 @@ describe("studio workspace auth", () => {
   it("reports the feature disabled without the password env", () => {
     delete process.env.STUDIO_WORKSPACE_PASSWORD;
     expect(isStudioWorkspaceEnabled()).toBe(false);
+  });
+
+  it("desabilita workspace quando não há proprietário validado ou o runtime é QA", async () => {
+    vi.mocked(studioRuntimeAvailable).mockReturnValue(false);
+    expect(isStudioWorkspaceEnabled()).toBe(false);
+    const gate = await requireStudioWorkspaceAccess(new NextRequest(WORKSPACE_URL));
+    expect(gate.ok).toBe(false);
+    if (!gate.ok) expect(gate.response.status).toBe(503);
   });
 
   it("reports the feature enabled with a configured password", () => {

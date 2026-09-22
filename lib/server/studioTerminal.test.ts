@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+vi.mock("./runtimeOwnership", () => ({ studioOwnerProperties: () => ["--property=BindsTo=test-owner.service", "--property=PartOf=test-owner.service", "--property=After=test-owner.service"] }));
 import {
   DEFAULT_TERMINAL_IDLE_TIMEOUT_MS,
   StudioTerminalManager,

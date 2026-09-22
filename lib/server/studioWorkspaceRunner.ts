@@ -1,5 +1,6 @@
 import { spawn as nodeSpawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { studioOwnerProperties } from "./runtimeOwnership";
 import { StringDecoder } from "node:string_decoder";
 import { buildJailParentEnv, hasJailOpenAIKey } from "@/lib/server/studioJailEnv";
 import type {
@@ -49,6 +50,7 @@ export function buildRunnerCommand({
   return {
     command: "systemd-run",
     args: [
+      ...studioOwnerProperties(),
       "--uid=studio",
       `--unit=${unitId}`,
       "--property=BindPaths=/root/studio-projects/active:/workspace",

@@ -1,5 +1,6 @@
 import { spawn as nodeSpawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { studioOwnerProperties } from "./runtimeOwnership";
 import { buildJailParentEnv, hasJailOpenAIKey } from "@/lib/server/studioJailEnv";
 import { readdir, rm } from "node:fs/promises";
 import path from "node:path";
@@ -36,6 +37,7 @@ export function buildKernelCommand({
   return {
     command: "systemd-run",
     args: [
+      ...studioOwnerProperties(),
       "--uid=studio",
       `--unit=${unitId}`,
       `--property=BindPaths=${KERNEL_HOST_WORKSPACE}:${KERNEL_WORKSPACE}`,

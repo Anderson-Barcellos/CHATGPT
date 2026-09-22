@@ -1,6 +1,7 @@
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("./runtimeOwnership", () => ({ studioOwnerProperties: () => ["--property=BindsTo=test-owner.service", "--property=PartOf=test-owner.service", "--property=After=test-owner.service"] }));
 import {
   RUNNER_MAX_EVENTS,
   StudioWorkspaceRunnerManager,
@@ -348,4 +349,3 @@ describe("runner spawn environment", () => {
     expect(run?.env?.STUDIO_OPENAI_API_KEY).toBeUndefined();
   });
 });
-

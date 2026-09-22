@@ -3,6 +3,7 @@ import { SignJWT, jwtVerify, errors as joseErrors } from "jose";
 import { NextRequest } from "next/server";
 import { jsonError } from "@/lib/api/errors";
 import { isAuthEnabled, isAuthenticatedRequest } from "@/lib/server/auth";
+import { studioRuntimeAvailable } from "./runtimeOwnership";
 
 export const STUDIO_WORKSPACE_TOKEN_HEADER = "x-studio-workspace-token";
 const STUDIO_WORKSPACE_TOKEN_TTL_SECONDS = 60 * 60;
@@ -22,7 +23,7 @@ function getConfiguredPassword(): string | null {
 }
 
 export function isStudioWorkspaceEnabled(): boolean {
-  return getConfiguredPassword() !== null;
+  return getConfiguredPassword() !== null && studioRuntimeAvailable();
 }
 
 function getWorkspaceSecret(): Uint8Array {

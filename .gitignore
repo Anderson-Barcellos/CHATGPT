@@ -25,6 +25,7 @@
 *.pem
 
 # local runtime data with personal/private content
+/data/.gaucho-runtime.lock
 /data/conversations.json
 /data/memories.json
 /data/persona.json

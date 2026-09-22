@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { studioOwnerProperties } from "./runtimeOwnership";
 import { buildJailParentEnv, hasJailOpenAIKey } from "@/lib/server/studioJailEnv";
 import type {
   StudioTerminalEvent,
@@ -28,6 +29,7 @@ export function buildTerminalCommand({
   return {
     command: "systemd-run",
     args: [
+      ...studioOwnerProperties(),
       "--uid=studio",
       `--unit=${unitId}`,
       "--property=BindPaths=/root/studio-projects/active:/workspace",
