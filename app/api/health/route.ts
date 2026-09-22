@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { readDataFile } from "@/lib/server/jsonFileStore";
+import { checkHealthStorage } from "@/lib/server/healthStorage";
+import { isAuthConfigurationValid, isAuthEnabled } from "@/lib/server/auth";
 
 interface HealthStatus {
   status: "healthy" | "degraded" | "unhealthy";
@@ -12,6 +13,7 @@ interface HealthStatus {
     database: CheckResult;
     openai: CheckResult;
     memory: CheckResult;
+    auth: CheckResult;
   };
   metadata: {
     basePath: string;
@@ -30,37 +32,25 @@ interface CheckResult {
 
 async function checkStorage(): Promise<CheckResult> {
   const start = Date.now();
-  try {
-    const [conversations, memories, persona] = await Promise.all([
-      readDataFile("conversations.json", [] as unknown[]),
-      readDataFile("memories.json", [] as unknown[]),
-      readDataFile("persona.json", {
-        id: "default",
-        contextAboutUser: "",
-        responsePreferences: "",
-      }),
-    ]);
+  const storage = await checkHealthStorage();
+  return {
+    ...storage,
+    latency: Date.now() - start,
+  };
+}
 
+function checkAuth(): CheckResult {
+  if (!isAuthConfigurationValid()) {
     return {
-      status: "ok",
-      message: "Storage accessible",
-      latency: Date.now() - start,
-      details: {
-        conversations: Array.isArray(conversations) ? conversations.length : 0,
-        memories: Array.isArray(memories) ? memories.length : 0,
-        hasPersona:
-          !!persona &&
-          typeof persona === "object" &&
-          "contextAboutUser" in persona,
-      },
-    };
-  } catch {
-    return {
-      status: "warning",
-      message: "Storage check failed",
-      latency: Date.now() - start,
+      status: "error",
+      message: "Authentication configuration invalid",
     };
   }
+
+  return {
+    status: "ok",
+    message: isAuthEnabled() ? "Authentication configured" : "Authentication disabled",
+  };
 }
 
 async function checkOpenAI(): Promise<CheckResult> {
@@ -131,8 +121,9 @@ export async function GET() {
     ]);
 
     const memory = checkMemory();
+    const auth = checkAuth();
 
-    const checks = { database, openai, memory };
+    const checks = { database, openai, memory, auth };
     const checkValues = Object.values(checks);
 
     const hasError = checkValues.some(c => c.status === "error");

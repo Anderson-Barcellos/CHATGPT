@@ -1,9 +1,36 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { NextRequest } from "next/server";
 import { getRateLimitConfig } from "@/lib/security/rateLimit";
 import {
   getSecurityContentSecurityPolicy,
+  proxy,
   shouldRateLimitPath,
 } from "@/proxy";
+
+const originalAuthEnabled = process.env.AUTH_ENABLED;
+const originalAuthUsername = process.env.AUTH_USERNAME;
+const originalAuthPassword = process.env.AUTH_PASSWORD;
+const originalJwtSecret = process.env.JWT_SECRET;
+
+beforeEach(() => {
+  vi.stubEnv("NODE_ENV", "test");
+  process.env.AUTH_ENABLED = "true";
+  process.env.AUTH_USERNAME = "usuario-sintetico";
+  process.env.AUTH_PASSWORD = "senha-sintetica";
+  process.env.JWT_SECRET = "segredo-sintetico";
+});
+
+afterEach(() => {
+  if (originalAuthEnabled === undefined) delete process.env.AUTH_ENABLED;
+  else process.env.AUTH_ENABLED = originalAuthEnabled;
+  if (originalAuthUsername === undefined) delete process.env.AUTH_USERNAME;
+  else process.env.AUTH_USERNAME = originalAuthUsername;
+  if (originalAuthPassword === undefined) delete process.env.AUTH_PASSWORD;
+  else process.env.AUTH_PASSWORD = originalAuthPassword;
+  if (originalJwtSecret === undefined) delete process.env.JWT_SECRET;
+  else process.env.JWT_SECRET = originalJwtSecret;
+  vi.unstubAllEnvs();
+});
 
 describe("proxy rate limit routing", () => {
   it("uses the login rate limit for auth login", () => {
@@ -62,5 +89,31 @@ describe("proxy rate limit routing", () => {
     const csp = getSecurityContentSecurityPolicy();
 
     expect(csp).toContain("default-src 'self'");
+  });
+
+  it("não deixa configuração inválida abrir rotas públicas de autenticação", async () => {
+    delete process.env.AUTH_ENABLED;
+
+    const response = await proxy(new NextRequest("http://localhost/api/auth/check"));
+
+    expect(response.status).toBe(503);
+  });
+
+  it("mantém liveness público mesmo quando a configuração ainda não está válida", async () => {
+    delete process.env.AUTH_ENABLED;
+
+    const response = await proxy(new NextRequest("http://localhost/api/health/live"));
+
+    expect(response.status).toBe(200);
+  });
+
+  it("deixa somente o readiness exato produzir seu contrato unhealthy", async () => {
+    delete process.env.AUTH_ENABLED;
+
+    const readiness = await proxy(new NextRequest("http://localhost/api/health"));
+    const nestedPath = await proxy(new NextRequest("http://localhost/api/health/private"));
+
+    expect(readiness.status).toBe(200);
+    expect(nestedPath.status).toBe(503);
   });
 });

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   getAuthPassword,
   getAuthUsername,
+  isAuthConfigurationValid,
   isAuthEnabled,
   setAuthCookie,
   signAuthToken,
@@ -19,6 +20,13 @@ function valuesMatch(a: string, b: string): boolean {
 export async function POST(request: NextRequest) {
   try {
     const { username, password } = await request.json();
+
+    if (!isAuthConfigurationValid()) {
+      return NextResponse.json(
+        { error: "Serviço de autenticação indisponível" },
+        { status: 503 }
+      );
+    }
 
     if (!isAuthEnabled()) {
       return NextResponse.json({ success: true });

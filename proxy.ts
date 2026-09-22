@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addRateLimitHeaders, checkRateLimit } from "@/lib/security/rateLimit";
-import { isAuthEnabled, isAuthenticatedRequest } from "@/lib/server/auth";
+import {
+  isAuthConfigurationValid,
+  isAuthEnabled,
+  isAuthenticatedRequest,
+} from "@/lib/server/auth";
 
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 const RATE_LIMITED_PATHS = [
@@ -41,7 +45,9 @@ function stripBasePath(pathname: string): string {
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((path) =>
-    path === "/" ? pathname === "/" : pathname.startsWith(path)
+    path === "/" || path === "/api/health"
+      ? pathname === path
+      : pathname.startsWith(path)
   );
 }
 
@@ -124,6 +130,21 @@ function finalizeResponse(response: NextResponse): NextResponse {
 
 export async function proxy(request: NextRequest) {
   const pathname = stripBasePath(request.nextUrl.pathname);
+
+  // Health é público por rota exata: readiness relata a configuração inválida
+  // no contrato de health, e liveness só confirma o processo vivo.
+  if (pathname === "/api/health" || pathname === "/api/health/live") {
+    return finalizeResponse(NextResponse.next());
+  }
+
+  if (!isAuthConfigurationValid()) {
+    return finalizeResponse(
+      NextResponse.json(
+        { error: "Authentication unavailable", message: "Authentication configuration is invalid." },
+        { status: 503 }
+      )
+    );
+  }
 
   if (pathname === "/api/auth/login" && shouldRateLimitPath(pathname)) {
     return applyRateLimit(request, pathname);
