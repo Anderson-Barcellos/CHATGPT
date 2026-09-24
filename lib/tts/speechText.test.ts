@@ -4,12 +4,18 @@ import {
   DEFAULT_TTS_PREFERENCES,
   REALTIME_TTS_VOICES,
   TTS_VOICES,
+  getXaiTtsSpeed,
   normalizeTtsPreferences,
   sanitizeSpeechText,
   splitSpeechText,
 } from "@/lib/tts/speechText";
 
 describe("speech text helpers", () => {
+  it("clamps legacy speed preferences to the xAI TTS range", () => {
+    expect(getXaiTtsSpeed(4)).toBe(1.5);
+    expect(getXaiTtsSpeed(0.25)).toBe(0.7);
+    expect(getXaiTtsSpeed(1.1)).toBe(1.1);
+  });
   it("offers only voices shared by standard TTS and Realtime", () => {
     expect(TTS_VOICES).toEqual(REALTIME_TTS_VOICES);
     expect(TTS_VOICES).toEqual([

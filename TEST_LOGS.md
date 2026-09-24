@@ -56,3 +56,47 @@ Harness: `/root/.cache/chat-mobile-iphone-qa.mjs`; capturas e métricas em `/roo
 | overflow horizontal / pageerror | 0 / nenhum | 0 / nenhum |
 
 Não emulável no harness: teclado do iOS (`visualViewport`), conferir no aparelho após deploy.
+
+## 2026-09-23 — Grok Realtime Orion no mini-player
+
+| Gate | Comando | Resultado |
+|---|---|
+| Focado | `npx vitest --run hooks/useGrokMessageRealtime.test.tsx app/api/realtime/grok-session/route.test.ts components/chat/MiniAudioPlayer.test.tsx` | exit 0; 3 arquivos/6 testes após a correção final |
+| Suíte completa | `npm test` | exit 0; 191 arquivos/980 testes |
+| TypeScript | `npx tsc --noEmit` | exit 0 |
+| Lint inicial | `npm run lint` | interrompido, exit 130: varria snapshot compilado antigo `.next-before-sc2-20260906T170822Z` |
+| Lint do fonte | `npm run lint -- --ignore-pattern '.next-before-sc2-20260906T170822Z/**'` | exit 0; 0 erros, 1 warning anterior em `CommandComposerContainerV2.test.tsx` |
+| Build isolado inicial | `npm run build` em `/root/.cache/chat-grok-orion-qa-20260923` | exit 1: Turbopack recusou `node_modules` por symlink externo |
+| Build intermediário | `npm run build` na worktree | interrompido, exit 1: os dois arquivos finais ainda não tinham sido copiados da origem |
+| Build isolado final | `npm run build` na mesma worktree com dependências copiadas | exit 0; 42 páginas, warnings anteriores de Edge/instrumentation e tracing Studio |
+| Whitespace | `git diff --check` | exit 0 |
+
+Produção não recebeu build nem restart. Sem smoke de chamada paga ou QA visual autenticado nesta rodada.
+
+## 2026-09-23 — Orion TTS e remux, preparação conjunta
+
+| Gate | Comando | Resultado |
+|---|---|---|
+| Focado TTS/merge | `npx vitest --run app/api/tts/xai/route.test.ts app/api/tts/xai/merge/route.test.ts hooks/useAssistantTts.xai.test.tsx` | exit 0; 3 arquivos/7 testes |
+| Suíte completa | `npm test` | exit 0; 194 arquivos/989 testes |
+| TypeScript | `npx tsc --noEmit` | exit 0 |
+| Lint fonte | `npm run lint -- --ignore-pattern '.next-before-sc2-20260906T170822Z/**'` | exit 0 após correção do cache; 0 erros, 1 warning anterior em `CommandComposerContainerV2.test.tsx` |
+| Build isolado `/chat` | `NEXT_PUBLIC_BASE_PATH=/chat npm run build` em `/root/.cache/chat-grok-orion-qa-20260923` | exit 0; 42 páginas, avisos anteriores de Edge/instrumentation e tracing Studio |
+| Whitespace | `git diff --check` | exit 0 |
+
+Smoke MP3 sintético: concatenar bytes de dois clips 24 kHz/128 kbps fez o decoder acusar `Header missing`; `ffmpeg -f concat -c copy` gerou duração de 2,112 s e decodificou sem erro. O teste da rota `/api/tts/xai/merge` repete o remux com dois tons sintéticos, sem provider nem dados persistidos.
+
+Incidente e reparo: build iniciado por engano no checkout produtivo e interrompido (exit 130), removendo `.next/BUILD_ID`. Rebuild limpa do `main` `6b7369e` com `/chat` em `/root/.cache/chat-recover-current-20260923` (exit 0), instalação da build `aJPIu6zJdyljl43INV-L_` e `systemctl restart chatgpt.service` (exit 0). Health local/público HTTP 200; serviço ativo; anônimo na rota de voz HTTP 401. Mudança Orion continua somente em código e build isolada. Sem chamada paga ou QA visual autenticado.
+
+## 2026-09-23 — Publicação Orion e QA público
+
+| Verificação | Resultado |
+|---|---|
+| Build publicada | `KhPboi2KcAMFtcuOOMWiJ`; script `/root/.cache/chat-orion-deploy-20260923/publish.sh` exit 0; backup `next-before` = `aJPIu6zJdyljl43INV-L_` |
+| Serviço/timers | `chatgpt.service`, `chatgpt-pulse.timer`, `chatgpt-soundcase.timer` e `.path` ativos |
+| Health | local e público HTTP 200, `healthy` |
+| Auth novas rotas | `POST /api/realtime/grok-session`, `/api/tts/xai` e `/api/tts/xai/merge`: HTTP 401 anônimo local e público |
+| Smoke xAI público autenticado | `/root/.cache/chat-orion-deploy-20260923/voice-smoke.mjs` exit 0; dois clips TTS (66.048/48.000 bytes), MP3 remuxado (114.476 bytes) decodifica sem erro; Realtime 183.840 bytes PCM, primeiro áudio 2.087 ms |
+| Chrome público desktop/mobile | `/root/.cache/chat-orion-deploy-20260923/player-smoke.cjs` exit 0; 1440×900 e 390×844, player com TTS Orion e Grok Realtime, zero pageerrors/escritas; capturas `player-desktop.png`/`player-mobile.png` inspecionadas |
+
+QA usou texto/conversa sintéticos. Nenhuma conversa, nota ou outro dado do app foi gravado; duas chamadas TTS curtas e uma Realtime foram feitas para verificar o provider real. Apache/porta/proxy intactos, sem commit ou push.

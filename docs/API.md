@@ -291,8 +291,9 @@ Atualiza:
 
 `POST` é aceito como alias para autosave forte/flush de saída do navegador
 (`sendBeacon`/`keepalive`). `ttsPreferences` persiste `voice`, `mode`,
-`speed`, `instructions` e `format` em `data/persona.json`; o default atual
-de formato é `flac`.
+`speed`, `instructions` e `format` em `data/persona.json`; os campos legados
+`voice`, `instructions` e `format` permanecem armazenados, mas o mini-player
+usa Orion/MP3 e aplica apenas `mode` e `speed`.
 
 **Arquivo:** `app/api/persona/route.ts`
 
@@ -302,7 +303,10 @@ de formato é `flac`.
 |---|---|---|
 | `POST` | `/api/artifacts/pdf` | Renderiza artifact de documento como PDF A4 server-side, com fonte Lexend embutida e cabeçalho compacto OpenAI + título |
 | `POST` | `/api/tts` | Gera áudio clássico com `gpt-4o-mini-tts`; aceita `format` `flac`, `mp3` ou `wav` |
+| `POST` | `/api/tts/xai` | Gera trecho MP3 com Orion, `pt-BR` e velocidade entre 0,7 e 1,5; autenticação obrigatória quando habilitada, chave server-side |
+| `POST` | `/api/tts/xai/merge` | Recebe dois ou mais trechos MP3 autenticados e remuxa o arquivo completo para download, sem chamar a xAI |
 | `POST` | `/api/realtime/tts-call` | Cria sessão SDP/WebRTC experimental com `gpt-realtime-2.1-mini` |
+| `POST` | `/api/realtime/grok-session` | Emite token efêmero autenticado e sem cache para a leitura Grok Realtime do Chat/Pulse |
 | `POST` | `/api/realtime/tts-call/log` | Recebe telemetria sanitizada do cliente Realtime para diagnóstico local |
 | `POST` | `/api/transcribe` | Transcreve áudio com `gpt-4o-transcribe`; streaming NDJSON ativo por padrão e desativável com `TRANSCRIPTION_STREAMING_ENABLED=false` |
 
@@ -347,7 +351,7 @@ Todas as rotas abaixo são privadas quando `AUTH_ENABLED=true`. O browser nunca 
 
 Todas as rotas de Pulse são privadas quando `AUTH_ENABLED=true`, exceto o runner interno `/api/pulse/run-due`, que exige `Authorization: Bearer <PULSE_RUNNER_TOKEN>` (comparação em tempo constante), responde `503` se o token não estiver configurado, passa pelo rate limit do proxy e é usado pelo timer local do servidor. Não há fallback por hostname. A reivindicação de execução é atômica dentro do lock de `pulse-runs.json` (timer e disparo manual nunca abrem dois runs da mesma rotina), e todo run `running` que nenhum processo vivo reconhece (sobra de restart) é marcado `failed` com aviso no próximo tick do runner ou disparo manual; a rotina segue vencida e roda de novo no tick seguinte.
 
-Os resultados do Pulse e as mensagens do chat reutilizam o mesmo mini-player. Ele abre no TTS estável via `/api/tts` (`gpt-4o-mini-tts`) e permite selecionar manualmente o Realtime experimental via `/api/realtime/tts-call`; nenhuma engine inicia apenas ao abrir o player.
+Os resultados do Pulse e as mensagens do chat reutilizam o mesmo mini-player. Ele abre no TTS Orion via `/api/tts/xai` (trechos MP3 e download completo) e permite selecionar manualmente Grok Realtime via `/api/realtime/grok-session`; nenhuma engine inicia apenas ao abrir o player.
 
 As execuções do Pulse usam `grok-4.7` + reasoning `medium` por padrão e mantêm Sol/Terra como opções. Rotinas antigas com mini resolvem para Grok; execuções históricas preservam o modelo gravado. O modelo e effort efetivos ficam registrados em cada execução. Grok força `medium` e não recebe verbosity; modelos OpenAI mantêm suas configurações. O prompt continua enxuto e a imagem continua OpenAI em chamada separada quando necessário. Overrides operacionais permanecem; identificadores incompatíveis com o provider devem falhar explicitamente.
 

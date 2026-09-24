@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import { apiUrl } from "@/lib/utils";
 import {
   DEFAULT_TTS_PREFERENCES,
+  getXaiTtsSpeed,
   getTtsChunkingProfile,
-  isDownloadableTtsFormat,
   normalizeTtsPreferences,
   TTS_CONTENT_TYPES,
   splitSpeechText,
@@ -36,6 +36,7 @@ interface CachedSpeech {
 }
 
 const speechCache = new Map<string, CachedSpeech>();
+const mergedSpeechCache = new Map<string, Blob>();
 const BROWSER_AUDIO_BLOCKED_MESSAGE =
   "Áudio pronto — clique em tocar para liberar o navegador.";
 
@@ -74,6 +75,7 @@ export function useAssistantTts(content: string, messageId: string) {
     customInstructions?.ttsPreferences ?? DEFAULT_TTS_PREFERENCES
   );
   const chunkingProfile = getTtsChunkingProfile(preferences.mode);
+  const xaiSpeed = getXaiTtsSpeed(preferences.speed);
   const chunks = useMemo(
     () => splitSpeechText(content, { mode: preferences.mode }),
     [content, preferences.mode]
@@ -83,20 +85,15 @@ export function useAssistantTts(content: string, messageId: string) {
       [
         messageId,
         hashText(content),
-        preferences.voice,
-        preferences.speed.toFixed(2),
+        "xai-orion-mp3-v1",
+        xaiSpeed.toFixed(2),
         preferences.mode,
-        preferences.format,
-        hashText(preferences.instructions),
       ].join(":"),
     [
       content,
       messageId,
-      preferences.instructions,
       preferences.mode,
-      preferences.speed,
-      preferences.voice,
-      preferences.format,
+      xaiSpeed,
     ]
   );
 
@@ -107,6 +104,7 @@ export function useAssistantTts(content: string, messageId: string) {
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isDownloadReady, setIsDownloadReady] = useState(false);
+  const [isMerging, setIsMerging] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUnlockedRef = useRef(false);
@@ -119,6 +117,7 @@ export function useAssistantTts(content: string, messageId: string) {
   const handleClipEndedRef = useRef<() => void>(() => {});
   const activeCacheRef = useRef<CachedSpeech | null>(null);
   const abortControllersRef = useRef<Set<AbortController>>(new Set());
+  const downloadControllerRef = useRef<AbortController | null>(null);
   const generatingKeyRef = useRef<string | null>(null);
   const requestedPlayRef = useRef(false);
   const waitingForClipRef = useRef<number | null>(null);
@@ -295,15 +294,12 @@ export function useAssistantTts(content: string, messageId: string) {
     chunk: string,
     signal: AbortSignal
   ): Promise<AudioClip> => {
-    const response = await fetch(apiUrl("/api/tts"), {
+    const response = await fetch(apiUrl("/api/tts/xai"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         input: chunk,
-        voice: preferences.voice,
-        speed: preferences.speed,
-        instructions: preferences.instructions,
-        format: preferences.format,
+        speed: xaiSpeed,
       }),
       signal,
     });
@@ -323,7 +319,7 @@ export function useAssistantTts(content: string, messageId: string) {
       duration: audioBuffer?.duration ?? 0,
       audioBuffer,
     };
-  }, [preferences.format, preferences.instructions, preferences.speed, preferences.voice]);
+  }, [xaiSpeed]);
 
   const generateClips = useCallback(async () => {
     if (!chunks.length) {
@@ -579,32 +575,51 @@ export function useAssistantTts(content: string, messageId: string) {
     }
   }, [currentTime, duration, getWebAudioPosition, playClip, status]);
 
-  const downloadAudio = useCallback(() => {
+  const downloadAudio = useCallback(async () => {
     const cache = activeCacheRef.current ?? speechCache.get(cacheKey);
-    if (!isDownloadableTtsFormat(preferences.format)) {
-      toast.info("Download completo fica disponível só em MP3 por enquanto.");
-      return;
-    }
-
     if (!isCacheDownloadReady(cache)) {
       toast.info("Espera a voz terminar de gerar para baixar o áudio inteiro.");
       return;
     }
 
-    const mergedBlob = new Blob(
-      cache.chunks.map((_, index) => cache.clips[index].blob),
-      { type: TTS_CONTENT_TYPES[preferences.format] }
-    );
-    const url = URL.createObjectURL(mergedBlob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = buildTtsDownloadFilename(messageId, preferences.format);
-    anchor.rel = "noopener";
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 5000);
-  }, [cacheKey, messageId, preferences.format]);
+    if (downloadControllerRef.current) return;
+    const controller = new AbortController();
+    downloadControllerRef.current = controller;
+    setIsMerging(true);
+    try {
+      let mergedBlob = mergedSpeechCache.get(cacheKey);
+      if (!mergedBlob) {
+        if (cache.clips.length === 1) {
+          mergedBlob = cache.clips[0].blob;
+        } else {
+          const form = new FormData();
+          cache.chunks.forEach((_, index) => form.append("clips", cache.clips[index].blob, `${index}.mp3`));
+          const response = await fetch(apiUrl("/api/tts/xai/merge"), { method: "POST", body: form, signal: controller.signal });
+          if (!response.ok) {
+            const payload = await response.json().catch(() => null) as { error?: string } | null;
+            throw new Error(payload?.error || "Não foi possível montar o MP3 completo.");
+          }
+          mergedBlob = await response.blob();
+        }
+        mergedSpeechCache.set(cacheKey, mergedBlob);
+      }
+      if (controller.signal.aborted) return;
+      const url = URL.createObjectURL(new Blob([mergedBlob], { type: TTS_CONTENT_TYPES.mp3 }));
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = buildTtsDownloadFilename(messageId, "mp3");
+      anchor.rel = "noopener";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (cause) {
+      if (!controller.signal.aborted) toast.error(cause instanceof Error ? cause.message : "Não foi possível baixar o MP3 completo.");
+    } finally {
+      if (downloadControllerRef.current === controller) downloadControllerRef.current = null;
+      setIsMerging(false);
+    }
+  }, [cacheKey, messageId]);
 
   useEffect(() => {
     const audio = document.createElement("audio");
@@ -646,6 +661,7 @@ export function useAssistantTts(content: string, messageId: string) {
 
     return () => {
       abortGeneration();
+      downloadControllerRef.current?.abort();
       stopWebAudioSource(false);
       audio.pause();
       audio.removeEventListener("timeupdate", handleTimeUpdate);
@@ -670,9 +686,7 @@ export function useAssistantTts(content: string, messageId: string) {
     formattedCurrentTime: formatDuration(currentTime),
     formattedDuration: formatDuration(duration),
     progress: duration > 0 ? Math.min((currentTime / duration) * 100, 100) : 0,
-    canDownload:
-      isDownloadableTtsFormat(preferences.format) &&
-      isDownloadReady,
+    canDownload: isDownloadReady && !isMerging,
     openAndPlay,
     togglePlay,
     stop,

@@ -89,6 +89,10 @@ export function isDownloadableTtsFormat(value: unknown): value is (typeof TTS_DO
   return value === "mp3";
 }
 
+export function getXaiTtsSpeed(value: number): number {
+  return Number(Math.min(Math.max(value, 0.7), 1.5).toFixed(2));
+}
+
 export function normalizeTtsPreferences(
   value: Partial<TtsPreferences> | null | undefined
 ): TtsPreferences {

@@ -2,6 +2,12 @@
 
 ## Estado operacional
 
+#### Orion Realtime + TTS MP3 no mini-player (`fechada`, 2026-09-23)
+
+Chat e Pulse compartilham TTS xAI MP3 com Orion como opção inicial e Grok Realtime Orion como opção manual. O TTS usa trechos progressivos, cache, seek e remux server-side do download completo; o Realtime usa token efêmero, turnos e PCM. Abrir o player não inicia áudio. SoundCase e as rotas OpenAI legadas conservam seus contratos. `ttsPreferences.mode` e velocidade seguem ativos; campos antigos de voz, formato e instruções continuam persistidos, mas não são enviados à xAI. Gates locais: 194 arquivos/989 testes, TypeScript, lint do fonte (0 erros, 1 warning anterior), remux de MP3 real sem erro de decoder e build `/chat` isolada (42 páginas) aprovados.
+
+Publicação autorizada por Anders em 2026-09-23: build `KhPboi2KcAMFtcuOOMWiJ` instalada, anterior `aJPIu6zJdyljl43INV-L_` preservada em `/root/.cache/chat-orion-deploy-20260923/next-before`, assets antigos retidos e `chatgpt.service` reiniciado. Health local/público 200 `healthy`; timers ativos; três novas rotas anônimas 401. Smoke real autenticado público: dois trechos TTS Orion, MP3 remuxado e decodificado, Realtime com 183.840 bytes PCM e primeiro áudio em 2.087 ms. Chrome desktop/mobile com conversa sintética mostrou os dois motores e zero pageerrors/escritas. Amostras e capturas no diretório de deploy. Anders aprovou o resultado e fechou a entrega em 2026-09-23; sem alteração de dados privados, Apache, commit ou push.
+
 #### Segurança e operação — sete achados do review (`pronta para revisão`, 2026-09-22)
 
 Plano aprovado por Anders em `docs/plans/2026-09-22-review-seguranca-operacao.md`; implementação isolada em `codex/review-seguranca-operacao`, base `0adcfe3`. Inclui auth obrigatória em produção, readiness sem mutações/liveness separado, exclusividade de runtime, propriedade de sessões Studio, scripts seguros, remoção de fuser da unit e token Pulse por stdin. Domínio `sonaris.us`, migração, merge, push e publicação ficam fora. Registro técnico em `docs/plans/2026-09-22-review-seguranca-operacao-report.md`.

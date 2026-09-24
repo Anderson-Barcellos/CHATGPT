@@ -239,8 +239,8 @@ A aba Rotinas substitui a superfície visível de Agenda. Ela cria rotinas recor
 - Cada rotina Pulse escolhe Grok 4.7 (padrão), Sol ou Terra. Grok usa reasoning `medium` fixo e `web_search`; OpenAI mantém verbosity `high` e suas ferramentas. Imagens permanecem em chamada OpenAI. Modelo/effort efetivos ficam gravados no run; IDs mini antigos resolvem para Grok. O orçamento padrão é `PULSE_MAX_OUTPUT_TOKENS=25000`, com clamp do runner entre 8k e 32k.
 - O prompt de execução do Pulse usa um contexto enxuto proprio: instruções da rotina, preferencias uteis de `persona.json`, ate 5 memorias ativas compactadas e 3 trechos relevantes do histórico via `searchMemoryContext`. Ele evita injetar o prompt global completo do chat para reduzir latencia e tokens.
 - Se a resposta principal não trouxer `image_generation`, o runner tenta uma segunda chamada curta para gerar a imagem conceitual de abertura do card.
-- Resultados de Pulse e balões do chat reutilizam `MiniAudioPlayer`, que abre com `useAssistantTts` e `/api/tts` (`gpt-4o-mini-tts`) selecionados, mas não inicia áudio automaticamente.
-- O mesmo mini-player permite trocar manualmente para o Realtime 2.1 mini (`/api/realtime/tts-call`); trocar de engine interrompe qualquer reprodução anterior.
+- Resultados de Pulse e balões do chat reutilizam `MiniAudioPlayer`, que abre com `useAssistantTts` e `/api/tts/xai` (Orion, MP3) selecionados, mas não inicia áudio automaticamente.
+- O mesmo mini-player permite trocar manualmente para Grok Realtime com voz Orion (`/api/realtime/grok-session`); trocar de engine interrompe qualquer reprodução anterior.
 
 ## Agenda Google e Notas Locais Legadas
 
@@ -271,12 +271,12 @@ Fluxos relevantes:
 
 ## Voz
 
-O TTS padrão usa `/api/tts` com `gpt-4o-mini-tts`.
+O TTS padrão do Chat/Pulse usa `/api/tts/xai` com voz Orion e MP3 24 kHz/128 kbps. `/api/tts` com `gpt-4o-mini-tts` permanece como rota legada; o SoundCase continua a gerar seus arquivos com OpenAI.
 
 - Texto é sanitizado e dividido em chunks em `lib/tts/speechText.ts`.
 - `hooks/useAssistantTts.ts` faz cache em memória, fila turbo e controle de playback.
-- `ttsPreferences.format` controla `response_format` (`flac` por padrão, com `mp3` e `wav` disponíveis); download completo fica habilitado apenas em `mp3` porque chunks `flac`/`wav` não devem ser concatenados como um arquivo único.
-- `/api/realtime/tts-call` segue como caminho experimental com `gpt-realtime-2.1-mini` via SDP/WebRTC. Chat e Pulse expõem um único alto-falante que abre `MiniAudioPlayer`; dentro dele, o usuário alterna entre TTS padrão e Realtime 2.1. O payload não define `max_output_tokens`, deixando o Realtime usar o default `inf` do contrato GA.
+- Cada trecho é gerado com as mesmas configurações MP3; o hook preserva a ordem na reprodução. Para baixar o áudio completo, envia os trechos já gerados a `/api/tts/xai/merge`, que usa `ffmpeg` para remuxar um único `.mp3` decodificável sem nova geração paga. Um trecho único é baixado diretamente. `ttsPreferences.mode` e `speed` afetam o TTS xAI; os campos legados `voice`, `format` e `instructions` permanecem persistidos para compatibilidade e não são enviados à xAI.
+- `/api/realtime/grok-session` emite token efêmero autenticado para `grok-voice-latest`; o browser conecta por WebSocket à xAI, envia o texto sanitizado em turnos de até 3.200 caracteres e reproduz PCM com a voz Orion. Chat e Pulse expõem um único alto-falante que abre `MiniAudioPlayer`; dentro dele, o usuário alterna entre TTS Orion e Grok Realtime. `/api/realtime/tts-call` permanece como rota legada OpenAI, fora do player.
 
 ## Modelos
 

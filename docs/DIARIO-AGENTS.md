@@ -1522,3 +1522,27 @@ Registro completo: `docs/plans/2026-09-22-review-seguranca-operacao-report.md`; 
 Codex: Anders autorizou publicação. Main recebeu fast-forward `2584921`; build validada `fQ5aGOE2G9BIiCdmil9-L` publicada com backup e retenção de 20 assets antigos. Unit sem fuser instalada e serviço reiniciado, após conferir auth e propriedade Studio por preflight seguro. Não havia sessões Studio nem workers ativos; agendadores pausados no corte e restaurados.
 
 Readiness/liveness local e público 200, anônimo 401, auth e Studio habilitado confirmados. Smoke público desktop/mobile com dados sintéticos passou, sem pageerrors; capturas inspecionadas. Sem chamadas pagas, push ou alteração de domínio/vhost. APACHE.md atualizado. Evidências e backup: `/root/.cache/gaucho-security-deploy-20260922`; relatório canônico atualizado. Estado: publicada e pronta para revisão de Anders.
+
+### 2026-09-23 — Grok Realtime Orion no Chat e Pulse
+
+Codex: a opção Realtime do `MiniAudioPlayer` passou a abrir `grok-voice-latest` com voz Orion por token efêmero autenticado; leitura em turnos e PCM reaproveitam o contrato já usado no SoundCase. O TTS OpenAI, o download e as preferências persistidas não foram alterados. DECISÃO: a possibilidade de agregar MP3 do TTS xAI foi confirmada na documentação oficial, mas a migração do áudio durável fica para decisão própria.
+
+Validação: 191 arquivos/980 testes, TypeScript e lint do fonte aprovados; build de 42 páginas em `/root/.cache/chat-grok-orion-qa-20260923` aprovada. O primeiro build isolado falhou por symlink externo de `node_modules`, resolvido com cópia das dependências; warnings antigos de Edge/instrumentation e tracing do Studio persistem. Não houve chamada paga, dado privado, publicação, restart, commit ou push. Falta escuta real e QA visual autenticado antes de confirmar experiência em produção.
+
+### 2026-09-23 — Orion TTS MP3 e reparo do build produtivo
+
+Codex: após Anders pedir a preparação conjunta, o Chat/Pulse passou a usar `/api/tts/xai` com Orion, `pt-BR`, MP3 24 kHz/128 kbps e velocidade limitada à faixa 0,7–1,5x. A leitura progressiva mantém chunks e cache; o download de vários chunks usa `/api/tts/xai/merge` e `ffmpeg -f concat -c copy`. Concatenação direta de bytes produziu erro de cabeçalho no decoder com MP3 sintético e foi descartada. SoundCase e rotas OpenAI legadas preservados; controles da UI refletem apenas modo e velocidade aplicáveis.
+
+Incidente: um `npm run build` foi iniciado por engano no checkout produtivo durante a cópia à worktree e interrompido, deixando `.next/BUILD_ID` ausente. O serviço ainda respondia 200. Foi recompilado o `main` atual (`6b7369e`) em worktree limpa com `NEXT_PUBLIC_BASE_PATH=/chat`, restaurado `.next` com build `aJPIu6zJdyljl43INV-L_` e reiniciado `chatgpt.service`; health local e público 200, rota de voz anônima 401. Nenhuma mudança Orion foi publicada nesse reparo. O `.next` interrompido ficou preservado em `/root/.cache/chat-corrupt-next-20260923`.
+
+Gates finais da preparação: 194 arquivos/989 testes, TypeScript, lint do fonte (0 erros, 1 warning anterior), teste com dois MP3 reais e build isolada `/chat` de 42 páginas aprovados. Falta escuta real/QA visual autenticado do conjunto. Sem geração paga, alteração de dados privados, commit ou push.
+
+### 2026-09-23 — Orion publicado para validação conjunta
+
+Codex: Anders autorizou publicação. Build isolada `KhPboi2KcAMFtcuOOMWiJ` instalada em `/root/CHATGPT/.next`, com backup `aJPIu6zJdyljl43INV-L_` em `/root/.cache/chat-orion-deploy-20260923/next-before` e assets estáticos antigos preservados. `chatgpt.service` reiniciado; health local/público 200 `healthy`; Pulse e SoundCase timers/path ativos. Rotas `/api/realtime/grok-session`, `/api/tts/xai` e `/api/tts/xai/merge` retornam 401 sem autenticação local e publicamente. Apache/porta/vhost sem alterações.
+
+Smoke público autenticado com texto sintético: TTS Orion gerou dois clips MP3 (66.048 e 48.000 bytes), remux devolveu 114.476 bytes decodificados sem erro; Grok Realtime entregou 183.840 bytes PCM com primeiro áudio em 2.087 ms. As amostras estão em `/root/.cache/chat-orion-deploy-20260923/orion-tts-completo.mp3` e `orion-realtime.wav`. Chrome desktop (1440×900) e mobile (390×844) usou conversa sintética por interceptação, confirmou TTS Orion inicial e Grok Realtime manual, zero pageerrors e zero escritas; capturas do player no mesmo diretório. Não houve criação de conversa, nota ou arquivo de app. Qualidade vocal fica para escuta de Anders; sem commit ou push.
+
+### 2026-09-23 — Orion fechado por Anders
+
+Codex: Anders aprovou o resultado publicado e declarou a entrega fechada (“Fechadao!”). Estado atualizado em `BACKLOG.md`; sem mudança de código, build, serviço, commit ou push nesta rodada. Gate documental: `git diff --check`.

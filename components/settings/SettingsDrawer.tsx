@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { isTtsAudioFormat, TTS_AUDIO_FORMATS, TTS_VOICES, DEFAULT_TTS_INSTRUCTIONS } from "@/lib/tts/speechText";
+import { getXaiTtsSpeed } from "@/lib/tts/speechText";
 import { indexRecentConversationMemories } from "@/lib/storage/memoryRag";
 import { BASE_SYSTEM_PROMPT } from "@/lib/prompts/systemPrompt";
 import { FIXED_PERSONA_PROMPT } from "@/lib/prompts/personaPrompt";
@@ -645,13 +645,13 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                       </h3>
                       <div className="gc-refined-panel space-y-4 rounded-[1.35rem] border p-[var(--gc-mobile-settings-card-pad)]">
                         <p className="text-micro leading-relaxed text-muted-foreground">
-                          A voz e as instruções são compartilhadas. Modo, formato e
-                          velocidade afetam somente o TTS padrão; o Realtime usa uma
-                          cadência fluida própria.
+                          Chat e Pulse usam Orion no TTS MP3 e no Grok Realtime.
+                          O modo e a velocidade abaixo afetam o TTS MP3; o
+                          Realtime segue sua própria cadência.
                         </p>
                         <label className="flex flex-col gap-1 text-xs">
                           <span className="text-muted-foreground">
-                            Modo — TTS padrão
+                            Modo — TTS MP3
                           </span>
                           <select
                             value={ttsPreferences.mode}
@@ -670,103 +670,29 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                           </select>
                         </label>
 
-                        <label className="flex flex-col gap-1 text-xs">
-                          <span className="text-muted-foreground">
-                            Voz — TTS + Realtime
-                          </span>
-                          <select
-                            value={ttsPreferences.voice}
-                            onChange={(e) => updateTtsPreferences({ voice: e.target.value })}
-                            className="gc-refined-soft-surface rounded-xl border px-3 py-2 text-[16px] outline-none focus:ring-2 focus:ring-primary/20 sm:text-xs"
-                          >
-                            {TTS_VOICES.map((voice) => (
-                              <option key={voice} value={voice}>
-                                {voice}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-
-                        <label className="flex flex-col gap-1 text-xs">
-                          <span className="text-muted-foreground">
-                            Formato — TTS padrão
-                          </span>
-                          <select
-                            value={ttsPreferences.format}
-                            onChange={(e) =>
-                              updateTtsPreferences({
-                                format: isTtsAudioFormat(e.target.value)
-                                  ? e.target.value
-                                  : "flac",
-                              })
-                            }
-                            className="gc-refined-soft-surface rounded-xl border px-3 py-2 text-[16px] outline-none focus:ring-2 focus:ring-primary/20 sm:text-xs"
-                          >
-                            {TTS_AUDIO_FORMATS.map((format) => (
-                              <option key={format} value={format}>
-                                {format.toUpperCase()}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-
                         <div className="space-y-2">
                           <div className="flex items-center justify-between gap-3">
                             <div>
                               <p className="text-xs font-medium">
-                                Velocidade — TTS padrão
+                                Velocidade — TTS MP3
                               </p>
                               <p className="text-micro text-muted-foreground">
                                 Ajusta o ritmo da fala gerada.
                               </p>
                             </div>
                             <span className="text-xs font-mono font-semibold">
-                              {ttsPreferences.speed.toFixed(2)}x
+                              {getXaiTtsSpeed(ttsPreferences.speed).toFixed(2)}x
                             </span>
                           </div>
                           <Slider
                             min={0.75}
                             max={1.5}
                             step={0.05}
-                            value={[ttsPreferences.speed]}
+                            value={[getXaiTtsSpeed(ttsPreferences.speed)]}
                             onValueChange={([value]) => updateTtsPreferences({ speed: value })}
                           />
                         </div>
 
-                        <div className="flex flex-col gap-1 text-xs">
-                          <div className="flex items-center justify-between gap-2">
-                            <label
-                              htmlFor="tts-voice-instructions"
-                              className="text-muted-foreground"
-                            >
-                              Instruções da voz — TTS + Realtime
-                            </label>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateTtsPreferences({
-                                  instructions: DEFAULT_TTS_INSTRUCTIONS,
-                                })
-                              }
-                              disabled={
-                                ttsPreferences.instructions === DEFAULT_TTS_INSTRUCTIONS
-                              }
-                              className="text-micro font-medium text-primary hover:underline disabled:cursor-default disabled:opacity-50 disabled:no-underline"
-                            >
-                              Restaurar padrão
-                            </button>
-                          </div>
-                          <textarea
-                            id="tts-voice-instructions"
-                            value={ttsPreferences.instructions}
-                            onChange={(e) =>
-                              updateTtsPreferences({ instructions: e.target.value })
-                            }
-                            placeholder="Vazio = sem instruções. Use “Restaurar padrão” para carregar a leitura recomendada."
-                            rows={5}
-                            className="gc-refined-soft-surface min-h-[68px] resize-none rounded-xl border px-3 py-2 text-xs outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/15 sm:min-h-[78px]"
-                          />
-                        </div>
                       </div>
                     </div>
                   </>

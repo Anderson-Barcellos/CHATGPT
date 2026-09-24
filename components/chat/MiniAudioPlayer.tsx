@@ -12,7 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { useAssistantTts } from "@/hooks/useAssistantTts";
-import { useRealtimeTtsLab } from "@/hooks/useRealtimeTtsLab";
+import { useGrokMessageRealtime } from "@/hooks/useGrokMessageRealtime";
 import { cn } from "@/lib/utils";
 
 export type AudioEngine = "standard" | "realtime";
@@ -57,7 +57,7 @@ export function MiniAudioPlayer({
 }: MiniAudioPlayerProps) {
   const [engine, setEngine] = useState<AudioEngine>("standard");
   const tts = useAssistantTts(content, messageId);
-  const realtime = useRealtimeTtsLab(content);
+  const realtime = useGrokMessageRealtime(content);
 
   const stopAll = useCallback(() => {
     tts.stop();
@@ -130,7 +130,7 @@ export function MiniAudioPlayer({
         >
           <button
             type="button"
-            aria-label="Escolher TTS padrão"
+            aria-label="Escolher TTS Orion"
             aria-pressed={isStandard}
             onClick={() => selectEngine("standard")}
             className={cn(
@@ -140,11 +140,11 @@ export function MiniAudioPlayer({
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            TTS padrão
+            TTS Orion
           </button>
           <button
             type="button"
-            aria-label="Escolher Realtime 2.1"
+            aria-label="Escolher Grok Realtime"
             aria-pressed={!isStandard}
             onClick={() => selectEngine("realtime")}
             className={cn(
@@ -154,7 +154,7 @@ export function MiniAudioPlayer({
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            Realtime 2.1
+            Grok Realtime
           </button>
         </div>
 
@@ -220,7 +220,7 @@ export function MiniAudioPlayer({
               title={
                 tts.canDownload
                   ? "Baixar áudio completo"
-                  : "Download completo disponível apenas em MP3"
+                  : "Baixar MP3 após a geração completa"
               }
               onClick={tts.downloadAudio}
               disabled={!tts.canDownload}

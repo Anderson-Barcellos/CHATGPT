@@ -48,8 +48,8 @@
 - `gemini-3.8-flash` inicia em thinking `high`, permite `low`, `medium` e `high`, e depende de `GEMINI_API_KEY`.
 - Gemini usa Interactions API stateless (`store=false`) com Google Search e URL Context nativos; os modos especiais usam seus presets, independentemente do seletor do chat.
 - Autocomplete FIM do Studio usa `codestral-latest` (Codestral 25.08, Mistral) via `/v1/fim/completions`; a key vem de `CODESTRAL_API_KEY` ou `MISTRAL_API_KEY`, com `deepseek-v4-pro` como fallback legado via `DEEPSEEK_API_KEY`.
-- TTS usa `gpt-4o-mini-tts` em `lib/tts/speechText.ts`.
-- Realtime TTS opcional usa `gpt-realtime-2.1-mini`, sem `max_output_tokens` explícito.
+- TTS do Chat/Pulse usa a API xAI `/v1/tts` com Orion e MP3; `gpt-4o-mini-tts` em `lib/tts/speechText.ts` permanece para SoundCase e rota legada.
+- Realtime opcional do Chat/Pulse usa `grok-voice-latest` com voz Orion; `gpt-realtime-2.1-mini` permanece no SoundCase e na rota legada OpenAI.
 - Transcrição usa `gpt-4o-transcribe`.
 - SoundCase usa `gpt-5.6-luna` com reasoning `low` para direção estruturada, `gpt-4o-mini-tts` para chunks do arquivo final, `gpt-realtime-2.1-mini` para escuta imediata e `gpt-image-2` para capa. Texto narrado nunca é reescrito pela etapa de direção.
 - O arquivo SoundCase usa MP3 por padrão, com FLAC/WAV por override; o Realtime é transitório e não substitui a versão durável para download.
