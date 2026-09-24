@@ -23,15 +23,15 @@ describe("buildReasoningConfig", () => {
     });
   });
 
-  it("adds Pro mode independently from the selected effort", () => {
+  it("omits legacy Pro mode for GPT-6 Luna", () => {
     expect(
-      buildReasoningConfig("gpt-5.6-luna", "low", "detailed", "pro")
-    ).toEqual({ effort: "low", summary: "detailed", mode: "pro" });
+      buildReasoningConfig("gpt-6-luna", "low", "detailed", "pro")
+    ).toEqual({ effort: "low", summary: "detailed" });
   });
 
   it("omits standard mode from the API payload", () => {
     expect(
-      buildReasoningConfig("gpt-5.6-sol", "medium", "detailed", "standard")
+      buildReasoningConfig("gpt-6-sol", "medium", "detailed", "standard")
     ).toEqual({ effort: "medium", summary: "detailed" });
   });
 

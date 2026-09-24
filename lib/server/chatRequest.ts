@@ -41,7 +41,7 @@ export const ALLOWED_CHAT_MODELS = new Set(
   })
 );
 
-export const DEFAULT_CHAT_MODEL = "gpt-5.6-luna";
+export const DEFAULT_CHAT_MODEL = "gpt-6-luna";
 const DEFAULT_IMAGE_GENERATION_MODEL = "gpt-image-2";
 export const MEMORY_TOOL_NAMES = {
   remember: "remember_memory",
@@ -51,6 +51,9 @@ export const MEMORY_TOOL_NAMES = {
 export type MemoryToolName = (typeof MEMORY_TOOL_NAMES)[keyof typeof MEMORY_TOOL_NAMES];
 
 const LEGACY_MODEL_FALLBACKS: Record<string, string> = {
+  "gpt-5.6-sol": "gpt-6-sol",
+  "gpt-5.6-luna": "gpt-6-luna",
+  "gpt-5.6-terra": "gpt-6-sol",
   "gemini-3.7-flash": "gemini-3.8-flash",
   "gpt-chat-latest": "chat-latest",
   "gpt-5-chat-latest": "chat-latest",

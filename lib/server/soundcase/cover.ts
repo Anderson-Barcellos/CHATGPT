@@ -46,7 +46,7 @@ export async function generateSoundCaseCover(input: {
     await input.beforeProvider?.();
     try {
       png = extractPng(await input.client.responses.create({
-        model: "gpt-5.6-luna",
+        model: "gpt-6-luna",
         input: input.prompt,
         store: false,
         tools: [{ type: "image_generation", model: "gpt-image-2", quality: "high", size: "auto", background: "auto", output_format: "png" }],

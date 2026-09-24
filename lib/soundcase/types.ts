@@ -53,7 +53,7 @@ export interface SoundCaseSegmentDirection {
 }
 
 export interface SoundCaseDirection {
-  model: "gpt-5.6-luna";
+  model: "gpt-6-luna";
   promptVersion: string;
   source: "automatic" | "fallback";
   title: string;

@@ -118,7 +118,7 @@ Detalhes importantes:
 
 `deepseek-v4-pro` é um provider separado para chat padrão streaming. Ele passa por `lib/server/deepseekChat.ts`, exige `DEEPSEEK_API_KEY`, força reasoning máximo no payload DeepSeek, não suporta `code_interpreter` e rejeita modos `document`, `deepsearch_*` e `quiz`.
 
-O adapter expõe uma tool local `fresh_web_context`. Quando o DeepSeek chama essa tool, o servidor faz uma chamada OpenAI curta com `web_search_preview` usando `DEEPSEEK_WEB_CONTEXT_MODEL` ou `gpt-5.6-luna`, injeta o resultado como mensagem de tool e continua um segundo turno DeepSeek sem expor chaves ao browser.
+O adapter expõe uma tool local `fresh_web_context`. Quando o DeepSeek chama essa tool, o servidor faz uma chamada OpenAI curta com `web_search_preview` usando `DEEPSEEK_WEB_CONTEXT_MODEL` ou `gpt-6-luna`, injeta o resultado como mensagem de tool e continua um segundo turno DeepSeek sem expor chaves ao browser.
 
 ### Gemini 3.8 Flash
 

@@ -13,7 +13,7 @@ const date = "2026-09-21T12:00:00.000Z";
 const requestedSettings = { automatic: true, playbackMode: "realtime", format: "mp3", voiceOverride: null, speedOverride: null, instructionsOverride: null };
 const choice = (value) => ({ value, source: "automatic" });
 const effectiveSettings = { format: choice("mp3"), voice: choice("cedar"), speed: choice(1), instructions: choice("Leia fielmente.") };
-const direction = { model: "gpt-5.6-luna", promptVersion: "qa", source: "automatic", title: "Narração de teste", summary: "Texto sintético.", language: "pt-BR", voice: "cedar", speed: 1, globalInstructions: "Leia fielmente.", pronunciations: [], segmentDirections: [], coverPrompt: "" };
+const direction = { model: "gpt-6-luna", promptVersion: "qa", source: "automatic", title: "Narração de teste", summary: "Texto sintético.", language: "pt-BR", voice: "cedar", speed: 1, globalInstructions: "Leia fielmente.", pronunciations: [], segmentDirections: [], coverPrompt: "" };
 const summary = { id: versionId, projectId, idempotencyKey: "qa", status: "ready", title: "Narração de teste", summary: "Texto sintético para QA.", wordCount: 13, estimatedDurationSeconds: 6, requestedFormat: "mp3", audio: { status: "pending", format: "mp3" }, cover: { status: "pending" }, progress: { phase: "ready", ratio: 1, completedChunks: 1, totalChunks: 1, updatedAt: date }, createdAt: date, completedAt: date };
 const version = { ...summary, sourceHash: "qa", settingsHash: "qa", requestedSettings, effectiveSettings, direction };
 const project = { id: projectId, title: "Narração de teste", draftRevision: 1, activeVersionId: versionId, createdAt: date, updatedAt: date, draftText: text, draftWordCount: 13, estimatedDurationSeconds: 6, versions: [summary] };

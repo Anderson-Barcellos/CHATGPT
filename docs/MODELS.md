@@ -1,6 +1,6 @@
 # Modelos
 
-**Última atualização:** 2026-09-21
+**Última atualização:** 2026-09-24
 **Fonte:** `lib/models/modelConfig.ts`
 
 ## Catálogo Atual
@@ -10,9 +10,8 @@
 | ID | Nome | Família | Reasoning | Contexto | Max output | Badge |
 |---|---|---|---|---|---|---|
 | `gpt-6-astra` | GPT-6 Astra | `gpt-6` | `medium` fixo | 1.05M | 128K | Mais potente |
-| `gpt-5.6-sol` | GPT-5.6 Sol | `gpt-5` | Sim (`standard`/`pro`, até `max`) | 1.05M | 128K | Mais potente |
-| `gpt-5.6-terra` | GPT-5.6 Terra | `gpt-5` | Sim (`standard`/`pro`, até `max`) | 1.05M | 128K | Equilibrado |
-| `gpt-5.6-luna` | GPT-5.6 Luna | `gpt-5` | Sim (`standard`/`pro`, até `max`) | 400K | 128K | Default |
+| `gpt-6-sol` | GPT-6 Sol | `gpt-6` | Sim (`standard`, até `max`) | 1.05M | 128K | Equilibrado |
+| `gpt-6-luna` | GPT-6 Luna | `gpt-6` | Sim (`standard`, até `max`) | 1.05M | 128K | Default |
 | `chat-latest` | GPT-5.5 Instant | `gpt-5` | Sim | 400K | 128K | Instant |
 | `gpt-5.5` | GPT-5.5 | `gpt-5` | Sim | 1.05M | 128K | Frontier |
 | `gpt-5.4` | GPT-5.4 | `gpt-5` | Sim | 1.05M | 128K | Frontier |
@@ -30,11 +29,12 @@
 
 ## Defaults
 
-- Modelo padrão do chat: `gpt-5.6-luna`, reasoning `low`, modo `standard`.
+- Modelo padrão do chat: `gpt-6-luna`, reasoning `low`, modo `standard`.
 - `gpt-6-astra` usa reasoning `medium` e verbosity `medium` fixos; store e backend rejeitam overrides desses dois campos.
-- `gpt-5.6-sol` inicia com reasoning `medium`, modo `standard`.
-- `gpt-5.6-terra` inicia com reasoning `medium`, modo `standard`.
-- Sol, Terra e Luna aceitam `reasoning.mode="pro"` independentemente do effort e oferecem effort `max`.
+- `gpt-6-sol` inicia com reasoning `medium`, modo `standard`; Luna inicia com `low`.
+- Sol e Luna oferecem effort `max`; o modo `pro` da família GPT-5.6 não é enviado aos modelos GPT-6.
+- IDs GPT-5.6 Sol/Luna/Terra salvos são aceitos para leitura e resolvem respectivamente para GPT-6 Sol/Luna/Sol antes de uma nova chamada. Históricos não são reescritos.
+- Preços locais estimados de Sol: US$ 2 entrada, US$ 0,20 cache e US$ 10 saída por milhão de tokens; Luna: US$ 0,10/0,01/0,50. Acima de 272 mil tokens de entrada, a tarifa longa vale para o request inteiro. A estimativa local não cobre cache writes, tools ou tiers de processamento; usar Costs da OpenAI para conciliação financeira. [Tabela oficial](https://developers.openai.com/api/docs/pricing).
 - `gpt-5.4-mini` é identificador legado: preferências e novas execuções resolvem para `grok-4.7`, sem reescrever mensagens/runs históricos. Grok usa `medium` fixo no cliente e no servidor, com `XAI_API_KEY` ou `GROK_API_KEY` (primeiro tem precedência).
 - `gpt-chat-latest` e `gpt-5-chat-latest` são aceitos como aliases locais e resolvem para `chat-latest`.
 - `gpt-5.2` inicia com reasoning `medium` + summary `detailed`.
@@ -42,8 +42,8 @@
 - Modelo de imagem usado pela tool: `gpt-image-2`.
 - Quiz força `gpt-5.4` com reasoning `high`.
 - Documento e Deepsearch Medium usam `grok-4.7` com reasoning `medium`; Deepsearch High continua em `gpt-5.4` com reasoning `high`.
-- O Pulse usa `grok-4.7` + `medium` por padrão e mantém Sol/Terra como opções. `verbosity=high` permanece apenas nas chamadas OpenAI; Grok não recebe esse parâmetro. Imagens continuam OpenAI por chamada separada.
-- O `fresh_web_context` do DeepSeek usa `gpt-5.6-luna` + `low`; a resposta final continua no DeepSeek V4 Pro com reasoning máximo.
+- O Pulse usa `grok-4.7` + `medium` por padrão e oferece Astra/Sol/Luna como opções OpenAI. Astra mantém reasoning/verbosity `medium`; Sol/Luna usam verbosity `high`; Grok não recebe esse parâmetro. Imagens continuam OpenAI por chamada separada.
+- O `fresh_web_context` do DeepSeek usa `gpt-6-luna` + `low`; a resposta final continua no DeepSeek V4 Pro com reasoning máximo.
 - `deepseek-v4-pro` é permitido apenas no chat padrão streaming, não usa `code_interpreter` e depende de `DEEPSEEK_API_KEY`.
 - `gemini-3.8-flash` inicia em thinking `high`, permite `low`, `medium` e `high`, e depende de `GEMINI_API_KEY`.
 - Gemini usa Interactions API stateless (`store=false`) com Google Search e URL Context nativos; os modos especiais usam seus presets, independentemente do seletor do chat.
@@ -51,7 +51,7 @@
 - TTS do Chat/Pulse usa a API xAI `/v1/tts` com Orion e MP3; `gpt-4o-mini-tts` em `lib/tts/speechText.ts` permanece para SoundCase e rota legada.
 - Realtime opcional do Chat/Pulse usa `grok-voice-latest` com voz Orion; `gpt-realtime-2.1-mini` permanece no SoundCase e na rota legada OpenAI.
 - Transcrição usa `gpt-4o-transcribe`.
-- SoundCase usa `gpt-5.6-luna` com reasoning `low` para direção estruturada, `gpt-4o-mini-tts` para chunks do arquivo final, `gpt-realtime-2.1-mini` para escuta imediata e `gpt-image-2` para capa. Texto narrado nunca é reescrito pela etapa de direção.
+- SoundCase usa `gpt-6-luna` com reasoning `low` para direção estruturada, `gpt-4o-mini-tts` para chunks do arquivo final, `gpt-realtime-2.1-mini` para escuta imediata e `gpt-image-2` para capa. Texto narrado nunca é reescrito pela etapa de direção.
 - O arquivo SoundCase usa MP3 por padrão, com FLAC/WAV por override; o Realtime é transitório e não substitui a versão durável para download.
 - SoundCase também oferece `grok-voice-latest` experimental: texto → áudio, sem microfone, com vozes xAI e velocidade entre 0.7x e 1.5x. Preferências independentes da geração de arquivo; engine OpenAI permanece default. Grok 4.7 é o modelo de texto, não o modelo dessa sessão de voz.
 
@@ -76,7 +76,7 @@ Referência do provider: [Grok 4.7](https://docs.x.ai/developers/models/grok-4.7
 - não envia reasoning quando o effort é `none`;
 - repassa `minimal`, `low`, `medium`, `high` e `xhigh` como `reasoning.effort` quando o modelo selecionado suporta o nível;
 - repassa também `max` nos modelos compatíveis, embora o Astra permaneça travado em `medium` neste app;
-- envia `reasoning.mode="pro"` somente em Sol/Terra/Luna; `standard` é omitido por ser o default da API;
+- não envia `reasoning.mode="pro"` a GPT-6 Sol/Luna; `standard` é omitido por ser o default da API;
 - repassa `auto`, `concise` e `detailed` como `reasoning.summary`;
 - converte a preferência local `summary=off` em omissão do campo, evitando valor inválido na Responses API.
 

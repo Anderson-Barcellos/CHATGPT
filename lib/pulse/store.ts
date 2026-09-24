@@ -29,6 +29,8 @@ function parsePulseModel(value: unknown): PulseModel {
   // Compatibilidade de dados já persistidos: a leitura os executa no novo
   // provider sem migrar nem regravar os JSONs privados do Anders.
   if (value === "gpt-5.4-mini") return "grok-4.7";
+  if (value === "gpt-5.6-sol" || value === "gpt-5.6-terra") return "gpt-6-sol";
+  if (value === "gpt-5.6-luna") return "gpt-6-luna";
   if (typeof value === "string" && PULSE_MODELS.includes(value as (typeof PULSE_MODELS)[number])) {
     return value as (typeof PULSE_MODELS)[number];
   }

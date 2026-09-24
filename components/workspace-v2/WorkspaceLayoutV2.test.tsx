@@ -136,7 +136,6 @@ describe("CommandComposerContainerV2", () => {
     expect(markup).toContain(">Rec<");
     expect(markup).not.toContain(">Arquivo<");
     expect(markup).not.toContain(">Imagem<");
-    expect(markup).toContain('aria-label="Ativar modo Pro"');
-    expect(markup).toContain('aria-pressed="false"');
+    expect(markup).not.toContain('aria-label="Ativar modo Pro"');
   });
 });

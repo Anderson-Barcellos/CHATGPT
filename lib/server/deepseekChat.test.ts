@@ -207,12 +207,17 @@ describe("DeepSeek chat adapter", () => {
     });
   });
 
-  it("uses GPT-5.6 Luna by default for fresh DeepSeek web context", () => {
+  it("uses GPT-6 Luna by default for fresh DeepSeek web context", () => {
     const params = buildOpenAIWebContextParams("noticias de IA hoje");
 
     expect(params).toMatchObject({
-      model: "gpt-5.6-luna",
+      model: "gpt-6-luna",
       reasoning: { effort: "low" },
     });
+  });
+
+  it("maps a persisted GPT-5.6 web context override to GPT-6", () => {
+    expect(buildOpenAIWebContextParams("teste", { model: "gpt-5.6-luna" }).model)
+      .toBe("gpt-6-luna");
   });
 });

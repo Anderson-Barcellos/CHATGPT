@@ -350,7 +350,7 @@ async function executeImageToolCall(
 
     const openai = new OpenAI({ apiKey });
     const imageResponse = await openai.responses.create({
-      model: "gpt-5.6-luna",
+      model: "gpt-6-luna",
       input: [{ role: "user", content: [{ type: "input_text", text: prompt }] }],
       tools: [{
         type: "image_generation",

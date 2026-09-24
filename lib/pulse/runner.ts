@@ -21,7 +21,7 @@ import {
 import { derivePulseRunTitle } from "@/lib/pulse/runTitle";
 
 const DEFAULT_IMAGE_MODEL = "gpt-image-2";
-const DEFAULT_IMAGE_REQUEST_MODEL = "gpt-5.6-luna";
+const DEFAULT_IMAGE_REQUEST_MODEL = "gpt-6-luna";
 const DEFAULT_PULSE_MAX_OUTPUT_TOKENS = 25_000;
 const MIN_PULSE_MAX_OUTPUT_TOKENS = 8_000;
 const MAX_PULSE_MAX_OUTPUT_TOKENS = 32_000;
@@ -172,7 +172,9 @@ async function completeClaimedRun(
       input: buildPulseInput(task),
       max_output_tokens: getPulseMaxOutputTokens(),
       reasoning: { effort: profile.reasoningEffort },
-      ...(profile.model === GROK_MODEL ? {} : { text: { verbosity: "high" } }),
+      ...(profile.model === GROK_MODEL ? {} : {
+        text: { verbosity: profile.model === "gpt-6-astra" ? "medium" : "high" },
+      }),
       tools: profile.model === GROK_MODEL
         ? ([{ type: "web_search" }] as never)
         : [

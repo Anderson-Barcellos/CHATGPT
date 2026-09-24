@@ -1,15 +1,15 @@
 import { MODELS } from "@/lib/models/modelConfig";
 
 export const STUDIO_MODEL_IDS = [
-  "gpt-5.6-luna",
-  "gpt-5.6-terra",
-  "gpt-5.6-sol",
+  "gpt-6-astra",
+  "gpt-6-sol",
+  "gpt-6-luna",
   "grok-4.7",
 ] as const;
 
 export type StudioModelId = (typeof STUDIO_MODEL_IDS)[number];
 
-export const DEFAULT_STUDIO_MODEL_ID: StudioModelId = "gpt-5.6-luna";
+export const DEFAULT_STUDIO_MODEL_ID: StudioModelId = "gpt-6-luna";
 
 export function isStudioModelId(value: unknown): value is StudioModelId {
   return (
@@ -20,6 +20,8 @@ export function isStudioModelId(value: unknown): value is StudioModelId {
 
 export function resolveStudioModelId(value: unknown): StudioModelId {
   if (value === "gpt-5.4-mini") return "grok-4.7";
+  if (value === "gpt-5.6-sol" || value === "gpt-5.6-terra") return "gpt-6-sol";
+  if (value === "gpt-5.6-luna") return "gpt-6-luna";
   return isStudioModelId(value) ? value : DEFAULT_STUDIO_MODEL_ID;
 }
 
