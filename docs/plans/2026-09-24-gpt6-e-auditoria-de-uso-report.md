@@ -1,6 +1,6 @@
 # Registro técnico — GPT-6 e uso de 16/09
 
-**Estado:** implementação validada em worktree isolada; pronta para revisão. Produção, proxy e dados privados não foram alterados. Branch `codex/gpt6-usage-audit-20260924`, base `2e0e37b`, plano `docs/plans/2026-09-24-gpt6-e-auditoria-de-uso.md`.
+**Estado:** entrega fechada por Anders em 2026-09-24, com commit e push da branch autorizados. Produção, proxy e dados privados não foram alterados. Branch `codex/gpt6-usage-audit-20260924`, base `2e0e37b`, plano `docs/plans/2026-09-24-gpt6-e-auditoria-de-uso.md`.
 
 ## Resultado e decisões
 

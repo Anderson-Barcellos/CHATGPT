@@ -2,9 +2,9 @@
 
 ## Estado operacional
 
-#### GPT-6 Sol/Luna e apuração do gasto de 16/09 (`pronta para revisão`, 2026-09-24)
+#### GPT-6 Sol/Luna e apuração do gasto de 16/09 (`fechada` por Anders, 2026-09-24)
 
-Plano aprovado por Anders em `docs/plans/2026-09-24-gpt6-e-auditoria-de-uso.md`; implementação isolada em `codex/gpt6-usage-audit-20260924`, base `2e0e37b`. Astra, Sol e Luna formam as escolhas OpenAI em chat, Studio e Pulse; Luna segue default, Terra sai das novas escolhas e IDs GPT-5.6 salvos resolvem para GPT-6 sem reescrever históricos. O botão `pro` da família 5.6 não aparece nos novos modelos. Preços locais e documentação foram atualizados. Gates: 194 arquivos/996 testes, TypeScript, lint sem erros (um warning anterior), build `/chat` isolado 42/42 e smoke Chrome desktop/mobile passaram. Sem publicação ou push.
+Plano aprovado por Anders em `docs/plans/2026-09-24-gpt6-e-auditoria-de-uso.md`; implementação isolada em `codex/gpt6-usage-audit-20260924`, base `2e0e37b`. Astra, Sol e Luna formam as escolhas OpenAI em chat, Studio e Pulse; Luna segue default, Terra sai das novas escolhas e IDs GPT-5.6 salvos resolvem para GPT-6 sem reescrever históricos. O botão `pro` da família 5.6 não aparece nos novos modelos. Preços locais e documentação foram atualizados. Gates: 194 arquivos/996 testes, TypeScript, lint sem erros (um warning anterior), build `/chat` isolado 42/42 e smoke Chrome desktop/mobile passaram. Anders fechou a entrega e autorizou commit/push da branch em 2026-09-24; publicação em produção não foi autorizada.
 
 Auditoria local de 16/09: 1 `POST /chat/api/chat`, 2 `POST /chat/api/studio/assist`, nenhum novo job background e nenhum run Pulse; 32 reconciliações de job são consultas, não 32 gerações. Metadados do snapshot atual não mostram mensagem salva nesse dia. Anders identificou o Playground da OpenAI como origem provável, o que é compatível com cobrança via API, mas chave e valor não podem ser atribuídos sem CSV Usage/Costs. Evidência e limites em `docs/plans/2026-09-24-gpt6-e-auditoria-de-uso-report.md`.
 
