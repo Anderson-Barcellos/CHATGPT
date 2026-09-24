@@ -1546,3 +1546,9 @@ Smoke público autenticado com texto sintético: TTS Orion gerou dois clips MP3 
 ### 2026-09-23 — Orion fechado por Anders
 
 Codex: Anders aprovou o resultado publicado e declarou a entrega fechada (“Fechadao!”). Estado atualizado em `BACKLOG.md`; sem mudança de código, build, serviço, commit ou push nesta rodada. Gate documental: `git diff --check`.
+
+### 2026-09-24 — GPT-6 no app e apuração local de 16/09
+
+Codex: na worktree `codex/gpt6-usage-audit-20260924`, Sol/Luna passaram aos IDs GPT-6 em chat, Studio, Pulse e helpers; Terra saiu das escolhas e IDs antigos continuam legíveis com execução encaminhada. DECISÃO: Terra legado resolve para Sol; perfis antigos por modelo são restaurados sem reescrever históricos. O modo `pro` não é oferecido aos GPT-6, enquanto Astra conserva controles fixos.
+
+Validação integrada: 194 arquivos/996 testes, TypeScript e lint exit 0 (um warning anterior), build `/chat` isolado com 42 páginas exit 0 e Chrome desktop/mobile com seleção dos três modelos, Terra/`pro` ausentes e zero pageerror. Nenhuma chamada paga, publicação ou restart de produção. Os logs locais de 16/09 mostram 1 POST ao chat, 2 ao assistente do Studio e nenhum run Pulse; 32 POSTs de reconciliação são consultas. Anders apontou Playground da OpenAI como origem provável, compatível com a cobrança via API; valor e chave específica seguem sem comprovação financeira porque não houve CSV. Relatório e comandos em `docs/plans/2026-09-24-gpt6-e-auditoria-de-uso-report.md`.

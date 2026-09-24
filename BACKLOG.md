@@ -2,6 +2,12 @@
 
 ## Estado operacional
 
+#### GPT-6 Sol/Luna e apuração do gasto de 16/09 (`pronta para revisão`, 2026-09-24)
+
+Plano aprovado por Anders em `docs/plans/2026-09-24-gpt6-e-auditoria-de-uso.md`; implementação isolada em `codex/gpt6-usage-audit-20260924`, base `2e0e37b`. Astra, Sol e Luna formam as escolhas OpenAI em chat, Studio e Pulse; Luna segue default, Terra sai das novas escolhas e IDs GPT-5.6 salvos resolvem para GPT-6 sem reescrever históricos. O botão `pro` da família 5.6 não aparece nos novos modelos. Preços locais e documentação foram atualizados. Gates: 194 arquivos/996 testes, TypeScript, lint sem erros (um warning anterior), build `/chat` isolado 42/42 e smoke Chrome desktop/mobile passaram. Sem publicação ou push.
+
+Auditoria local de 16/09: 1 `POST /chat/api/chat`, 2 `POST /chat/api/studio/assist`, nenhum novo job background e nenhum run Pulse; 32 reconciliações de job são consultas, não 32 gerações. Metadados do snapshot atual não mostram mensagem salva nesse dia. Anders identificou o Playground da OpenAI como origem provável, o que é compatível com cobrança via API, mas chave e valor não podem ser atribuídos sem CSV Usage/Costs. Evidência e limites em `docs/plans/2026-09-24-gpt6-e-auditoria-de-uso-report.md`.
+
 #### Orion Realtime + TTS MP3 no mini-player (`fechada`, 2026-09-23)
 
 Chat e Pulse compartilham TTS xAI MP3 com Orion como opção inicial e Grok Realtime Orion como opção manual. O TTS usa trechos progressivos, cache, seek e remux server-side do download completo; o Realtime usa token efêmero, turnos e PCM. Abrir o player não inicia áudio. SoundCase e as rotas OpenAI legadas conservam seus contratos. `ttsPreferences.mode` e velocidade seguem ativos; campos antigos de voz, formato e instruções continuam persistidos, mas não são enviados à xAI. Gates locais: 194 arquivos/989 testes, TypeScript, lint do fonte (0 erros, 1 warning anterior), remux de MP3 real sem erro de decoder e build `/chat` isolada (42 páginas) aprovados.
