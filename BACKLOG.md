@@ -2,6 +2,12 @@
 
 ## Estado operacional
 
+#### Composer mobile com folga e ondinha no STT (`pronta para revisão`, 2026-09-24)
+
+Plano aprovado em `docs/plans/2026-09-24-composer-mobile-stt.md`; implementação isolada na branch `codex/composer-mobile-stt-20260924`, base `2e0e37b`. Modelo/raciocínio/Pro ocupam a primeira faixa mobile; anexo/voz/pesquisa/envio, a segunda. O botão “Rec” mostra ondinha apenas durante a gravação real, usando o nível de áudio existente; transcrição e movimento reduzido conservam estados próprios. Desktop, APIs e dados privados permanecem preservados.
+
+Validação: 194 arquivos/990 testes, TypeScript e build isolado aprovados; lint sem erros e com um warning anterior. Chrome/Playwright confirmou sem overflow em 320, 390, 430 px e paisagem curta; menu Pesquisa, foco, gravação com microfone simulado, transição de estados e movimento reduzido passaram. Registro e capturas em `docs/plans/2026-09-24-composer-mobile-stt-report.md`. Nenhuma publicação, restart, merge ou push.
+
 #### Orion Realtime + TTS MP3 no mini-player (`fechada`, 2026-09-23)
 
 Chat e Pulse compartilham TTS xAI MP3 com Orion como opção inicial e Grok Realtime Orion como opção manual. O TTS usa trechos progressivos, cache, seek e remux server-side do download completo; o Realtime usa token efêmero, turnos e PCM. Abrir o player não inicia áudio. SoundCase e as rotas OpenAI legadas conservam seus contratos. `ttsPreferences.mode` e velocidade seguem ativos; campos antigos de voz, formato e instruções continuam persistidos, mas não são enviados à xAI. Gates locais: 194 arquivos/989 testes, TypeScript, lint do fonte (0 erros, 1 warning anterior), remux de MP3 real sem erro de decoder e build `/chat` isolada (42 páginas) aprovados.

@@ -1546,3 +1546,9 @@ Smoke público autenticado com texto sintético: TTS Orion gerou dois clips MP3 
 ### 2026-09-23 — Orion fechado por Anders
 
 Codex: Anders aprovou o resultado publicado e declarou a entrega fechada (“Fechadao!”). Estado atualizado em `BACKLOG.md`; sem mudança de código, build, serviço, commit ou push nesta rodada. Gate documental: `git diff --check`.
+
+### 2026-09-24 — Composer mobile e retorno visual do STT
+
+Codex: Anders escolheu duas faixas mobile e uma ondinha discreta em “Rec”. DECISÃO: agrupar controles com `display: contents` no desktop preserva sua ordem e separa, no mobile, modelo/raciocínio/Pro de anexo/voz/pesquisa/envio. A ondinha usa `isRecording` e `audioLevel` existentes; não surge no clique antes de `getUserMedia`/`MediaRecorder` confirmarem gravação. Movimento reduzido mantém o ícone estático.
+
+Execução na worktree `codex/composer-mobile-stt-20260924`, base `2e0e37b`. Os 194 arquivos/990 testes, TypeScript, lint (0 erros, 1 warning anterior) e build isolado passaram. O primeiro build falhou porque o Turbopack rejeita `node_modules` por symlink fora da raiz; a cópia local das dependências resolveu, sem editar o checkout produtivo. Chrome/Playwright verificou a barra em 320/390/430 px e paisagem curta, light/dark, menu Pesquisa, foco, microfone simulado e movimento reduzido; sem overflow e sem chamadas pagas. O primeiro carregamento sintético encontrou corrida na inicialização de `conversations.json` vazio; a rodada estável passou sem erros de página. Relatório completo em `docs/plans/2026-09-24-composer-mobile-stt-report.md`. Sem publicação, restart, merge, push, Apache ou dados privados.
