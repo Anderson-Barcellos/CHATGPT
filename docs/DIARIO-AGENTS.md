@@ -1566,3 +1566,15 @@ Codex: após Anders aprovar a faixa única com lupa, retirada do botão “+” 
 ### 2026-09-25 — Composer mobile e STT fechados por Anders
 
 Codex: Anders confirmou “Fechada meu velho!” após publicação e push. Estado atualizado em `BACKLOG.md`; fechamento somente documental, sem nova build, alteração de serviço, API ou dados privados. O push anterior sincronizou `origin/main` em `f9feb97`; o registro técnico da entrega guarda os gates e a publicação.
+
+### 2026-09-25 — TTS Grok ou OpenAI no arquivo SoundCase
+
+Codex: implementada escolha de TTS do arquivo separada da leitura Realtime. Preferência nova: Grok/Orion; JSON local e versões antigas sem provedor: OpenAI. `requestedSettings` congela provedor/voz, e a projeção resume o provedor. Worker usa a mesma credencial xAI server-side já carregada por `chatgpt.service`; `chatgpt-soundcase.service` apenas chama a rota interna por HTTP. DECISÃO: WAV xAI → FLAC local por chunk preserva validação, retomada e montagem existente de MP3/FLAC/WAV; direção/capa Luna continuam, sem enviar instruções de voz OpenAI à xAI.
+
+Validação: `npx vitest --run` focado 33/33 (exit 0); `npm test` completo 195 arquivos/996 testes (exit 0); `npx tsc --noEmit` (exit 0); `npm run lint -- --ignore-pattern '.next-before-sc2-20260906T170822Z/**'` (exit 0, zero erros, um warning anterior de `_content`); `NEXT_PUBLIC_BASE_PATH=/chat NEXT_TELEMETRY_DISABLED=1 npm run build` em cópia isolada com `node_modules` real (exit 0, 42 páginas, warnings anteriores de instrumentation Edge e tracing Studio); `git diff --check` (exit 0). Testes cobrem preferências legadas, seleção de provedor/voz, idempotência, rota xAI simulada, conversão e falha sem fallback. Não há suíte Playwright configurada; UI verificada por testes de markup/integração existentes. Sem chamada real paga ou escrita em dados SoundCase.
+
+Incidente de validação: o primeiro build isolado falhou (exit 1) porque Turbopack recusou symlink de `node_modules` fora da raiz. Ao refazer, um comando foi disparado no checkout produtivo por engano e interrompido (exit 130) antes da compilação; isso removeu `.next/BUILD_ID`. Restaurada a build publicada exata `g3jqXnah4B4NI5lBaGERb` de `/root/.cache/gaucho-composer-mobile-stt-20260924/.next`, mantendo a árvore interrompida em `/root/.cache/soundcase-tts-next-interrupted-20260925` para inspeção. Health local/público e asset estático público retornaram 200, `chatgpt.service` ficou ativo e não houve restart. Novo código permanece apenas no checkout, sem publicação, commit ou push.
+
+### 2026-09-25 — TTS do arquivo SoundCase fechado por Anders
+
+Codex: Anders confirmou “Fechado meu velho!”. Estado atualizado em `BACKLOG.md`. Fechamento somente documental; código novo permanece local, sem publicação, build, restart, commit ou push nesta rodada.

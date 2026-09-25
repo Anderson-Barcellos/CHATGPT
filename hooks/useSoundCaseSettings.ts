@@ -8,6 +8,7 @@ import type { SoundCaseGenerationSettings } from "@/lib/soundcase/types";
 export const SOUNDCASE_SETTINGS_KEY = "gaucho-soundcase:settings:v1";
 const CHANGE_EVENT = "gaucho:soundcase-settings";
 export const DEFAULT_SOUNDCASE_SETTINGS: SoundCaseGenerationSettings = {
+  ttsProvider: "grok", grokVoice: "orion",
   automatic: true, playbackMode: "realtime", format: "mp3",
   voiceOverride: null, speedOverride: null, instructionsOverride: null,
 };
@@ -31,11 +32,13 @@ function subscribe(onChange: () => void) {
   };
 }
 
-function normalizeSettings(raw: string | null): SoundCaseGenerationSettings {
+export function normalizeSoundCaseSettings(raw: string | null): SoundCaseGenerationSettings {
   try {
     const value = JSON.parse(raw ?? "null");
     if (!value || typeof value !== "object" || Array.isArray(value)) return DEFAULT_SOUNDCASE_SETTINGS;
     return {
+      ttsProvider: value.ttsProvider === "grok" || value.ttsProvider === "openai" ? value.ttsProvider : "openai",
+      grokVoice: typeof value.grokVoice === "string" && /^[a-z][a-z0-9_-]{0,63}$/i.test(value.grokVoice) ? value.grokVoice : "orion",
       automatic: typeof value.automatic === "boolean" ? value.automatic : true,
       playbackMode: value.playbackMode === "silent" ? "silent" : "realtime",
       format: value.format === "flac" || value.format === "wav" ? value.format : "mp3",
@@ -50,7 +53,7 @@ function normalizeSettings(raw: string | null): SoundCaseGenerationSettings {
 
 export function useSoundCaseSettings() {
   const raw = useSyncExternalStore(subscribe, readSettings, () => null);
-  const settings = useMemo(() => normalizeSettings(raw), [raw]);
+  const settings = useMemo(() => normalizeSoundCaseSettings(raw), [raw]);
   const setSettings = (next: SoundCaseGenerationSettings) => {
     const serialized = JSON.stringify(next);
     try {

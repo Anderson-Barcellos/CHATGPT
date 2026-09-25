@@ -76,7 +76,9 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
     : playingFinalVersionId && playingFinalVersionId === selectedVersionId
       ? { versionId: selectedVersionId, source: "file" as const }
       : null;
-  const selectedVoice = soundcase.selectedVersion?.effectiveSettings?.voice.value ?? soundcase.selectedVersion?.direction?.voice ?? null;
+  const selectedVoice = soundcase.selectedVersion?.requestedSettings.ttsProvider === "grok"
+    ? soundcase.selectedVersion.requestedSettings.grokVoice ?? "orion"
+    : soundcase.selectedVersion?.effectiveSettings?.voice.value ?? soundcase.selectedVersion?.direction?.voice ?? null;
 
   useEffect(() => {
     const version = soundcase.selectedVersion;
@@ -157,7 +159,7 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
         <Collapsible className={styles.settingsSection} open={directionOpen} onOpenChange={setDirectionOpen}>
           <CollapsibleTrigger className={styles.settingsTrigger} aria-label="Configurações do Soundcase" disabled={generating}>
             <SlidersHorizontal />
-            <span><strong>Configurações do Soundcase</strong><small>{settings.automatic ? "Direção automática · Luna" : "Direção manual"} · {settings.format.toUpperCase()}</small></span>
+            <span><strong>Configurações do Soundcase</strong><small>{settings.automatic ? "Direção automática · Luna" : "Direção manual"} · {settings.ttsProvider === "grok" ? "Grok TTS" : "OpenAI TTS"} · {settings.format.toUpperCase()}</small></span>
             <ChevronDown />
           </CollapsibleTrigger>
           <CollapsibleContent>

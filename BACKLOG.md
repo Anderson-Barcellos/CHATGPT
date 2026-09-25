@@ -2,6 +2,14 @@
 
 ## Estado operacional
 
+#### TTS OpenAI ou Grok para arquivo SoundCase (`fechada`, 2026-09-25)
+
+SoundCase escolhe Grok ou OpenAI para o TTS do arquivo final independentemente da leitura Realtime; novas preferências iniciam em Grok/Orion, preferências e versões antigas sem provedor continuam OpenAI. Provedor e voz xAI ficam no snapshot da versão e na projeção do acervo. O worker usa WAV da xAI, converte os chunks localmente para FLAC retomável e monta MP3/FLAC/WAV; falhas não trocam o provedor silenciosamente. Luna continua com direção e capa; instruções de voz OpenAI ficam ocultas no modo Grok. Contratos em `docs/API.md`, `docs/ARCHITECTURE.md` e `docs/MODELS.md`.
+
+Gates: 195 arquivos/996 testes completos, TypeScript, lint do fonte (0 erros, 1 warning anterior), build `/chat` isolado (42 páginas) e `git diff --check` aprovados. Testes de UI renderizada e worker com xAI simulada passaram; não há suíte Playwright configurada. Sem chamada real paga, dados persistidos de teste ou publicação do novo código. Durante a validação, um build foi iniciado por engano no checkout produtivo e interrompido; a `.next` anterior foi restaurada da cópia isolada exata `g3jqXnah4B4NI5lBaGERb`, com health local/público e asset público 200, serviço ativo e sem restart. Registro técnico no fim de `docs/DIARIO-AGENTS.md`.
+
+Anders fechou a entrega em 2026-09-25 (“Fechado meu velho!”). Fechamento somente documental; código novo segue local, ainda não publicado.
+
 #### Composer mobile com folga e ondinha no STT (`fechada`, 2026-09-25)
 
 Plano e correções de Anders em `docs/plans/2026-09-24-composer-mobile-stt.md`; implementação isolada na branch `codex/composer-mobile-stt-20260924`, base `2e0e37b`. A barra mobile ficou numa linha, com a lupa da Pesquisa à esquerda, modelo/raciocínio/Pro, voz e envio. Anders pediu retirar o botão “+” de anexos; colar imagem e arrastar arquivo continuam. O botão “Rec” mostra ondinha apenas durante a gravação real; movimento reduzido é estático. `overflow: clip` no frame impede o deslocamento horizontal observado ao escolher modelo. APIs e dados privados permanecem preservados.

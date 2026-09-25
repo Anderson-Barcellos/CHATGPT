@@ -45,7 +45,7 @@ export function parseSoundCaseProjectUpdate(value: unknown): UpdateSoundCaseProj
 
 export function parseSoundCaseSettings(value: unknown): SoundCaseGenerationSettings | null {
   if (!isRecord(value) || !onlyKeys(value, [
-    "automatic", "playbackMode", "format", "voiceOverride", "speedOverride", "instructionsOverride",
+    "automatic", "playbackMode", "format", "voiceOverride", "speedOverride", "instructionsOverride", "ttsProvider", "grokVoice",
   ])) return null;
   const speed = value.speedOverride;
   const instructions = value.instructionsOverride;
@@ -53,11 +53,15 @@ export function parseSoundCaseSettings(value: unknown): SoundCaseGenerationSetti
     typeof value.automatic !== "boolean" ||
     (value.playbackMode !== "realtime" && value.playbackMode !== "silent") ||
     (value.format !== "mp3" && value.format !== "flac" && value.format !== "wav") ||
+    (value.ttsProvider !== undefined && value.ttsProvider !== "openai" && value.ttsProvider !== "grok") ||
+    (value.grokVoice !== undefined && (typeof value.grokVoice !== "string" || !/^[a-z][a-z0-9_-]{0,63}$/i.test(value.grokVoice))) ||
     !(value.voiceOverride === null || isTtsVoice(value.voiceOverride)) ||
     !(speed === null || (typeof speed === "number" && Number.isFinite(speed) && speed >= 0.25 && speed <= 4)) ||
     !(instructions === null || (typeof instructions === "string" && instructions.length <= 1_200))
   ) return null;
   return {
+    ttsProvider: value.ttsProvider === "grok" ? "grok" : "openai",
+    grokVoice: typeof value.grokVoice === "string" ? value.grokVoice : "orion",
     automatic: value.automatic,
     playbackMode: value.playbackMode,
     format: value.format,

@@ -88,6 +88,18 @@ describe("SoundCase version queue", () => {
     ).resolves.toBe("Texto.");
   });
 
+  it("separates providers and voices while preserving legacy OpenAI idempotency", async () => {
+    const project = await createSoundCaseProject({ title: "Vozes", text: "Mesmo texto." });
+    const legacy = await createSoundCaseVersion(project.id, settings);
+    const openai = await createSoundCaseVersion(project.id, { ...settings, ttsProvider: "openai", grokVoice: "orion" });
+    const grok = await createSoundCaseVersion(project.id, { ...settings, ttsProvider: "grok", grokVoice: "orion" });
+    const otherVoice = await createSoundCaseVersion(project.id, { ...settings, ttsProvider: "grok", grokVoice: "eve" });
+    expect(openai.version.id).toBe(legacy.version.id);
+    expect(grok.version.id).not.toBe(legacy.version.id);
+    expect(otherVoice.version.id).not.toBe(grok.version.id);
+    expect(grok.version.requestedSettings).toMatchObject({ ttsProvider: "grok", grokVoice: "orion" });
+  });
+
   it("creates a new version after the equivalent job is terminal", async () => {
     const project = await createSoundCaseProject({ text: "Texto." });
     const first = await createSoundCaseVersion(project.id, settings);

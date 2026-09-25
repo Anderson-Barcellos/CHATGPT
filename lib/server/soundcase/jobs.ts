@@ -249,6 +249,7 @@ function settingsHash(settings: SoundCaseGenerationSettings): string {
   return hash(
     JSON.stringify({
       automatic: settings.automatic,
+      ...(settings.ttsProvider === "grok" ? { ttsProvider: "grok", grokVoice: settings.grokVoice ?? "orion" } : {}),
       playbackMode: settings.playbackMode,
       format: settings.format,
       voiceOverride: settings.voiceOverride,
@@ -299,6 +300,7 @@ function metadataOf(version: SoundCaseVersion): SoundCaseVersionMetadata {
 
 function summaryOf(version: SoundCaseVersion): SoundCaseVersionSummary {
   return {
+    ttsProvider: version.requestedSettings.ttsProvider ?? "openai",
     id: version.id,
     projectId: version.projectId,
     idempotencyKey: version.idempotencyKey,

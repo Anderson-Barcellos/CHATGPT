@@ -8,6 +8,7 @@ import type {
   SoundCaseEffectiveSettings,
   SoundCaseManifest,
   SoundCaseSegment,
+  SoundCaseTtsProvider,
 } from "@/lib/soundcase/types";
 import { TTS_MODEL } from "@/lib/tts/speechText";
 import {
@@ -69,7 +70,7 @@ const FORMAT_CONFIG: Record<
 function defaultExecFile(
   file: string,
   args: string[],
-  options: { cwd?: string } = {}
+  options: { cwd?: string; signal?: AbortSignal } = {}
 ): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     nodeExecFile(file, args, { ...options, maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => {
@@ -77,6 +78,58 @@ function defaultExecFile(
       else resolve({ stdout: String(stdout), stderr: String(stderr) });
     });
   });
+}
+
+async function synthesizeGrokFlac(input: {
+  projectId: string;
+  versionId: string;
+  segment: SoundCaseSegment;
+  effectiveSettings: SoundCaseEffectiveSettings;
+  grokVoice?: string;
+  execFile?: SoundCaseExecFile;
+  signal?: AbortSignal;
+}): Promise<Buffer> {
+  const key = process.env.XAI_API_KEY?.trim() || process.env.GROK_API_KEY?.trim();
+  if (!key) throw new Error("soundcase_grok_tts_unavailable");
+  const response = await fetch("https://api.x.ai/v1/tts", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text: input.segment.text,
+      voice_id: input.grokVoice ?? "orion",
+      language: "pt-BR",
+      speed: Math.min(1.5, Math.max(0.7, input.effectiveSettings.speed.value)),
+      output_format: { codec: "wav", sample_rate: 24_000 },
+    }),
+    cache: "no-store",
+    signal: input.signal ? AbortSignal.any([input.signal, AbortSignal.timeout(90_000)]) : AbortSignal.timeout(90_000),
+  });
+  if (!response.ok) {
+    const error = new Error("soundcase_grok_tts_provider") as Error & { status?: number };
+    error.status = response.status;
+    throw error;
+  }
+  const wav = Buffer.from(await response.arrayBuffer());
+  if (wav.length < 44 || wav.toString("ascii", 0, 4) !== "RIFF" || wav.toString("ascii", 8, 12) !== "WAVE") {
+    throw new Error("soundcase_grok_tts_wav_invalid");
+  }
+  const base = resolveSoundCasePath("projects", input.projectId, "versions", input.versionId, "chunks", randomUUID());
+  const wavPath = `${base}.wav.part`;
+  const flacPath = `${base}.flac.part`;
+  try {
+    await writeBufferDurable(wavPath, wav);
+    try {
+      await (input.execFile ?? defaultExecFile)(FFMPEG_PATH, [
+        "-hide_banner", "-loglevel", "error", "-nostats", "-n", "-i", wavPath,
+        "-c:a", "flac", "-f", "flac", flacPath,
+      ], { signal: input.signal });
+      return await fs.readFile(flacPath);
+    } catch (cause) {
+      throw new Error("soundcase_grok_tts_conversion", { cause });
+    }
+  } finally {
+    await Promise.all([fs.rm(wavPath, { force: true }), fs.rm(flacPath, { force: true })]);
+  }
 }
 
 export async function probeSoundCaseAudio(
@@ -134,6 +187,8 @@ async function probePacketDuration(
 }
 
 export async function synthesizeSoundCaseChunk(input: {
+  ttsProvider?: SoundCaseTtsProvider;
+  grokVoice?: string;
   projectId: string;
   versionId: string;
   chunk: SoundCaseChunk;
@@ -157,18 +212,22 @@ export async function synthesizeSoundCaseChunk(input: {
   )?.instructions;
   let bytes: Buffer;
   try {
-    const response = await input.client.audio.speech.create({
-      model: TTS_MODEL,
-      voice: input.effectiveSettings.voice.value,
-      input: input.segment.text,
-      speed: input.effectiveSettings.speed.value,
-      instructions: [
-        input.effectiveSettings.instructions.value,
-        segmentDirection,
-      ].filter(Boolean).join("\n\n"),
-      response_format: "flac",
-    }, { signal: input.signal });
-    bytes = Buffer.from(await response.arrayBuffer());
+    if (input.ttsProvider === "grok") {
+      bytes = await synthesizeGrokFlac(input);
+    } else {
+      const response = await input.client.audio.speech.create({
+        model: TTS_MODEL,
+        voice: input.effectiveSettings.voice.value,
+        input: input.segment.text,
+        speed: input.effectiveSettings.speed.value,
+        instructions: [
+          input.effectiveSettings.instructions.value,
+          segmentDirection,
+        ].filter(Boolean).join("\n\n"),
+        response_format: "flac",
+      }, { signal: input.signal });
+      bytes = Buffer.from(await response.arrayBuffer());
+    }
   } catch (error) {
     await input.afterProvider?.();
     throw error;

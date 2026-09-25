@@ -76,6 +76,7 @@ function VersionCard(props: {
           {expanded ? (
             <dl>
               <div><dt><Clock3 /> Duração</dt><dd>{version.audio.status === "ready" ? "" : "~"}{Math.max(1, Math.ceil(durationSeconds / 60))} min</dd></div>
+              <div><dt><FileAudio /> TTS do arquivo</dt><dd>{version.ttsProvider === "grok" ? "Grok" : "OpenAI"}</dd></div>
               {props.selectedVoice ? <div><dt><Sparkles /> Voz</dt><dd>{props.selectedVoice}</dd></div> : null}
               <div><dt><CalendarDays /> Criado</dt><dd>{new Date(version.createdAt).toLocaleDateString("pt-BR")}</dd></div>
             </dl>

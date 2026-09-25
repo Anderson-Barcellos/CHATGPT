@@ -39,6 +39,70 @@ function manifest(): SoundCaseManifest {
 }
 
 describe("SoundCase audio pipeline", () => {
+  it("uses the selected Grok voice and converts WAV to the resumable FLAC chunk", async () => {
+    const oldKey = process.env.XAI_API_KEY;
+    process.env.XAI_API_KEY = "test-key";
+    const originalFetch = globalThis.fetch;
+    const fetchMock = vi.fn(async () => new Response(Buffer.concat([
+      Buffer.from("RIFF"), Buffer.alloc(4), Buffer.from("WAVE"), Buffer.alloc(40),
+    ])));
+    globalThis.fetch = fetchMock as typeof fetch;
+    try {
+      const [segment] = segmentSoundCaseText("Texto para a voz Grok.");
+      const direction = buildFallbackSoundCaseDirection({ sourceText: segment.text, segments: [segment] });
+      const openaiCreate = vi.fn();
+      const execFile: SoundCaseExecFile = vi.fn(async (file, args) => {
+        if (file.endsWith("ffmpeg")) await fs.writeFile(args.at(-1)!, Buffer.from("fLaCdata"));
+        return { stdout: file.endsWith("ffprobe")
+          ? JSON.stringify({ streams: [{ codec_name: "flac", duration: "1.2" }] }) : "", stderr: "" };
+      });
+      const artifact = await synthesizeSoundCaseChunk({
+        ttsProvider: "grok", grokVoice: "orion", projectId: "project-a", versionId: "version-a",
+        chunk: { id: segment.id, index: 0, segmentId: segment.id, start: segment.start, end: segment.end,
+          textHash: segment.textHash, status: "synthesizing", attempts: 1 },
+        segment, direction,
+        effectiveSettings: { ttsProvider: "grok", grokVoice: "orion",
+          format: { value: "flac", source: "override" }, voice: { value: "marin", source: "fallback" },
+          speed: { value: 1, source: "fallback" }, instructions: { value: "Não enviar", source: "fallback" } },
+        client: { audio: { speech: { create: openaiCreate } } }, execFile,
+      });
+      expect(openaiCreate).not.toHaveBeenCalled();
+      expect(fetchMock).toHaveBeenCalledWith("https://api.x.ai/v1/tts", expect.objectContaining({
+        body: JSON.stringify({ text: segment.text, voice_id: "orion", language: "pt-BR", speed: 1,
+          output_format: { codec: "wav", sample_rate: 24_000 } }),
+      }));
+      expect(artifact).toMatchObject({ fileName: "chunks/0000.flac", durationSeconds: 1.2 });
+      expect((execFile as ReturnType<typeof vi.fn>).mock.calls.some((call: unknown[]) => String(call[0]).endsWith("ffmpeg"))).toBe(true);
+    } finally {
+      globalThis.fetch = originalFetch;
+      if (oldKey === undefined) delete process.env.XAI_API_KEY; else process.env.XAI_API_KEY = oldKey;
+    }
+  });
+
+  it("reports a Grok rejection without falling back to OpenAI", async () => {
+    const oldKey = process.env.XAI_API_KEY;
+    process.env.XAI_API_KEY = "test-key";
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn(async () => new Response("rejected", { status: 429 })) as typeof fetch;
+    try {
+      const [segment] = segmentSoundCaseText("Texto que falhou.");
+      const direction = buildFallbackSoundCaseDirection({ sourceText: segment.text, segments: [segment] });
+      const create = vi.fn();
+      await expect(synthesizeSoundCaseChunk({
+        ttsProvider: "grok", projectId: "project-a", versionId: "version-a",
+        chunk: { id: segment.id, index: 0, segmentId: segment.id, start: segment.start, end: segment.end,
+          textHash: segment.textHash, status: "synthesizing", attempts: 1 },
+        segment, direction,
+        effectiveSettings: { format: { value: "mp3", source: "automatic" }, voice: { value: "marin", source: "fallback" },
+          speed: { value: 1, source: "fallback" }, instructions: { value: "ignored", source: "fallback" } },
+        client: { audio: { speech: { create } } },
+      })).rejects.toMatchObject({ message: "soundcase_grok_tts_provider", status: 429 });
+      expect(create).not.toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = originalFetch;
+      if (oldKey === undefined) delete process.env.XAI_API_KEY; else process.env.XAI_API_KEY = oldKey;
+    }
+  });
   it("sends exact text and promotes a probed FLAC only after lease hooks", async () => {
     const [segment] = segmentSoundCaseText("Texto exato, sem reescrita.");
     const direction = buildFallbackSoundCaseDirection({ sourceText: segment.text, segments: [segment] });

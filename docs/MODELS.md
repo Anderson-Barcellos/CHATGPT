@@ -1,6 +1,6 @@
 # Modelos
 
-**Última atualização:** 2026-09-21
+**Última atualização:** 2026-09-25
 **Fonte:** `lib/models/modelConfig.ts`
 
 ## Catálogo Atual
@@ -48,12 +48,12 @@
 - `gemini-3.8-flash` inicia em thinking `high`, permite `low`, `medium` e `high`, e depende de `GEMINI_API_KEY`.
 - Gemini usa Interactions API stateless (`store=false`) com Google Search e URL Context nativos; os modos especiais usam seus presets, independentemente do seletor do chat.
 - Autocomplete FIM do Studio usa `codestral-latest` (Codestral 25.08, Mistral) via `/v1/fim/completions`; a key vem de `CODESTRAL_API_KEY` ou `MISTRAL_API_KEY`, com `deepseek-v4-pro` como fallback legado via `DEEPSEEK_API_KEY`.
-- TTS do Chat/Pulse usa a API xAI `/v1/tts` com Orion e MP3; `gpt-4o-mini-tts` em `lib/tts/speechText.ts` permanece para SoundCase e rota legada.
+- TTS do Chat/Pulse usa a API xAI `/v1/tts` com Orion e MP3; `gpt-4o-mini-tts` em `lib/tts/speechText.ts` permanece como opção do SoundCase e rota legada.
 - Realtime opcional do Chat/Pulse usa `grok-voice-latest` com voz Orion; `gpt-realtime-2.1-mini` permanece no SoundCase e na rota legada OpenAI.
 - Transcrição usa `gpt-4o-transcribe`.
-- SoundCase usa `gpt-5.6-luna` com reasoning `low` para direção estruturada, `gpt-4o-mini-tts` para chunks do arquivo final, `gpt-realtime-2.1-mini` para escuta imediata e `gpt-image-2` para capa. Texto narrado nunca é reescrito pela etapa de direção.
+- SoundCase usa `gpt-5.6-luna` com reasoning `low` para direção estruturada, xAI `/v1/tts` (Grok TTS, Orion inicial) ou `gpt-4o-mini-tts` para chunks do arquivo final, e `gpt-image-2` para capa. Texto narrado nunca é reescrito pela etapa de direção. A escuta imediata tem escolha independente entre OpenAI Realtime (`gpt-realtime-2.1-mini`) e Grok Realtime.
 - O arquivo SoundCase usa MP3 por padrão, com FLAC/WAV por override; o Realtime é transitório e não substitui a versão durável para download.
-- SoundCase também oferece `grok-voice-latest` experimental: texto → áudio, sem microfone, com vozes xAI e velocidade entre 0.7x e 1.5x. Preferências independentes da geração de arquivo; engine OpenAI permanece default. Grok 4.7 é o modelo de texto, não o modelo dessa sessão de voz.
+- SoundCase também oferece `grok-voice-latest` experimental: texto → áudio, sem microfone, com vozes xAI e velocidade entre 0.7x e 1.5x. Preferências da leitura ao vivo são independentes da geração de arquivo; engine OpenAI permanece default para Realtime. Grok 4.7 é o modelo de texto, não o modelo dessa sessão de voz.
 
 Referência do provider: [Grok 4.7](https://docs.x.ai/developers/models/grok-4.7), [Realtime](https://docs.x.ai/developers/model-capabilities/audio/speech-to-speech). Preço-base de Grok: US$ 2/6 por milhão de tokens input/output e US$ 0.50 cached; a partir de 200k tokens de entrada, US$ 4/12 e US$ 1 cached. O limiar inclusivo segue o contrato de `long_context_threshold` na [API de modelos](https://docs.x.ai/developers/rest-api-reference/inference/models). Estimativas locais não substituem a fatura, especialmente quando o uso agrega várias rodadas de ferramentas. Voz: US$ 0.08 por minuto de áudio enviado/recebido e US$ 0.004 por mensagem de texto de entrada.
 

@@ -87,6 +87,9 @@ function isRetryableChunkError(error: unknown): boolean {
   }
   if (error instanceof Error && (
     error.message === "soundcase_chunk_flac_invalid" ||
+    error.message === "soundcase_grok_tts_unavailable" ||
+    error.message === "soundcase_grok_tts_wav_invalid" ||
+    error.message === "soundcase_grok_tts_conversion" ||
     error.message === "soundcase_audio_probe_invalid" ||
     error.message === "soundcase_audio_probe_mismatch" ||
     error.name === "SoundCaseFileError"
@@ -135,6 +138,8 @@ function resolveEffectiveSettings(
 ): SoundCaseEffectiveSettings {
   const requested = version.requestedSettings;
   return {
+    ttsProvider: requested.ttsProvider ?? "openai",
+    grokVoice: requested.grokVoice ?? "orion",
     format: { value: requested.format, source: requested.format === "mp3" ? "automatic" : "override" },
     voice: requested.voiceOverride
       ? { value: requested.voiceOverride, source: "override" }
@@ -332,6 +337,8 @@ export async function runNextSoundCaseJob(
           try {
             const artifact = await withLeaseHeartbeat(state.checkpoint, (signal) =>
               synthesizeSoundCaseChunk({
+                ttsProvider: version.requestedSettings.ttsProvider ?? "openai",
+                grokVoice: version.requestedSettings.grokVoice ?? "orion",
                 projectId: version.projectId,
                 versionId: version.id,
                 chunk,

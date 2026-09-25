@@ -318,7 +318,7 @@ Notas do PDF:
 
 ## SoundCase
 
-`/soundcase` reutiliza o mesmo cookie JWT do Chat. O texto e os assets ficam privados no servidor; o browser recebe apenas projeções autenticadas e URLs protegidas. O modo Realtime usa `gpt-realtime-2.1-mini` para ouvir enquanto o arquivo final é produzido, e o pipeline durável usa Luna para direção, `gpt-4o-mini-tts` para áudio e `gpt-image-2` para capa.
+`/soundcase` reutiliza o mesmo cookie JWT do Chat. O texto e os assets ficam privados no servidor; o browser recebe apenas projeções autenticadas e URLs protegidas. A leitura ao vivo usa OpenAI Realtime ou Grok Realtime, independentemente do TTS do arquivo final. O pipeline durável usa Luna para direção, OpenAI `gpt-4o-mini-tts` ou xAI `/v1/tts` para áudio, e `gpt-image-2` para capa. `ttsProvider` e `grokVoice` ficam no snapshot de cada versão; versões legadas sem provedor usam OpenAI.
 
 | Método | Rota | Função |
 |---|---|---|
@@ -337,7 +337,7 @@ Notas do PDF:
 
 O limite editorial inicial é 90 minutos estimados. O default de saída é MP3; FLAC e WAV são overrides. Cada chunk FLAC é validado por magic `fLaC` + `ffprobe`; como o FLAC do `gpt-4o-mini-tts` vem sem `total_samples` no STREAMINFO (container devolve `N/A`), a duração cai para o último packet (`pts_time + duration_time`) antes de qualquer rejeição. Erros do worker chegam ao cliente só como `code` + `diagnosticId`; o erro real (e a `cause` do chunk) fica no journal/log do serviço com o mesmo `diagnosticId`. O worker é disparado por `chatgpt-soundcase.path` (mudança em `data/soundcase/jobs.json`) e `chatgpt-soundcase.timer` (recovery a cada 1 min). A chegada do arquivo final não interrompe Realtime: a troca de fonte é sempre explícita no player.
 
-As configurações próprias do SoundCase ficam em `gaucho-soundcase:settings:v1` no navegador, compartilhadas pela página e painel. Valem para próximas gerações; formato não altera a direção automática. O player inicia Realtime sobre `/source` da versão selecionada e reutiliza sua direção persistida, sem criar outra versão/job TTS. A busca do snapshot participa do cancelamento da sessão.
+As configurações próprias do SoundCase ficam em `gaucho-soundcase:settings:v1` no navegador, compartilhadas pela página e painel. Valem para próximas gerações; preferências antigas sem provedor continuam OpenAI, enquanto uma instalação nova inicia com Grok TTS e Orion. Formato não altera a direção automática. No caminho Grok, WAV da xAI vira chunk FLAC local para retomada e montagem em MP3/FLAC/WAV. O player inicia Realtime sobre `/source` da versão selecionada e reutiliza sua direção persistida, sem criar outra versão/job TTS. A busca do snapshot participa do cancelamento da sessão.
 
 Grok Realtime é uma opção experimental independente: `grok-voice-latest`, texto → áudio sem microfone. O browser usa exclusivamente o token temporário no subprotocolo `xai-client-secret.*`; a credencial permanente permanece no servidor. Preferências próprias de engine/voz/velocidade não alteram configurações de geração do arquivo. Abrir/configurar o painel não inicia sessão de voz; parada e retry são explícitos.
 

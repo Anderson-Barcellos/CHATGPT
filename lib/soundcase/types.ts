@@ -6,6 +6,7 @@ export const SOUNDCASE_AUDIO_FORMAT_OVERRIDES = ["flac", "wav"] as const satisfi
 export const SOUNDCASE_INTERMEDIATE_AUDIO_FORMAT = "flac" satisfies TtsAudioFormat;
 
 export type SoundCasePlaybackMode = "realtime" | "silent";
+export type SoundCaseTtsProvider = "openai" | "grok";
 export type SoundCaseChoiceSource = "automatic" | "override" | "fallback";
 
 export type SoundCaseVersionStatus =
@@ -68,6 +69,8 @@ export interface SoundCaseDirection {
 }
 
 export interface SoundCaseGenerationSettings {
+  ttsProvider?: SoundCaseTtsProvider;
+  grokVoice?: string;
   automatic: boolean;
   playbackMode: SoundCasePlaybackMode;
   format: TtsAudioFormat;
@@ -82,6 +85,8 @@ export interface SoundCaseEffectiveChoice<T> {
 }
 
 export interface SoundCaseEffectiveSettings {
+  ttsProvider?: SoundCaseTtsProvider;
+  grokVoice?: string;
   format: SoundCaseEffectiveChoice<TtsAudioFormat>;
   voice: SoundCaseEffectiveChoice<TtsVoice>;
   speed: SoundCaseEffectiveChoice<number>;
@@ -197,6 +202,7 @@ export interface SoundCaseVersion {
 }
 
 export interface SoundCaseVersionSummary {
+  ttsProvider?: SoundCaseTtsProvider;
   id: string;
   projectId: string;
   idempotencyKey: string;
