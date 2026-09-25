@@ -63,11 +63,6 @@ const REASONING_OPTIONS: { value: ReasoningEffort; label: string; desc: string }
   { value: "max", label: "Maximo", desc: "Qualidade extrema" },
 ];
 
-const IMAGE_ATTACHMENT_ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
-const FILE_ATTACHMENT_ACCEPT =
-  "application/pdf,.txt,.md,.csv,.json,.xml,.log,.yaml,.yml,.toml,.ini,.sh,.py,.js,.ts,.tsx,.jsx,.html,.css";
-const DEFAULT_ATTACHMENT_ACCEPT = `${IMAGE_ATTACHMENT_ACCEPT},${FILE_ATTACHMENT_ACCEPT}`;
-
 interface CommandComposerContainerV2Props {
   sendMessage: (content: string, options?: SendMessageOptions) => Promise<boolean>;
   stopGeneration: () => void;
@@ -100,7 +95,6 @@ export function CommandComposerContainerV2({
   const [isDragging, setIsDragging] = useState(false);
   const dragCounter = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const speechInputBaseRef = useRef("");
   const handleTranscriptPreview = useCallback((preview: string) => {
     setInput(
@@ -232,14 +226,6 @@ export function CommandComposerContainerV2({
       textareaRef.current.focus();
     });
   }, [input, isRecording, toggleRecording]);
-
-  const openAttachmentPicker = useCallback((mode: "file" | "image") => {
-    const input = fileInputRef.current;
-    if (!input) return;
-
-    input.accept = mode === "image" ? IMAGE_ATTACHMENT_ACCEPT : FILE_ATTACHMENT_ACCEPT;
-    input.click();
-  }, []);
 
   const handlePaste = useCallback(
     (event: ClipboardEvent<HTMLTextAreaElement>) => {
@@ -495,19 +481,6 @@ export function CommandComposerContainerV2({
 
   return (
     <>
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        accept={DEFAULT_ATTACHMENT_ACCEPT}
-        onChange={(event) => {
-          if (event.target.files && event.target.files.length > 0) {
-            addFiles(event.target.files);
-            event.target.value = "";
-          }
-        }}
-        className="hidden"
-      />
       <CommandComposerV2
         textareaRef={textareaRef}
         value={input}
@@ -541,8 +514,6 @@ export function CommandComposerContainerV2({
           void handleSubmit();
         }}
         onStop={stopGeneration}
-        onFileSelect={() => openAttachmentPicker("file")}
-        onImageSelect={() => openAttachmentPicker("image")}
         onMicrophoneClick={() => {
           void handleMicrophoneClick();
         }}

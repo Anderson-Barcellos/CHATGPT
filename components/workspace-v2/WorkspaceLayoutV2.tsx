@@ -17,14 +17,12 @@ import {
   CalendarCheck,
   ChevronDown,
   FileText,
-  ImageIcon,
   Menu,
   Mic,
   Plus,
   PanelRightClose,
   PanelRightOpen,
   PencilLine,
-  Paperclip,
   Search,
   Send,
   Settings,
@@ -125,8 +123,6 @@ interface CommandComposerV2Props {
   onPaste?: (event: ClipboardEvent<HTMLTextAreaElement>) => void;
   onSubmit: () => void;
   onStop: () => void;
-  onFileSelect: () => void;
-  onImageSelect: () => void;
   onMicrophoneClick: () => void;
   onSelectDocumentMode: (mode: Extract<ResponseMode, "document" | "deepsearch_medium" | "deepsearch_high">) => void;
   onToggleQuiz: () => void;
@@ -236,7 +232,7 @@ export function WorkspaceFrameV2({
 
   return (
     <div
-      className="gc-chat-ui gc-atmosphere-shell gc-dynamic-bg gc-device-frame relative overflow-hidden text-foreground"
+      className="gc-chat-ui gc-atmosphere-shell gc-dynamic-bg gc-device-frame relative overflow-clip text-foreground"
       data-visual-theme="atmosphere-glass"
     >
       <div
@@ -543,8 +539,6 @@ export function CommandComposerV2({
   onPaste,
   onSubmit,
   onStop,
-  onFileSelect,
-  onImageSelect,
   onMicrophoneClick,
   onSelectDocumentMode,
   onToggleQuiz,
@@ -632,42 +626,8 @@ export function CommandComposerV2({
             </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)]/48 px-[var(--gc-mobile-composer-footer-x)] py-[var(--gc-mobile-composer-controls-y)] md:gap-2 md:px-3 md:py-1.75">
-            <div className="order-2 flex shrink-0 md:contents">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    disabled={disabled || isProcessing}
-                    aria-label="Adicionar anexos"
-                    className={cn(
-                      "size-[var(--gc-mobile-composer-control-height)] rounded-lg md:size-8 md:rounded-lg",
-                      COMPOSER_CONTROL_BUTTON_CLASS
-                    )}
-                  >
-                    {isProcessing ? (
-                      <LoaderCircle className="size-[0.92rem] animate-spin" />
-                    ) : (
-                      <Paperclip className="size-[0.92rem]" />
-                    )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" side="top" collisionPadding={12} className="gc-chat-ui gc-composer-menu min-w-[10.125rem] md:min-w-[11rem]">
-                  <DropdownMenuItem onClick={onFileSelect}>
-                    <Paperclip className="mr-2 size-3.5 text-muted-foreground" />
-                    Arquivo
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onImageSelect}>
-                    <ImageIcon className="mr-2 size-3.5 text-muted-foreground" />
-                    Imagem
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            <div className="gc-composer-controls order-1 flex w-full min-w-0 items-center gap-2 px-0.5 md:contents">
+          <div className="flex flex-nowrap items-center justify-between gap-[0.2rem] border-t border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)]/48 px-[var(--gc-mobile-composer-footer-x)] py-[var(--gc-mobile-composer-controls-y)] md:flex-wrap md:gap-2 md:px-3 md:py-1.75">
+            <div className="gc-composer-controls order-2 flex min-w-0 flex-1 items-center gap-1 md:contents">
               {modelControl ?? (
                 <button
                   type="button"
@@ -699,7 +659,7 @@ export function CommandComposerV2({
               {proControl}
             </div>
 
-            <div className="order-2 flex min-w-0 flex-1 items-center gap-2 md:contents">
+            <div className="contents">
               <Button
                 type="button"
                 variant="ghost"
@@ -712,7 +672,7 @@ export function CommandComposerV2({
                   boxShadow: `0 0 ${5 + audioLevel * 10}px rgba(251,113,133,${(0.22 + audioLevel * 0.5).toFixed(2)})`,
                 } : undefined}
                 className={cn(
-                  "flex h-[var(--gc-mobile-composer-control-height)] items-center gap-[0.23rem] rounded-lg border px-[0.46rem] text-[length:var(--gc-mobile-control-font-size)] font-medium transition-shadow has-[>svg]:px-[0.46rem] md:hidden",
+                  "order-3 flex h-[var(--gc-mobile-composer-control-height)] shrink-0 items-center gap-[0.23rem] rounded-lg border px-[0.46rem] text-[length:var(--gc-mobile-control-font-size)] font-medium transition-shadow has-[>svg]:px-[0.46rem] md:hidden",
                   isRecording
                     ? "border-rose-500/35 bg-rose-500/12 text-rose-700 dark:text-rose-300"
                     : isTranscribing
@@ -739,10 +699,12 @@ export function CommandComposerV2({
                   <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     disabled={disabled}
+                    aria-label="Selecionar tipo de pesquisa"
+                    title="Pesquisa"
                     className={cn(
-                      "flex h-[var(--gc-mobile-composer-control-height)] gap-0 rounded-lg border px-1 text-[length:var(--gc-mobile-control-font-size)] has-[>svg]:px-1 md:hidden",
+                      "order-1 size-[var(--gc-mobile-composer-control-height)] shrink-0 rounded-lg border p-0 md:hidden",
                       responseMode === "document" ||
                         responseMode === "deepsearch_medium" ||
                         responseMode === "deepsearch_high"
@@ -750,9 +712,7 @@ export function CommandComposerV2({
                         : COMPOSER_CONTROL_BUTTON_CLASS
                     )}
                   >
-                    <Search className="mr-1 size-[0.8125rem]" />
-                    Pesquisa
-                    <ChevronDown className="ml-1 hidden size-3 min-[430px]:block" />
+                    <Search className="size-[0.8125rem]" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" side="top" collisionPadding={12} className="gc-chat-ui gc-composer-menu min-w-[11rem] md:min-w-[12rem]">
@@ -887,7 +847,7 @@ export function CommandComposerV2({
               </Button>
             </div>
 
-            <div className="order-2 ml-auto flex shrink-0 items-center md:order-none md:gap-1.5">
+            <div className="order-4 ml-auto flex shrink-0 items-center md:order-none md:gap-1.5">
               {isLoading || isTranscribing ? (
                 <Button
                   type="button"
@@ -895,10 +855,10 @@ export function CommandComposerV2({
                   size="sm"
                   onClick={onStop}
                   aria-label="Parar geração"
-                  className="h-[var(--gc-mobile-composer-control-height)] rounded-lg px-2.5 text-[length:var(--gc-mobile-send-font-size)] md:h-8 md:px-3 md:text-xs"
+                  className="size-[var(--gc-mobile-composer-send-size)] rounded-full p-0 text-[length:var(--gc-mobile-send-font-size)] max-[359px]:has-[>svg]:px-0 min-[360px]:w-auto min-[360px]:rounded-lg min-[360px]:px-2.5 md:h-8 md:px-3 md:text-xs"
                 >
-                  <Square className="mr-1.5 size-3.5" />
-                  Parar
+                  <Square className="size-3.5 min-[360px]:mr-1.5" />
+                  <span className="hidden min-[360px]:inline">Parar</span>
                 </Button>
               ) : (
                 <Button

@@ -33,6 +33,7 @@ describe("WorkspaceFrameV2", () => {
     expect(markup).toContain("Artefato");
     expect(markup).not.toContain("Preview do documento");
     expect(markup).toContain("gc-device-frame");
+    expect(markup).toContain("overflow-clip");
     expect(markup).toContain("gc-atmosphere-shell");
     expect(markup).toContain("gc-chat-ui");
     expect(markup).toContain('data-visual-theme="atmosphere-glass"');
@@ -90,8 +91,6 @@ describe("CommandComposerV2", () => {
         onValueChange={() => undefined}
         onSubmit={() => undefined}
         onStop={() => undefined}
-        onFileSelect={() => undefined}
-        onImageSelect={() => undefined}
         onMicrophoneClick={() => undefined}
         onSelectDocumentMode={() => undefined}
         onToggleQuiz={() => undefined}
@@ -101,18 +100,20 @@ describe("CommandComposerV2", () => {
     expect(markup).toContain("Mensagem para o GPT...");
     expect(markup).toContain("gpt-5.3-chat-latest");
     expect(markup).toContain('aria-label="Ajustar nível de raciocínio"');
-    expect(markup).toContain('aria-label="Adicionar anexos"');
+    expect(markup).not.toContain('aria-label="Adicionar anexos"');
     expect(markup).toContain("Documento");
     expect(markup).toContain("Quiz");
     expect(markup).toContain('aria-label="Gravar áudio"');
+    expect(markup).toContain('aria-label="Selecionar tipo de pesquisa"');
     expect(markup).toContain('aria-label="Enviar mensagem"');
     expect(markup).toContain("pb-[var(--gc-mobile-composer-footer-bottom)]");
     expect(markup).not.toContain("pb-[calc(env(safe-area-inset-bottom)+var(--gc-mobile-composer-footer-bottom))]");
     expect(markup).toContain("py-[var(--gc-mobile-composer-controls-y)]");
-    expect(markup).toContain("gc-composer-controls order-1 flex w-full");
-    expect(markup).toContain("order-2 flex shrink-0 md:contents");
-    expect(markup).toContain("order-2 flex min-w-0 flex-1");
-    expect(markup).toContain("order-2 ml-auto flex shrink-0");
+    expect(markup).toContain("flex flex-nowrap items-center justify-between");
+    expect(markup).toContain("order-1 size-[var(--gc-mobile-composer-control-height)]");
+    expect(markup).toContain("gc-composer-controls order-2 flex min-w-0 flex-1");
+    expect(markup).toContain("order-3 flex h-[var(--gc-mobile-composer-control-height)]");
+    expect(markup).toContain("order-4 ml-auto flex shrink-0");
     expect(markup).not.toContain("overflow-x-auto");
     expect(markup).toContain("size-[var(--gc-mobile-composer-control-height)]");
     expect(markup).toContain("size-[var(--gc-mobile-composer-send-size)]");
@@ -135,8 +136,6 @@ describe("CommandComposerV2", () => {
       onValueChange: () => undefined,
       onSubmit: () => undefined,
       onStop: () => undefined,
-      onFileSelect: () => undefined,
-      onImageSelect: () => undefined,
       onMicrophoneClick: () => undefined,
       onSelectDocumentMode: () => undefined,
       onToggleQuiz: () => undefined,
@@ -158,7 +157,7 @@ describe("CommandComposerV2", () => {
 });
 
 describe("CommandComposerContainerV2", () => {
-  it("promotes attachments to the first row and removes the mobile bottom attachment bar", () => {
+  it("keeps the search control and composer modes without a manual attachment picker", () => {
     const markup = renderToStaticMarkup(
       <CommandComposerContainerV2
         sendMessage={async () => false}
@@ -168,13 +167,13 @@ describe("CommandComposerContainerV2", () => {
       />
     );
 
-    expect(markup).toContain('aria-label="Adicionar anexos"');
+    expect(markup).not.toContain('aria-label="Adicionar anexos"');
+    expect(markup).not.toContain('type="file"');
+    expect(markup).toContain('aria-label="Selecionar tipo de pesquisa"');
     expect(markup).toContain('aria-label="Selecionar modelo"');
     expect(markup).toContain("max-w-[var(--gc-mobile-composer-model-width)]");
     expect(markup).toContain("md:max-w-[10rem]");
     expect(markup).toContain(">Rec<");
-    expect(markup).not.toContain(">Arquivo<");
-    expect(markup).not.toContain(">Imagem<");
     expect(markup).toContain('aria-label="Ativar modo Pro"');
     expect(markup).toContain('aria-pressed="false"');
   });
