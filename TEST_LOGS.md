@@ -100,3 +100,56 @@ Incidente e reparo: build iniciado por engano no checkout produtivo e interrompi
 | Chrome público desktop/mobile | `/root/.cache/chat-orion-deploy-20260923/player-smoke.cjs` exit 0; 1440×900 e 390×844, player com TTS Orion e Grok Realtime, zero pageerrors/escritas; capturas `player-desktop.png`/`player-mobile.png` inspecionadas |
 
 QA usou texto/conversa sintéticos. Nenhuma conversa, nota ou outro dado do app foi gravado; duas chamadas TTS curtas e uma Realtime foram feitas para verificar o provider real. Apache/porta/proxy intactos, sem commit ou push.
+
+## 2026-09-25 — Composer mobile em cápsula, anexo de volta e bugs vizinhos (Claude)
+
+Worktree isolada `/root/.cache/gaucho-composer-capsule-20260925`, branch `claude/composer-capsule-20260925`, base `b73b2a3`.
+
+### Unitários — primeira execução (RED, antes da implementação)
+
+Comando: `npx vitest --run components/workspace-v2/WorkspaceLayoutV2.test.tsx`
+
+```
+ × keeps the command bar controls visible and grouped
+ × lists Documento alongside both Deepsearch levels for mobile and desktop menus
+ × lights the modes button in amber while Quiz is active
+ × shows the audio wave only while recording and keeps transcription distinct
+ × restores the manual attachment picker next to the modes control
+      Tests  5 failed | 2 passed (7)
+```
+
+### Unitários — primeira execução após implementação (GREEN)
+
+```
+      Tests  7 passed (7)
+```
+
+`app/globals.visual.test.ts` falhou na primeira suíte completa por travar os tokens antigos (`controls-y 0`, `control-height 1.9rem`, `send-size 2.0625rem`); contrato atualizado para `0.25rem`/`2.25rem`/`2.375rem` e densidade `2rem` abaixo de 360 px: `Tests 13 passed (13)`.
+
+### Gates completos
+
+| Gate | Comando | Resultado |
+|---|---|---|
+| Suíte completa | `npm test` | exit 0; 194 arquivos/992 testes |
+| TypeScript | `npx tsc --noEmit` | exit 0 |
+| Lint | `npm run lint` | exit 0; 0 erros, 1 warning anterior (`_content` em `CommandComposerContainerV2.test.tsx`) |
+| Build isolado `/chat` | `NEXT_PUBLIC_BASE_PATH=/chat npm run build` na worktree | exit 0 |
+| Whitespace | `git diff --check` | exit 0 |
+
+### QA visual (Chrome/Playwright, API 100% sintética, `next dev` isolado na 3041, auth desligada, sem chaves)
+
+16/16 cenários mobile (320 dark, 375 light, 390 dark, 430 light × parado/Quiz/modelo trocado/gravando com microfone falso): `pageOverflow=false`, `stripOverflow=false`, nenhum botão fora da faixa, zero `pageerror`. Desktop 1280: menu Documento lista Documento/Deepsearch Medium/High, anexo lista Arquivo/Imagem, sem overflow. A primeira rodada revelou vazamento do Pro sobre o Rec em 320/375 px (`Button` com `shrink-0`), corrigido deixando só o modelo encolher; em 320 px o modelo virava “G.”, corrigido com densidade própria abaixo de 360 px. Capturas e roteiros em `/root/.cache/gaucho-composer-capsule-evidence`. Porta 3041 liberada ao fim.
+
+## 2026-09-25 — Prompt de Deep Research com agente único (Claude)
+
+`lib/chat/deepResearchPrompt.test.ts`, primeira execução (RED): `Error: Cannot find package '@/lib/chat/deepResearchPrompt'` — `Tests no tests`. Teste de encaixe acrescentado depois: `1 failed | 3 passed (4)`. GREEN: `Tests 4 passed (4)`.
+
+| Gate | Resultado |
+|---|---|
+| `npm test` | exit 0; 195 arquivos/996 testes |
+| `npx tsc --noEmit` | exit 0 |
+| `npm run lint` | exit 0; 0 erros, 1 warning anterior |
+| `NEXT_PUBLIC_BASE_PATH=/chat npm run build` | exit 0 |
+| `git diff --check` | exit 0 |
+
+Troca dos modelos (Medium → `gpt-6-luna` high; High → `gpt-6-sol` high) não aplicada: os IDs não existem no catálogo e a conferência na API foi barrada pela proteção de credenciais.

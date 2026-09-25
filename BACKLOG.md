@@ -2,6 +2,16 @@
 
 ## Estado operacional
 
+#### Deepsearch com prompt de agente único e modelos novos (`bloqueada parcialmente`, 2026-09-25)
+
+Anders pediu adaptar a skill deep-prose-research para um agente só, sem subagentes nem scripts, e trocar os modelos fixos: Medium → `gpt-6-luna` em high e High → `gpt-6-sol` em high. Feito na mesma worktree `claude/composer-capsule-20260925`: `lib/chat/deepResearchPrompt.ts` com apuração em rodadas R1–R4, registro interno de fontes e claims, planta, oito regras da prosa encadeada, Referências e Nota de cobertura; os pisos são Medium 3.500 palavras/20 buscas/15 fontes e High 8.000/40/35. `useChat` passa a usar esse prompt nos dois Deepsearch; o modo Documento segue com o prompt antigo. Bloqueio: `gpt-6-luna` e `gpt-6-sol` não estão em `lib/models/modelConfig.ts` e a conferência na API foi negada pela proteção de credenciais. Faltam confirmar os IDs, o contexto, a saída máxima e os preços antes de catalogar e trocar `lib/chat/deepsearchConfig.ts`. Dívida vista: o toggle Pro do usuário (`parameters.reasoningMode`) vaza para o perfil fixo do Deepsearch.
+
+#### Composer mobile em cápsula e anexo de volta (`pronta para revisão`, 2026-09-25)
+
+Anders pediu devolver o botão de anexos e redesenhar a faixa mobile, que tinha ficado apertada (controles de 30 px). Plano em `/root/.claude/plans/e-a-claude-como-adaptive-tome.md`; implementação isolada na branch `claude/composer-capsule-20260925` (worktree `/root/.cache/gaucho-composer-capsule-20260925`, base `b73b2a3`). Faixa única: `+` (Arquivo/Imagem), lupa de modos (Documento, Deepsearch Medium/High e Quiz — escolha de Anders), cápsula com modelo/raciocínio/Pro sob uma borda com divisórias, Rec com duração `mm:ss` durante a gravação e envio. Controles de 36 px (32 px abaixo de 360 px) com alvo de toque vertical de 44 px por pseudo-elemento; só o modelo cede espaço e trunca. DECISÃO: layout em cápsula, a opção recomendada, porque a pergunta de layout ficou sem resposta. Bugs corrigidos: Quiz inalcançável no mobile; menu Documento do desktop sem o item Documento; Rec sem duração; "Parar geração" exibido durante a transcrição (agora envio desabilitado com spinner). Continua aberto: o tooltip de modelo bloqueado no Deepsearch nunca aparece porque o botão fica `disabled`/`pointer-events-none`; o conserto pede um wrapper e ficou fora desta entrega.
+
+Validação: 194 arquivos/992 testes, TypeScript, lint (0 erros, 1 warning anterior), build `/chat` isolado e `git diff --check` aprovados; QA Chrome 16/16 cenários mobile e desktop sem overflow nem `pageerror`. Detalhes em `TEST_LOGS.md`; capturas em `/root/.cache/gaucho-composer-capsule-evidence`. Sem commit, push, publicação, restart ou dados privados.
+
 #### TTS OpenAI ou Grok para arquivo SoundCase (`fechada`, 2026-09-25)
 
 SoundCase escolhe Grok ou OpenAI para o TTS do arquivo final independentemente da leitura Realtime; novas preferências iniciam em Grok/Orion, preferências e versões antigas sem provedor continuam OpenAI. Provedor e voz xAI ficam no snapshot da versão e na projeção do acervo. O worker usa WAV da xAI, converte os chunks localmente para FLAC retomável e monta MP3/FLAC/WAV; falhas não trocam o provedor silenciosamente. Luna continua com direção e capa; instruções de voz OpenAI ficam ocultas no modo Grok. Contratos em `docs/API.md`, `docs/ARCHITECTURE.md` e `docs/MODELS.md`.

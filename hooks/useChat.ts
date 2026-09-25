@@ -40,6 +40,7 @@ import { buildQuizCompletionPatch } from "@/lib/chat/quizCompletion";
 import { buildAbortedAssistantMessagePatch } from "@/lib/chat/abortCompletion";
 import { buildReasoningConfig } from "@/lib/chat/reasoningConfig";
 import { resolveDeepsearchProfile } from "@/lib/chat/deepsearchConfig";
+import { appendDeepResearchInstructions } from "@/lib/chat/deepResearchPrompt";
 import { createThrottle } from "@/lib/performance/throttle";
 import {
   isDeepSeekModel,
@@ -747,7 +748,9 @@ export function useChat() {
           responseMode === "default"
         );
         const systemMessage =
-          isDocumentLikeMode(responseMode)
+          responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
+            ? appendDeepResearchInstructions(baseSystemMessage, responseMode)
+            : responseMode === "document"
             ? appendDocumentModeInstructions(baseSystemMessage, content)
             : responseMode === "quiz"
             ? appendQuizModeInstructions(baseSystemMessage)
