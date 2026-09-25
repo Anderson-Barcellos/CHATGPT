@@ -1562,3 +1562,7 @@ Gates finais na worktree: 194 arquivos/990 testes, TypeScript, lint (0 erros, 1 
 ### 2026-09-25 — Composer mobile e STT publicados para revisão
 
 Codex: após Anders aprovar a faixa única com lupa, retirada do botão “+” e ondinha do STT, autorizou publicação, commit e push. `main` recebeu fast-forward até `f5888ba`. Build isolada com `NEXT_PUBLIC_BASE_PATH=/chat`, 42 páginas, ID `g3jqXnah4B4NI5lBaGERb`; versão anterior preservada em `/root/.cache/gaucho-composer-deploy-20260925/next-before`, com assets antigos retidos na nova build. `chatgpt.service` reiniciado e ativo; health local/público 200 `healthy`, login público 200, chat anônimo 307 para login e manifests novo/anterior 200. QA autenticado da build isolada confirmou composer e Pesquisa sem overflow ou erro de página. Sem mexer em Apache, dados privados ou serviços alheios. Registro técnico em `docs/plans/2026-09-24-composer-mobile-stt-report.md`; estado publicado para revisão.
+
+### 2026-09-25 — Composer mobile e STT fechados por Anders
+
+Codex: Anders confirmou “Fechada meu velho!” após publicação e push. Estado atualizado em `BACKLOG.md`; fechamento somente documental, sem nova build, alteração de serviço, API ou dados privados. O push anterior sincronizou `origin/main` em `f9feb97`; o registro técnico da entrega guarda os gates e a publicação.
