@@ -12,6 +12,7 @@ import {
 import {
   Archive,
   Activity,
+  AudioLines,
   Brain,
   CalendarCheck,
   ChevronDown,
@@ -631,8 +632,8 @@ export function CommandComposerV2({
             </div>
           )}
 
-          <div className="flex flex-nowrap items-center justify-between gap-[0.23rem] border-t border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)]/48 px-[var(--gc-mobile-composer-footer-x)] py-[var(--gc-mobile-composer-controls-y)] md:flex-wrap md:gap-2 md:px-3 md:py-1.75">
-            <div className="gc-composer-controls flex min-w-0 flex-1 flex-wrap items-center min-[390px]:flex-nowrap md:flex-wrap md:gap-1.5">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)]/48 px-[var(--gc-mobile-composer-footer-x)] py-[var(--gc-mobile-composer-controls-y)] md:gap-2 md:px-3 md:py-1.75">
+            <div className="order-2 flex shrink-0 md:contents">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -664,7 +665,9 @@ export function CommandComposerV2({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            </div>
 
+            <div className="gc-composer-controls order-1 flex w-full min-w-0 items-center gap-2 px-0.5 md:contents">
               {modelControl ?? (
                 <button
                   type="button"
@@ -694,7 +697,9 @@ export function CommandComposerV2({
               )}
 
               {proControl}
+            </div>
 
+            <div className="order-2 flex min-w-0 flex-1 items-center gap-2 md:contents">
               <Button
                 type="button"
                 variant="ghost"
@@ -702,6 +707,7 @@ export function CommandComposerV2({
                 disabled={isLoading || isTranscribing || (!speechSupported && !isRecording)}
                 onClick={onMicrophoneClick}
                 aria-label={isRecording ? "Encerrar gravação" : "Gravar áudio"}
+                aria-pressed={isRecording}
                 style={isRecording ? {
                   boxShadow: `0 0 ${5 + audioLevel * 10}px rgba(251,113,133,${(0.22 + audioLevel * 0.5).toFixed(2)})`,
                 } : undefined}
@@ -716,8 +722,14 @@ export function CommandComposerV2({
               >
                 {isTranscribing ? (
                   <LoaderCircle className="size-[0.8125rem] animate-spin" />
+                ) : isRecording ? (
+                  <AudioLines
+                    aria-hidden="true"
+                    className="size-[0.8125rem] origin-center animate-pulse transition-transform duration-150 motion-reduce:!animate-none motion-reduce:!transform-none"
+                    style={{ transform: `scaleY(${0.75 + audioLevel * 0.45})` }}
+                  />
                 ) : (
-                  <Mic className={cn("size-[0.8125rem]", isRecording && "animate-pulse")} />
+                  <Mic className="size-[0.8125rem]" />
                 )}
                 <span>Rec</span>
               </Button>
@@ -875,7 +887,7 @@ export function CommandComposerV2({
               </Button>
             </div>
 
-            <div className="flex shrink-0 items-center gap-[0.23rem] md:gap-1.5">
+            <div className="order-2 ml-auto flex shrink-0 items-center md:order-none md:gap-1.5">
               {isLoading || isTranscribing ? (
                 <Button
                   type="button"

@@ -1532,7 +1532,7 @@ body {
   }
 
   .gc-atmosphere-shell .gc-composer-controls {
-    gap: 0.125rem;
+    gap: 0.5rem;
   }
 
   .gc-chat-ui.gc-composer-menu {

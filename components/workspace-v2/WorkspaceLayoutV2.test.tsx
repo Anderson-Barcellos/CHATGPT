@@ -109,12 +109,51 @@ describe("CommandComposerV2", () => {
     expect(markup).toContain("pb-[var(--gc-mobile-composer-footer-bottom)]");
     expect(markup).not.toContain("pb-[calc(env(safe-area-inset-bottom)+var(--gc-mobile-composer-footer-bottom))]");
     expect(markup).toContain("py-[var(--gc-mobile-composer-controls-y)]");
-    expect(markup).toContain("flex flex-nowrap items-center justify-between gap-[0.23rem]");
-    expect(markup).toContain("flex shrink-0 items-center gap-[0.23rem]");
-    expect(markup).toContain("gc-composer-controls flex min-w-0 flex-1 flex-wrap items-center min-[390px]:flex-nowrap");
+    expect(markup).toContain("gc-composer-controls order-1 flex w-full");
+    expect(markup).toContain("order-2 flex shrink-0 md:contents");
+    expect(markup).toContain("order-2 flex min-w-0 flex-1");
+    expect(markup).toContain("order-2 ml-auto flex shrink-0");
     expect(markup).not.toContain("overflow-x-auto");
     expect(markup).toContain("size-[var(--gc-mobile-composer-control-height)]");
     expect(markup).toContain("size-[var(--gc-mobile-composer-send-size)]");
+  });
+
+  it("shows the audio wave only while recording and keeps transcription distinct", () => {
+    const props = {
+      value: "",
+      placeholder: "Mensagem para o GPT...",
+      attachments: [],
+      isLoading: false,
+      isProcessing: false,
+      speechSupported: true,
+      speechStatusLabel: "Voz",
+      hasContent: false,
+      modelName: "Grok 4.7",
+      reasoningLabel: "Médio",
+      hasReasoning: true,
+      responseMode: "default" as const,
+      onValueChange: () => undefined,
+      onSubmit: () => undefined,
+      onStop: () => undefined,
+      onFileSelect: () => undefined,
+      onImageSelect: () => undefined,
+      onMicrophoneClick: () => undefined,
+      onSelectDocumentMode: () => undefined,
+      onToggleQuiz: () => undefined,
+    };
+
+    const idle = renderToStaticMarkup(<CommandComposerV2 {...props} isRecording={false} isTranscribing={false} />);
+    const recording = renderToStaticMarkup(<CommandComposerV2 {...props} isRecording isTranscribing={false} audioLevel={0.5} />);
+    const transcribing = renderToStaticMarkup(<CommandComposerV2 {...props} isRecording={false} isTranscribing />);
+
+    expect(idle).toContain('aria-label="Gravar áudio"');
+    expect(idle).not.toContain("lucide-audio-lines");
+    expect(recording).toContain('aria-label="Encerrar gravação"');
+    expect(recording).toContain('aria-pressed="true"');
+    expect(recording).toContain("lucide-audio-lines");
+    expect(recording).toContain("motion-reduce:!animate-none");
+    expect(transcribing).not.toContain("lucide-audio-lines");
+    expect(transcribing).toContain("animate-spin");
   });
 });
 
