@@ -1578,3 +1578,7 @@ Incidente de validação: o primeiro build isolado falhou (exit 1) porque Turbop
 ### 2026-09-25 — TTS do arquivo SoundCase fechado por Anders
 
 Codex: Anders confirmou “Fechado meu velho!”. Estado atualizado em `BACKLOG.md`. Fechamento somente documental; código novo permanece local, sem publicação, build, restart, commit ou push nesta rodada.
+
+### 2026-09-25 — Composer mobile em cápsula com anexo de volta (pronta para revisão)
+
+Claude: Anders pediu devolver o botão de anexos e arejar a faixa mobile apertada pela entrega anterior. A faixa agora tem anexo, lupa de modos com Quiz, cápsula modelo/raciocínio/Pro, Rec com duração e envio. Os controles têm 36 px, com alvo de toque de 44 px. Também saíram quatro bugs: Quiz inalcançável no mobile, menu Documento sem Documento no desktop, Rec sem duração e "Parar" durante a transcrição. Continua aberto o tooltip do modelo bloqueado no Deepsearch, que não recebe hover. Pitfall: o `next dev` numa worktree em `/root/.cache` não recarregou CSS editado, então cada rodada exigiu restart; Turbopack também recusa `node_modules` por symlink (`cp -al` resolve). Gates: 992 testes, tsc, lint, build e diff check aprovados; QA 16/16 sem overflow. Sem commit, push ou publicação.

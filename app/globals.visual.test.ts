@@ -24,10 +24,11 @@ describe("Gaucho Chat visual contract", () => {
   });
 
   it("expresses the 92 percent mobile density through responsive tokens", () => {
-    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-composer-controls-y:\s*0;/);
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-composer-controls-y:\s*0\.25rem;/);
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-header-height:\s*2\.53125rem;/);
-    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-composer-control-height:\s*1\.9rem;/);
-    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-composer-send-size:\s*2\.0625rem;/);
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-composer-control-height:\s*2\.25rem;/);
+    expect(css).toMatch(/@media \(max-width: 359px\)[\s\S]*--gc-mobile-composer-control-height:\s*2rem;/);
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-composer-send-size:\s*2\.375rem;/);
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-textarea-font-size:\s*16px;/);
     expect(css).toContain("--gc-mobile-control-height: 2.5rem;");
     expect(css).toContain("--gc-mobile-icon-button-size: 2.5rem;");

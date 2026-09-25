@@ -17,12 +17,14 @@ import {
   CalendarCheck,
   ChevronDown,
   FileText,
+  ImageIcon,
   Menu,
   Mic,
   Plus,
   PanelRightClose,
   PanelRightOpen,
   PencilLine,
+  Paperclip,
   Search,
   Send,
   Settings,
@@ -40,6 +42,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -123,6 +126,8 @@ interface CommandComposerV2Props {
   onPaste?: (event: ClipboardEvent<HTMLTextAreaElement>) => void;
   onSubmit: () => void;
   onStop: () => void;
+  onFileSelect: () => void;
+  onImageSelect: () => void;
   onMicrophoneClick: () => void;
   onSelectDocumentMode: (mode: Extract<ResponseMode, "document" | "deepsearch_medium" | "deepsearch_high">) => void;
   onToggleQuiz: () => void;
@@ -186,6 +191,15 @@ function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
+
+type DocumentResponseMode = Extract<ResponseMode, "document" | "deepsearch_medium" | "deepsearch_high">;
+
+/** Modos que devolvem documento no Canvas; mobile (lupa) e desktop (Documento) usam a mesma lista. */
+export const COMPOSER_MODE_OPTIONS: { mode: DocumentResponseMode; label: string; icon: typeof FileText }[] = [
+  { mode: "document", label: "Documento", icon: FileText },
+  { mode: "deepsearch_medium", label: "Deepsearch Medium", icon: Search },
+  { mode: "deepsearch_high", label: "Deepsearch High", icon: Search },
+];
 
 const COMPOSER_CONTROL_BUTTON_CLASS =
   "border border-[color:var(--gc-composer-control-border)] bg-[var(--gc-composer-control-bg)] text-[var(--gc-composer-control-fg)] hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground";
@@ -539,6 +553,8 @@ export function CommandComposerV2({
   onPaste,
   onSubmit,
   onStop,
+  onFileSelect,
+  onImageSelect,
   onMicrophoneClick,
   onSelectDocumentMode,
   onToggleQuiz,
@@ -551,6 +567,19 @@ export function CommandComposerV2({
 }: CommandComposerV2Props) {
   const disabled = isLoading || isTranscribing;
   const statusMessage = error || speechError || fileErrors[0] || null;
+  const isDocumentMode = COMPOSER_MODE_OPTIONS.some((option) => option.mode === responseMode);
+  const isQuizMode = responseMode === "quiz";
+  const modeMenuItems = COMPOSER_MODE_OPTIONS.map(({ mode, label, icon: Icon }) => (
+    <DropdownMenuItem key={mode} onClick={() => onSelectDocumentMode(mode)}>
+      <Icon
+        className={cn(
+          "mr-2 size-3.5",
+          responseMode === mode ? "text-primary" : "text-muted-foreground"
+        )}
+      />
+      <span className={responseMode === mode ? "text-primary" : ""}>{label}</span>
+    </DropdownMenuItem>
+  ));
 
   return (
     <footer className="gc-composer-dock shrink-0 border-t border-[color:var(--gc-border-soft)] bg-background/80 px-[var(--gc-mobile-composer-footer-x)] pb-[var(--gc-mobile-composer-footer-bottom)] pt-[var(--gc-mobile-composer-footer-top)] backdrop-blur-xl md:border-t-0 md:bg-transparent md:px-5 md:pb-4 md:pt-0">
@@ -626,8 +655,85 @@ export function CommandComposerV2({
             </div>
           )}
 
-          <div className="flex flex-nowrap items-center justify-between gap-[0.2rem] border-t border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)]/48 px-[var(--gc-mobile-composer-footer-x)] py-[var(--gc-mobile-composer-controls-y)] md:flex-wrap md:gap-2 md:px-3 md:py-1.75">
-            <div className="gc-composer-controls order-2 flex min-w-0 flex-1 items-center gap-1 md:contents">
+          <div className="gc-composer-strip flex flex-nowrap items-center gap-[var(--gc-mobile-composer-strip-gap)] border-t border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)]/48 px-[var(--gc-mobile-composer-footer-x)] py-[var(--gc-mobile-composer-controls-y)] md:flex-wrap md:gap-2 md:px-3 md:py-1.75">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={disabled || isProcessing}
+                  aria-label="Adicionar anexos"
+                  className={cn(
+                    "size-[var(--gc-mobile-composer-control-height)] shrink-0 rounded-full md:size-8 md:rounded-lg",
+                    COMPOSER_CONTROL_BUTTON_CLASS
+                  )}
+                >
+                  {isProcessing ? (
+                    <LoaderCircle className="size-[0.9375rem] animate-spin md:size-3.5" />
+                  ) : (
+                    <>
+                      <Plus className="size-[1.0625rem] md:hidden" strokeWidth={2.1} />
+                      <Paperclip className="hidden size-3.5 md:block" />
+                    </>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" side="top" collisionPadding={12} className="gc-chat-ui gc-composer-menu min-w-[10.125rem] md:min-w-[11rem]">
+                <DropdownMenuItem onClick={onFileSelect}>
+                  <Paperclip className="mr-2 size-3.5 text-muted-foreground" />
+                  Arquivo
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onImageSelect}>
+                  <ImageIcon className="mr-2 size-3.5 text-muted-foreground" />
+                  Imagem
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={disabled}
+                  aria-label="Selecionar modo de resposta"
+                  title={isQuizMode || isDocumentMode ? RESPONSE_MODE_LABELS[responseMode] : "Modos"}
+                  className={cn(
+                    "size-[var(--gc-mobile-composer-control-height)] shrink-0 rounded-full border p-0 md:hidden",
+                    isQuizMode
+                      ? "border-amber-500/30 bg-amber-500/12 text-amber-700 dark:text-amber-300"
+                      : isDocumentMode
+                        ? "border-primary/30 bg-primary/12 text-primary"
+                        : COMPOSER_CONTROL_BUTTON_CLASS
+                  )}
+                >
+                  {isQuizMode ? (
+                    <ClipboardList className="size-[0.9375rem]" />
+                  ) : isDocumentMode ? (
+                    <FileText className="size-[0.9375rem]" />
+                  ) : (
+                    <Search className="size-[0.9375rem]" />
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" side="top" collisionPadding={12} className="gc-chat-ui gc-composer-menu min-w-[11rem] md:min-w-[12rem]">
+                {modeMenuItems}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onToggleQuiz}>
+                  <ClipboardList
+                    className={cn(
+                      "mr-2 size-3.5",
+                      isQuizMode ? "text-amber-600 dark:text-amber-300" : "text-muted-foreground"
+                    )}
+                  />
+                  <span className={isQuizMode ? "text-amber-700 dark:text-amber-300" : ""}>Quiz</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <div className="gc-composer-controls gc-composer-capsule flex min-w-0 items-center md:contents">
               {modelControl ?? (
                 <button
                   type="button"
@@ -659,203 +765,123 @@ export function CommandComposerV2({
               {proControl}
             </div>
 
-            <div className="contents">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={isLoading || isTranscribing || (!speechSupported && !isRecording)}
-                onClick={onMicrophoneClick}
-                aria-label={isRecording ? "Encerrar gravação" : "Gravar áudio"}
-                aria-pressed={isRecording}
-                style={isRecording ? {
-                  boxShadow: `0 0 ${5 + audioLevel * 10}px rgba(251,113,133,${(0.22 + audioLevel * 0.5).toFixed(2)})`,
-                } : undefined}
-                className={cn(
-                  "order-3 flex h-[var(--gc-mobile-composer-control-height)] shrink-0 items-center gap-[0.23rem] rounded-lg border px-[0.46rem] text-[length:var(--gc-mobile-control-font-size)] font-medium transition-shadow has-[>svg]:px-[0.46rem] md:hidden",
-                  isRecording
-                    ? "border-rose-500/35 bg-rose-500/12 text-rose-700 dark:text-rose-300"
-                    : isTranscribing
-                      ? "border-primary/25 bg-primary/10 text-primary"
-                      : COMPOSER_CONTROL_BUTTON_CLASS
-                )}
-              >
-                {isTranscribing ? (
-                  <LoaderCircle className="size-[0.8125rem] animate-spin" />
-                ) : isRecording ? (
-                  <AudioLines
-                    aria-hidden="true"
-                    className="size-[0.8125rem] origin-center animate-pulse transition-transform duration-150 motion-reduce:!animate-none motion-reduce:!transform-none"
-                    style={{ transform: `scaleY(${0.75 + audioLevel * 0.45})` }}
-                  />
-                ) : (
-                  <Mic className="size-[0.8125rem]" />
-                )}
-                <span>Rec</span>
-              </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    disabled={disabled}
-                    aria-label="Selecionar tipo de pesquisa"
-                    title="Pesquisa"
-                    className={cn(
-                      "order-1 size-[var(--gc-mobile-composer-control-height)] shrink-0 rounded-lg border p-0 md:hidden",
-                      responseMode === "document" ||
-                        responseMode === "deepsearch_medium" ||
-                        responseMode === "deepsearch_high"
-                        ? "border-primary/25 bg-primary/10 text-primary"
-                        : COMPOSER_CONTROL_BUTTON_CLASS
-                    )}
-                  >
-                    <Search className="size-[0.8125rem]" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" side="top" collisionPadding={12} className="gc-chat-ui gc-composer-menu min-w-[11rem] md:min-w-[12rem]">
-                  <DropdownMenuItem onClick={() => onSelectDocumentMode("document")}>
-                    <FileText
-                      className={cn(
-                        "mr-2 size-3.5",
-                        responseMode === "document" ? "text-primary" : "text-muted-foreground"
-                      )}
-                    />
-                    <span className={responseMode === "document" ? "text-primary" : ""}>
-                      Documento
-                    </span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onSelectDocumentMode("deepsearch_medium")}>
-                    <Search
-                      className={cn(
-                        "mr-2 size-3.5",
-                        responseMode === "deepsearch_medium" ? "text-primary" : "text-muted-foreground"
-                      )}
-                    />
-                    <span className={responseMode === "deepsearch_medium" ? "text-primary" : ""}>
-                      Deepsearch Medium
-                    </span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onSelectDocumentMode("deepsearch_high")}>
-                    <Search
-                      className={cn(
-                        "mr-2 size-3.5",
-                        responseMode === "deepsearch_high" ? "text-primary" : "text-muted-foreground"
-                      )}
-                    />
-                    <span className={responseMode === "deepsearch_high" ? "text-primary" : ""}>
-                      Deepsearch High
-                    </span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    disabled={disabled}
-                    className={cn(
-                      "hidden h-[var(--gc-mobile-control-height)] rounded-[1rem] border px-2.5 text-[length:var(--gc-mobile-control-font-size)] md:flex md:h-8 md:rounded-lg md:px-2 md:text-micro",
-                      responseMode === "document" ||
-                        responseMode === "deepsearch_medium" ||
-                        responseMode === "deepsearch_high"
-                        ? "border-primary/25 bg-primary/10 text-primary"
-                        : COMPOSER_CONTROL_BUTTON_CLASS
-                    )}
-                  >
-                    <FileText className="mr-1 size-3.5" />
-                    Documento
-                    <ChevronDown className="ml-1 size-3.5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" side="top" className="gc-chat-ui min-w-[14rem]">
-                  <DropdownMenuItem onClick={() => onSelectDocumentMode("deepsearch_medium")}>
-                    <FileText
-                      className={cn(
-                        "mr-2 size-3.5",
-                        responseMode === "deepsearch_medium" ? "text-primary" : "text-muted-foreground"
-                      )}
-                    />
-                    <span className={responseMode === "deepsearch_medium" ? "text-primary" : ""}>
-                      Deepsearch Medium
-                    </span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onSelectDocumentMode("deepsearch_high")}>
-                    <FileText
-                      className={cn(
-                        "mr-2 size-3.5",
-                        responseMode === "deepsearch_high" ? "text-primary" : "text-muted-foreground"
-                      )}
-                    />
-                    <span className={responseMode === "deepsearch_high" ? "text-primary" : ""}>
-                      Deepsearch High
-                    </span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={disabled}
-                onClick={onToggleQuiz}
-                  className={cn(
-                    "hidden h-[var(--gc-mobile-control-height)] rounded-lg border px-2 text-[length:var(--gc-mobile-control-font-size)] md:flex md:h-8 md:text-micro",
-                    responseMode === "quiz"
-                      ? "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                      : COMPOSER_CONTROL_BUTTON_CLASS
-                  )}
-                >
-                <ClipboardList className="mr-1 size-3.5" />
-                Quiz
-              </Button>
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={isLoading || isTranscribing || (!speechSupported && !isRecording)}
-                onClick={onMicrophoneClick}
-                aria-label={isRecording ? "Encerrar gravação" : "Gravar áudio"}
-                style={isRecording ? {
-                  boxShadow: `0 0 ${8 + audioLevel * 14}px rgba(251,113,133,${(0.3 + audioLevel * 0.6).toFixed(2)})`,
-                } : undefined}
-                  className={cn(
-                    "hidden h-[var(--gc-mobile-control-height)] rounded-[1rem] border px-2.5 text-[length:var(--gc-mobile-control-font-size)] transition-shadow md:flex md:h-8 md:rounded-lg md:px-2 md:text-micro",
-                  isRecording
-                    ? "border-rose-500/35 bg-rose-500/10 text-rose-700 dark:text-rose-300"
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={isLoading || isTranscribing || (!speechSupported && !isRecording)}
+              onClick={onMicrophoneClick}
+              aria-label={isRecording ? "Encerrar gravação" : "Gravar áudio"}
+              aria-pressed={isRecording}
+              style={isRecording ? {
+                boxShadow: `0 0 ${5 + audioLevel * 10}px rgba(251,113,133,${(0.22 + audioLevel * 0.5).toFixed(2)})`,
+              } : undefined}
+              className={cn(
+                "ml-auto flex h-[var(--gc-mobile-composer-control-height)] min-w-[var(--gc-mobile-composer-control-height)] shrink-0 items-center justify-center gap-[0.25rem] rounded-full border px-[0.6rem] text-[length:var(--gc-mobile-control-font-size)] font-semibold tabular-nums transition-shadow has-[>svg]:px-[0.6rem] max-[359px]:px-0 md:hidden",
+                isRecording && "min-w-[3.6rem]",
+                isRecording
+                  ? "border-rose-500/35 bg-rose-500/12 text-rose-700 dark:text-rose-300"
                   : isTranscribing
                     ? "border-primary/25 bg-primary/10 text-primary"
                     : COMPOSER_CONTROL_BUTTON_CLASS
-                )}
-              >
-                {isTranscribing ? (
-                  <LoaderCircle className="mr-1 size-3.5 animate-spin" />
-                ) : (
-                  <Mic className={cn("mr-1 size-3.5", isRecording && "animate-pulse")} />
-                )}
-                <span className="hidden sm:inline">{speechStatusLabel}</span>
-                {recordingDurationLabel && (
-                  <span className="tabular-nums">{recordingDurationLabel}</span>
-                )}
-              </Button>
-            </div>
+              )}
+            >
+              {isTranscribing ? (
+                <LoaderCircle className="size-[0.875rem] animate-spin" />
+              ) : isRecording ? (
+                <AudioLines
+                  aria-hidden="true"
+                  className="size-[0.875rem] origin-center animate-pulse transition-transform duration-150 motion-reduce:!animate-none motion-reduce:!transform-none"
+                  style={{ transform: `scaleY(${0.75 + audioLevel * 0.45})` }}
+                />
+              ) : (
+                <Mic className="size-[0.875rem]" />
+              )}
+              <span className={cn(!isRecording && "max-[359px]:sr-only")}>
+                {isRecording ? recordingDurationLabel ?? "Rec" : "Rec"}
+              </span>
+            </Button>
 
-            <div className="order-4 ml-auto flex shrink-0 items-center md:order-none md:gap-1.5">
-              {isLoading || isTranscribing ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={disabled}
+                  className={cn(
+                    "hidden h-8 rounded-lg border px-2 text-micro md:flex",
+                    isDocumentMode
+                      ? "border-primary/25 bg-primary/10 text-primary"
+                      : COMPOSER_CONTROL_BUTTON_CLASS
+                  )}
+                >
+                  <FileText className="mr-1 size-3.5" />
+                  {isDocumentMode ? RESPONSE_MODE_LABELS[responseMode] : "Documento"}
+                  <ChevronDown className="ml-1 size-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" side="top" className="gc-chat-ui min-w-[14rem]">
+                {modeMenuItems}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={disabled}
+              onClick={onToggleQuiz}
+              className={cn(
+                "hidden h-8 rounded-lg border px-2 text-micro md:flex",
+                isQuizMode
+                  ? "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                  : COMPOSER_CONTROL_BUTTON_CLASS
+              )}
+            >
+              <ClipboardList className="mr-1 size-3.5" />
+              Quiz
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={isLoading || isTranscribing || (!speechSupported && !isRecording)}
+              onClick={onMicrophoneClick}
+              aria-label={isRecording ? "Encerrar gravação" : "Gravar áudio"}
+              style={isRecording ? {
+                boxShadow: `0 0 ${8 + audioLevel * 14}px rgba(251,113,133,${(0.3 + audioLevel * 0.6).toFixed(2)})`,
+              } : undefined}
+              className={cn(
+                "hidden h-8 rounded-lg border px-2 text-micro transition-shadow md:flex",
+                isRecording
+                  ? "border-rose-500/35 bg-rose-500/10 text-rose-700 dark:text-rose-300"
+                  : isTranscribing
+                    ? "border-primary/25 bg-primary/10 text-primary"
+                    : COMPOSER_CONTROL_BUTTON_CLASS
+              )}
+            >
+              {isTranscribing ? (
+                <LoaderCircle className="mr-1 size-3.5 animate-spin" />
+              ) : (
+                <Mic className={cn("mr-1 size-3.5", isRecording && "animate-pulse")} />
+              )}
+              <span className="hidden sm:inline">{speechStatusLabel}</span>
+              {recordingDurationLabel && (
+                <span className="tabular-nums">{recordingDurationLabel}</span>
+              )}
+            </Button>
+
+            <div className="flex shrink-0 items-center md:ml-auto md:gap-1.5">
+              {isLoading ? (
                 <Button
                   type="button"
                   variant="destructive"
                   size="sm"
                   onClick={onStop}
                   aria-label="Parar geração"
-                  className="size-[var(--gc-mobile-composer-send-size)] rounded-full p-0 text-[length:var(--gc-mobile-send-font-size)] max-[359px]:has-[>svg]:px-0 min-[360px]:w-auto min-[360px]:rounded-lg min-[360px]:px-2.5 md:h-8 md:px-3 md:text-xs"
+                  className="size-[var(--gc-mobile-composer-send-size)] rounded-full p-0 text-[length:var(--gc-mobile-send-font-size)] max-[359px]:has-[>svg]:px-0 min-[360px]:w-auto min-[360px]:px-3 md:h-8 md:rounded-lg md:px-3 md:text-xs"
                 >
                   <Square className="size-3.5 min-[360px]:mr-1.5" />
                   <span className="hidden min-[360px]:inline">Parar</span>
@@ -864,12 +890,16 @@ export function CommandComposerV2({
                 <Button
                   type="button"
                   size="sm"
-                  disabled={!hasContent || isRecording || isProcessing}
+                  disabled={!hasContent || isRecording || isProcessing || isTranscribing}
                   onClick={onSubmit}
-                  aria-label="Enviar mensagem"
-                  className="size-[var(--gc-mobile-composer-send-size)] rounded-full bg-primary p-0 text-primary-foreground shadow-[0_10px_22px_rgba(15,118,110,0.22)] hover:bg-primary/90 disabled:opacity-30 md:h-8 md:w-auto md:rounded-lg md:px-3 md:text-xs"
+                  aria-label={isTranscribing ? "Transcrevendo áudio" : "Enviar mensagem"}
+                  className="size-[var(--gc-mobile-composer-send-size)] rounded-full bg-primary p-0 text-primary-foreground shadow-[0_8px_20px_rgba(15,118,110,0.24)] hover:bg-primary/90 disabled:opacity-30 disabled:shadow-none md:h-8 md:w-auto md:rounded-lg md:px-3 md:text-xs"
                 >
-                  <Send className="size-4 md:size-3.5" />
+                  {isTranscribing ? (
+                    <LoaderCircle className="size-4 animate-spin md:size-3.5" />
+                  ) : (
+                    <Send className="size-4 md:size-3.5" />
+                  )}
                 </Button>
               )}
             </div>

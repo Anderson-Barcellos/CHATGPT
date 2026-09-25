@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { CommandComposerContainerV2 } from "@/components/workspace-v2/CommandComposerContainerV2";
 import {
+  COMPOSER_MODE_OPTIONS,
   CommandComposerV2,
   WorkspaceFrameV2,
 } from "@/components/workspace-v2/WorkspaceLayoutV2";
@@ -91,6 +92,8 @@ describe("CommandComposerV2", () => {
         onValueChange={() => undefined}
         onSubmit={() => undefined}
         onStop={() => undefined}
+        onFileSelect={() => undefined}
+        onImageSelect={() => undefined}
         onMicrophoneClick={() => undefined}
         onSelectDocumentMode={() => undefined}
         onToggleQuiz={() => undefined}
@@ -100,23 +103,76 @@ describe("CommandComposerV2", () => {
     expect(markup).toContain("Mensagem para o GPT...");
     expect(markup).toContain("gpt-5.3-chat-latest");
     expect(markup).toContain('aria-label="Ajustar nível de raciocínio"');
-    expect(markup).not.toContain('aria-label="Adicionar anexos"');
+    expect(markup).toContain('aria-label="Adicionar anexos"');
     expect(markup).toContain("Documento");
     expect(markup).toContain("Quiz");
     expect(markup).toContain('aria-label="Gravar áudio"');
-    expect(markup).toContain('aria-label="Selecionar tipo de pesquisa"');
+    expect(markup).toContain('aria-label="Selecionar modo de resposta"');
     expect(markup).toContain('aria-label="Enviar mensagem"');
     expect(markup).toContain("pb-[var(--gc-mobile-composer-footer-bottom)]");
     expect(markup).not.toContain("pb-[calc(env(safe-area-inset-bottom)+var(--gc-mobile-composer-footer-bottom))]");
     expect(markup).toContain("py-[var(--gc-mobile-composer-controls-y)]");
-    expect(markup).toContain("flex flex-nowrap items-center justify-between");
-    expect(markup).toContain("order-1 size-[var(--gc-mobile-composer-control-height)]");
-    expect(markup).toContain("gc-composer-controls order-2 flex min-w-0 flex-1");
-    expect(markup).toContain("order-3 flex h-[var(--gc-mobile-composer-control-height)]");
-    expect(markup).toContain("order-4 ml-auto flex shrink-0");
+    // Faixa mobile única: anexo, lupa e cápsula à esquerda; voz e envio à direita.
+    expect(markup).toContain("gc-composer-strip flex flex-nowrap items-center");
+    expect(markup).toContain("gc-composer-controls gc-composer-capsule flex min-w-0");
     expect(markup).not.toContain("overflow-x-auto");
+    expect(markup.indexOf('aria-label="Adicionar anexos"')).toBeLessThan(
+      markup.indexOf('aria-label="Selecionar modo de resposta"')
+    );
+    expect(markup.indexOf('aria-label="Selecionar modo de resposta"')).toBeLessThan(
+      markup.indexOf("gc-composer-capsule")
+    );
     expect(markup).toContain("size-[var(--gc-mobile-composer-control-height)]");
     expect(markup).toContain("size-[var(--gc-mobile-composer-send-size)]");
+  });
+
+  it("lists Documento alongside both Deepsearch levels for mobile and desktop menus", () => {
+    expect(COMPOSER_MODE_OPTIONS.map((option) => option.mode)).toEqual([
+      "document",
+      "deepsearch_medium",
+      "deepsearch_high",
+    ]);
+    expect(COMPOSER_MODE_OPTIONS.map((option) => option.label)).toEqual([
+      "Documento",
+      "Deepsearch Medium",
+      "Deepsearch High",
+    ]);
+  });
+
+  it("lights the modes button in amber while Quiz is active", () => {
+    const markup = renderToStaticMarkup(
+      <CommandComposerV2
+        value=""
+        placeholder="Mensagem para o GPT..."
+        attachments={[]}
+        isLoading={false}
+        isProcessing={false}
+        isRecording={false}
+        isTranscribing={false}
+        speechSupported
+        speechStatusLabel="Voz"
+        hasContent={false}
+        modelName="Grok 4.7"
+        reasoningLabel="Médio"
+        hasReasoning
+        responseMode="quiz"
+        onValueChange={() => undefined}
+        onSubmit={() => undefined}
+        onStop={() => undefined}
+        onFileSelect={() => undefined}
+        onImageSelect={() => undefined}
+        onMicrophoneClick={() => undefined}
+        onSelectDocumentMode={() => undefined}
+        onToggleQuiz={() => undefined}
+      />
+    );
+    const trigger = markup.slice(
+      markup.lastIndexOf("<button", markup.indexOf('aria-label="Selecionar modo de resposta"')),
+      markup.indexOf("</button>", markup.indexOf('aria-label="Selecionar modo de resposta"'))
+    );
+
+    expect(trigger).toContain("border-amber-500/30");
+    expect(trigger).toContain("lucide-clipboard-list");
   });
 
   it("shows the audio wave only while recording and keeps transcription distinct", () => {
@@ -136,13 +192,17 @@ describe("CommandComposerV2", () => {
       onValueChange: () => undefined,
       onSubmit: () => undefined,
       onStop: () => undefined,
+      onFileSelect: () => undefined,
+      onImageSelect: () => undefined,
       onMicrophoneClick: () => undefined,
       onSelectDocumentMode: () => undefined,
       onToggleQuiz: () => undefined,
     };
 
     const idle = renderToStaticMarkup(<CommandComposerV2 {...props} isRecording={false} isTranscribing={false} />);
-    const recording = renderToStaticMarkup(<CommandComposerV2 {...props} isRecording isTranscribing={false} audioLevel={0.5} />);
+    const recording = renderToStaticMarkup(
+      <CommandComposerV2 {...props} isRecording isTranscribing={false} audioLevel={0.5} recordingDurationLabel="0:07" />
+    );
     const transcribing = renderToStaticMarkup(<CommandComposerV2 {...props} isRecording={false} isTranscribing />);
 
     expect(idle).toContain('aria-label="Gravar áudio"');
@@ -153,11 +213,18 @@ describe("CommandComposerV2", () => {
     expect(recording).toContain("motion-reduce:!animate-none");
     expect(transcribing).not.toContain("lucide-audio-lines");
     expect(transcribing).toContain("animate-spin");
+    // O Rec mobile troca o rótulo pela duração enquanto grava.
+    expect(idle).toContain(">Rec<");
+    expect(recording).toContain(">0:07<");
+    expect(recording).not.toContain(">Rec<");
+    // Transcrever não é gerar: o slot de envio não oferece "Parar geração".
+    expect(transcribing).not.toContain('aria-label="Parar geração"');
+    expect(transcribing).toContain('aria-label="Transcrevendo áudio"');
   });
 });
 
 describe("CommandComposerContainerV2", () => {
-  it("keeps the search control and composer modes without a manual attachment picker", () => {
+  it("restores the manual attachment picker next to the modes control", () => {
     const markup = renderToStaticMarkup(
       <CommandComposerContainerV2
         sendMessage={async () => false}
@@ -167,9 +234,9 @@ describe("CommandComposerContainerV2", () => {
       />
     );
 
-    expect(markup).not.toContain('aria-label="Adicionar anexos"');
-    expect(markup).not.toContain('type="file"');
-    expect(markup).toContain('aria-label="Selecionar tipo de pesquisa"');
+    expect(markup).toContain('aria-label="Adicionar anexos"');
+    expect(markup).toContain('type="file"');
+    expect(markup).toContain('aria-label="Selecionar modo de resposta"');
     expect(markup).toContain('aria-label="Selecionar modelo"');
     expect(markup).toContain("max-w-[var(--gc-mobile-composer-model-width)]");
     expect(markup).toContain("md:max-w-[10rem]");
