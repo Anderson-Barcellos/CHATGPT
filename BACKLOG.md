@@ -2,11 +2,11 @@
 
 ## Estado operacional
 
-#### Composer mobile com folga e ondinha no STT (`pronta para revisão`, 2026-09-24)
+#### Composer mobile com folga e ondinha no STT (`pronta para revisão`, revisada em 2026-09-25)
 
-Plano aprovado em `docs/plans/2026-09-24-composer-mobile-stt.md`; implementação isolada na branch `codex/composer-mobile-stt-20260924`, base `2e0e37b`. Modelo/raciocínio/Pro ocupam a primeira faixa mobile; anexo/voz/pesquisa/envio, a segunda. O botão “Rec” mostra ondinha apenas durante a gravação real, usando o nível de áudio existente; transcrição e movimento reduzido conservam estados próprios. Desktop, APIs e dados privados permanecem preservados.
+Plano e correções de Anders em `docs/plans/2026-09-24-composer-mobile-stt.md`; implementação isolada na branch `codex/composer-mobile-stt-20260924`, base `2e0e37b`. A barra mobile ficou numa linha, com a lupa da Pesquisa à esquerda, modelo/raciocínio/Pro, voz e envio. Anders pediu retirar o botão “+” de anexos; colar imagem e arrastar arquivo continuam. O botão “Rec” mostra ondinha apenas durante a gravação real; movimento reduzido é estático. `overflow: clip` no frame impede o deslocamento horizontal observado ao escolher modelo. APIs e dados privados permanecem preservados.
 
-Validação: 194 arquivos/990 testes, TypeScript e build isolado aprovados; lint sem erros e com um warning anterior. Chrome/Playwright confirmou sem overflow em 320, 390, 430 px e paisagem curta; menu Pesquisa, foco, gravação com microfone simulado, transição de estados e movimento reduzido passaram. Registro e capturas em `docs/plans/2026-09-24-composer-mobile-stt-report.md`. Nenhuma publicação, restart, merge ou push.
+Validação final: 194 arquivos/990 testes, TypeScript e build isolado aprovados; lint sem erros e com um warning anterior. Chrome/Playwright confirmou a faixa única sem recorte/overflow em 320, 390, 430 px, paisagem curta e desktop; Sol/Pro e menu Pesquisa funcionaram, sem `pageerror`. A ondinha e o movimento reduzido foram validados na rodada inicial; Anders aprovou visualmente a correção (“Bah ficou trrrrri”). Registro e capturas em `docs/plans/2026-09-24-composer-mobile-stt-report.md`. Nenhuma publicação, restart, merge ou push.
 
 #### Orion Realtime + TTS MP3 no mini-player (`fechada`, 2026-09-23)
 
