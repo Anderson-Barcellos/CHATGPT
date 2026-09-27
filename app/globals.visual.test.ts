@@ -26,9 +26,11 @@ describe("Gaucho Chat visual contract", () => {
   it("expresses the 92 percent mobile density through responsive tokens", () => {
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-composer-controls-y:\s*0\.25rem;/);
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-header-height:\s*2\.53125rem;/);
-    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-composer-control-height:\s*2\.25rem;/);
-    expect(css).toMatch(/@media \(max-width: 359px\)[\s\S]*--gc-mobile-composer-control-height:\s*2rem;/);
-    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-composer-send-size:\s*2\.375rem;/);
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-composer-control-height:\s*2\.5rem;/);
+    expect(css).toMatch(/@media \(max-width: 359px\)[\s\S]*--gc-mobile-composer-control-height:\s*2\.125rem;/);
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-composer-send-size:\s*2\.5rem;/);
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-composer-segment-size:\s*2\.125rem;/);
+    expect(css).toMatch(/@media \(max-width: 359px\)[\s\S]*--gc-mobile-composer-segment-size:\s*1\.75rem;/);
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-textarea-font-size:\s*16px;/);
     expect(css).toContain("--gc-mobile-control-height: 2.5rem;");
     expect(css).toContain("--gc-mobile-icon-button-size: 2.5rem;");
@@ -49,6 +51,14 @@ describe("Gaucho Chat visual contract", () => {
     const mobileList = "@media (max-width: 767px), ((max-height: 500px) and (pointer: coarse))";
     expect(css.split(mobileList).length - 1).toBeGreaterThanOrEqual(2);
     expect(css).toContain("@media (max-width: 767px) and (pointer: coarse), ((max-height: 500px) and (pointer: coarse))");
+  });
+
+  it("draws the mobile composer as one continuous glass capsule with an elastic model segment", () => {
+    expect(css).toMatch(/\.gc-composer-capsule > \[data-composer-segment="model"\]\s*\{[^}]*flex: 1 1 auto;/);
+    expect(css).not.toContain(".gc-composer-capsule > button:first-child");
+    expect(css).toMatch(/\.gc-composer-capsule > button:not\(\[data-composer-segment\]\)\s*\{[^}]*width: var\(--gc-mobile-composer-segment-size\)/);
+    expect(css).toMatch(/\.gc-composer-capsule\[data-recording="true"\]\s*\{[^}]*border-color:/);
+    expect(css).toMatch(/\.gc-composer-capsule > button\[data-active="true"\]/);
   });
 
   it("follows the iOS visual viewport so the keyboard shrinks the shell instead of pushing it", () => {

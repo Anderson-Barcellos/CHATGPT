@@ -358,8 +358,9 @@ export function CommandComposerContainerV2({
             size="sm"
             disabled={isLoading || isTranscribing || isDeepsearchMode}
             aria-label="Selecionar modelo"
+            data-composer-segment="model"
             title={isDeepsearchMode ? `Deepsearch usa modelo fixo (${deepsearchModelLabel}).` : undefined}
-            className="h-[var(--gc-mobile-composer-control-height)] max-w-[var(--gc-mobile-composer-model-width)] gap-[0.1875rem] rounded-lg border border-[color:var(--gc-composer-control-border)] bg-[var(--gc-composer-control-bg)] px-[0.375rem] text-[length:var(--gc-mobile-control-font-size)] font-medium text-[var(--gc-composer-control-fg)] has-[>svg]:px-[0.375rem] hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:h-8 md:max-w-[10rem] md:gap-1 md:rounded-lg md:px-2.5 md:text-nano md:has-[>svg]:px-2.5"
+            className="h-[var(--gc-mobile-composer-control-height)] max-md:max-w-none gap-[0.1875rem] rounded-lg border border-[color:var(--gc-composer-control-border)] bg-[var(--gc-composer-control-bg)] px-[0.375rem] text-[length:var(--gc-mobile-control-font-size)] font-medium text-[var(--gc-composer-control-fg)] has-[>svg]:px-[0.375rem] hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:h-8 md:max-w-[10rem] md:gap-1 md:rounded-lg md:px-2.5 md:text-nano md:has-[>svg]:px-2.5"
           >
             <span className="truncate">{displayModel?.name || parameters.model}</span>
             <ChevronDown className="size-[0.8125rem] shrink-0 md:size-3.5" />

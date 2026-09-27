@@ -112,16 +112,24 @@ describe("CommandComposerV2", () => {
     expect(markup).toContain("pb-[var(--gc-mobile-composer-footer-bottom)]");
     expect(markup).not.toContain("pb-[calc(env(safe-area-inset-bottom)+var(--gc-mobile-composer-footer-bottom))]");
     expect(markup).toContain("py-[var(--gc-mobile-composer-controls-y)]");
-    // Faixa mobile única: anexo, lupa e cápsula à esquerda; voz e envio à direita.
+    // Cápsula única contínua: anexo, lupa, modelo, raciocínio, Pro e Rec numa só barra; envio fora.
     expect(markup).toContain("gc-composer-strip flex flex-nowrap items-center");
-    expect(markup).toContain("gc-composer-controls gc-composer-capsule flex min-w-0");
+    expect(markup).toContain("gc-composer-controls gc-composer-capsule flex min-w-0 flex-1");
     expect(markup).not.toContain("overflow-x-auto");
+    const capsuleStart = markup.indexOf("gc-composer-capsule");
+    const sendIndex = markup.indexOf('aria-label="Enviar mensagem"');
+    const capsuleEnd = markup.lastIndexOf('aria-label="Gravar áudio"', sendIndex);
+    expect(capsuleStart).toBeLessThan(markup.indexOf('aria-label="Adicionar anexos"'));
     expect(markup.indexOf('aria-label="Adicionar anexos"')).toBeLessThan(
       markup.indexOf('aria-label="Selecionar modo de resposta"')
     );
     expect(markup.indexOf('aria-label="Selecionar modo de resposta"')).toBeLessThan(
-      markup.indexOf("gc-composer-capsule")
+      markup.indexOf('aria-label="Ajustar nível de raciocínio"')
     );
+    expect(markup.indexOf('aria-label="Ajustar nível de raciocínio"')).toBeLessThan(capsuleEnd);
+    expect(markup).toContain('data-composer-segment="voice"');
+    expect(markup).not.toMatch(/ml-auto flex h-\[var\(--gc-mobile-composer-control-height\)\]/);
+    expect(markup).toContain('data-recording="false"');
     expect(markup).toContain("size-[var(--gc-mobile-composer-control-height)]");
     expect(markup).toContain("size-[var(--gc-mobile-composer-send-size)]");
   });
@@ -173,6 +181,7 @@ describe("CommandComposerV2", () => {
 
     expect(trigger).toContain("border-amber-500/30");
     expect(trigger).toContain("lucide-clipboard-list");
+    expect(trigger).toContain('data-active="true"');
   });
 
   it("shows the audio wave only while recording and keeps transcription distinct", () => {
@@ -210,6 +219,9 @@ describe("CommandComposerV2", () => {
     expect(recording).toContain('aria-label="Encerrar gravação"');
     expect(recording).toContain('aria-pressed="true"');
     expect(recording).toContain("lucide-audio-lines");
+    // Gravando, o contorno rosa e o brilho vão para a cápsula inteira.
+    expect(recording).toContain('data-recording="true"');
+    expect(recording).toMatch(/data-recording="true"[^>]*style="box-shadow/);
     expect(recording).toContain("motion-reduce:!animate-none");
     expect(transcribing).not.toContain("lucide-audio-lines");
     expect(transcribing).toContain("animate-spin");
@@ -238,7 +250,9 @@ describe("CommandComposerContainerV2", () => {
     expect(markup).toContain('type="file"');
     expect(markup).toContain('aria-label="Selecionar modo de resposta"');
     expect(markup).toContain('aria-label="Selecionar modelo"');
-    expect(markup).toContain("max-w-[var(--gc-mobile-composer-model-width)]");
+    expect(markup).toContain('data-composer-segment="model"');
+    expect(markup).toContain("max-md:max-w-none");
+    expect(markup).not.toContain("max-w-[var(--gc-mobile-composer-model-width)]");
     expect(markup).toContain("md:max-w-[10rem]");
     expect(markup).toContain(">Rec<");
     expect(markup).toContain('aria-label="Ativar modo Pro"');

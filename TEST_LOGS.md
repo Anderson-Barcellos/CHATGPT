@@ -153,3 +153,20 @@ Comando: `npx vitest --run components/workspace-v2/WorkspaceLayoutV2.test.tsx`
 | `git diff --check` | exit 0 |
 
 Troca dos modelos (Medium → `gpt-6-luna` high; High → `gpt-6-sol` high) não aplicada: os IDs não existem no catálogo e a conferência na API foi barrada pela proteção de credenciais.
+
+## 2026-09-25 — Composer mobile em cápsula única contínua (Claude)
+
+Primeira execução (RED) de `WorkspaceLayoutV2.test.tsx` + `app/globals.visual.test.ts`: `Tests 6 failed | 15 passed (21)` — cápsula sem `flex-1`, sem `data-active` no modo Quiz, sem `data-recording`, modelo sem `data-composer-segment="model"`, tokens 2.5rem/segmento ausentes e seletor elástico ausente. GREEN: `Tests 21 passed (21)`.
+
+| Gate | Comando | Resultado |
+|---|---|---|
+| Suíte completa | `npm test` | exit 0; 196 arquivos/1003 testes |
+| TypeScript | `npx tsc --noEmit` | exit 0 |
+| Lint dos arquivos tocados | `npx eslint <4 arquivos>` | exit 0 |
+| Lint geral | `npm run lint` | PRE_EXISTING_FAILURE: 4446 erros, todos em `.next-before-sc2-20260906T170822Z/` (backup antigo de build, fora do diff) |
+| Build isolado `/chat` | `NEXT_PUBLIC_BASE_PATH=/chat npm run build` na worktree | exit 0 |
+| Whitespace | `git diff --check` | exit 0 |
+
+### QA visual (Playwright + Chrome DevTools, API sintética, `next dev` isolado na 3041, auth desligada)
+
+12/12 cenários mobile (390 dark/light, 320 dark, 430 light × parado/Pro/Deepsearch): `overflow=false`, modelo sem truncamento em todas as larguras, zero `pageerror`. A primeira rodada mostrou "GPT-5.6 L…" em 320 px; corrigido com segmento de 1.75rem e padding menor no modelo abaixo de 360 px. Desktop 1440 conferido idêntico ao anterior. Gravação real não exercitada (sem microfone falso nesta rodada); coberta pelo teste de markup `data-recording`. Capturas e roteiro em `/root/.cache/gaucho-composer-single-capsule-evidence`.
