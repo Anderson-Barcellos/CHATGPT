@@ -69,8 +69,6 @@ function buildDefaultModelSettings(modelId: string): ModelScopedParameters {
       ? "xhigh"
       : resolvedModelId === "gemini-3.8-flash"
       ? "high"
-      : resolvedModelId === "gpt-6-luna"
-      ? "low"
       : usesNoReasoningByDefault(resolvedModelId)
       ? "none"
       : isReasoningModel(resolvedModelId)
@@ -261,6 +259,25 @@ function mergePersistedSettings(
   };
 }
 
+/**
+ * v2: o default do Luna subiu de `low` para `medium`. Quem veio da v1 com o
+ * `low` antigo sobe uma vez; um `low` escolhido depois da v2 é respeitado.
+ */
+function migratePersistedSettings(persisted: unknown, version: number): PersistedSettings {
+  const raw = (persisted ?? {}) as PersistedSettings;
+  if (version >= 2 || !raw.modelSettingsById || typeof raw.modelSettingsById !== "object") {
+    return raw;
+  }
+  const modelSettingsById = { ...raw.modelSettingsById };
+  for (const lunaId of ["gpt-6-luna", "gpt-5.6-luna"]) {
+    const luna = modelSettingsById[lunaId];
+    if (luna?.reasoningEffort === "low") {
+      modelSettingsById[lunaId] = { ...luna, reasoningEffort: "medium" };
+    }
+  }
+  return { ...raw, modelSettingsById };
+}
+
 function sanitizeScopedSettings(
   value: Partial<ModelScopedParameters> | undefined
 ): Partial<ModelScopedParameters> {
@@ -326,8 +343,9 @@ export const useSettingsStore = create<SettingsState>()(persist((set, get) => ({
   getActiveMemories: () => get().memories.filter((m) => m.isActive),
 }), {
   name: SETTINGS_STORAGE_KEY,
-  version: 1,
+  version: 2,
   storage: createJSONStorage(() => localStorage),
+  migrate: (persisted, version) => migratePersistedSettings(persisted, version),
   // Hidratação manual no cliente (SettingsHydrator) para não divergir do SSR.
   skipHydration: true,
   partialize: (state): PersistedSettings => ({

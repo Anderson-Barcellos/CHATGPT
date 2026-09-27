@@ -13,9 +13,9 @@ describe("settings store model defaults", () => {
     });
   });
 
-  it("uses GPT-6 Luna with low standard reasoning as the chat default", () => {
+  it("uses GPT-6 Luna with medium standard reasoning as the chat default", () => {
     expect(useSettingsStore.getState().parameters.model).toBe("gpt-6-luna");
-    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("low");
+    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("medium");
     expect(useSettingsStore.getState().parameters.reasoningMode).toBe("standard");
     expect(useSettingsStore.getState().parameters.reasoningSummary).toBe("detailed");
   });

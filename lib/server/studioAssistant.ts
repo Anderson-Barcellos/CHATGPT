@@ -229,16 +229,13 @@ ${request.prompt}`;
     ],
     max_output_tokens: 8_000,
     store: false,
+    reasoning: { effort: "medium" },
     tools: request.cell
       ? []
       : provider === "xai"
       ? ([{ type: "web_search" }] as never)
       : [buildWebSearchTool()],
   };
-
-  if (provider === "xai") {
-    params.reasoning = { effort: "medium" };
-  }
 
   return params;
 }

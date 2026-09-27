@@ -42,6 +42,7 @@ import type {
   PulseTask,
   PulseTaskProposal,
 } from "@/lib/pulse/types";
+import { DEFAULT_PULSE_MODEL } from "@/lib/pulse/types";
 import { describeSchedule, weekdayOptions } from "@/lib/pulse/schedule";
 import { derivePulseRunTitle } from "@/lib/pulse/runTitle";
 
@@ -68,7 +69,7 @@ function proposalToForm(proposal: PulseTaskProposal): ProposalForm {
     emoji: proposal.emoji,
     prompt: proposal.prompt,
     executionPrompt: proposal.executionPrompt,
-    model: "grok-4.7",
+    model: DEFAULT_PULSE_MODEL,
     recurrenceType: proposal.recurrenceType,
     time: proposal.time || "09:00",
     weekday: String(proposal.weekday ?? 1),
@@ -886,10 +887,10 @@ export function PulsePanelV2() {
                   }
                   className="h-8 w-full rounded-md border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-2 text-xs text-foreground"
                 >
-                  <option value="grok-4.7">Grok 4.7 — padrão</option>
+                  <option value="gpt-6-sol">GPT-6 Sol — padrão</option>
                   <option value="gpt-6-astra">GPT-6 Astra</option>
-                  <option value="gpt-6-sol">GPT-6 Sol</option>
                   <option value="gpt-6-luna">GPT-6 Luna</option>
+                  <option value="grok-4.7">Grok 4.7</option>
                 </select>
                 <span className="block text-[10px] text-muted-foreground/75">
                   Todos usam reasoning medium e verbosity high; a escolha fica salva nesta rotina.

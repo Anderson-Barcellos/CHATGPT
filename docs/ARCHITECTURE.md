@@ -280,7 +280,7 @@ O TTS padrão do Chat/Pulse usa `/api/tts/xai` com voz Orion e MP3 24 kHz/128 kb
 
 ## Modelos
 
-O catálogo vive em `lib/models/modelConfig.ts`. O default do chat continua Luna (`low/standard`); o mini resolve para Grok 4.7 (`medium` fixo), preservando os registros históricos. Sol e Luna (GPT-6) aceitam effort até `max`, sem modo `pro`. Documento usa Grok; Deepsearch Medium/High usam `gpt-6-luna`/`gpt-6-sol` em `high`; Quiz continua `gpt-5.4/high`. O contexto web auxiliar do DeepSeek mantém Luna/low. Capacidades, parâmetros e preços ficam documentados em `docs/MODELS.md`.
+O catálogo vive em `lib/models/modelConfig.ts`. O default do chat é Luna (`medium/standard`); o mini resolve para Grok 4.7 (`medium` fixo), preservando os registros históricos. Sol e Luna (GPT-6) aceitam effort até `max`, sem modo `pro`. Documento segue o chat (fallback Luna/`medium` para DeepSeek/Gemini); Deepsearch Medium usa Luna/`medium` e High Sol/`high`; Pulse nasce em Sol/`medium`; Studio e SoundCase usam Luna/`medium`; Quiz continua `gpt-5.4/high`. O contexto web auxiliar do DeepSeek mantém Luna/low. Capacidades, parâmetros e preços ficam documentados em `docs/MODELS.md`.
 
 Tools padrão:
 

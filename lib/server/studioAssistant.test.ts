@@ -34,7 +34,7 @@ describe("Studio assistant request", () => {
         user_location: { type: "approximate", country: "BR" },
       },
     ]);
-    expect(params.reasoning).toBeUndefined();
+    expect(params.reasoning).toEqual({ effort: "medium" });
     expect(params.text).toBeUndefined();
     expect(JSON.stringify(params.input)).toContain("src/calculadora.ts");
     expect(JSON.stringify(params.input)).toContain("Revise esta função.");
@@ -102,7 +102,7 @@ describe("Studio assistant request", () => {
     expect(serialized).toContain("import pandas as pd");
     expect(params.instructions).toContain("bloco de código Python");
     expect(params.tools).toEqual([]);
-    expect(params.reasoning).toBeUndefined();
+    expect(params.reasoning).toEqual({ effort: "medium" });
     expect(params.text).toBeUndefined();
 
     const xaiParams = buildStudioResponseParams(

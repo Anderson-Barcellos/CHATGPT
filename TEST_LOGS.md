@@ -196,3 +196,15 @@ Merge de `codex/gpt6-usage-audit-20260924`: 196 arquivos/1010 testes e tsc exit 
 | Whitespace | `git diff --check` | exit 0 |
 
 QA Playwright (`next dev` isolado na 3041, `AUTH_ENABLED=false`, iPhone 15 Pro Max emulado, dark/light): zero `pageerror`, sem overflow horizontal, réguas/barras/painel legíveis. Emulação é aba de navegador, não standalone: a leitura real depende do iPhone do Anders.
+
+## 2026-09-27 — Modelos padrão por seção (Claude)
+
+Primeira execução (RED) do conjunto (settingsStore, persistência, Studio, SoundCase, Pulse store/config, Documento, Deepsearch): `Test Files 8 failed (8)`, `Tests 8 failed | 43 passed (51)`; `lib/chat/documentConfig.test.ts` sem módulo. GREEN (com PulsePanelV2 e useChat): `Test Files 10 passed (10)`, `Tests 60 passed (60)`.
+
+| Gate | Comando | Resultado |
+|---|---|---|
+| Suíte completa | `npm test` | exit 0; 199 arquivos/1025 testes |
+| TypeScript | `npx tsc --noEmit` | exit 0 |
+| Lint | `npm run lint -- --ignore-pattern '.next-before-*/**'` | exit 0; 0 erros, 1 warning anterior |
+| Build isolado `/chat` | `NEXT_PUBLIC_BASE_PATH=/chat npm run build` em `/root/.cache/chat-ios27-probe` | exit 0; BUILD_ID `uZstdqKc_MmvSHgrwQ8sT` (aviso antigo de `process.exit` no instrumentation) |
+| Whitespace | `git diff --check` | exit 0 |

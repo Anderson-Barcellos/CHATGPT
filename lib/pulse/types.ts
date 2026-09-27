@@ -13,7 +13,7 @@ export const PULSE_MODELS = [
 ] as const;
 /** Identificador legado aceito ao ler rotinas já persistidas; nunca é oferecido. */
 export type PulseModel = (typeof PULSE_MODELS)[number] | "gpt-5.4-mini" | "gpt-5.6-sol" | "gpt-5.6-terra" | "gpt-5.6-luna";
-export const DEFAULT_PULSE_MODEL: PulseModel = "grok-4.7";
+export const DEFAULT_PULSE_MODEL: PulseModel = "gpt-6-sol";
 export type PulseExecutionReasoningEffort = "low" | "medium" | "high";
 
 export interface PulseSchedule {

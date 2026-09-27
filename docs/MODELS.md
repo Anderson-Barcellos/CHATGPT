@@ -1,6 +1,6 @@
 # Modelos
 
-**Última atualização:** 2026-09-26
+**Última atualização:** 2026-09-27
 **Fonte:** `lib/models/modelConfig.ts`
 
 ## Catálogo Atual
@@ -29,9 +29,9 @@
 
 ## Defaults
 
-- Modelo padrão do chat: `gpt-6-luna`, reasoning `low`, modo `standard`.
+- Modelo padrão do chat: `gpt-6-luna`, reasoning `medium`, modo `standard`. A preferência persistida (`gaucho-chat:settings`, v2) migrou uma vez o `low` antigo do Luna para `medium`; um `low` escolhido depois é respeitado.
 - `gpt-6-astra` usa reasoning `medium` e verbosity `medium` fixos; store e backend rejeitam overrides desses dois campos.
-- `gpt-6-sol` inicia com reasoning `medium`, modo `standard`; Luna inicia com `low`.
+- `gpt-6-sol` e `gpt-6-luna` iniciam com reasoning `medium`, modo `standard`.
 - Sol e Luna oferecem effort `max`; o modo `pro` da família GPT-5.6 não é enviado aos modelos GPT-6.
 - IDs GPT-5.6 Sol/Luna/Terra salvos são aceitos para leitura e resolvem respectivamente para GPT-6 Sol/Luna/Sol antes de uma nova chamada. Históricos não são reescritos.
 - Preços locais estimados de Sol: US$ 2 entrada, US$ 0,20 cache e US$ 10 saída por milhão de tokens; Luna: US$ 0,10/0,01/0,50. Acima de 272 mil tokens de entrada, a tarifa longa vale para o request inteiro. A estimativa local não cobre cache writes, tools ou tiers de processamento; usar Costs da OpenAI para conciliação financeira. [Tabela oficial](https://developers.openai.com/api/docs/pricing).
@@ -41,17 +41,18 @@
 - Modelos mini iniciam com reasoning `none` + summary `detailed`; como o effort começa em `none`, esse summary não é enviado ao backend até o usuário ativar reasoning.
 - Modelo de imagem usado pela tool: `gpt-image-2`.
 - Quiz força `gpt-5.4` com reasoning `high`.
-- Documento usa `grok-4.7` com reasoning `medium`. Deepsearch Medium usa `gpt-6-luna` e Deepsearch High usa `gpt-6-sol`, ambos com reasoning `high` (`lib/chat/deepsearchConfig.ts`). Quiz continua em `gpt-5.4` com reasoning `high`.
-- O Pulse usa `grok-4.7` + `medium` por padrão e oferece Astra/Sol/Luna como opções OpenAI. Astra mantém reasoning/verbosity `medium`; Sol/Luna usam verbosity `high`; Grok não recebe esse parâmetro. Imagens continuam OpenAI por chamada separada.
+- Documento segue o modelo do chat; com DeepSeek ou Gemini selecionados cai para `gpt-6-luna` + `medium` (`lib/chat/documentConfig.ts`). Deepsearch Medium usa `gpt-6-luna` + `medium` e Deepsearch High usa `gpt-6-sol` + `high` (`lib/chat/deepsearchConfig.ts`). Quiz continua em `gpt-5.4` com reasoning `high`.
+- O Pulse usa `gpt-6-sol` + `medium` por padrão em rotinas novas (as salvas mantêm o modelo gravado) e oferece Astra/Luna/Grok 4.7 como opções. Astra mantém reasoning/verbosity `medium`; Sol/Luna usam verbosity `high`; Grok não recebe esse parâmetro. Imagens continuam OpenAI por chamada separada.
 - O `fresh_web_context` do DeepSeek usa `gpt-6-luna` + `low`; a resposta final continua no DeepSeek V4 Pro com reasoning máximo.
 - `deepseek-v4-pro` é permitido apenas no chat padrão streaming, não usa `code_interpreter` e depende de `DEEPSEEK_API_KEY`.
 - `gemini-3.8-flash` inicia em thinking `high`, permite `low`, `medium` e `high`, e depende de `GEMINI_API_KEY`.
 - Gemini usa Interactions API stateless (`store=false`) com Google Search e URL Context nativos; os modos especiais usam seus presets, independentemente do seletor do chat.
+- O assistente do Studio usa `gpt-6-luna` por padrão, com reasoning `medium` em qualquer modelo (OpenAI ou Grok), no painel e no modo célula.
 - Autocomplete FIM do Studio usa `codestral-latest` (Codestral 25.08, Mistral) via `/v1/fim/completions`; a key vem de `CODESTRAL_API_KEY` ou `MISTRAL_API_KEY`, com `deepseek-v4-pro` como fallback legado via `DEEPSEEK_API_KEY`.
 - TTS do Chat/Pulse usa a API xAI `/v1/tts` com Orion e MP3; `gpt-4o-mini-tts` em `lib/tts/speechText.ts` permanece como opção do SoundCase e rota legada.
 - Realtime opcional do Chat/Pulse usa `grok-voice-latest` com voz Orion; `gpt-realtime-2.1-mini` permanece no SoundCase e na rota legada OpenAI.
 - Transcrição usa `gpt-4o-transcribe`.
-- SoundCase usa `gpt-6-luna` com reasoning `low` para direção estruturada, xAI `/v1/tts` (Grok TTS, Orion inicial) ou `gpt-4o-mini-tts` para chunks do arquivo final, e `gpt-image-2` para capa. Texto narrado nunca é reescrito pela etapa de direção. A escuta imediata tem escolha independente entre OpenAI Realtime (`gpt-realtime-2.1-mini`) e Grok Realtime.
+- SoundCase usa `gpt-6-luna` com reasoning `medium` para direção estruturada, xAI `/v1/tts` (Grok TTS, Orion inicial) ou `gpt-4o-mini-tts` para chunks do arquivo final, e `gpt-image-2` para capa. Texto narrado nunca é reescrito pela etapa de direção. A escuta imediata tem escolha independente entre OpenAI Realtime (`gpt-realtime-2.1-mini`) e Grok Realtime.
 - O arquivo SoundCase usa MP3 por padrão, com FLAC/WAV por override; o Realtime é transitório e não substitui a versão durável para download.
 - SoundCase também oferece `grok-voice-latest` experimental: texto → áudio, sem microfone, com vozes xAI e velocidade entre 0.7x e 1.5x. Preferências da leitura ao vivo são independentes da geração de arquivo; engine OpenAI permanece default para Realtime. Grok 4.7 é o modelo de texto, não o modelo dessa sessão de voz.
 

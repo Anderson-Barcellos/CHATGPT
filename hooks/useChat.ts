@@ -40,11 +40,10 @@ import { buildQuizCompletionPatch } from "@/lib/chat/quizCompletion";
 import { buildAbortedAssistantMessagePatch } from "@/lib/chat/abortCompletion";
 import { buildReasoningConfig } from "@/lib/chat/reasoningConfig";
 import { resolveDeepsearchProfile } from "@/lib/chat/deepsearchConfig";
+import { resolveDocumentFallbackProfile } from "@/lib/chat/documentConfig";
 import { appendDeepResearchInstructions } from "@/lib/chat/deepResearchPrompt";
 import { createThrottle } from "@/lib/performance/throttle";
 import {
-  isDeepSeekModel,
-  isGeminiModel,
   modelSupportsCodeInterpreter,
   modelSupportsTemperature,
   modelSupportsVerbosity,
@@ -61,7 +60,6 @@ import {
 
 const STREAM_AUTO_SAVE_INTERVAL_MS = 2000;
 const BACKGROUND_POLL_INTERVAL_MS = 5000;
-const DOCUMENT_FORCED_MODEL = "grok-4.7";
 
 function isPendingBackgroundMessage(message: Message): boolean {
   return (
@@ -662,17 +660,20 @@ export function useChat() {
         responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
           ? resolveDeepsearchProfile(responseMode)
           : null;
+      const documentFallback =
+        responseMode === "document" ? resolveDocumentFallbackProfile(parameters.model) : null;
       const requestModel = responseMode === "quiz"
         ? QUIZ_FORCED_MODEL
-        : responseMode === "document" &&
-          (isDeepSeekModel(parameters.model) || isGeminiModel(parameters.model))
-        ? DOCUMENT_FORCED_MODEL
+        : documentFallback
+        ? documentFallback.model
         : responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
         ? deepsearchProfile!.model
         : parameters.model;
       const requestReasoningEffort =
         responseMode === "quiz"
           ? QUIZ_FORCED_REASONING_EFFORT
+          : documentFallback
+          ? documentFallback.reasoningEffort
           : responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
           ? deepsearchProfile!.reasoningEffort
           : parameters.reasoningEffort;

@@ -3,10 +3,10 @@ import { MODELS } from "@/lib/models/modelConfig";
 import { resolveDeepsearchProfile } from "./deepsearchConfig";
 
 describe("Deepsearch profiles", () => {
-  it("uses GPT-6 Luna with high reasoning for Medium", () => {
+  it("uses GPT-6 Luna with medium reasoning for Medium", () => {
     expect(resolveDeepsearchProfile("deepsearch_medium")).toEqual({
       model: "gpt-6-luna",
-      reasoningEffort: "high",
+      reasoningEffort: "medium",
     });
   });
 

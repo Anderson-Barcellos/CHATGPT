@@ -328,7 +328,7 @@ export async function directSoundCase(
           content: [{ type: "input_text", text: buildDirectionInput(input.segments) }],
         },
       ],
-      reasoning: { effort: "low" },
+      reasoning: { effort: "medium" },
       max_output_tokens: 3_200,
       store: false,
       text: { format: soundCaseDirectionSchema },

@@ -353,7 +353,7 @@ Todas as rotas de Pulse são privadas quando `AUTH_ENABLED=true`, exceto o runne
 
 Os resultados do Pulse e as mensagens do chat reutilizam o mesmo mini-player. Ele abre no TTS Orion via `/api/tts/xai` (trechos MP3 e download completo) e permite selecionar manualmente Grok Realtime via `/api/realtime/grok-session`; nenhuma engine inicia apenas ao abrir o player.
 
-As execuções do Pulse usam `grok-4.7` + reasoning `medium` por padrão e mantêm Sol/Terra como opções. Rotinas antigas com mini resolvem para Grok; execuções históricas preservam o modelo gravado. O modelo e effort efetivos ficam registrados em cada execução. Grok força `medium` e não recebe verbosity; modelos OpenAI mantêm suas configurações. O prompt continua enxuto e a imagem continua OpenAI em chamada separada quando necessário. Overrides operacionais permanecem; identificadores incompatíveis com o provider devem falhar explicitamente.
+As execuções do Pulse usam `gpt-6-sol` + reasoning `medium` por padrão em rotinas novas e mantêm Astra/Luna/Grok 4.7 como opções; rotinas salvas preservam o modelo gravado. Rotinas antigas com mini resolvem para Grok; execuções históricas preservam o modelo gravado. O modelo e effort efetivos ficam registrados em cada execução. Grok força `medium` e não recebe verbosity; modelos OpenAI mantêm suas configurações. O prompt continua enxuto e a imagem continua OpenAI em chamada separada quando necessário. Overrides operacionais permanecem; identificadores incompatíveis com o provider devem falhar explicitamente.
 
 | Método | Rota | Função |
 |---|---|---|

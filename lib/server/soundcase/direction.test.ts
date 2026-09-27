@@ -58,7 +58,7 @@ describe("SoundCase narration direction", () => {
     expect(client.responses.create).toHaveBeenCalledWith(
       expect.objectContaining({
         model: "gpt-6-luna",
-        reasoning: { effort: "low" },
+        reasoning: { effort: "medium" },
         store: false,
         text: { format: soundCaseDirectionSchema },
       })

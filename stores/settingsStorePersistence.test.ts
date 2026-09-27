@@ -66,6 +66,44 @@ describe("settings store persistence (B6)", () => {
     expect(parameters.reasoningEffort).toBeTruthy();
   });
 
+  it("moves the old Luna default (low) to medium once, when upgrading from v1", async () => {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
+      state: {
+        model: "gpt-6-luna",
+        systemPrompt: "",
+        modelSettingsById: {
+          "gpt-6-luna": { maxOutputTokens: 4_096, reasoningEffort: "low", reasoningMode: "standard" },
+        },
+      },
+      version: 1,
+    }));
+
+    await useSettingsStore.persist.rehydrate();
+
+    expect(useSettingsStore.getState().parameters).toMatchObject({
+      model: "gpt-6-luna",
+      maxOutputTokens: 4_096,
+      reasoningEffort: "medium",
+    });
+  });
+
+  it("respects a Luna effort chosen after the upgrade", async () => {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
+      state: {
+        model: "gpt-6-luna",
+        systemPrompt: "",
+        modelSettingsById: {
+          "gpt-6-luna": { reasoningEffort: "low", reasoningMode: "standard" },
+        },
+      },
+      version: 2,
+    }));
+
+    await useSettingsStore.persist.rehydrate();
+
+    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("low");
+  });
+
   it("keeps saved Sol settings while migrating a legacy model id", async () => {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
       state: {
