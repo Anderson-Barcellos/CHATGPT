@@ -182,3 +182,17 @@ Merge de `codex/gpt6-usage-audit-20260924`: 196 arquivos/1010 testes e tsc exit 
 | Lint | `npm run lint -- --ignore-pattern '.next-before-sc2-20260906T170822Z/**'` | exit 0; 0 erros, 1 warning anterior |
 | Build isolado `/chat` | `NEXT_PUBLIC_BASE_PATH=/chat npm run build` na worktree | exit 0 |
 | Whitespace | `git diff --check` | exit 0 |
+
+## 2026-09-27 — iOS 27: sonda de viewport, Bloco 1 (Claude)
+
+`lib/layout/viewportProbe.test.ts`, primeira execução (RED): `Failed to resolve import "@/lib/layout/viewportProbe"` — `Test Files 1 failed`, `Tests no tests`. GREEN: `Tests 5 passed (5)`.
+
+| Gate | Comando | Resultado |
+|---|---|---|
+| Suíte completa | `npm test` | exit 0; 197 arquivos/1016 testes |
+| TypeScript | `npx tsc --noEmit` | exit 0 |
+| Lint | `npm run lint -- --ignore-pattern '.next-before-*/**'` | exit 0; 0 erros, 1 warning anterior |
+| Build isolado `/chat` | `NEXT_PUBLIC_BASE_PATH=/chat npm run build` em `/root/.cache/chat-ios27-probe` | exit 0; rota `ƒ /viewport-probe` |
+| Whitespace | `git diff --check` | exit 0 |
+
+QA Playwright (`next dev` isolado na 3041, `AUTH_ENABLED=false`, iPhone 15 Pro Max emulado, dark/light): zero `pageerror`, sem overflow horizontal, réguas/barras/painel legíveis. Emulação é aba de navegador, não standalone: a leitura real depende do iPhone do Anders.

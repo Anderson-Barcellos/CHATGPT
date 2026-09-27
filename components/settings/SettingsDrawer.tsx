@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
@@ -515,6 +516,14 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                   <p className="mt-2 text-nano text-muted-foreground/80">
                     O seletor de modelo continua na área de input.
                   </p>
+                  {/* Temporário: sonda do iOS 27; remover com app/viewport-probe. */}
+                  <Link
+                    href="/viewport-probe"
+                    onClick={onClose}
+                    className="mt-2 inline-block text-nano font-semibold text-primary underline underline-offset-2"
+                  >
+                    Diagnóstico de tela (temporário)
+                  </Link>
                 </div>
 
                 {activeMode === "chat" && (
