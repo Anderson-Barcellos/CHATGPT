@@ -9,7 +9,7 @@ import {
 
 const validRequest = {
   prompt: "Revise esta função.",
-  model: "gpt-5.6-luna",
+  model: "gpt-6-luna",
   file: {
     path: "src/calculadora.ts",
     language: "typescript",
@@ -25,7 +25,7 @@ describe("Studio assistant request", () => {
     if (!parsed.ok) return;
 
     const params = buildStudioResponseParams(parsed.value);
-    expect(params.model).toBe("gpt-5.6-luna");
+    expect(params.model).toBe("gpt-6-luna");
     expect(params.store).toBe(false);
     expect(params.tools).toEqual([
       {
@@ -51,7 +51,7 @@ describe("Studio assistant request", () => {
 
     expect(parsed.ok).toBe(true);
     if (parsed.ok) {
-      expect(parsed.value.model).toBe("gpt-5.6-luna");
+      expect(parsed.value.model).toBe("gpt-6-luna");
     }
   });
 

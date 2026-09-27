@@ -272,7 +272,7 @@ describe("adaptador xAI Responses", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const imageRequest = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
     expect(imageRequest).toMatchObject({
-      model: "gpt-5.6-luna",
+      model: "gpt-6-luna",
       tool_choice: { type: "image_generation" },
       tools: [{ type: "image_generation", model: "gpt-image-2", quality: "medium" }],
     });

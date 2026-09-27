@@ -14,16 +14,17 @@ describe("Pulse task model selection", () => {
     expect(normalizePulseTaskInput(baseInput).model).toBe("grok-4.7");
   });
 
-  it.each(["gpt-5.6-sol", "gpt-5.6-terra"] as const)(
+  it.each(["gpt-6-astra", "gpt-6-sol", "gpt-6-luna"] as const)(
     "accepts %s as a premium Pulse model",
     (model) => {
       expect(normalizePulseTaskInput({ ...baseInput, model }).model).toBe(model);
     }
   );
 
-  it("rejects unsupported Pulse models", () => {
-    expect(
-      () => normalizePulseTaskInput({ ...baseInput, model: "gpt-5.6-luna" })
-    ).toThrow("Modelo Pulse invalido");
+  it("maps persisted model ids and rejects unknown models", () => {
+    expect(normalizePulseTaskInput({ ...baseInput, model: "gpt-5.6-terra" }).model).toBe("gpt-6-sol");
+    expect(normalizePulseTaskInput({ ...baseInput, model: "gpt-5.6-luna" }).model).toBe("gpt-6-luna");
+    expect(() => normalizePulseTaskInput({ ...baseInput, model: "unknown" }))
+      .toThrow("Modelo Pulse invalido");
   });
 });

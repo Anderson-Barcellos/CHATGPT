@@ -13,7 +13,7 @@ export const SOUNDCASE_DIRECTION_PROMPT_VERSION = "soundcase-direction-v1";
 export const DEFAULT_TTS_INSTRUCTIONS =
   "Leia o texto exatamente como fornecido, sem resumir, omitir, corrigir ou acrescentar conteúdo. Use dicção clara, ritmo natural, pausas coerentes com a pontuação e respeite as pronúncias indicadas.";
 
-const SOUNDCASE_DIRECTION_MODEL = "gpt-5.6-luna" as const;
+const SOUNDCASE_DIRECTION_MODEL = "gpt-6-luna" as const;
 const DEFAULT_COVER_PROMPT =
   "Composição editorial abstrata inspirada em áudio e narrativa, atmosfera azul profunda, sem palavras, letras, números, legendas ou tipografia legível.";
 const COVER_NO_TEXT_CONSTRAINT =

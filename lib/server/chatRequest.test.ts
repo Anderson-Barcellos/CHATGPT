@@ -16,21 +16,20 @@ function toolTypesFor(responseMode: "default" | "document" | "deepsearch_medium"
 }
 
 describe("buildResponseCreateParams", () => {
-  it("uses GPT-5.6 Luna as the API default", () => {
-    expect(DEFAULT_CHAT_MODEL).toBe("gpt-5.6-luna");
+  it("uses GPT-6 Luna as the API default", () => {
+    expect(DEFAULT_CHAT_MODEL).toBe("gpt-6-luna");
     expect(buildResponseCreateParams({ input: [{ role: "user", content: "Oi" }] }).model)
-      .toBe("gpt-5.6-luna");
+      .toBe("gpt-6-luna");
   });
 
-  it("passes GPT-5.6 Pro mode and max effort to the Responses API", () => {
+  it("drops legacy Pro mode while retaining max effort for GPT-6", () => {
     const params = buildResponseCreateParams({
       input: [{ role: "user", content: "Teste" }],
-      model: "gpt-5.6-sol",
+      model: "gpt-6-sol",
       reasoning: { mode: "pro", effort: "max", summary: "detailed" },
     });
 
     expect(params.reasoning).toEqual({
-      mode: "pro",
       effort: "max",
       summary: "detailed",
     });
@@ -113,8 +112,10 @@ describe("buildResponseCreateParams", () => {
     expect(resolveRequestedModel("deepseek-v4-pro")).toBe("deepseek-v4-pro");
   });
 
-  it("allows GPT-5.6 Terra as a selectable chat model", () => {
-    expect(resolveRequestedModel("gpt-5.6-terra")).toBe("gpt-5.6-terra");
+  it("maps old model IDs to GPT-6 for new requests", () => {
+    expect(resolveRequestedModel("gpt-5.6-terra")).toBe("gpt-6-sol");
+    expect(resolveRequestedModel("gpt-5.6-sol")).toBe("gpt-6-sol");
+    expect(resolveRequestedModel("gpt-5.6-luna")).toBe("gpt-6-luna");
   });
 
   it("forces GPT-6 Astra reasoning and verbosity to medium", () => {

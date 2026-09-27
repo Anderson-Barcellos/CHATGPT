@@ -255,7 +255,6 @@ describe("CommandComposerContainerV2", () => {
     expect(markup).not.toContain("max-w-[var(--gc-mobile-composer-model-width)]");
     expect(markup).toContain("md:max-w-[10rem]");
     expect(markup).toContain(">Rec<");
-    expect(markup).toContain('aria-label="Ativar modo Pro"');
-    expect(markup).toContain('aria-pressed="false"');
+    expect(markup).not.toContain('aria-label="Ativar modo Pro"');
   });
 });

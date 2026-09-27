@@ -90,11 +90,13 @@ function formatDateTime(value?: string): string {
 
 function pulseModelLabel(model?: string, reasoningEffort = "medium"): string {
   const modelLabel =
-    model === "gpt-5.6-sol"
+    model === "gpt-6-astra"
+      ? "Astra"
+      : model === "gpt-6-sol" || model === "gpt-5.6-sol" || model === "gpt-5.6-terra"
       ? "Sol"
-      : model === "gpt-5.6-terra"
-        ? "Terra"
-        : "Mini";
+      : model === "gpt-6-luna" || model === "gpt-5.6-luna"
+        ? "Luna"
+        : "Grok";
   const effortLabel = reasoningEffort.charAt(0).toUpperCase() + reasoningEffort.slice(1);
   return `${modelLabel} · ${effortLabel}`;
 }
@@ -885,8 +887,9 @@ export function PulsePanelV2() {
                   className="h-8 w-full rounded-md border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-2 text-xs text-foreground"
                 >
                   <option value="grok-4.7">Grok 4.7 — padrão</option>
-                  <option value="gpt-5.6-sol">GPT-5.6 Sol</option>
-                  <option value="gpt-5.6-terra">GPT-5.6 Terra — experimental</option>
+                  <option value="gpt-6-astra">GPT-6 Astra</option>
+                  <option value="gpt-6-sol">GPT-6 Sol</option>
+                  <option value="gpt-6-luna">GPT-6 Luna</option>
                 </select>
                 <span className="block text-[10px] text-muted-foreground/75">
                   Todos usam reasoning medium e verbosity high; a escolha fica salva nesta rotina.

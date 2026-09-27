@@ -30,9 +30,12 @@ interface SettingsState {
   getActiveMemories: () => Memory[];
 }
 
-const DEFAULT_MODEL = "gpt-5.6-luna";
+const DEFAULT_MODEL = "gpt-6-luna";
 
 const LEGACY_MODEL_FALLBACKS: Record<string, string> = {
+  "gpt-5.6-sol": "gpt-6-sol",
+  "gpt-5.6-luna": "gpt-6-luna",
+  "gpt-5.6-terra": "gpt-6-sol",
   "gemini-3.7-flash": "gemini-3.8-flash",
   "gpt-chat-latest": "chat-latest",
   "gpt-5-chat-latest": "chat-latest",
@@ -66,7 +69,7 @@ function buildDefaultModelSettings(modelId: string): ModelScopedParameters {
       ? "xhigh"
       : resolvedModelId === "gemini-3.8-flash"
       ? "high"
-      : resolvedModelId === "gpt-5.6-luna"
+      : resolvedModelId === "gpt-6-luna"
       ? "low"
       : usesNoReasoningByDefault(resolvedModelId)
       ? "none"
@@ -230,14 +233,25 @@ function mergePersistedSettings(
       ? raw.modelSettingsById
       : {}),
   };
-  const model = resolveSupportedModelId(
-    typeof raw.model === "string" ? raw.model : current.parameters.model
-  );
+  for (const [oldId, newId] of [
+    ["gpt-5.6-sol", "gpt-6-sol"],
+    ["gpt-5.6-terra", "gpt-6-sol"],
+    ["gpt-5.6-luna", "gpt-6-luna"],
+  ] as const) {
+    if (!modelSettingsById[newId] && modelSettingsById[oldId]) {
+      modelSettingsById[newId] = clampModelSettings(newId, {
+        ...buildDefaultModelSettings(newId),
+        ...sanitizeScopedSettings(modelSettingsById[oldId]),
+      });
+    }
+  }
+  const persistedModel = typeof raw.model === "string" ? raw.model : current.parameters.model;
+  const model = resolveSupportedModelId(persistedModel);
   const systemPrompt =
     typeof raw.systemPrompt === "string" ? raw.systemPrompt : current.parameters.systemPrompt;
   const scoped = clampModelSettings(model, {
     ...buildDefaultModelSettings(model),
-    ...sanitizeScopedSettings(modelSettingsById[model]),
+    ...sanitizeScopedSettings(modelSettingsById[model] ?? modelSettingsById[persistedModel]),
   });
   modelSettingsById[model] = scoped;
   return {

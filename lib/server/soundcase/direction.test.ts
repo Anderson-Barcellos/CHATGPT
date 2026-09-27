@@ -41,7 +41,7 @@ describe("SoundCase narration direction", () => {
     const direction = await directSoundCase({ sourceText, segments }, client);
 
     expect(direction).toMatchObject({
-      model: "gpt-5.6-luna",
+      model: "gpt-6-luna",
       promptVersion: SOUNDCASE_DIRECTION_PROMPT_VERSION,
       source: "automatic",
       title: "O cérebro que aprende",
@@ -57,7 +57,7 @@ describe("SoundCase narration direction", () => {
     expect(JSON.stringify(direction)).not.toContain(sourceText);
     expect(client.responses.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        model: "gpt-5.6-luna",
+        model: "gpt-6-luna",
         reasoning: { effort: "low" },
         store: false,
         text: { format: soundCaseDirectionSchema },

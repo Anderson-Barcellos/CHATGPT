@@ -21,7 +21,7 @@ Proxy server-side para chat com streaming. Modelos OpenAI usam a `Responses API`
   "input": [
     { "role": "user", "content": "Explique neurite vestibular em tópicos." }
   ],
-  "model": "gpt-5.6-luna",
+  "model": "gpt-6-luna",
   "instructions": "You are a helpful assistant.",
   "maxOutputTokens": 4096,
   "verbosity": "medium",
@@ -40,7 +40,7 @@ Proxy server-side para chat com streaming. Modelos OpenAI usam a `Responses API`
 | Campo | Tipo | Padrão | Observação |
 |---|---|---|---|
 | `input` | array | obrigatório | Payload compatível com Responses API |
-| `model` | string | `gpt-5.6-luna` | Precisa existir em `lib/models/modelConfig.ts` com capacidade `chat` ou `reasoning`; modelos removidos conhecidos caem para esse default |
+| `model` | string | `gpt-6-luna` | Precisa existir em `lib/models/modelConfig.ts` com capacidade `chat` ou `reasoning`; IDs GPT-5.6 Sol/Luna/Terra conhecidos resolvem para GPT-6 |
 | `instructions` | string | nenhum | Instruções de sistema |
 | `maxOutputTokens` | number | máximo do modelo | Sempre limitado ao `maxOutput` do modelo |
 | `temperature` | number | nenhum | Só enviado se o modelo suportar temperatura |
@@ -135,7 +135,7 @@ Assistente contextual do editor em `/studio`. A rota usa Responses API do provid
 
 ```json
 {
-  "model": "gpt-5.6-luna",
+  "model": "gpt-6-luna",
   "prompt": "Sugira uma forma mais segura de validar estes parâmetros.",
   "file": {
     "path": "main.py",

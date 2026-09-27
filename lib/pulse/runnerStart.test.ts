@@ -46,7 +46,7 @@ const task: PulseTask = {
   emoji: "📡",
   prompt: "Pesquise.",
   executionPrompt: "Pesquise novidades.",
-  model: "gpt-5.6-sol",
+  model: "gpt-6-sol",
   status: "active",
   schedule: { recurrenceType: "daily", time: "09:00" } as unknown as PulseTask["schedule"],
   nextRunAt: new Date(now.getTime() - 60_000).toISOString(),
@@ -201,7 +201,7 @@ describe("Pulse manual start", () => {
     }));
     expect(xai.create.mock.calls[0][0]).not.toHaveProperty("text");
     expect(openai.responses.create).toHaveBeenCalledWith(expect.objectContaining({
-      model: "gpt-5.6-luna",
+      model: "gpt-6-luna",
       reasoning: { effort: "medium" },
       tools: [expect.objectContaining({
         type: "image_generation",

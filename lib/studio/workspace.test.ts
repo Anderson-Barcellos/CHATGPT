@@ -14,7 +14,7 @@ describe("Studio prefs persistence", () => {
     expect(workspace.version).toBe(2);
     expect(workspace.autocompleteEnabled).toBe(true);
     expect(workspace.assistantMessages).toEqual([]);
-    expect(workspace.selectedModelId).toBe("gpt-5.6-luna");
+    expect(workspace.selectedModelId).toBe("gpt-6-luna");
   });
 
   it("restores an explicitly disabled autocomplete preference", () => {
@@ -57,7 +57,7 @@ describe("Studio prefs persistence", () => {
 
     expect(restored.version).toBe(2);
     expect(restored.autocompleteEnabled).toBe(false);
-    expect(restored.selectedModelId).toBe("gpt-5.6-terra");
+    expect(restored.selectedModelId).toBe("gpt-6-sol");
     expect(restored.assistantMessages).toEqual([
       expect.objectContaining({ id: "legacy-question" }),
     ]);
@@ -116,7 +116,7 @@ describe("Studio prefs persistence", () => {
       })
     );
 
-    expect(restored.selectedModelId).toBe("gpt-5.6-luna");
+    expect(restored.selectedModelId).toBe("gpt-6-luna");
   });
 
   it("resolve o mini persistido para Grok e preserva o histórico", () => {

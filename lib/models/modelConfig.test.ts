@@ -16,9 +16,8 @@ describe("chat model capabilities", () => {
 
     expect(ids).toEqual([
       "gpt-6-astra",
-      "gpt-5.6-sol",
-      "gpt-5.6-terra",
-      "gpt-5.6-luna",
+      "gpt-6-sol",
+      "gpt-6-luna",
       "grok-4.7",
       "deepseek-v4-pro",
       "gemini-3.8-flash",
@@ -37,18 +36,17 @@ describe("chat model capabilities", () => {
       .toBeCloseTo(0.662, 6);
   });
 
-  it("offers max reasoning to Astra and GPT-5.6 models", () => {
+  it("offers max reasoning to GPT-6 models", () => {
     expect(getSupportedReasoningEfforts("gpt-6-astra")).toContain("max");
-    expect(getSupportedReasoningEfforts("gpt-5.6-sol")).toContain("max");
-    expect(getSupportedReasoningEfforts("gpt-5.6-terra")).toContain("max");
-    expect(getSupportedReasoningEfforts("gpt-5.6-luna")).toContain("max");
+    expect(getSupportedReasoningEfforts("gpt-6-sol")).toContain("max");
+    expect(getSupportedReasoningEfforts("gpt-6-luna")).toContain("max");
     expect(getSupportedReasoningEfforts("gpt-5.5")).not.toContain("max");
   });
 
-  it("offers Pro mode only to GPT-5.6 models", () => {
-    expect(modelSupportsReasoningMode("gpt-5.6-sol", "pro")).toBe(true);
-    expect(modelSupportsReasoningMode("gpt-5.6-terra", "pro")).toBe(true);
-    expect(modelSupportsReasoningMode("gpt-5.6-luna", "pro")).toBe(true);
+  it("does not offer the GPT-5.6 Pro mode to GPT-6", () => {
+    expect(modelSupportsReasoningMode("gpt-6-astra", "pro")).toBe(false);
+    expect(modelSupportsReasoningMode("gpt-6-sol", "pro")).toBe(false);
+    expect(modelSupportsReasoningMode("gpt-6-luna", "pro")).toBe(false);
     expect(modelSupportsReasoningMode("gpt-5.5", "pro")).toBe(false);
   });
 
@@ -59,6 +57,13 @@ describe("chat model capabilities", () => {
   it("locks GPT-6 Astra controls to medium", () => {
     expect(getFixedReasoningEffort("gpt-6-astra")).toBe("medium");
     expect(getFixedVerbosity("gpt-6-astra")).toBe("medium");
+  });
+
+  it("prices GPT-6 Sol and Luna at standard and long-context rates", () => {
+    expect(calculateCost(1_000_000, 1_000_000, "gpt-6-sol").totalCost).toBe(19);
+    expect(calculateCost(1_000_000, 1_000_000, "gpt-6-luna").totalCost).toBe(0.95);
+    expect(calculateCost(272_000, 0, "gpt-6-sol").totalCost).toBe(0.544);
+    expect(calculateCost(272_001, 0, "gpt-6-sol").totalCost).toBe(1.088004);
   });
 
   it("offers only Gemini thinking levels to Gemini 3.8 Flash", () => {

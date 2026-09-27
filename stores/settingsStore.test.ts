@@ -13,24 +13,24 @@ describe("settings store model defaults", () => {
     });
   });
 
-  it("uses GPT-5.6 Luna with low standard reasoning as the chat default", () => {
-    expect(useSettingsStore.getState().parameters.model).toBe("gpt-5.6-luna");
+  it("uses GPT-6 Luna with low standard reasoning as the chat default", () => {
+    expect(useSettingsStore.getState().parameters.model).toBe("gpt-6-luna");
     expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("low");
     expect(useSettingsStore.getState().parameters.reasoningMode).toBe("standard");
     expect(useSettingsStore.getState().parameters.reasoningSummary).toBe("detailed");
   });
 
-  it("defaults GPT-5.6 Sol to medium standard reasoning", () => {
-    useSettingsStore.getState().updateParameters({ model: "gpt-5.6-sol" });
+  it("defaults GPT-6 Sol to medium standard reasoning", () => {
+    useSettingsStore.getState().updateParameters({ model: "gpt-6-sol" });
 
     expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("medium");
     expect(useSettingsStore.getState().parameters.reasoningMode).toBe("standard");
   });
 
-  it("defaults GPT-5.6 Terra to medium standard reasoning", () => {
+  it("maps a legacy Terra selection to GPT-6 Sol", () => {
     useSettingsStore.getState().updateParameters({ model: "gpt-5.6-terra" });
 
-    expect(useSettingsStore.getState().parameters.model).toBe("gpt-5.6-terra");
+    expect(useSettingsStore.getState().parameters.model).toBe("gpt-6-sol");
     expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("medium");
     expect(useSettingsStore.getState().parameters.reasoningMode).toBe("standard");
     expect(useSettingsStore.getState().parameters.maxOutputTokens).toBe(128_000);
@@ -69,7 +69,7 @@ describe("settings store model defaults", () => {
   it("falls legacy removed models back to the current default", () => {
     useSettingsStore.getState().updateParameters({ model: "gpt-5.1" });
 
-    expect(useSettingsStore.getState().parameters.model).toBe("gpt-5.6-luna");
+    expect(useSettingsStore.getState().parameters.model).toBe("gpt-6-luna");
   });
 
   it("maps short chat-latest aliases to Chat Latest", () => {
@@ -124,7 +124,7 @@ describe("settings store model defaults", () => {
     expect(useSettingsStore.getState().parameters.maxOutputTokens).toBe(65_536);
 
     useSettingsStore.getState().updateParameters({ reasoningEffort: "low" });
-    useSettingsStore.getState().updateParameters({ model: "gpt-5.6-luna" });
+    useSettingsStore.getState().updateParameters({ model: "gpt-6-luna" });
     useSettingsStore.getState().updateParameters({ model: "gemini-3.8-flash" });
 
     expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("low");
@@ -133,19 +133,19 @@ describe("settings store model defaults", () => {
     expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("high");
   });
 
-  it("remembers Pro mode independently for each GPT-5.6 model", () => {
+  it("keeps max effort per model and clamps unsupported Pro mode", () => {
     useSettingsStore.getState().updateParameters({
-      model: "gpt-5.6-luna",
+      model: "gpt-6-luna",
       reasoningMode: "pro",
       reasoningEffort: "max",
     });
-    useSettingsStore.getState().updateParameters({ model: "gpt-5.6-sol" });
+    useSettingsStore.getState().updateParameters({ model: "gpt-6-sol" });
 
     expect(useSettingsStore.getState().parameters.reasoningMode).toBe("standard");
     expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("medium");
 
-    useSettingsStore.getState().updateParameters({ model: "gpt-5.6-luna" });
-    expect(useSettingsStore.getState().parameters.reasoningMode).toBe("pro");
+    useSettingsStore.getState().updateParameters({ model: "gpt-6-luna" });
+    expect(useSettingsStore.getState().parameters.reasoningMode).toBe("standard");
     expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("max");
   });
 });

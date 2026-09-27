@@ -6,7 +6,7 @@ import { extractResponseOutput } from "@/lib/chat/responseToMessagePatch";
 export const DEEPSEEK_MODEL = "deepseek-v4-pro";
 export const FRESH_WEB_CONTEXT_TOOL_NAME = "fresh_web_context";
 const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
-const DEFAULT_WEB_CONTEXT_MODEL = "gpt-5.6-luna";
+const DEFAULT_WEB_CONTEXT_MODEL = "gpt-6-luna";
 
 type TextPart = { type: "input_text"; text: string };
 type ImagePart = { type: "input_image"; image_url: string };
@@ -282,8 +282,11 @@ export function buildOpenAIWebContextParams(
   query: string,
   { model = process.env.DEEPSEEK_WEB_CONTEXT_MODEL?.trim() || DEFAULT_WEB_CONTEXT_MODEL } = {}
 ): OpenAI.Responses.ResponseCreateParamsNonStreaming {
+  const effectiveModel = model === "gpt-5.6-sol" || model === "gpt-5.6-terra"
+    ? "gpt-6-sol"
+    : model === "gpt-5.6-luna" ? "gpt-6-luna" : model;
   return {
-    model,
+    model: effectiveModel,
     instructions:
       "Pesquise na web e devolva contexto factual compacto para outro modelo responder ao usuario. Inclua pontos relevantes, datas, nomes proprios e fontes. Nao escreva a resposta final ao usuario; entregue apenas material de contexto.",
     input: query,
