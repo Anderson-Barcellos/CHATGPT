@@ -1600,3 +1600,7 @@ Claude: Anders achou a faixa do iPhone ainda desarrumada e escolheu a "cápsula 
 ### 2026-09-26 — GPT-6 integrado ao main e Deepsearch em Luna/Sol
 
 Claude: Anders notou que os modelos não tinham mudado. A migração GPT-6 do Codex estava fechada desde 24/09 na branch `codex/gpt6-usage-audit-20260924`, mas nunca entrou no `main`; foi integrada por merge, com conflitos só em docs append-only e num teste do composer (anexos ficam, Pro some com GPT-6). Por cima, Deepsearch Medium foi de Grok 4.7/`medium` para `gpt-6-luna`/`high` e High de `gpt-5.4` para `gpt-6-sol`/`high`; o composer passou a usar `resolveDeepsearchProfile` em vez de IDs duplicados. Quiz segue `gpt-5.4`. Gates: 1011 testes, tsc, lint, build isolado e diff check. Sem deploy.
+
+### 2026-09-26 — Cápsula, GPT-6 e Deepsearch Luna/Sol publicados
+
+Claude: Anders autorizou push e deploy dos 10 commits pendentes. `origin/main` em `b33aa05`; build isolada `dsqMLjfxIWTvd7rQ7-JGu` instalada com backup em `/root/.cache/gaucho-gpt6-deploy-20260926/next-before` e assets antigos retidos; timers Pulse/SoundCase pausados durante a troca. Health local/público 200, auth barrando anônimo. Sobre o Grok no Deepsearch Medium: o plano `docs/plans/2026-09-21-grok-chat-soundcase.md` registra que Anders confirmou "substituir todos os usos" do mini, e o Medium rodava em `gpt-5.4-mini`; Anders não se lembrava de ter escolhido isso para o Deepsearch. Pitfall: troca de modelo por arrasto em modos fixos precisa ser perguntada modo a modo.
