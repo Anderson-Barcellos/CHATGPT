@@ -170,3 +170,15 @@ Primeira execução (RED) de `WorkspaceLayoutV2.test.tsx` + `app/globals.visual.
 ### QA visual (Playwright + Chrome DevTools, API sintética, `next dev` isolado na 3041, auth desligada)
 
 12/12 cenários mobile (390 dark/light, 320 dark, 430 light × parado/Pro/Deepsearch): `overflow=false`, modelo sem truncamento em todas as larguras, zero `pageerror`. A primeira rodada mostrou "GPT-5.6 L…" em 320 px; corrigido com segmento de 1.75rem e padding menor no modelo abaixo de 360 px. Desktop 1440 conferido idêntico ao anterior. Gravação real não exercitada (sem microfone falso nesta rodada); coberta pelo teste de markup `data-recording`. Capturas e roteiro em `/root/.cache/gaucho-composer-single-capsule-evidence`.
+
+## 2026-09-26 — Merge GPT-6 + Deepsearch em Luna/Sol (Claude)
+
+Merge de `codex/gpt6-usage-audit-20260924`: 196 arquivos/1010 testes e tsc exit 0 antes do commit. `lib/chat/deepsearchConfig.test.ts`, primeira execução (RED): `Tests 3 failed (3)` (Grok/`gpt-5.4` ainda no perfil). GREEN: `3 passed`.
+
+| Gate | Comando | Resultado |
+|---|---|---|
+| Suíte completa | `npm test` | exit 0; 196 arquivos/1011 testes |
+| TypeScript | `npx tsc --noEmit` | exit 0 |
+| Lint | `npm run lint -- --ignore-pattern '.next-before-sc2-20260906T170822Z/**'` | exit 0; 0 erros, 1 warning anterior |
+| Build isolado `/chat` | `NEXT_PUBLIC_BASE_PATH=/chat npm run build` na worktree | exit 0 |
+| Whitespace | `git diff --check` | exit 0 |

@@ -9,6 +9,6 @@ export interface DeepsearchProfile {
 
 export function resolveDeepsearchProfile(mode: DeepsearchMode): DeepsearchProfile {
   return mode === "deepsearch_high"
-    ? { model: "gpt-5.4", reasoningEffort: "high" }
-    : { model: "grok-4.7", reasoningEffort: "medium" };
+    ? { model: "gpt-6-sol", reasoningEffort: "high" }
+    : { model: "gpt-6-luna", reasoningEffort: "high" };
 }

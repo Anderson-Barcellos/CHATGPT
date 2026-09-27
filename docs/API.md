@@ -78,8 +78,8 @@ Em `responseMode="quiz"`, as tools são removidas e o backend força:
 Em `responseMode="deepsearch_medium"` e `responseMode="deepsearch_high"`:
 
 - no shell atual, `hooks/useChat.ts` envia o mesmo fluxo de documento/canvas;
-- no shell atual, `hooks/useChat.ts` envia `gpt-5.4-mini` + reasoning `high` em `deepsearch_medium`;
-- no shell atual, `hooks/useChat.ts` envia `gpt-5.4` + reasoning `high` em `deepsearch_high`.
+- no shell atual, `hooks/useChat.ts` envia `gpt-6-luna` + reasoning `high` em `deepsearch_medium`;
+- no shell atual, `hooks/useChat.ts` envia `gpt-6-sol` + reasoning `high` em `deepsearch_high`.
 
 ### Streaming
 

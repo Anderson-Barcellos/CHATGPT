@@ -41,7 +41,7 @@
 - Modelos mini iniciam com reasoning `none` + summary `detailed`; como o effort começa em `none`, esse summary não é enviado ao backend até o usuário ativar reasoning.
 - Modelo de imagem usado pela tool: `gpt-image-2`.
 - Quiz força `gpt-5.4` com reasoning `high`.
-- Documento e Deepsearch Medium usam `grok-4.7` com reasoning `medium`; Deepsearch High continua em `gpt-5.4` com reasoning `high`.
+- Documento usa `grok-4.7` com reasoning `medium`. Deepsearch Medium usa `gpt-6-luna` e Deepsearch High usa `gpt-6-sol`, ambos com reasoning `high` (`lib/chat/deepsearchConfig.ts`). Quiz continua em `gpt-5.4` com reasoning `high`.
 - O Pulse usa `grok-4.7` + `medium` por padrão e oferece Astra/Sol/Luna como opções OpenAI. Astra mantém reasoning/verbosity `medium`; Sol/Luna usam verbosity `high`; Grok não recebe esse parâmetro. Imagens continuam OpenAI por chamada separada.
 - O `fresh_web_context` do DeepSeek usa `gpt-6-luna` + `low`; a resposta final continua no DeepSeek V4 Pro com reasoning máximo.
 - `deepseek-v4-pro` é permitido apenas no chat padrão streaming, não usa `code_interpreter` e depende de `DEEPSEEK_API_KEY`.

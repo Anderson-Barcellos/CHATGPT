@@ -2,7 +2,9 @@
 
 ## Estado operacional
 
-#### Deepsearch com prompt de agente único e modelos novos (`bloqueada parcialmente`, 2026-09-25)
+#### Deepsearch com prompt de agente único e modelos novos (`pronta para revisão`, 2026-09-26)
+
+Desbloqueada em 2026-09-26: Anders confirmou que os IDs corretos são GPT-6. A migração do Codex (`codex/gpt6-usage-audit-20260924`, fechada em 24/09 mas nunca integrada) entrou no `main` por merge; Deepsearch Medium passou a `gpt-6-luna` e High a `gpt-6-sol`, ambos em `high`, e o composer lê o modelo exibido do mesmo `resolveDeepsearchProfile`. Quiz segue em `gpt-5.4` até decisão de Anders. A dívida do toggle Pro vazando no Deepsearch perdeu efeito: GPT-6 não oferece modo `pro`.
 
 Anders pediu adaptar a skill deep-prose-research para um agente só, sem subagentes nem scripts, e trocar os modelos fixos: Medium → `gpt-6-luna` em high e High → `gpt-6-sol` em high. Feito na mesma worktree `claude/composer-capsule-20260925`: `lib/chat/deepResearchPrompt.ts` com apuração em rodadas R1–R4, registro interno de fontes e claims, planta, oito regras da prosa encadeada, Referências e Nota de cobertura; os pisos são Medium 3.500 palavras/20 buscas/15 fontes e High 8.000/40/35. `useChat` passa a usar esse prompt nos dois Deepsearch; o modo Documento segue com o prompt antigo. Bloqueio: `gpt-6-luna` e `gpt-6-sol` não estão em `lib/models/modelConfig.ts` e a conferência na API foi negada pela proteção de credenciais. Faltam confirmar os IDs, o contexto, a saída máxima e os preços antes de catalogar e trocar `lib/chat/deepsearchConfig.ts`. Dívida vista: o toggle Pro do usuário (`parameters.reasoningMode`) vaza para o perfil fixo do Deepsearch.
 

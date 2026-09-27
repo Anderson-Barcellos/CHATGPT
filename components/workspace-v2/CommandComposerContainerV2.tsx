@@ -43,6 +43,7 @@ import {
   MODELS,
   modelSupportsReasoningMode,
 } from "@/lib/models/modelConfig";
+import { resolveDeepsearchProfile } from "@/lib/chat/deepsearchConfig";
 import { canSubmitComposerMessage } from "@/lib/chat/composerSubmit";
 import { composeSpeechTranscriptPreview } from "@/lib/chat/speechComposer";
 import {
@@ -140,8 +141,9 @@ export function CommandComposerContainerV2({
     modelSupportsReasoningMode(parameters.model, "pro") &&
     responseMode !== "quiz" &&
     !isDeepsearchMode;
-  const deepsearchModelId =
-    responseMode === "deepsearch_high" ? "gpt-5.4" : "grok-4.7";
+  const deepsearchModelId = resolveDeepsearchProfile(
+    responseMode === "deepsearch_high" ? "deepsearch_high" : "deepsearch_medium"
+  ).model;
   const displayModel = isDeepsearchMode ? MODELS[deepsearchModelId] : currentModel;
   const deepsearchModelLabel = MODELS[deepsearchModelId]?.name ?? deepsearchModelId;
   const currentReasoning = REASONING_OPTIONS.find(

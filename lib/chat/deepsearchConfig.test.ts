@@ -1,18 +1,26 @@
 import { describe, expect, it } from "vitest";
+import { MODELS } from "@/lib/models/modelConfig";
 import { resolveDeepsearchProfile } from "./deepsearchConfig";
 
 describe("Deepsearch profiles", () => {
-  it("uses Grok 4.7 with fixed medium reasoning for Medium", () => {
+  it("uses GPT-6 Luna with high reasoning for Medium", () => {
     expect(resolveDeepsearchProfile("deepsearch_medium")).toEqual({
-      model: "grok-4.7",
-      reasoningEffort: "medium",
+      model: "gpt-6-luna",
+      reasoningEffort: "high",
     });
   });
 
-  it("keeps GPT-5.4 with high reasoning for High", () => {
+  it("uses GPT-6 Sol with high reasoning for High", () => {
     expect(resolveDeepsearchProfile("deepsearch_high")).toEqual({
-      model: "gpt-5.4",
+      model: "gpt-6-sol",
       reasoningEffort: "high",
     });
+  });
+
+  it("only points to catalogued models that accept the fixed effort", () => {
+    for (const mode of ["deepsearch_medium", "deepsearch_high"] as const) {
+      const { model, reasoningEffort } = resolveDeepsearchProfile(mode);
+      expect(MODELS[model]?.supportedReasoningEfforts).toContain(reasoningEffort);
+    }
   });
 });

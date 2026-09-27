@@ -20,7 +20,7 @@ Browser/PWA
 
 Grok 4.7 substitui os usos ativos do mini, usando Responses API própria, reasoning `medium` e adaptação das ferramentas. A fonte de verdade continua nos módulos atuais de cada produto; não há migração em massa dos dados privados. Busca usa a ferramenta xAI; memória continua local; geração de imagem continua OpenAI. O fluxo OpenAI permanece em Responses API.
 
-Documento/Deepsearch médio com Grok usam execução no processo servidor, independente da aba, e metadados persistidos com provider. A xAI não implementa `background=true`; jobs OpenAI mantêm retrieve/cancel originais. Reinício do executor Grok marca interrupção recuperável, sem repetição automática de chamada cobrada.
+Documento com Grok usa execução no processo servidor, independente da aba, e metadados persistidos com provider. A xAI não implementa `background=true`; jobs OpenAI mantêm retrieve/cancel originais. Reinício do executor Grok marca interrupção recuperável, sem repetição automática de chamada cobrada.
 
 SoundCase mantém TTS/worker/arquivos existentes. A engine de leitura Grok usa token efêmero obtido em rota autenticada, WebSocket direto do browser e PCM por Web Audio, sempre sobre o snapshot imutável da versão. Fechar o painel não desmonta a sessão; parar ou sair encerra áudio/conexão. Preferências de engine/voz/velocidade Grok são separadas da direção e formato dos arquivos. A chave permanente nunca entra no browser.
 
@@ -124,7 +124,7 @@ O adapter expõe uma tool local `fresh_web_context`. Quando o DeepSeek chama ess
 
 `gemini-3.8-flash` é um provider separado para chat padrão streaming. `lib/server/geminiChat.ts` converte o histórico e imagens para turns da Interactions API, envia `store=false`, Google Search, URL Context e summaries de pensamento, e traduz o stream Gemini para o mesmo contrato SSE usado pelo reducer do chat.
 
-O adapter exige `GEMINI_API_KEY`, aceita thinking `low`, `medium` e `high`, não envia os parâmetros depreciados `temperature`, `top_p` ou `top_k` e rejeita Documento, Deepsearch e Quiz. Esses modos usam seus presets próprios: Grok para Documento/Deepsearch médio e OpenAI para Deepsearch alto/Quiz.
+O adapter exige `GEMINI_API_KEY`, aceita thinking `low`, `medium` e `high`, não envia os parâmetros depreciados `temperature`, `top_p` ou `top_k` e rejeita Documento, Deepsearch e Quiz. Esses modos usam seus presets próprios: Grok para Documento e OpenAI para Deepsearch (Luna/Sol GPT-6) e Quiz.
 
 ## Reasoning
 
@@ -280,7 +280,7 @@ O TTS padrão do Chat/Pulse usa `/api/tts/xai` com voz Orion e MP3 24 kHz/128 kb
 
 ## Modelos
 
-O catálogo vive em `lib/models/modelConfig.ts`. O default do chat continua Luna (`low/standard`); o mini resolve para Grok 4.7 (`medium` fixo), preservando os registros históricos. Sol e Luna mantêm modo `pro` e effort `max`. Documento/Deepsearch médio usam Grok; Quiz e Deepsearch alto continuam `gpt-5.4/high`. O contexto web auxiliar do DeepSeek mantém Luna/low. Capacidades, parâmetros e preços ficam documentados em `docs/MODELS.md`.
+O catálogo vive em `lib/models/modelConfig.ts`. O default do chat continua Luna (`low/standard`); o mini resolve para Grok 4.7 (`medium` fixo), preservando os registros históricos. Sol e Luna (GPT-6) aceitam effort até `max`, sem modo `pro`. Documento usa Grok; Deepsearch Medium/High usam `gpt-6-luna`/`gpt-6-sol` em `high`; Quiz continua `gpt-5.4/high`. O contexto web auxiliar do DeepSeek mantém Luna/low. Capacidades, parâmetros e preços ficam documentados em `docs/MODELS.md`.
 
 Tools padrão:
 
