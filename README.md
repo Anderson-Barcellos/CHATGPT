@@ -14,7 +14,7 @@ Alguns artefatos internos antigos ainda usam o rótulo histórico `Celer`, mas o
 - Artefatos de documento/quiz com preview, download de fonte e PDF A4 server-side.
 - Auth simples do app por usuário/senha, sessão JWT e cookie `auth-token`.
 - Shell `workspace-v2` com o sistema visual **Atmosphere Glass** como padrão: Midnight Glass no escuro, Daybreak no claro e densidade mobile compacta por tokens, sem `zoom` ou escala global.
-- **Gaucho Studio** em `/studio`: IDE Python separada com Monaco sobre o workspace do servidor, Explorer com criação/exclusão e pastas recolhíveis, run sandboxed com stdin, terminal PTY, notebooks `.ipynb` com kernel persistente, preview Markdown, autocomplete FIM DeepSeek e assistente contextual somente leitura com pesquisa web e citações no painel lateral.
+- **Descobrir IA** em `/discover`: feed pessoal de notícias recentes de IA com capas geradas, fontes, leitura expandida e assuntos preferidos. O Studio permanece em `/studio` pelo endereço direto, preservando workspace e APIs.
 
 ## Stack
 
@@ -28,11 +28,13 @@ Alguns artefatos internos antigos ainda usam o rótulo histórico `Celer`, mas o
 
 ```text
 app/
-  api/                  Rotas BFF: chat, background, auth, persona, memoria/RAG, PDF, TTS, Pulse
+  api/                  Rotas BFF: chat, background, auth, persona, memoria/RAG, PDF, TTS, Pulse e Discover
   login/                Tela de login do app
+  discover/             Feed autenticado de notícias de IA
   studio/               Página autenticada e separada do Gaucho Studio
 components/
   chat/                 Balões, markdown, reasoning, ações rápidas e TTS
+  discover/             Cards, leitura expandida e assuntos preferidos
   settings/             Drawer de persona, memória, tuning e voz
   studio/               Explorer, Monaco, console, terminal, notebook e assistente contextual
   workspace-v2/         Shell atual do Gaucho Chat
@@ -43,6 +45,7 @@ lib/
   chat/                 Reducer de stream, reasoning e helpers de estado
   models/               Catálogo de modelos
   pulse/                Rotinas recorrentes, runner, scheduling e persistência Pulse
+  discover/             Curadoria, armazenamento e agendamento do feed
   server/               Auth, workspace/runner/terminal/kernel e helpers server-side
   studio/               Controller cliente, protocolos SSE, layout e formatos do Studio
   storage/              Persistência JSON e beacon

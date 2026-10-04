@@ -1,6 +1,6 @@
 # API
 
-**Última atualização:** 2026-09-21
+**Última atualização:** 2026-10-04
 **Base URL pública:** `https://ultrassom.ai/chat`
 **Base path interno:** `NEXT_PUBLIC_BASE_PATH=/chat`
 
@@ -124,6 +124,20 @@ de jobs pendentes em `data/chat-background-jobs.json` e chama `/reconcile` ao
 abrir, ao voltar para aba visível e ao carregar conversas com job pendente.
 
 No provider xAI, a rota cria um identificador local `xai-*`, persiste o vínculo/provider e inicia a chamada no processo servidor sem vincular sua duração ao navegador. Sync consulta o resultado local; cancel aborta o executor e impede aplicação tardia. Reconcile distingue job vivo de execução perdida por restart. Reinício não reenvia a chamada automaticamente: a mensagem termina com indicação de interrupção, permitindo tentativa explícita. Jobs legados sem provider continuam sendo OpenAI.
+
+## Descobrir IA
+
+Página autenticada `/discover`, sob o base path `/chat`. O feed fica em `data/discover.json`; imagens geradas ficam em `data/discover-images/<id>.png`, servidas somente por rota autenticada. Os dados do Studio e do Pulse permanecem separados.
+
+| Rota | Contrato |
+|---|---|
+| `GET /api/discover` | Auth do app; retorna `{ topics, suggestedTopics, articles, job, lastDailyDate }`, sem cache. Cada artigo contém título, resumo, Markdown narrativo, data, tema, fontes HTTP(S), identificador e `image` opcional (ID da capa). |
+| `PUT /api/discover/topics` | Auth do app; recebe `{ topics: string[] }`. Até 12 assuntos de 2 a 60 caracteres; normaliza espaços e duplicatas. Retorna `{ topics }`; entrada inválida retorna 400. |
+| `POST /api/discover/refresh` | Auth do app; reivindica atualização manual e retorna `{ status: "started" | "running" }`. `started` usa HTTP 202; a UI consulta `GET` para acompanhar. |
+| `GET /api/discover/images/[id]` | Auth do app; serve PNG de um artigo ainda presente no feed ou 404. |
+| `POST /api/discover/run-due` | Bearer `DISCOVER_RUNNER_TOKEN`; faz a rodada diária de forma síncrona e retorna `{ status: "started" | "running" | "not_due" }`. Sem token configurado, 503; token incorreto, 401. |
+
+O job expõe `idle`, `running` ou `failed`; erro preserva os artigos anteriores. A curadoria exige ao menos uma fonte citada ou consultada pela busca para cada notícia publicada nos últimos 14 dias e inclui links inline no texto. Matérias sem fonte válida não entram; falha na capa mantém o card com imagem substituta.
 
 ## Gaucho Studio
 

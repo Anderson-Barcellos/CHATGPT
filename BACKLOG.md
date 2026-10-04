@@ -2,6 +2,10 @@
 
 ## Estado operacional
 
+#### Descobrir IA no lugar do atalho Studio (`pronta para revisão`, 2026-10-04)
+
+Página `/discover` com cards de notícias recentes de IA, capa privada, narrativa expandida com fontes e assuntos preferidos. Curadoria própria até cinco matérias por rodada, atualização manual e timer diário às 08h BRT preparado; Studio e workspace Python preservados por URL direta. `DECISÃO:` dados e agendador ficam separados do Pulse; notícias exigem fonte da busca e data recente; falha parcial mantém o acervo. Branch isolada `codex/ia-discover-20261004` a partir de `6919551`, plano em `docs/plans/2026-10-04-feed-noticias-ia.md`, relatório em `docs/plans/2026-10-04-feed-noticias-ia-report.md`. Gates: 203 arquivos/1.033 testes, tipos, lint, build `/chat` e smoke Chrome desktop/mobile passaram. Fonte real não foi chamada; timer, publicação, restart e push não autorizados nesta etapa.
+
 #### Deepsearch com prompt de agente único e modelos novos (`pronta para revisão`, 2026-09-26)
 
 Publicação autorizada por Anders em 2026-09-26 ("Bora fazer deploy e push"), incluindo os 7 commits retidos (GPT-6 do Codex, TTS Grok/OpenAI do SoundCase, faixa com anexos, prompt de Deep Research): `origin/main` avançou `b73b2a3..b33aa05`; build isolada `/chat` `dsqMLjfxIWTvd7rQ7-JGu` instalada, build anterior `g3jqXnah4B4NI5lBaGERb` em `/root/.cache/gaucho-gpt6-deploy-20260926/next-before` e assets antigos retidos. Timers Pulse/SoundCase pausados na troca e religados; sem sessões Studio ativas. `chatgpt.service` ativo; health local/público 200 `healthy`, `/chat` anônimo 307, API anônima 401, CSS da cápsula servido publicamente. Sem alteração de Apache ou dados privados.

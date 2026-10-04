@@ -37,6 +37,12 @@ QA isolado usa `GAUCHO_ISOLATED_RUNTIME=true`, dados sintéticos próprios e Stu
 
 O shell legado foi removido. Novas mudanças de UI devem seguir `workspace-v2`, tokens `--gc-*` em `app/globals.css` e os padrões atuais de componentes Radix/lucide.
 
+## Descobrir IA
+
+`/discover` é uma página autenticada de leitura. `components/discover/DiscoverPage.tsx` mostra cards com capa, resumo e narrativa expandida; interesses são salvos por `PUT /api/discover/topics` e passam a influenciar a próxima curadoria. A navegação principal aponta para Descobrir IA no lugar do Studio; `/studio`, suas APIs e o workspace Python continuam preservados e acessíveis diretamente.
+
+O estado próprio em `data/discover.json` guarda assuntos, até 60 matérias recentes e status do job. As capas PNG ficam em `data/discover-images/`, fora de `public/`, e exigem autenticação para leitura. `lib/discover/curator.ts` usa Responses API com web search e JSON estruturado, aceita apenas URLs presentes nas citações ou fontes consultadas retornadas pela busca, inclui links inline na narrativa, rejeita datas fora da janela de 14 dias e gera uma capa conceitual por matéria quando possível. `lib/discover/store.ts` serializa claim e gravação com lock por arquivo para evitar duas rodadas simultâneas. Atualização manual devolve 202 e é acompanhada por polling; o agendador diário usa endpoint Bearer separado. Falha de geração mantém o histórico anterior.
+
 ## Gaucho Studio
 
 O Studio é uma mudança de página, não um modo interno da conversa. Chat e Studio compartilham auth, tema, configurações e o mesmo processo Next, mas mantêm estados e contratos separados:
