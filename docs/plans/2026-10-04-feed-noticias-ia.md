@@ -15,6 +15,21 @@ Pedido de Anders: substituir o atalho visível do Studio por um feed próprio de
 | Imagens | Uma capa gerada por matéria |
 | Volume | Até cinco matérias por atualização |
 
+### 1.2 Refinamento aprovado por Anders
+
+Em 2026-10-04, após analisar a publicação, Anders aprovou o refinamento abaixo com “PLEASE IMPLEMENT THIS PLAN”:
+
+| Decisão | Escolha |
+|---|---|
+| Profundidade editorial | 6–9 parágrafos, aproximadamente 700–1.000 palavras |
+| Modelo editorial | `gpt-6-sol`, reasoning `medium`, verbosity `high` |
+| Lote existente | Reescrever os três artigos, preservando identidade, títulos, resumos, capas e datas |
+| Expansão desktop | Card aberto ocupa o destaque superior; demais cards ficam abaixo |
+| Movimento | Rolagem suave até o destaque; movimento imediato quando redução de movimento estiver ativa |
+| Mobile | Uma coluna, expansão no lugar e rolagem vertical própria da página |
+
+`DECISÃO:` a reescrita do lote será atômica e precedida de backup; falha parcial conserva os três textos atuais. Fontes atuais permanecem e somente fontes adicionais verificadas pela busca podem ser anexadas. O refinamento inclui build isolado, publicação com backup, primeira reescrita real e health local/público. Merge e push ficam fora.
+
 ## 2. Objetivo e exemplos
 
 Anders abre uma página editorial em `/chat/discover`, vê até cinco notícias novas por dia, expande cada card para ler uma narrativa em português com fontes e define assuntos que orientam as próximas curadorias.
