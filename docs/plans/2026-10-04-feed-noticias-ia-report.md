@@ -47,3 +47,24 @@ DECISÃO: a build para produção combinou a branch do feed com as mudanças loc
 | HTTP público anônimo | `/chat/discover` 307 para login; `/chat/api/discover` 401; runner sem token 401 |
 
 Backup anterior em `/root/.cache/gaucho-deploy/20261004T182556Z/next-before`. Token exclusivo em `/etc/chatgpt/discover.env`, root 0600; drop-in do app `30-discover.conf`; script instalado em `/usr/local/libexec/chatgpt-discover-run-due.sh`; timer ativo para 08h BRT. Proxy, porta e cookies não mudaram. A fonte da branch ainda não foi integrada ao `main`, e a build de origem deve permanecer no disco. Não houve merge nem push.
+
+## Refinamento editorial e visual publicado em 2026-10-04
+
+Anders aprovou matérias de 6–9 parágrafos e aproximadamente 700–1.000 palavras, `gpt-6-sol` com reasoning `medium` e verbosity `high`, promoção do card aberto ao primeiro destaque no desktop, expansão local no mobile e correção da rolagem. `DECISÃO:` respostas com menos de seis parágrafos ou 600 palavras são descartadas; a reescrita existente é tudo-ou-nada e preserva título, resumo, assunto, datas, ID, capa e fontes originais.
+
+| Gate/checagem | Resultado |
+|---|---|
+| Testes focados | exit 0; 4 arquivos, 12 testes |
+| Branch isolada: `npm test` | exit 0; 205 arquivos, 1.041 testes |
+| Branch isolada: TypeScript e lint | exit 0; lint com zero erros e o warning anterior do composer |
+| Cópia combinada com WIP vivo: pre-deploy | exit 0; 206 arquivos, 1.053 testes; tipos e lint aprovados |
+| `NEXT_PUBLIC_BASE_PATH=/chat npm run build` | exit 0; build `NJoCo5uxmVkV2ZNtMhzPJ`; `/discover` presente |
+| Smoke Chrome sintético | 1440, 390 e 320 px; segundo/terceiro card, ordem desktop, expansão mobile, sticky, fim da rolagem, zero overflow/pageerror; capturas `/root/.cache/gaucho-discover-refine-{1440,390,320}-open.png` |
+| Deploy | `scripts/deploy.sh --from /root/.cache/gaucho-discover-refine-deploy-20261004`, exit 0; restart só de `chatgpt.service`; health local/público 200 |
+| Reescrita real | exit 0 em 1min25s; três artigos; backup `/root/CHATGPT/data/discover-backups/discover-before-rewrite-2026-10-04T19-13-42-977Z.json`, modo 0600 |
+| Validação privada por métricas | 8 parágrafos cada; 792, 899 e 827 palavras; 5, 3 e 3 fontes; identidade, fontes originais e três capas preservadas |
+| Smoke público autenticado | 1440, 390 e 320 px; três cards/capas, narrativa aberta com 8 parágrafos, rolagem vertical, ordem responsiva e zero pageerror |
+
+A primeira rodada de QA público falhou apenas porque esperava rolagem com os três cards ainda recolhidos em 1000 px de altura; o critério foi corrigido para exigir rolagem após expansão, que é o comportamento pedido. Uma tentativa de login sintético aguardou `/chat/` enquanto o app normalizou para `/chat`; o smoke passou a autenticar diretamente pela API. A instância isolada foi encerrada, a porta 3997 ficou livre e os dados sintéticos foram removidos.
+
+Build anterior: `Bt7v1m-4wP_S_XiOKL04D`; backup em `/root/.cache/gaucho-deploy/20261004T191153Z/next-before`. O timer `chatgpt-discover.timer` permanece ativo para 08h BRT. Proxy, porta, cookies, Studio, Pulse e geração de capas não mudaram. O checkout vivo manteve 13 caminhos de WIP preexistente; a branch está limpa após o commit documental. Sem merge ou push.

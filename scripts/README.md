@@ -4,6 +4,15 @@ Scripts utilitários locais do Gaucho Chat. O runtime oficial de produção é A
 
 ## Disponíveis
 
+### `rewrite-discover-current.ts`
+
+Reescreve atomicamente o lote atual do Descobrir IA com o padrão editorial vigente. Sem `--apply`, informa apenas a quantidade de artigos; a aplicação exige `--expected-count N`, reserva o job, gera o lote completo, preserva identidade/capas/fontes originais e cria backup privado antes da troca. Executar somente com publicação autorizada e credencial OpenAI server-side disponível; a saída contém apenas contagens e caminho do backup.
+
+```bash
+npx tsx scripts/rewrite-discover-current.ts --expected-count 3
+npx tsx scripts/rewrite-discover-current.ts --apply --expected-count 3
+```
+
 ### `qa-grok-soundcase.mjs` e `qa-grok-catalog.mjs`
 
 QA Playwright desktop/mobile com APIs interceptadas, dados sintéticos e sem cobrança. O primeiro cobre preferências e reprodução Realtime do SoundCase; o segundo cobre Luna default, ausência do mini, seleção/persistência do Grok e reasoning medium fixo. Usam `GROK_QA_BASE_URL` (default `http://127.0.0.1:3147/chat`) e `CHROME_PATH`; o SoundCase salva evidências em `GROK_QA_OUTPUT_DIR`. Executar contra instância isolada com `GAUCHO_ISOLATED_RUNTIME=true`, nunca contra dados reais.
