@@ -5,6 +5,18 @@ import type { DiscoverArticle } from "./types";
 
 type Draft = Omit<DiscoverArticle, "id" | "createdAt" | "image">;
 
+const MIN_NARRATIVE_PARAGRAPHS = 6;
+const MIN_NARRATIVE_WORDS = 600;
+const EDITORIAL_INSTRUCTIONS = [
+  "És editor de um feed pessoal de notícias de inteligência artificial.",
+  "Pesquise na web fatos publicados nos últimos 14 dias. Priorize fontes primárias e independentes confiáveis.",
+  "Cada notícia deve ter data e ao menos uma URL efetivamente consultada na busca. Não invente fatos, datas ou URLs.",
+  "Escreva em português brasileiro uma narrativa contínua, factual e agradável, com 6 a 9 parágrafos curtos e aproximadamente 700 a 1.000 palavras.",
+  "Encadeie abertura, contexto, acontecimento, implicações práticas, limites e próximos movimentos com transições naturais.",
+  "Use voz ativa e explique termos difíceis de modo acessível. Evite listas, subtítulos artificiais, repetição, tom promocional e frases telegráficas.",
+  "Insira links Markdown para as fontes junto às afirmações no content. Não inclua texto protegido de matérias; sintetize com palavras próprias.",
+] as const;
+
 const DISCOVER_SCHEMA = {
   type: "json_schema" as const,
   name: "gaucho_discover_articles",
@@ -40,6 +52,18 @@ function httpUrl(value: unknown): string | null {
   } catch { return null; }
 }
 
+function narrativeParagraphs(content: string): string[] {
+  return content.split(/\n\s*\n/).map((paragraph) => paragraph.trim()).filter(Boolean);
+}
+
+function narrativeWordCount(content: string): number {
+  const plain = content
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[`*_>#-]/g, " ")
+    .trim();
+  return plain ? plain.split(/\s+/u).length : 0;
+}
+
 function normalizeDrafts(text: string, citedUrls: string[], today = new Date()): Draft[] {
   const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   const parsed: unknown = JSON.parse(cleaned);
@@ -59,7 +83,8 @@ function normalizeDrafts(text: string, citedUrls: string[], today = new Date()):
     const publishedAt = typeof article.publishedAt === "string" ? article.publishedAt : "";
     const published = new Date(publishedAt);
     const age = today.getTime() - published.getTime();
-    if (!title || title.length > 160 || summary.length < 30 || summary.length > 500 || content.length < 250 ||
+    if (!title || title.length > 160 || summary.length < 30 || summary.length > 500 ||
+      narrativeParagraphs(content).length < MIN_NARRATIVE_PARAGRAPHS || narrativeWordCount(content) < MIN_NARRATIVE_WORDS ||
       !Number.isFinite(age) || age < -24 * 60 * 60 * 1000 || age > 14 * 24 * 60 * 60 * 1000) continue;
     const sources = Array.isArray(article.sources) ? article.sources.flatMap((source: unknown) => {
       if (!source || typeof source !== "object") return [];
@@ -101,18 +126,14 @@ export async function curateDiscoverArticles(topics: string[], previous: Discove
   const response = await client.responses.create({
     model: "gpt-6-sol",
     reasoning: { effort: "medium" },
-    max_output_tokens: 16000,
-    text: { format: DISCOVER_SCHEMA },
+    max_output_tokens: 24000,
+    text: { format: DISCOVER_SCHEMA, verbosity: "high" },
     include: ["web_search_call.action.sources"],
     tools: [{ type: "web_search_preview", search_context_size: "medium", user_location: { type: "approximate", country: "BR" } }],
     instructions: [
-      "És editor de um feed pessoal de notícias de inteligência artificial.",
-      "Pesquise na web fatos publicados nos últimos 14 dias. Priorize fontes primárias e independentes confiáveis.",
+      ...EDITORIAL_INSTRUCTIONS,
       "Retorne até 5 itens em articles. Cada item tem title, summary, content, topic, publishedAt ISO e sources [{title,url}].",
-      "Cada notícia deve ter data e ao menos uma URL efetivamente consultada na busca. Não invente fatos, datas ou URLs.",
-      "Escreva em português brasileiro: resumo claro e narrativa interessante, factual, em 3 a 5 parágrafos curtos em Markdown, com contexto, novidade e implicação.",
       "Não repita o mesmo acontecimento nem notícias já publicadas. Inclua novidades gerais relevantes e priorize os assuntos pessoais quando houver.",
-      "Insira links Markdown para as fontes junto às afirmações no content. Não inclua texto protegido de matérias; sintetize com palavras próprias.",
     ].join("\n"),
     input: [
       `Data atual: ${now.toISOString()}. Assuntos preferidos: ${topics.join(", ") || "nenhum"}.`,
@@ -141,4 +162,65 @@ export async function curateDiscoverArticles(topics: string[], previous: Discove
   return articles;
 }
 
-export { normalizeDrafts };
+function mergeSources(current: DiscoverArticle["sources"], additional: DiscoverArticle["sources"]): DiscoverArticle["sources"] {
+  const merged: DiscoverArticle["sources"] = [];
+  const seen = new Set<string>();
+  for (const source of [...current, ...additional]) {
+    const url = httpUrl(source.url);
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    merged.push({ title: source.title || new URL(url).hostname, url });
+  }
+  return merged;
+}
+
+export async function rewriteDiscoverArticles(
+  current: DiscoverArticle[],
+  now = new Date()
+): Promise<DiscoverArticle[]> {
+  const client = createOpenAIClient();
+  if (!client) throw new Error("OPENAI_API_KEY indisponível para a reescrita.");
+  const rewritten: DiscoverArticle[] = [];
+
+  for (const article of current) {
+    const response = await client.responses.create({
+      model: "gpt-6-sol",
+      reasoning: { effort: "medium" },
+      max_output_tokens: 6000,
+      text: { format: DISCOVER_SCHEMA, verbosity: "high" },
+      include: ["web_search_call.action.sources"],
+      tools: [{ type: "web_search_preview", search_context_size: "medium", user_location: { type: "approximate", country: "BR" } }],
+      instructions: [
+        ...EDITORIAL_INSTRUCTIONS,
+        "Reescreva exatamente a matéria fornecida e retorne exatamente um item em articles.",
+        "Mantenha a manchete, o assunto e a data fornecidos. Preserve as fontes existentes e só acrescente URLs efetivamente consultadas na busca.",
+        "Cada item tem title, summary, content, topic, publishedAt ISO e sources [{title,url}].",
+      ].join("\n"),
+      input: [
+        `Data atual: ${now.toISOString()}.`,
+        `Manchete: ${article.title}`,
+        `Resumo do card: ${article.summary}`,
+        `Assunto: ${article.topic}`,
+        `Data da publicação: ${article.publishedAt}`,
+        `Fontes existentes: ${article.sources.map((source) => `${source.title}: ${source.url}`).join(" | ")}`,
+      ].join("\n"),
+    });
+    if (response.status !== "completed") throw new Error(`A reescrita de ${article.id} terminou sem resposta completa.`);
+    const output = extractResponseOutput(response);
+    const searchSources = (response.output as Array<{ type?: string; action?: { sources?: Array<{ url?: string }> } }>)
+      .filter((item) => item.type === "web_search_call")
+      .flatMap((item) => item.action?.sources?.map((source) => source.url).filter((url): url is string => typeof url === "string") ?? []);
+    const allowedSources = [...article.sources.map((source) => source.url), ...output.citations.map((citation) => citation.url), ...searchSources];
+    const drafts = normalizeDrafts(response.output_text || output.content, allowedSources, now);
+    if (drafts.length !== 1) throw new Error(`A reescrita de ${article.id} não retornou exatamente uma matéria válida.`);
+    rewritten.push({
+      ...article,
+      content: drafts[0].content,
+      sources: mergeSources(article.sources, drafts[0].sources),
+    });
+  }
+
+  return rewritten;
+}
+
+export { MIN_NARRATIVE_PARAGRAPHS, MIN_NARRATIVE_WORDS, narrativeParagraphs, narrativeWordCount, normalizeDrafts };

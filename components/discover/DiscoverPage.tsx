@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { useRef } from "react";
 import { ArrowLeft, ChevronDown, Newspaper, Plus, RefreshCw, Sparkles, X } from "lucide-react";
 import { ChatMarkdown } from "@/components/chat/ChatMarkdown";
 import { ProductNav } from "@/components/navigation/ProductNav";
 import { apiUrl } from "@/lib/utils";
 import type { DiscoverState } from "@/lib/discover/types";
+import { MOBILE_MEDIA_QUERY } from "@/lib/layout/breakpoints";
 
 type ViewState = DiscoverState & { suggestedTopics: string[] };
 
@@ -28,6 +30,7 @@ export function DiscoverPage() {
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const articleRefs = useRef(new Map<string, HTMLElement>());
 
   const load = useCallback(async () => {
     try {
@@ -76,8 +79,21 @@ export function DiscoverPage() {
   };
 
   const busy = state?.job.status === "running";
+  const toggleArticle = (id: string, open: boolean) => {
+    const next = open ? null : id;
+    setExpanded(next);
+    if (!next || window.matchMedia(MOBILE_MEDIA_QUERY).matches) return;
+    window.requestAnimationFrame(() => {
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      articleRefs.current.get(id)?.scrollIntoView({
+        behavior: reducedMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div data-discover-scroll-root className="h-dvh touch-pan-y overflow-x-hidden overflow-y-auto overscroll-y-contain bg-background text-foreground">
       <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 md:px-6">
           <Link href="/" aria-label="Voltar ao Chat" className="rounded-lg p-2 hover:bg-accent"><ArrowLeft className="size-5" /></Link>
@@ -101,10 +117,12 @@ export function DiscoverPage() {
           {state?.job.status === "failed" && <p role="status" className="mb-4 rounded-xl border border-amber-500/40 p-3 text-sm">A última atualização falhou: {state.job.error}. As matérias anteriores seguem disponíveis.</p>}
           {loading && !state && <p role="status" className="py-16 text-center text-muted-foreground">Carregando notícias…</p>}
           {!loading && state?.articles.length === 0 && <div className="rounded-2xl border border-dashed border-border p-10 text-center"><Sparkles className="mx-auto mb-3 size-7 text-primary" /><p className="font-medium">O feed ainda está vazio.</p><p className="mt-1 text-sm text-muted-foreground">Busca as primeiras novidades para começar.</p></div>}
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-5 md:grid-cols-2">
             {state?.articles.map((article) => {
               const open = expanded === article.id;
-              return <article key={article.id} className={`min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-sm ${open ? "sm:col-span-2" : ""}`}>
+              return <article key={article.id} ref={(node) => { if (node) articleRefs.current.set(article.id, node); else articleRefs.current.delete(article.id); }}
+                data-discover-article={article.id}
+                className={`min-w-0 scroll-mt-20 overflow-hidden rounded-2xl border border-border bg-card shadow-sm ${open ? "md:order-first md:col-span-2" : ""}`}>
                 {article.image ? (
                   // A capa privada requer cookie e vem da rota autenticada do app.
                   // eslint-disable-next-line @next/next/no-img-element
@@ -115,7 +133,7 @@ export function DiscoverPage() {
                   <p className="text-xs font-semibold uppercase tracking-wide text-primary">{article.topic} · {formatDate(article.publishedAt)}</p>
                   <h2 className="mt-2 text-xl font-semibold leading-tight">{article.title}</h2>
                   <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{article.summary}</p>
-                  <button type="button" aria-expanded={open} aria-controls={`discover-${article.id}`} onClick={() => setExpanded(open ? null : article.id)}
+                  <button type="button" aria-expanded={open} aria-controls={`discover-${article.id}`} onClick={() => toggleArticle(article.id, open)}
                     className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg font-medium text-primary hover:underline">
                     {open ? "Recolher" : "Ler a matéria"}<ChevronDown className={`size-4 transition-transform ${open ? "rotate-180" : ""}`} />
                   </button>

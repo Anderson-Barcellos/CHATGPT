@@ -7,6 +7,7 @@ import type { DiscoverArticle, DiscoverState } from "./types";
 const FILE = "discover.json";
 const EMPTY: DiscoverState = { topics: [], articles: [], job: { status: "idle" } };
 const IMAGE_DIR = path.join(process.cwd(), "data", "discover-images");
+const BACKUP_DIR = path.join(process.cwd(), "data", "discover-backups");
 const TIME_ZONE = "America/Sao_Paulo";
 
 export function discoverDate(now = new Date()): string {
@@ -49,7 +50,7 @@ export async function saveTopics(value: unknown): Promise<string[]> {
   });
 }
 
-export async function claimDiscoverJob(kind: "daily" | "manual", now = new Date()): Promise<"started" | "running" | "not_due"> {
+export async function claimDiscoverJob(kind: "daily" | "manual" | "rewrite", now = new Date()): Promise<"started" | "running" | "not_due"> {
   return withDataFileLock(FILE, async () => {
     const state = await readDiscoverState();
     const today = discoverDate(now);
@@ -62,6 +63,53 @@ export async function claimDiscoverJob(kind: "daily" | "manual", now = new Date(
       job: { status: "running", startedAt: now.toISOString() },
     });
     return "started";
+  });
+}
+
+function sourceUrl(source: DiscoverArticle["sources"][number]): string {
+  try { return new URL(source.url).href; }
+  catch { return source.url; }
+}
+
+export function applyDiscoverRewrite(current: DiscoverArticle[], rewritten: DiscoverArticle[]): DiscoverArticle[] {
+  if (rewritten.length !== current.length) throw new Error("A reescrita precisa cobrir todas as matérias atuais.");
+  const byId = new Map(rewritten.map((article) => [article.id, article]));
+  if (byId.size !== rewritten.length) throw new Error("A reescrita retornou identificadores duplicados.");
+
+  return current.map((article) => {
+    const next = byId.get(article.id);
+    if (!next) throw new Error(`A reescrita não retornou a matéria ${article.id}.`);
+    for (const field of ["title", "summary", "topic", "publishedAt", "createdAt", "image"] as const) {
+      if (next[field] !== article[field]) throw new Error(`A reescrita tentou alterar ${field} da matéria ${article.id}.`);
+    }
+    const nextSources = new Set(next.sources.map(sourceUrl));
+    if (!article.sources.every((source) => nextSources.has(sourceUrl(source))))
+      throw new Error(`A reescrita tentou remover uma fonte da matéria ${article.id}.`);
+    if (!next.content.trim()) throw new Error(`A reescrita retornou conteúdo vazio para ${article.id}.`);
+    return { ...article, content: next.content, sources: next.sources };
+  });
+}
+
+export async function finishDiscoverRewrite(
+  rewritten: DiscoverArticle[],
+  now = new Date(),
+  backupDirectory = BACKUP_DIR
+): Promise<string> {
+  return withDataFileLock(FILE, async () => {
+    const state = await readDiscoverState();
+    if (state.job.status !== "running") throw new Error("A reescrita não possui uma execução ativa.");
+    const articles = applyDiscoverRewrite(state.articles, rewritten);
+    const backupState: DiscoverState = { ...state, job: { status: "idle", finishedAt: now.toISOString() } };
+    await fs.mkdir(backupDirectory, { recursive: true, mode: 0o700 });
+    const stamp = now.toISOString().replace(/[:.]/g, "-");
+    const backupPath = path.join(backupDirectory, `discover-before-rewrite-${stamp}.json`);
+    await fs.writeFile(backupPath, JSON.stringify(backupState, null, 2), { encoding: "utf8", flag: "wx", mode: 0o600 });
+    await writeDataFile(FILE, {
+      ...state,
+      articles,
+      job: { status: "idle", finishedAt: now.toISOString() },
+    });
+    return backupPath;
   });
 }
 
