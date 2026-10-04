@@ -1,6 +1,6 @@
 # Infraestrutura
 
-**Última atualização:** 2026-10-04 (agendador Descobrir IA preparado; não instalado)
+**Última atualização:** 2026-10-04 (Descobrir IA publicado)
 **Produção:** `https://ultrassom.ai/chat`
 **Porta local:** `3040`
 
@@ -153,14 +153,14 @@ Pulse:
 | `PULSE_MAX_OUTPUT_TOKENS` | Orçamento de saída do runner; default `25000`, limitado entre 8k e 32k |
 | `PULSE_REASONING_EFFORT` | Override opcional de effort; default `medium`, com `none`/`minimal` coeridos para `low` |
 
-Descobrir IA (preparado no repositório, ainda sem instalação ou ativação no host):
+Descobrir IA (publicado em 2026-10-04):
 
 | Variável | Propósito |
 |---|---|
 | `DISCOVER_RUNNER_TOKEN` | Bearer exclusivo para `POST /api/discover/run-due`; ausente, a rota retorna 503 |
 | `DISCOVER_RUNNER_URL` | Override opcional do endpoint local do agendador |
 
-`systemd/chatgpt-discover.timer` agenda a curadoria para 08h em `America/Sao_Paulo`, com `Persistent=true`; `chatgpt-discover.service` usa `scripts/run-discover-due.sh`, que entrega o token ao curl por stdin. Instalar unit, configurar token protegido e iniciar timer somente numa publicação autorizada, após a build do app com as rotas novas. A chamada manual autenticada independe do timer. A execução pode gerar até cinco textos e cinco capas por rodada; sem matéria nova, preserva o feed existente. Sem fonte verificável para a curadoria inicial, registra falha.
+`systemd/chatgpt-discover.timer` agenda a curadoria para 08h em `America/Sao_Paulo`, com `Persistent=true`. A unit instalada usa uma cópia de `scripts/run-discover-due.sh` em `/usr/local/libexec/chatgpt-discover-run-due.sh` e recebe o token de `/etc/chatgpt/discover.env` (root, 0600). O app recebe o mesmo arquivo pelo drop-in `/etc/systemd/system/chatgpt.service.d/30-discover.conf`. O script entrega o token ao curl por stdin. A chamada manual autenticada independe do timer. A execução pode gerar até cinco textos e cinco capas por rodada; sem matéria nova, preserva o feed existente. Sem fonte verificável para a curadoria inicial, registra falha. A build publicada veio da cópia isolada `/root/.cache/gaucho-discover-deploy-20261004`, com os ajustes locais de viewport preservados; a origem deve permanecer até a integração da branch.
 
 Transcrição:
 

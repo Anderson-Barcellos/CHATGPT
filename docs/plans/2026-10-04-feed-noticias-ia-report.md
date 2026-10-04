@@ -1,6 +1,6 @@
 # Relatório técnico — Descobrir IA
 
-**Estado:** pronta para revisão em 2026-10-04. **Branch:** `codex/ia-discover-20261004`; worktree isolada `/root/.cache/gaucho-ia-discover-20261004`; base `6919551`. Plano aprovado no commit `c2a27ac`. A produção em `/root/CHATGPT` e sua `.next` não foram alteradas.
+**Estado:** publicada para análise em 2026-10-04; pronta para revisão. **Branch:** `codex/ia-discover-20261004`; worktree isolada `/root/.cache/gaucho-ia-discover-20261004`; base `6919551`. Plano aprovado no commit `c2a27ac`.
 
 ## Resultado observável
 
@@ -30,4 +30,20 @@
 
 O projeto não possui `playwright.config` nem suíte `*.spec.*` versionada para executar; o smoke acima usou o Chrome do host. O primeiro ensaio falhou por um seletor de QA que procurava `Remover IA médica` como nome acessível; a preferência foi persistida, o seletor foi corrigido e a rodada completa passou. A primeira tentativa de tsc na worktree não tinha `next-env.d.ts` ignorado pelo Git; a declaração gerada localmente foi copiada e o gate passou. A primeira suíte completa encontrou data fixa antiga em um teste novo; o teste passou a usar o relógio corrente, e as suítes completas seguintes passaram. O primeiro start de QA omitiu `NEXT_PUBLIC_BASE_PATH=/chat`; foi reiniciado com o valor correto.
 
-**Limite da validação:** o fluxo pago de busca e geração de imagem foi exercitado com respostas simuladas, sem chamada real de provedor. A qualidade e a forma exata do conteúdo produzido em ambiente real ainda precisam de conferência após uma publicação autorizada. Nenhum serviço produtivo, timer, proxy, segredo, dado privado, push ou deploy foi alterado.
+**Limite do ensaio anterior à publicação:** o fluxo pago de busca e geração de imagem havia sido exercitado com respostas simuladas. A qualidade editorial do conteúdo real ainda depende da avaliação de Anders na interface autenticada.
+
+## Publicação autorizada em 2026-10-04
+
+DECISÃO: a build para produção combinou a branch do feed com as mudanças locais preexistentes em `app/globals.css`, `hooks/useVisualViewport.ts` e testes relacionados, sem alterar ou descartar esse WIP no checkout vivo. Cópia isolada: `/root/.cache/gaucho-discover-deploy-20261004`. No primeiro passe, três testes de URLs falharam porque a suíte recebeu `NEXT_PUBLIC_BASE_PATH=/chat`; repetidos sem esse valor, todos passaram. O prefixo foi usado no build.
+
+| Gate/checagem | Resultado |
+|---|---|
+| TypeScript e lint na cópia combinada | exit 0; lint sem erros |
+| `npm test` na cópia combinada | exit 0; 203 arquivos, 1.038 testes; zero falhas |
+| `NEXT_PUBLIC_BASE_PATH=/chat npm run build` na cópia combinada | exit 0; build `Bt7v1m-4wP_S_XiOKL04D`; `/discover` presente |
+| `systemd-analyze verify` para serviço e timer | exit 0 |
+| `scripts/deploy.sh --from /root/.cache/gaucho-discover-deploy-20261004` | exit 0; restart de `chatgpt.service`; health local e público 200 |
+| Primeira curadoria real via `chatgpt-discover.service` | exit 0; estado persistido e três arquivos de capa gerados; conteúdo privado não inspecionado |
+| HTTP público anônimo | `/chat/discover` 307 para login; `/chat/api/discover` 401; runner sem token 401 |
+
+Backup anterior em `/root/.cache/gaucho-deploy/20261004T182556Z/next-before`. Token exclusivo em `/etc/chatgpt/discover.env`, root 0600; drop-in do app `30-discover.conf`; script instalado em `/usr/local/libexec/chatgpt-discover-run-due.sh`; timer ativo para 08h BRT. Proxy, porta e cookies não mudaram. A fonte da branch ainda não foi integrada ao `main`, e a build de origem deve permanecer no disco. Não houve merge nem push.

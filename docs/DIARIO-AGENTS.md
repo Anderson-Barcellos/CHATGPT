@@ -1624,3 +1624,7 @@ Notes: docs MODELS/API/ARCHITECTURE, AGENTS e CLAUDE atualizados. Build isolado 
 ### 2026-10-04 — Descobrir IA preparado em worktree isolada
 
 Anders aprovou trocar o atalho do Studio por uma página editorial de notícias de IA, preservando o Studio e o workspace real. Criados feed, interesses, curadoria com fontes, capas privadas e agendador diário independente. `DECISÃO:` usar armazenamento separado do Pulse, aceitar apenas URLs retornadas pela busca, inserir links inline e manter conteúdo anterior em caso de falha. Testes e build integrados passaram; browser sintético validou desktop e mobile. Relatório completo em `docs/plans/2026-10-04-feed-noticias-ia-report.md`. Publicação, instalação do timer, restart e push aguardam autorização separada.
+
+### 2026-10-04 — Descobrir IA publicado para análise
+
+Anders autorizou o deploy. `DECISÃO:` a build isolada combinou a branch do feed com os ajustes locais preexistentes de viewport, sem tocar no WIP do checkout vivo. Gates completos e build passaram; a `.next` foi trocada com backup e `chatgpt.service` reiniciado. Health local/público 200. Token próprio em `/etc/chatgpt/discover.env` (0600), timer diário 08h BRT ativo. A primeira curadoria real concluiu e persistiu o feed com três capas. Conteúdo privado aguarda análise de Anders na UI autenticada. Sem merge ou push. Evidência e caminhos no relatório técnico da entrega.
