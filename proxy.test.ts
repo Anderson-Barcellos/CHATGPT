@@ -82,7 +82,13 @@ describe("proxy rate limit routing", () => {
 
   it("rate limits the public runner endpoints", () => {
     expect(shouldRateLimitPath("/api/pulse/run-due")).toBe(true);
+    expect(shouldRateLimitPath("/api/discover/run-due")).toBe(true);
     expect(shouldRateLimitPath("/api/soundcase/worker/run-next")).toBe(true);
+  });
+
+  it("permite que o runner Descobrir IA chegue à autenticação Bearer da rota", async () => {
+    const response = await proxy(new NextRequest("http://localhost/api/discover/run-due", { method: "POST" }));
+    expect(response.status).toBe(200);
   });
 
   it("applies the app content security policy to every route", () => {

@@ -1,0 +1,16 @@
+[Unit]
+Description=Gaucho Chat AI news curator
+After=chatgpt.service
+Requires=chatgpt.service
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+NoNewPrivileges=true
+WorkingDirectory=/root/CHATGPT
+EnvironmentFile=/root/CHATGPT/.env.production
+ExecStart=/bin/bash /root/CHATGPT/scripts/run-discover-due.sh
+StandardOutput=append:/var/log/chatgpt/discover.log
+StandardError=append:/var/log/chatgpt/discover-error.log
+TimeoutStartSec=3600

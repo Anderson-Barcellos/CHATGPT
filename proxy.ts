@@ -19,6 +19,8 @@ const RATE_LIMITED_PATHS = [
   "/api/calendar/events",
   "/api/workspace-notes",
   "/api/pulse/run-due",
+  "/api/discover/run-due",
+  "/api/discover/refresh",
   "/api/soundcase/worker/run-next",
 ];
 const PUBLIC_PATHS = [
@@ -28,6 +30,7 @@ const PUBLIC_PATHS = [
   "/api/auth/check",
   "/api/health",
   "/api/pulse/run-due",
+  "/api/discover/run-due",
   "/api/soundcase/worker/run-next",
   "/_next",
   "/favicon.ico",

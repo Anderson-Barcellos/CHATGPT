@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { AudioLines, Code2, MessageSquare } from "lucide-react";
+import { AudioLines, MessageSquare, Newspaper } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type GauchoProduct = "chat" | "studio" | "soundcase";
+export type GauchoProduct = "chat" | "studio" | "soundcase" | "discover";
 
 const PRODUCTS = [
   { id: "chat", href: "/", label: "Chat", icon: MessageSquare },
-  { id: "studio", href: "/studio", label: "Studio", icon: Code2 },
+  { id: "discover", href: "/discover", label: "Descobrir IA", icon: Newspaper },
   { id: "soundcase", href: "/soundcase", label: "SoundCase", icon: AudioLines },
 ] as const;
 
@@ -22,7 +22,6 @@ export function ProductNav({ active, compact = false, className }: {
           key={id}
           href={href}
           aria-current={active === id ? "page" : undefined}
-          className={id === "studio" ? "gc-product-nav-desktop-only" : undefined}
           title={label}
         >
           {compact ? <Icon aria-hidden="true" /> : null}<span>{label}</span>

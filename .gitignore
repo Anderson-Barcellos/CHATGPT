@@ -35,6 +35,8 @@
 /data/chat-background-jobs.json
 /data/pulse-tasks.json
 /data/pulse-runs.json
+/data/discover.json
+/data/discover-images/
 /data/memory-index/
 /data/memory-suggestions.json
 /data/soundcase/

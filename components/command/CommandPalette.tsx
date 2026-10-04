@@ -16,6 +16,7 @@ import {
   Sparkles,
   StickyNote,
   AudioLines,
+  Newspaper,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useCommandPaletteContext } from "@/components/command/CommandPaletteProvider";
@@ -113,6 +114,14 @@ export function CommandPalette() {
               >
                 <AudioLines className="size-4 shrink-0 text-muted-foreground" />
                 <span className="flex-1">Abrir SoundCase</span>
+              </Command.Item>
+              <Command.Item
+                value="descobrir ia notícias feed"
+                onSelect={() => run(() => router.push("/discover"))}
+                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm aria-selected:bg-accent"
+              >
+                <Newspaper className="size-4 shrink-0 text-muted-foreground" />
+                <span className="flex-1">Descobrir IA</span>
               </Command.Item>
             </Command.Group>
 

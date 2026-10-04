@@ -17,15 +17,16 @@ function linkOrder(markup: string, hrefs: string[]): number[] {
 }
 
 describe("ConversationRailV2 product links", () => {
-  it("offers a single SoundCase entry above Studio in the footer", () => {
+  it("offers SoundCase and Descobrir IA in the footer", () => {
     const markup = renderToStaticMarkup(<ConversationRailV2 onOpenSettings={() => undefined} />);
 
     expect(markup).toContain("Abrir SoundCase");
-    expect(markup).toContain("Abrir Studio");
+    expect(markup).toContain("Descobrir IA");
+    expect(markup).not.toContain('href="/studio"');
     expect(markup.match(/href="\/soundcase"/g)).toHaveLength(1);
-    const [soundcase, studio] = linkOrder(markup, ["/soundcase", "/studio"]);
+    const [soundcase, discover] = linkOrder(markup, ["/soundcase", "/discover"]);
     expect(soundcase).toBeGreaterThan(-1);
-    expect(soundcase).toBeLessThan(studio);
+    expect(soundcase).toBeLessThan(discover);
   });
 
   it("keeps the same order in the compact rail", () => {
@@ -35,8 +36,8 @@ describe("ConversationRailV2 product links", () => {
 
     expect(markup).toContain('title="Abrir SoundCase"');
     expect(markup.match(/href="\/soundcase"/g)).toHaveLength(1);
-    const [soundcase, studio] = linkOrder(markup, ["/soundcase", "/studio"]);
+    const [soundcase, discover] = linkOrder(markup, ["/soundcase", "/discover"]);
     expect(soundcase).toBeGreaterThan(-1);
-    expect(soundcase).toBeLessThan(studio);
+    expect(soundcase).toBeLessThan(discover);
   });
 });

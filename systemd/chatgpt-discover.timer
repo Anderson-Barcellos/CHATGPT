@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Gaucho Chat AI news curator daily
+
+[Timer]
+OnCalendar=*-*-* 08:00:00 America/Sao_Paulo
+Persistent=true
+Unit=chatgpt-discover.service
+
+[Install]
+WantedBy=timers.target
