@@ -164,6 +164,8 @@ Descobrir IA (publicado em 2026-10-04):
 
 Controle de curadoria (2026-10-07): o timer continua acordando diariamente às 08h; o app decide sob lock se a atualização está habilitada e se transcorreram dois dias civis desde a última tentativa automática. Pausado ou ainda não devido, não chama provedores. O interruptor não executa systemctl nem indica saúde da unit; não exige alteração/reinício do timer. A preferência fica em `data/discover.json`, com leitura compatível de arquivos antigos. Publicação desse comportamento depende da instalação autorizada da nova build.
 
+Publicação de 2026-10-07: build viva `6_32NVLtusWBg1p8kSENn` originada de `/root/.cache/gaucho-discover-controls-20261007` (preservar diretório), backup anterior em `/root/.cache/gaucho-deploy/20261007T161559Z/next-before`. Fontes integrados à main; serviço reiniciado, health local/público 200 e agendadores retomados. Controle de dois dias e TTS das matérias publicados, Studio novamente nos atalhos. Sem alteração de proxy, portas ou dados pessoais. Este registro substitui as referências de build atual anteriores desta seção.
+
 Transcrição:
 
 | Variável | Propósito |

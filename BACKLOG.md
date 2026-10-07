@@ -8,7 +8,7 @@ Plano aprovado por Anders em `docs/plans/2026-10-07-descobrir-controles-tts-stud
 
 Conjunto validado: 211 arquivos/1.075 testes, tipos, lint sem erros, build isolada `/chat` 43/43 e 7 cenários Playwright (1440/390/320 claro/escuro, API real sintética, TTS/Studio simulados). Aviso antigo de lint e avisos de build em código inalterado registrados. Capturas inspecionadas. Registro: `docs/plans/2026-10-07-descobrir-controles-tts-studio-report.md`.
 
-Integração local na main autorizada inclui o feed publicado e o WIP web de viewport/deploy, preservado primeiro em `c3318b7`. Desktop Windows (aceitação pendente) e candidata de migração para sonaris.us permanecem separados. Sem publicação, push, restart, alteração do timer vivo ou dados pessoais. A nova frequência só passa a valer no serviço após publicação autorizada.
+Integração local na main inclui o feed publicado e o WIP web de viewport/deploy, preservado primeiro em `c3318b7`. Desktop Windows (aceitação pendente) e candidata de migração para sonaris.us permanecem separados. Publicação autorizada e concluída em 2026-10-07: build `6_32NVLtusWBg1p8kSENn`, backup `/root/.cache/gaucho-deploy/20261007T161559Z/next-before`, restart de chatgpt.service e health local/público 200. Agendadores retomados; nova frequência em vigor. Asset público da interface conferido byte a byte. Sem mudanças em dados pessoais ou proxy. Push pendente: a main inclui sete commits anteriores da fundação/refinamento Descobrir; AGENTS §6 exige confirmar sua inclusão junto da rodada atual.
 
 #### Descobrir IA no lugar do atalho Studio (`pronta para revisão`, 2026-10-04)
 

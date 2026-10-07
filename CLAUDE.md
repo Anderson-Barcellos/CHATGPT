@@ -10,13 +10,13 @@ Este arquivo é a ponte compacta para Claude Code. A autoridade operacional é `
 - `docs/ARCHITECTURE.md`: fluxos e fronteiras.
 - `docs/INFRASTRUCTURE.md`: Apache, systemd, env e deploy.
 - `docs/MODELS.md`: catálogo e defaults.
-- `BACKLOG.md`: estado das frentes e entregas; Descobrir IA está publicada para revisão na branch isolada, ainda sem merge ou push.
+- `BACKLOG.md`: estado das frentes e entregas; Descobrir IA está integrado na main e publicado para revisão; push aguarda confirmação dos commits anteriores incluídos.
 
 ## Estado atual
 
 - Next.js 16 com `basePath=/chat`; produção em `chatgpt.service`, porta `3040`.
 - Shell único: `GauchoChatShellV2` / `workspace-v2`.
-- `Descobrir IA` é uma página separada em `/discover`, com notícias recentes, capas geradas e interesses; ocupa o atalho antes visível do Studio. `/studio` e o workspace Python continuam preservados por URL direta. Textos usam Sol `medium`/verbosity `high`, com 6–9 parágrafos; timer diário ativo às 08h BRT.
+- `Descobrir IA` é uma página separada em `/discover`, com notícias recentes, capas geradas, interesses e TTS Grok/Orion sob demanda. Studio e Descobrir convivem nos atalhos; workspace Python preservado. Textos usam Sol `medium`/verbosity `high`, com 6–9 parágrafos; timer diário às 08h BRT verifica intervalo de dois dias, com pausa persistente na página e busca manual independente.
 - Tema padrão: Atmosphere Glass (`Midnight Glass` no dark e `Daybreak` no light); tokens de cor são globais para alcançar portals Radix, enquanto a geometria permanece escopada a `.gc-atmosphere-shell`.
 - Chat principal via OpenAI Responses API; DeepSeek V4 Pro e Gemini 3.8 Flash usam adapters server-side apenas no chat padrão streaming. GPT-6 Astra está disponível com reasoning e verbosity `medium` fixos.
 - Defaults por seção: chat, Documento (fallback de DeepSeek/Gemini), Studio e SoundCase em `gpt-6-luna` + `medium`; Pulse em `gpt-6-sol` + `medium`; Deepsearch Medium em Luna `medium` e High em Sol `high`; Quiz permanece em `gpt-5.4`. Grok 4.7 substitui o mini nas extrações internas e segue opcional nas seções, com reasoning `medium` fixo. IDs mini antigos resolvem para Grok sem reescrever históricos. Credencial server-side: `XAI_API_KEY` ou `GROK_API_KEY`.

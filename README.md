@@ -14,7 +14,7 @@ Alguns artefatos internos antigos ainda usam o rótulo histórico `Celer`, mas o
 - Artefatos de documento/quiz com preview, download de fonte e PDF A4 server-side.
 - Auth simples do app por usuário/senha, sessão JWT e cookie `auth-token`.
 - Shell `workspace-v2` com o sistema visual **Atmosphere Glass** como padrão: Midnight Glass no escuro, Daybreak no claro e densidade mobile compacta por tokens, sem `zoom` ou escala global.
-- **Descobrir IA** em `/discover`: feed pessoal de notícias recentes de IA com capas geradas, fontes, leitura expandida e assuntos preferidos. O Studio permanece em `/studio` pelo endereço direto, preservando workspace e APIs.
+- **Descobrir IA** em `/discover`: feed pessoal de notícias recentes de IA com capas geradas, fontes, leitura expandida, assuntos preferidos e TTS Grok/Orion. Atualização automática a cada dois dias às 08h de São Paulo, com pausa e busca manual. Studio permanece em `/studio`, também pelos atalhos de navegação, preservando workspace e APIs.
 
 ## Stack
 

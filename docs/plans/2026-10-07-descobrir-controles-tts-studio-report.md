@@ -1,6 +1,6 @@
 # Registro técnico — Descobrir IA e Studio
 
-Estado: pronta para revisão. Plano aprovado em `af77df6`; implementação em `8f154de`. Worktree: `/root/.cache/gaucho-discover-controls-20261007`. Integração local na main autorizada; publicação e push não executados.
+Estado: pronta para revisão, publicada. Plano aprovado em `af77df6`; implementação em `8f154de`. Worktree: `/root/.cache/gaucho-discover-controls-20261007` (preservar: origem da build viva). Integração e publicação concluídas; push aguarda confirmação dos sete commits anteriores incluídos na main, conforme AGENTS §6.
 
 Integração concluída por fast-forward da main até `bc54361` (registro de validação), sem conflitos adicionais. Main e candidata ficaram limpas e com árvores idênticas. Conferência pós-integração somente leitura: `chatgpt.service` active, health local/público HTTP 200; a build viva continua `lXC2ejL4ftyZ9pT0n_3mG`, diferente da candidata nova. Nenhum restart/deploy. A anotação final deste resultado é apenas documental.
 
@@ -46,3 +46,13 @@ Capturas `discover-{1440,390,320}-{light,dark}.png`; conferidas visualmente as d
 ## Limites
 
 Sem publicação, push, chamadas de API paga ou uso de dados pessoais. QA não comprova execução real do workspace Studio nem comportamento físico do iPhone; testa navegação/UI do Studio simulada e preserva o ajuste iOS anterior.
+
+## Publicação autorizada — 2026-10-07
+
+Anders: “Podemos publicar e fazermos o push meu velho!”. Fontes main e candidata conferidos sem diferenças; build validada reaproveitada, sem alterações posteriores no código consumido. Nenhuma execução Studio/worker ativa. Quatro gatilhos de agendamento pausados durante a troca e retomados por trap.
+
+`npm run deploy -- --from /root/.cache/gaucho-discover-controls-20261007`: exit 0. Build instalada `6_32NVLtusWBg1p8kSENn`, anterior `lXC2ejL4ftyZ9pT0n_3mG` preservada em `/root/.cache/gaucho-deploy/20261007T161559Z/next-before`; assets antigos retidos. `systemctl restart chatgpt.service` executado pelo script. Saúde local/pública 200; serviço, timers Discover/Pulse/SoundCase e path SoundCase ativos. Log em `/root/.cache/gaucho-discover-controls-evidence/deploy.log`.
+
+Smoke público sem credenciais/dados pessoais: `/chat/discover` anônimo 307; PUT settings anônimo 401 (sem gravação); chunk `2_11jj3x70fph.js` público 200, SHA-256 idêntico ao local, contém Ouvir matéria e /api/discover/settings. Fluxo autenticado completo foi validado no QA isolado anterior; não foi repetido com dados pessoais na produção. Apache/proxy/portas preservados; APACHE.md recebe apenas o registro operacional. Estado anterior desta seção Limites é histórico para a preparação.
+
+`git fetch origin main`: exit 0; 14 commits pendentes antes deste registro, sendo sete atuais e sete anteriores da fundação/refinamento do Descobrir (c2a27ac até 3613d7b), ainda ausentes na main remota. Push não iniciado: confirmar explicitamente esse conjunto adicional conforme AGENTS §6. O registro final da publicação acrescenta um commit documental à rodada atual.
