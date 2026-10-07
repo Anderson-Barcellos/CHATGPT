@@ -39,9 +39,11 @@ O shell legado foi removido. Novas mudanças de UI devem seguir `workspace-v2`, 
 
 ## Descobrir IA
 
-`/discover` é uma página autenticada de leitura com contêiner vertical próprio, pois o shell global bloqueia a rolagem de `html`/`body`. `components/discover/DiscoverPage.tsx` mostra cards com capa, resumo e narrativa expandida; no desktop o card aberto ocupa o destaque superior e os demais seguem abaixo, enquanto no mobile a expansão permanece no lugar. Interesses são salvos por `PUT /api/discover/topics` e passam a influenciar a próxima curadoria. A navegação principal aponta para Descobrir IA no lugar do Studio; `/studio`, suas APIs e o workspace Python continuam preservados e acessíveis diretamente.
+`/discover` é uma página autenticada de leitura com contêiner vertical próprio, pois o shell global bloqueia a rolagem de `html`/`body`. `components/discover/DiscoverPage.tsx` mostra cards com capa, resumo e narrativa expandida; no desktop o card aberto ocupa o destaque superior e os demais seguem abaixo, enquanto no mobile a expansão permanece no lugar. Interesses são salvos por `PUT /api/discover/topics` e passam a influenciar a próxima curadoria. Descobrir IA e Studio convivem na navegação de produtos, rail e paleta; `/studio`, suas APIs e o workspace Python permanecem preservados.
 
 O estado próprio em `data/discover.json` guarda assuntos, até 60 matérias recentes e status do job. As capas PNG ficam em `data/discover-images/`, fora de `public/`, e exigem autenticação para leitura. `lib/discover/curator.ts` usa `gpt-6-sol` com reasoning `medium`, verbosity `high`, web search e JSON estruturado; exige narrativa de 6–9 parágrafos e ao menos 600 palavras, aceita apenas URLs presentes nas citações ou fontes consultadas, inclui links inline, rejeita datas fora da janela de 14 dias e gera uma capa conceitual por matéria quando possível. `lib/discover/store.ts` serializa claim e gravação com lock por arquivo para evitar duas rodadas simultâneas. A reescrita controlada gera o lote inteiro, preserva identidade/capas/fontes originais e grava backup 0600 em `data/discover-backups/` antes da troca. Atualização manual devolve 202 e é acompanhada por polling; o agendador diário usa endpoint Bearer separado. Falha de geração mantém o histórico anterior.
+
+O feed oferece controle persistente `schedule.enabled`, com verificação de intervalo de dois dias antes do claim automático sob lock. A UI mostra previsão, não estado de systemd. O TTS reutiliza o mini-player em modo somente Orion e só gera mediante reprodução.
 
 ## Gaucho Studio
 

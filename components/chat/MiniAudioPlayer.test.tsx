@@ -59,4 +59,19 @@ describe("MiniAudioPlayer", () => {
     expect(assistantTts.togglePlay).not.toHaveBeenCalled();
     expect(realtimeTts.start).not.toHaveBeenCalled();
   });
+
+  it("oculta Realtime quando a superfície permite apenas TTS de arquivo", () => {
+    const markup = renderToStaticMarkup(
+      <MiniAudioPlayer
+        content="Texto para leitura."
+        messageId="discover-article-1"
+        allowRealtime={false}
+        onClose={() => undefined}
+      />
+    );
+
+    expect(markup).toContain("TTS Orion");
+    expect(markup).not.toContain("Grok Realtime");
+    expect(realtimeTts.start).not.toHaveBeenCalled();
+  });
 });

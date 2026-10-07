@@ -13,6 +13,9 @@ export interface DiscoverArticle {
 export interface DiscoverState {
   topics: string[];
   articles: DiscoverArticle[];
+  schedule: {
+    enabled: boolean;
+  };
   job: {
     status: "idle" | "running" | "failed";
     startedAt?: string;

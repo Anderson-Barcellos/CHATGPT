@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { runDiscover } from "@/lib/discover/runner";
 import { POST } from "./route";
 
 vi.mock("@/lib/discover/runner", () => ({ runDiscover: vi.fn().mockResolvedValue("not_due") }));
@@ -21,5 +22,15 @@ describe("agendador Descobrir IA", () => {
     }));
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ status: "not_due" });
+  });
+
+  it("propaga a pausa sem acionar o curador", async () => {
+    vi.mocked(runDiscover).mockResolvedValueOnce("paused");
+    vi.stubEnv("DISCOVER_RUNNER_TOKEN", "segredo-sintetico");
+    const response = await POST(new NextRequest("http://localhost/api/discover/run-due", {
+      method: "POST", headers: { authorization: "Bearer segredo-sintetico" },
+    }));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ status: "paused" });
   });
 });

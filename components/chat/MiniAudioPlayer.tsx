@@ -21,6 +21,8 @@ interface MiniAudioPlayerProps {
   content: string;
   messageId: string;
   onClose: () => void;
+  /** Mantém o Realtime disponível nas superfícies de conversa; o feed é TTS de arquivo. */
+  allowRealtime?: boolean;
   className?: string;
 }
 
@@ -53,6 +55,7 @@ export function MiniAudioPlayer({
   content,
   messageId,
   onClose,
+  allowRealtime = true,
   className,
 }: MiniAudioPlayerProps) {
   const [engine, setEngine] = useState<AudioEngine>("standard");
@@ -74,7 +77,7 @@ export function MiniAudioPlayer({
   );
 
   const toggleSelectedEngine = useCallback(() => {
-    if (engine === "standard") {
+    if (engine === "standard" || !allowRealtime) {
       realtime.stop();
       tts.togglePlay();
       return;
@@ -86,7 +89,7 @@ export function MiniAudioPlayer({
       return;
     }
     void realtime.start();
-  }, [engine, realtime, tts]);
+  }, [allowRealtime, engine, realtime, tts]);
 
   const close = useCallback(() => {
     stopAll();
@@ -123,40 +126,44 @@ export function MiniAudioPlayer({
       data-audio-engine={engine}
     >
       <div className="mb-1.5 flex items-center justify-between gap-2 border-b border-[color:var(--gc-border-soft)] pb-1.5">
-        <div
-          role="group"
-          aria-label="Motor de áudio"
-          className="flex min-w-0 items-center rounded-lg bg-background/55 p-0.5 text-micro md:text-nano"
-        >
-          <button
-            type="button"
-            aria-label="Escolher TTS Orion"
-            aria-pressed={isStandard}
-            onClick={() => selectEngine("standard")}
-            className={cn(
-              "h-6 rounded-md px-2 transition-colors",
-              isStandard
-                ? "bg-background font-medium text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
+        {allowRealtime ? (
+          <div
+            role="group"
+            aria-label="Motor de áudio"
+            className="flex min-w-0 items-center rounded-lg bg-background/55 p-0.5 text-micro md:text-nano"
           >
-            TTS Orion
-          </button>
-          <button
-            type="button"
-            aria-label="Escolher Grok Realtime"
-            aria-pressed={!isStandard}
-            onClick={() => selectEngine("realtime")}
-            className={cn(
-              "h-6 rounded-md px-2 transition-colors",
-              !isStandard
-                ? "bg-background font-medium text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Grok Realtime
-          </button>
-        </div>
+            <button
+              type="button"
+              aria-label="Escolher TTS Orion"
+              aria-pressed={isStandard}
+              onClick={() => selectEngine("standard")}
+              className={cn(
+                "h-6 rounded-md px-2 transition-colors",
+                isStandard
+                  ? "bg-background font-medium text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              TTS Orion
+            </button>
+            <button
+              type="button"
+              aria-label="Escolher Grok Realtime"
+              aria-pressed={!isStandard}
+              onClick={() => selectEngine("realtime")}
+              className={cn(
+                "h-6 rounded-md px-2 transition-colors",
+                !isStandard
+                  ? "bg-background font-medium text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Grok Realtime
+            </button>
+          </div>
+        ) : (
+          <span className="text-micro font-medium text-foreground">TTS Orion</span>
+        )}
 
         <PlayerButton title="Fechar player de áudio" onClick={close}>
           <X className="size-3.5" />

@@ -131,13 +131,18 @@ Página autenticada `/discover`, sob o base path `/chat`. O feed fica em `data/d
 
 | Rota | Contrato |
 |---|---|
-| `GET /api/discover` | Auth do app; retorna `{ topics, suggestedTopics, articles, job, lastDailyDate }`, sem cache. Cada artigo contém título, resumo, Markdown narrativo, data, tema, fontes HTTP(S), identificador e `image` opcional (ID da capa). |
+| `GET /api/discover` | Auth do app; retorna `{ topics, suggestedTopics, articles, job, lastDailyDate, schedule, nextScheduledAt }`, sem cache. `schedule.enabled` indica a preferência automática; `nextScheduledAt` é previsão ISO ou `null` quando pausado. Cada artigo contém título, resumo, Markdown narrativo, data, tema, fontes HTTP(S), identificador e `image` opcional (ID da capa). |
+| `PUT /api/discover/settings` | Auth do app; recebe `{ enabled: boolean }` e retorna `{ schedule, nextScheduledAt }`. Entrada inválida retorna 400. Persiste sob o mesmo lock do claim, sem gerar conteúdo; campos do feed são preservados. |
 | `PUT /api/discover/topics` | Auth do app; recebe `{ topics: string[] }`. Até 12 assuntos de 2 a 60 caracteres; normaliza espaços e duplicatas. Retorna `{ topics }`; entrada inválida retorna 400. |
 | `POST /api/discover/refresh` | Auth do app; reivindica atualização manual e retorna `{ status: "started" | "running" }`. `started` usa HTTP 202; a UI consulta `GET` para acompanhar. |
 | `GET /api/discover/images/[id]` | Auth do app; serve PNG de um artigo ainda presente no feed ou 404. |
-| `POST /api/discover/run-due` | Bearer `DISCOVER_RUNNER_TOKEN`; faz a rodada diária de forma síncrona e retorna `{ status: "started" | "running" | "not_due" }`. Sem token configurado, 503; token incorreto, 401. |
+| `POST /api/discover/run-due` | Bearer `DISCOVER_RUNNER_TOKEN`; verifica diariamente uma rodada a cada dois dias civis, às 08h de São Paulo; retorna `{ status: "started" | "running" | "not_due" | "paused" }`. Execução síncrona quando devida. Sem token configurado, 503; token incorreto, 401. |
 
 O job expõe `idle`, `running` ou `failed`; erro preserva os artigos anteriores. A curadoria exige ao menos uma fonte citada ou consultada pela busca para cada notícia publicada nos últimos 14 dias e inclui links inline no texto. Matérias sem fonte válida não entram; falha na capa mantém o card com imagem substituta.
+
+Estados antigos sem preferência mantêm automação ativa. `lastDailyDate` é a data da última tentativa automática, inclusive se falhar; manual não altera esse marco. Pausar bloqueia novas reservas automáticas e permite concluir a já iniciada. Reativar não chama o provider; a previsão aguarda a próxima passagem das 08h quando estiver vencida. O estado exibido é preferência do aplicativo, não saúde do timer.
+
+“Ouvir matéria” abre `MiniAudioPlayer` com `allowRealtime=false`; somente Tocar gera TTS Grok/Orion via `/api/tts/xai`. O texto contém título e conteúdo, sem resumo duplicado/lista de fontes. O feed mantém um player por vez; Chat/Pulse preservam as duas engines.
 
 ## Gaucho Studio
 

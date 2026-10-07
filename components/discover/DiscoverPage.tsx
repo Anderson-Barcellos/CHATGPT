@@ -1,16 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
-import { useRef } from "react";
-import { ArrowLeft, ChevronDown, Newspaper, Plus, RefreshCw, Sparkles, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowLeft, ChevronDown, Newspaper, Plus, RefreshCw, Sparkles, Volume2, X } from "lucide-react";
 import { ChatMarkdown } from "@/components/chat/ChatMarkdown";
+import { MiniAudioPlayer } from "@/components/chat/MiniAudioPlayer";
 import { ProductNav } from "@/components/navigation/ProductNav";
 import { apiUrl } from "@/lib/utils";
 import type { DiscoverState } from "@/lib/discover/types";
 import { MOBILE_MEDIA_QUERY } from "@/lib/layout/breakpoints";
 
-type ViewState = DiscoverState & { suggestedTopics: string[] };
+type ViewState = DiscoverState & {
+  suggestedTopics: string[];
+  schedule?: { enabled: boolean };
+  nextScheduledAt?: string | null;
+};
+
+interface ScheduleUpdateResponse {
+  schedule: { enabled: boolean };
+  nextScheduledAt: string | null;
+}
+
+interface DiscoverRefreshResponse {
+  status?: "started" | "running" | "completed" | "failed";
+}
 
 async function responseJson<T>(response: Response): Promise<T> {
   const body = await response.json();
@@ -23,32 +36,75 @@ function formatDate(value: string): string {
   return Number.isNaN(date.getTime()) ? "Data indisponível" : date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
 }
 
+function formatScheduledAt(value: string | null | undefined): string {
+  if (!value) return "A próxima data será calculada na reativação.";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Previsão indisponível.";
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "America/Sao_Paulo",
+  }).format(date);
+}
+
 export function DiscoverPage() {
   const [state, setState] = useState<ViewState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [savingSchedule, setSavingSchedule] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [draft, setDraft] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [audioArticleId, setAudioArticleId] = useState<string | null>(null);
   const articleRefs = useRef(new Map<string, HTMLElement>());
+  const pendingMutations = useRef(0);
+  const readVersion = useRef(0);
+
+  const beginMutation = useCallback(() => {
+    pendingMutations.current += 1;
+    readVersion.current += 1;
+  }, []);
+
+  const finishMutation = useCallback(() => {
+    pendingMutations.current = Math.max(0, pendingMutations.current - 1);
+    readVersion.current += 1;
+  }, []);
 
   const load = useCallback(async () => {
+    const requestVersion = readVersion.current;
     try {
       const data = await responseJson<ViewState>(await fetch(apiUrl("/api/discover"), { cache: "no-store" }));
+      if (requestVersion !== readVersion.current || pendingMutations.current > 0) return;
       setState(data);
       setError("");
     } catch (cause) {
+      if (requestVersion !== readVersion.current || pendingMutations.current > 0) return;
       setError(cause instanceof Error ? cause.message : "Falha ao carregar o feed.");
-    } finally { setLoading(false); }
+    } finally {
+      if (requestVersion === readVersion.current && pendingMutations.current === 0) setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     const controller = new AbortController();
+    const requestVersion = readVersion.current;
     fetch(apiUrl("/api/discover"), { cache: "no-store", signal: controller.signal })
       .then(responseJson<ViewState>)
-      .then((data) => { setState(data); setError(""); })
-      .catch((cause) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Falha ao carregar o feed."); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+      .then((data) => {
+        if (!controller.signal.aborted && requestVersion === readVersion.current && pendingMutations.current === 0) {
+          setState(data);
+          setError("");
+        }
+      })
+      .catch((cause) => {
+        if (!controller.signal.aborted && requestVersion === readVersion.current && pendingMutations.current === 0) {
+          setError(cause instanceof Error ? cause.message : "Falha ao carregar o feed.");
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted && requestVersion === readVersion.current && pendingMutations.current === 0) setLoading(false);
+      });
     return () => controller.abort();
   }, []);
   useEffect(() => {
@@ -58,6 +114,7 @@ export function DiscoverPage() {
   }, [state?.job.status, load]);
 
   const saveTopics = async (topics: string[]) => {
+    beginMutation();
     setSaving(true);
     try {
       const result = await responseJson<{ topics: string[] }>(await fetch(apiUrl("/api/discover/topics"), {
@@ -67,18 +124,58 @@ export function DiscoverPage() {
       setDraft("");
       setError("");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Falha ao salvar assuntos."); }
-    finally { setSaving(false); }
+    finally {
+      finishMutation();
+      setSaving(false);
+    }
+  };
+
+  const saveSchedule = async (enabled: boolean) => {
+    if (savingSchedule) return;
+    beginMutation();
+    setSavingSchedule(true);
+    try {
+      const result = await responseJson<ScheduleUpdateResponse>(await fetch(apiUrl("/api/discover/settings"), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled }),
+      }));
+      setState((current) => current ? {
+        ...current,
+        schedule: result.schedule,
+        nextScheduledAt: result.nextScheduledAt,
+      } : current);
+      setError("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao salvar a atualização automática.");
+    } finally {
+      finishMutation();
+      setSavingSchedule(false);
+    }
   };
 
   const refresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
     setError("");
     try {
-      await responseJson(await fetch(apiUrl("/api/discover/refresh"), { method: "POST" }));
+      const result = await responseJson<DiscoverRefreshResponse>(await fetch(apiUrl("/api/discover/refresh"), { method: "POST" }));
+      if (result.status === "started" || result.status === "running") {
+        setState((current) => current ? {
+          ...current,
+          job: { ...current.job, status: "running" },
+        } : current);
+      }
       await load();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Falha ao iniciar atualização."); }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao iniciar atualização.");
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const busy = state?.job.status === "running";
+  const scheduleEnabled = state?.schedule?.enabled;
   const toggleArticle = (id: string, open: boolean) => {
     const next = open ? null : id;
     setExpanded(next);
@@ -93,12 +190,12 @@ export function DiscoverPage() {
   };
 
   return (
-    <div data-discover-scroll-root className="h-dvh touch-pan-y overflow-x-hidden overflow-y-auto overscroll-y-contain bg-background text-foreground">
+    <div data-discover-scroll-root className="gc-chat-ui h-dvh touch-pan-y overflow-x-hidden overflow-y-auto overscroll-y-contain bg-background text-foreground">
       <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 md:px-6">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 md:px-6">
           <Link href="/" aria-label="Voltar ao Chat" className="rounded-lg p-2 hover:bg-accent"><ArrowLeft className="size-5" /></Link>
-          <div className="mr-auto flex items-center gap-2 font-semibold"><Newspaper className="size-5 text-primary" /> Descobrir IA</div>
-          <ProductNav active="discover" compact />
+          <div className="mr-auto flex min-w-0 items-center gap-2 font-semibold"><Newspaper className="size-5 shrink-0 text-primary" /> <span className="truncate">Descobrir IA</span></div>
+          <ProductNav active="discover" compact className="ml-auto max-[430px]:w-full max-[430px]:justify-center" />
         </div>
       </header>
       <main className="mx-auto grid max-w-6xl gap-8 px-4 py-8 md:grid-cols-[minmax(0,1fr)_17rem] md:px-6">
@@ -108,11 +205,30 @@ export function DiscoverPage() {
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">O que está acontecendo em IA</h1>
               <p className="mt-2 text-sm text-muted-foreground">Novidades com contexto, leitura leve e fontes para ir além.</p>
             </div>
-            <button type="button" onClick={() => void refresh()} disabled={busy || loading}
+            <button type="button" onClick={() => void refresh()} disabled={busy || loading || refreshing}
               className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium hover:bg-accent disabled:opacity-50">
-              <RefreshCw className={`size-4 ${busy ? "animate-spin" : ""}`} />{busy ? "Atualizando…" : "Buscar novidades"}
+              <RefreshCw className={`size-4 ${busy || refreshing ? "animate-spin" : ""}`} />{busy || refreshing ? "Atualizando…" : "Buscar novidades"}
             </button>
           </div>
+          <section className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3" aria-label="Atualização automática">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Atualização automática <span className={scheduleEnabled === undefined ? "text-muted-foreground" : scheduleEnabled ? "text-primary" : "text-muted-foreground"}>{scheduleEnabled === undefined ? "Carregando…" : scheduleEnabled ? "Ativa" : "Pausada"}</span></p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{scheduleEnabled === undefined ? "Carregando a preferência de atualização automática…" : <>A cada dois dias, às 08h (São Paulo) · {scheduleEnabled ? `Próxima previsão: ${formatScheduledAt(state?.nextScheduledAt)}` : "Pausada até tu reativar."}</>}</p>
+              {savingSchedule && <p className="mt-1 text-xs font-medium text-primary" aria-live="polite">Salvando preferência…</p>}
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-label="Atualização automática"
+              aria-checked={Boolean(scheduleEnabled)}
+              disabled={savingSchedule || loading || !state}
+              onClick={() => void saveSchedule(!scheduleEnabled)}
+              className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:cursor-wait disabled:opacity-60 ${scheduleEnabled ? "bg-primary" : "bg-muted"}`}
+            >
+              <span className={`size-5 rounded-full bg-background shadow-sm transition-transform ${scheduleEnabled ? "translate-x-6" : "translate-x-1"}`} />
+              <span className="sr-only">{savingSchedule ? "Salvando atualização automática" : scheduleEnabled ? "Pausar atualização automática" : "Ativar atualização automática"}</span>
+            </button>
+          </section>
           {error && <p role="alert" className="mb-4 rounded-xl border border-destructive/40 p-3 text-sm text-destructive">{error}</p>}
           {state?.job.status === "failed" && <p role="status" className="mb-4 rounded-xl border border-amber-500/40 p-3 text-sm">A última atualização falhou: {state.job.error}. As matérias anteriores seguem disponíveis.</p>}
           {loading && !state && <p role="status" className="py-16 text-center text-muted-foreground">Carregando notícias…</p>}
@@ -133,10 +249,21 @@ export function DiscoverPage() {
                   <p className="text-xs font-semibold uppercase tracking-wide text-primary">{article.topic} · {formatDate(article.publishedAt)}</p>
                   <h2 className="mt-2 text-xl font-semibold leading-tight">{article.title}</h2>
                   <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{article.summary}</p>
+                  <button type="button" onClick={() => setAudioArticleId(article.id)} className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium hover:bg-accent">
+                    <Volume2 className="size-4" /> Ouvir matéria
+                  </button>
                   <button type="button" aria-expanded={open} aria-controls={`discover-${article.id}`} onClick={() => toggleArticle(article.id, open)}
-                    className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg font-medium text-primary hover:underline">
+                    className="ml-3 mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg font-medium text-primary hover:underline">
                     {open ? "Recolher" : "Ler a matéria"}<ChevronDown className={`size-4 transition-transform ${open ? "rotate-180" : ""}`} />
                   </button>
+                  {audioArticleId === article.id && (
+                    <MiniAudioPlayer
+                      content={`${article.title}\n\n${article.content}`}
+                      messageId={`discover-${article.id}`}
+                      allowRealtime={false}
+                      onClose={() => setAudioArticleId(null)}
+                    />
+                  )}
                   {open && <div id={`discover-${article.id}`} className="mt-4 border-t border-border pt-5">
                     <ChatMarkdown content={article.content} className="leading-relaxed" />
                     <h3 className="mt-6 text-sm font-semibold">Fontes</h3>

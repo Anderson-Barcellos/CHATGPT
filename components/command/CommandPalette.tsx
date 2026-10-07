@@ -16,6 +16,7 @@ import {
   Sparkles,
   StickyNote,
   AudioLines,
+  Code2,
   Newspaper,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -122,6 +123,14 @@ export function CommandPalette() {
               >
                 <Newspaper className="size-4 shrink-0 text-muted-foreground" />
                 <span className="flex-1">Descobrir IA</span>
+              </Command.Item>
+              <Command.Item
+                value="abrir studio código python"
+                onSelect={() => run(() => router.push("/studio"))}
+                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm aria-selected:bg-accent"
+              >
+                <Code2 className="size-4 shrink-0 text-muted-foreground" />
+                <span className="flex-1">Abrir Studio</span>
               </Command.Item>
             </Command.Group>
 

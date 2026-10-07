@@ -48,7 +48,7 @@ describe("reescrita atômica do Descobrir IA", () => {
   it("cria backup antes de gravar o lote completo", async () => {
     const backupDirectory = mkdtempSync(join(tmpdir(), "discover-rewrite-"));
     tempDirectories.push(backupDirectory);
-    const state: DiscoverState = { topics: [], articles: [ARTICLE], job: { status: "running" } };
+    const state: DiscoverState = { topics: [], articles: [ARTICLE], schedule: { enabled: true }, job: { status: "running" } };
     const rewritten = [{ ...ARTICLE, content: "Conteúdo narrativo novo e completo." }];
     vi.mocked(readDataFile).mockImplementation(async () => state);
     expect(await readDataFile("discover.json", state)).toBe(state);

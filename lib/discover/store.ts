@@ -2,10 +2,11 @@ import { randomUUID } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { readDataFile, withDataFileLock, writeDataFile } from "@/lib/server/jsonFileStore";
+import { isDiscoverDailyDue } from "./schedule";
 import type { DiscoverArticle, DiscoverState } from "./types";
 
 const FILE = "discover.json";
-const EMPTY: DiscoverState = { topics: [], articles: [], job: { status: "idle" } };
+const EMPTY: DiscoverState = { topics: [], articles: [], schedule: { enabled: true }, job: { status: "idle" } };
 const IMAGE_DIR = path.join(process.cwd(), "data", "discover-images");
 const BACKUP_DIR = path.join(process.cwd(), "data", "discover-backups");
 const TIME_ZONE = "America/Sao_Paulo";
@@ -36,6 +37,7 @@ export async function readDiscoverState(): Promise<DiscoverState> {
   return {
     topics: Array.isArray(raw?.topics) ? raw.topics : [],
     articles: Array.isArray(raw?.articles) ? raw.articles : [],
+    schedule: { enabled: raw?.schedule?.enabled !== false },
     job: stale ? { status: "failed", error: "A atualização foi interrompida. Tente novamente." } : job,
     lastDailyDate: raw?.lastDailyDate,
   };
@@ -50,13 +52,28 @@ export async function saveTopics(value: unknown): Promise<string[]> {
   });
 }
 
-export async function claimDiscoverJob(kind: "daily" | "manual" | "rewrite", now = new Date()): Promise<"started" | "running" | "not_due"> {
+export async function saveDiscoverSchedule(value: unknown): Promise<DiscoverState["schedule"]> {
+  if (typeof value !== "boolean") throw new Error("Agendamento inválido.");
+  return withDataFileLock(FILE, async () => {
+    const state = await readDiscoverState();
+    const schedule = { enabled: value };
+    await writeDataFile(FILE, { ...state, schedule });
+    return schedule;
+  });
+}
+
+export type DiscoverClaim = "started" | "running" | "not_due" | "paused";
+
+export async function claimDiscoverJob(kind: "daily" | "manual" | "rewrite", now = new Date()): Promise<DiscoverClaim> {
   return withDataFileLock(FILE, async () => {
     const state = await readDiscoverState();
     const today = discoverDate(now);
+    if (kind === "daily" && !state.schedule.enabled) return "paused";
     if (state.job.status === "running" && state.job.startedAt &&
       now.getTime() - new Date(state.job.startedAt).getTime() < 60 * 60 * 1000) return "running";
-    if (kind === "daily" && state.lastDailyDate === today) return "not_due";
+    if (kind === "daily") {
+      if (!isDiscoverDailyDue(state.lastDailyDate, now)) return "not_due";
+    }
     await writeDataFile(FILE, {
       ...state,
       lastDailyDate: kind === "daily" ? today : state.lastDailyDate,

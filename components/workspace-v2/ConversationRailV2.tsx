@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from "react";
 import {
   AudioLines,
   Clock,
+  Code2,
   Newspaper,
   FolderClosed,
   Menu,
@@ -434,6 +435,16 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
         >
           <Newspaper className="size-3.5" />
         </Link>
+        <Link
+          href="/studio"
+          title="Abrir Gaucho Studio"
+          className={cn(
+            "flex size-8 shrink-0 items-center justify-center",
+            RAIL_CONTROL_BUTTON_CLASS
+          )}
+        >
+          <Code2 className="size-3.5" />
+        </Link>
         <div className="flex min-h-0 flex-1 flex-col items-center gap-1 overflow-hidden">
           {pinnedConversations.slice(0, 8).map((conv) => (
             <button
@@ -611,6 +622,16 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
           <Link href="/discover">
             <Newspaper className="mr-2 size-4" />
             Descobrir IA
+          </Link>
+        </Button>
+        <Button
+          variant="ghost"
+          asChild
+          className={cn("h-9 w-full justify-start px-2 text-xs", RAIL_CONTROL_BUTTON_CLASS)}
+        >
+          <Link href="/studio">
+            <Code2 className="mr-2 size-4" />
+            Abrir Studio
           </Link>
         </Button>
         <Button

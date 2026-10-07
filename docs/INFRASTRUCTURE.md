@@ -162,6 +162,8 @@ Descobrir IA (publicado em 2026-10-04):
 
 `systemd/chatgpt-discover.timer` agenda a curadoria para 08h em `America/Sao_Paulo`, com `Persistent=true`. A unit instalada usa uma cópia de `scripts/run-discover-due.sh` em `/usr/local/libexec/chatgpt-discover-run-due.sh` e recebe o token de `/etc/chatgpt/discover.env` (root, 0600). O app recebe o mesmo arquivo pelo drop-in `/etc/systemd/system/chatgpt.service.d/30-discover.conf`. O script entrega o token ao curl por stdin. A chamada manual autenticada independe do timer. A execução pode gerar até cinco textos e cinco capas por rodada; sem matéria nova, preserva o feed existente. Sem fonte verificável para a curadoria inicial, registra falha. A build atual veio da cópia isolada `/root/.cache/gaucho-discover-refine-deploy-20261004`, com os ajustes locais de viewport preservados; a origem deve permanecer até a integração da branch. Reescritas únicas usam `scripts/rewrite-discover-current.ts --apply --expected-count N`; o comando reserva o job, só troca o lote completo e cria backup privado em `data/discover-backups/`.
 
+Controle de curadoria (2026-10-07): o timer continua acordando diariamente às 08h; o app decide sob lock se a atualização está habilitada e se transcorreram dois dias civis desde a última tentativa automática. Pausado ou ainda não devido, não chama provedores. O interruptor não executa systemctl nem indica saúde da unit; não exige alteração/reinício do timer. A preferência fica em `data/discover.json`, com leitura compatível de arquivos antigos. Publicação desse comportamento depende da instalação autorizada da nova build.
+
 Transcrição:
 
 | Variável | Propósito |

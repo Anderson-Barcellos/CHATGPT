@@ -1,7 +1,7 @@
-import { claimDiscoverJob, finishDiscoverJob, readDiscoverState } from "./store";
+import { claimDiscoverJob, finishDiscoverJob, readDiscoverState, type DiscoverClaim } from "./store";
 import { curateDiscoverArticles } from "./curator";
 
-export async function runDiscover(kind: "daily" | "manual"): Promise<"started" | "running" | "not_due"> {
+export async function runDiscover(kind: "daily" | "manual"): Promise<DiscoverClaim> {
   const claim = await claimDiscoverJob(kind);
   if (claim !== "started") return claim;
   const work = async () => {

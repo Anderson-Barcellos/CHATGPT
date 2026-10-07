@@ -7,7 +7,8 @@ describe("Gaucho product navigation", () => {
     const markup = renderToStaticMarkup(<ProductNav active="soundcase" />);
     expect(markup).toContain('href="/"');
     expect(markup).toContain('href="/discover"');
-    expect(markup).not.toContain('href="/studio"');
+    expect(markup).toContain('href="/studio"');
+    expect(markup).toContain('aria-label="Studio"');
     expect(markup).toContain('href="/soundcase"');
     expect(markup).toContain('aria-current="page"');
   });
