@@ -1474,6 +1474,15 @@ body {
     padding-bottom: var(--gc-mobile-composer-footer-bottom);
   }
 
+  /* PWA no iOS: safe area do indicador de home, descontada a faixa que o WebKit
+     já deixa sem pintar embaixo (useVisualViewport). Sem faixa, ganha os 34 px. */
+  html[data-standalone]:not([data-keyboard-open]) .gc-composer-dock {
+    padding-bottom: max(
+      var(--gc-mobile-composer-footer-bottom),
+      calc(env(safe-area-inset-bottom) - var(--gc-standalone-bottom-gap, 0px))
+    );
+  }
+
   /* Rolagem fluida: sem blur por balão e sem rubber-band vazando pro shell. */
   .gc-atmosphere-shell .gc-assistant-bubble {
     backdrop-filter: none;

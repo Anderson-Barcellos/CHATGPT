@@ -1632,3 +1632,19 @@ Anders autorizou o deploy. `DECISÃO:` a build isolada combinou a branch do feed
 ### 2026-10-04 — Descobrir IA refinado após análise
 
 Anders pediu matérias maiores e narrativas, Sol `medium`/verbosity `high`, promoção de qualquer card aberto ao destaque superior no desktop e correção da página sem rolagem. Implementação na mesma branch: 6–9 parágrafos, piso de 600 palavras, contêiner `h-dvh` rolável, ordem visual desktop com movimento suave e expansão local no mobile. `DECISÃO:` a reescrita dos três artigos é um job exclusivo, gera tudo antes da troca, preserva identidade/capas/fontes originais e cria backup 0600; falha parcial não grava. Build combinada `NJoCo5uxmVkV2ZNtMhzPJ` publicada com backup anterior em `/root/.cache/gaucho-deploy/20261004T191153Z/next-before`; health local/público 200. Reescrita real concluiu: 8 parágrafos e 792/899/827 palavras, três capas e identidades preservadas. Smoke público 1440/390/320 passou sem overflow ou pageerror. Timer 08h segue ativo. Sem merge ou push.
+
+### 2026-09-27 12:50 - `npm run deploy`
+
+Context: a instalação da `.next` foi barrada pelo classificador de permissões da sessão; Anders pediu um script para ele mesmo publicar, poupando tokens em tarefa determinística.
+
+Details: `scripts/deploy.sh` descobre o checkout vivo pelo `WorkingDirectory` da unit (`lib/runtime-safety.sh`). Sem argumentos: cópia isolada em `/root/.cache/gaucho-deploy/<carimbo>/build` (sem `/data`, `.env*`, `.git`, `/.next*`, `/.worktrees`; `node_modules` por hardlink), `pre-deploy.sh --skip-build` sem base path e build com `NEXT_PUBLIC_BASE_PATH=/chat`. Com `--from <dir>`: instala a `.next` pronta. Depois: backup `next-before`, assets antigos retidos (`cp --update=none`), restart, health local com rollback automático e health público com erro sem rollback. Binários, URLs, tentativas e raiz injetáveis por `GAUCHO_*` para os testes (`scripts/deploy.test.ts`, 7 casos com fakes).
+
+Notes: para publicar a entrega de hoje: `npm run deploy -- --from /root/.cache/chat-ios27-probe`. O diretório de origem da build não pode ser apagado, porque a `.next` referencia esse caminho. O script não foi executado pelo agente; commit pendente de autorização.
+
+### 2026-09-27 14:55 - iOS 27 PWA, Bloco 2a: teclado devolvendo a sobra e safe area do composer
+
+Context: com a flag experimental Fullscreen API ligada no Safari, a PWA do Anders abriu em tela cheia, mas a sobra de baixo voltava depois do teclado e o composer encostava no indicador de home.
+
+Details: `hooks/useVisualViewport.ts` agora só grava `--gc-visual-viewport-height`/`offset-top` com o teclado aberto; fechado, remove as duas variáveis (o CSS volta a `100dvh`) e desfaz o pan residual com `scrollTo(0,0)`. Em standalone (`display-mode: standalone` ou `navigator.standalone`), marca `data-standalone` e grava `--gc-standalone-bottom-gap` = tela física (`physicalViewportHeight`, orientação-aware) − `clientHeight`. `app/globals.css`: `html[data-standalone]:not([data-keyboard-open]) .gc-composer-dock` usa `max(footer, env(safe-area-inset-bottom) − gap)`, que dá os 34 px com a flag e o respiro atual sem ela. A sonda ganhou um campo de texto (16 px) para medir o ciclo do teclado.
+
+Notes: build isolada pronta (`dCx1O7ggY_iV14A1BR53I` em `/root/.cache/chat-ios27-probe`); publicação pelo Anders com `npm run deploy -- --from /root/.cache/chat-ios27-probe`. Validar pelo ícone com e sem a flag. Sem commit.

@@ -68,6 +68,12 @@ describe("Gaucho Chat visual contract", () => {
     expect(css).toMatch(/\.gc-composer-dock[\s\S]*padding-bottom: var\(--gc-mobile-composer-footer-bottom\)/);
   });
 
+  it("na PWA dá ao composer a safe area do indicador de home, descontada a faixa que o WebKit já deixa", () => {
+    expect(css).toMatch(
+      /html\[data-standalone\]:not\(\[data-keyboard-open\]\) \.gc-composer-dock\s*\{\s*padding-bottom: max\(\s*var\(--gc-mobile-composer-footer-bottom\),\s*calc\(env\(safe-area-inset-bottom\) - var\(--gc-standalone-bottom-gap, 0px\)\)\s*\);/
+    );
+  });
+
   it("keeps the iPhone welcome card compact enough for the splash actions", () => {
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-welcome-title-size:\s*1\.1rem;/);
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-welcome-subtitle-size:\s*0\.68rem;/);
