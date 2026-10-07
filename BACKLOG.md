@@ -2,6 +2,14 @@
 
 ## Estado operacional
 
+#### Descobrir IA: agendamento, TTS e acesso ao Studio (`pronta para revisão`, 2026-10-07)
+
+Plano aprovado por Anders em `docs/plans/2026-10-07-descobrir-controles-tts-studio.md`; código em `8f154de`. Atualização automática a cada dois dias às 08h de São Paulo, interruptor persistente e previsão; pausa impede novos claims automáticos sem cancelar job já iniciado, manual preservado. Cada matéria abre TTS Grok/Orion sob demanda, sem Realtime; player único. Studio restaurado na navegação/rail/paleta, mantendo Descobrir e SoundCase.
+
+Conjunto validado: 211 arquivos/1.075 testes, tipos, lint sem erros, build isolada `/chat` 43/43 e 7 cenários Playwright (1440/390/320 claro/escuro, API real sintética, TTS/Studio simulados). Aviso antigo de lint e avisos de build em código inalterado registrados. Capturas inspecionadas. Registro: `docs/plans/2026-10-07-descobrir-controles-tts-studio-report.md`.
+
+Integração local na main autorizada inclui o feed publicado e o WIP web de viewport/deploy, preservado primeiro em `c3318b7`. Desktop Windows (aceitação pendente) e candidata de migração para sonaris.us permanecem separados. Sem publicação, push, restart, alteração do timer vivo ou dados pessoais. A nova frequência só passa a valer no serviço após publicação autorizada.
+
 #### Descobrir IA no lugar do atalho Studio (`pronta para revisão`, 2026-10-04)
 
 Página `/discover` com cards de notícias recentes de IA, capa privada, narrativa expandida com fontes e assuntos preferidos. Curadoria própria até cinco matérias por rodada, atualização manual e timer diário às 08h BRT ativo; Studio e workspace Python preservados por URL direta. Refinamento publicado em 2026-10-04: Sol `medium`/verbosity `high`, narrativas de 6–9 parágrafos, rolagem própria e card aberto promovido ao destaque no desktop. Os três artigos iniciais foram reescritos atomicamente, preservando identidade e capas, com backup 0600. Build combinada `NJoCo5uxmVkV2ZNtMhzPJ`; 206 arquivos/1.053 testes, tipos, lint, build `/chat`, smoke sintético e público 1440/390/320, health local/público 200. Branch `codex/ia-discover-20261004`; plano e relatório em `docs/plans/`. Anders analisa o conteúdo e a interface; merge e push seguem pendentes.
