@@ -2,6 +2,8 @@
 
 Estado: pronta para revisão. Plano aprovado em `af77df6`; implementação em `8f154de`. Worktree: `/root/.cache/gaucho-discover-controls-20261007`. Integração local na main autorizada; publicação e push não executados.
 
+Integração concluída por fast-forward da main até `bc54361` (registro de validação), sem conflitos adicionais. Main e candidata ficaram limpas e com árvores idênticas. Conferência pós-integração somente leitura: `chatgpt.service` active, health local/público HTTP 200; a build viva continua `lXC2ejL4ftyZ9pT0n_3mG`, diferente da candidata nova. Nenhum restart/deploy. A anotação final deste resultado é apenas documental.
+
 ## Decisões e integração
 
 - DECISÃO: duas frentes exclusivas: agendamento/backend e interface/TTS/navegação. Principal responde por Git, docs, script QA, revisão e gates completos.
