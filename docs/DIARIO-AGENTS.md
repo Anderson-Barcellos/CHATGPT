@@ -1620,3 +1620,19 @@ Context: Anders pediu Luna com reasoning medium como padrão das seções e, em 
 Details: chat em `gpt-6-luna` + `medium` (`stores/settingsStore.ts`, persistência v2 com `migrate` que sobe uma vez o `low` antigo do Luna; `low` escolhido depois é respeitado). Documento segue o chat e cai para Luna `medium` com DeepSeek/Gemini (`lib/chat/documentConfig.ts`, antes Grok). Deepsearch Medium em Luna `medium` (`lib/chat/deepsearchConfig.ts`). Pulse nasce em `gpt-6-sol` (`DEFAULT_PULSE_MODEL`, formulário e rótulo "padrão" no `PulsePanelV2`); reasoning segue `medium` pelo perfil de execução. Studio passa a enviar reasoning `medium` em qualquer provider (antes só Grok). Direção do SoundCase em Luna `medium`. DECISÃO: Quiz (`gpt-5.4` high) e extrações internas em Grok ficam como estão; rotinas Pulse já salvas em `data/*.json` mantêm o modelo gravado.
 
 Notes: docs MODELS/API/ARCHITECTURE, AGENTS e CLAUDE atualizados. Build isolado pronto em `/root/.cache/chat-ios27-probe` (BUILD_ID `uZstdqKc_MmvSHgrwQ8sT`, inclui a sonda do iOS 27). A instalação da build em `.next` foi barrada pelo classificador de permissões desta sessão; deploy e restart pendentes, a cargo de Anders.
+
+### 2026-09-27 12:50 - `npm run deploy`
+
+Context: a instalação da `.next` foi barrada pelo classificador de permissões da sessão; Anders pediu um script para ele mesmo publicar, poupando tokens em tarefa determinística.
+
+Details: `scripts/deploy.sh` descobre o checkout vivo pelo `WorkingDirectory` da unit (`lib/runtime-safety.sh`). Sem argumentos: cópia isolada em `/root/.cache/gaucho-deploy/<carimbo>/build` (sem `/data`, `.env*`, `.git`, `/.next*`, `/.worktrees`; `node_modules` por hardlink), `pre-deploy.sh --skip-build` sem base path e build com `NEXT_PUBLIC_BASE_PATH=/chat`. Com `--from <dir>`: instala a `.next` pronta. Depois: backup `next-before`, assets antigos retidos (`cp --update=none`), restart, health local com rollback automático e health público com erro sem rollback. Binários, URLs, tentativas e raiz injetáveis por `GAUCHO_*` para os testes (`scripts/deploy.test.ts`, 7 casos com fakes).
+
+Notes: para publicar a entrega de hoje: `npm run deploy -- --from /root/.cache/chat-ios27-probe`. O diretório de origem da build não pode ser apagado, porque a `.next` referencia esse caminho. O script não foi executado pelo agente; commit pendente de autorização.
+
+### 2026-09-27 14:55 - iOS 27 PWA, Bloco 2a: teclado devolvendo a sobra e safe area do composer
+
+Context: com a flag experimental Fullscreen API ligada no Safari, a PWA do Anders abriu em tela cheia, mas a sobra de baixo voltava depois do teclado e o composer encostava no indicador de home.
+
+Details: `hooks/useVisualViewport.ts` agora só grava `--gc-visual-viewport-height`/`offset-top` com o teclado aberto; fechado, remove as duas variáveis (o CSS volta a `100dvh`) e desfaz o pan residual com `scrollTo(0,0)`. Em standalone (`display-mode: standalone` ou `navigator.standalone`), marca `data-standalone` e grava `--gc-standalone-bottom-gap` = tela física (`physicalViewportHeight`, orientação-aware) − `clientHeight`. `app/globals.css`: `html[data-standalone]:not([data-keyboard-open]) .gc-composer-dock` usa `max(footer, env(safe-area-inset-bottom) − gap)`, que dá os 34 px com a flag e o respiro atual sem ela. A sonda ganhou um campo de texto (16 px) para medir o ciclo do teclado.
+
+Notes: build isolada pronta (`dCx1O7ggY_iV14A1BR53I` em `/root/.cache/chat-ios27-probe`); publicação pelo Anders com `npm run deploy -- --from /root/.cache/chat-ios27-probe`. Validar pelo ícone com e sem a flag. Sem commit.

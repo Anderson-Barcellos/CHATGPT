@@ -11,11 +11,19 @@ import { useEffect } from "react";
  * (`--gc-visual-viewport-height`), marca `data-keyboard-open` no `<html>` e
  * devolve o scroll da janela pra 0, de modo que o shell encolha junto com o
  * teclado em vez de ser deslocado.
+ *
+ * Com o teclado fechado o hook devolve a altura ao CSS (`100dvh`): no iOS 27
+ * o WebKit volta a informar a altura curta depois do teclado, e travar esse
+ * valor deixava uma faixa vazia embaixo da PWA. Na web app da tela inicial o
+ * hook também marca `data-standalone` e mede a faixa que o WebKit deixa sem
+ * pintar (`--gc-standalone-bottom-gap`), para o dock descontá-la da safe area.
  */
 
 export const VISUAL_VIEWPORT_HEIGHT_VAR = "--gc-visual-viewport-height";
 export const VISUAL_VIEWPORT_OFFSET_TOP_VAR = "--gc-visual-viewport-offset-top";
 export const KEYBOARD_OPEN_ATTR = "data-keyboard-open";
+export const STANDALONE_ATTR = "data-standalone";
+export const STANDALONE_BOTTOM_GAP_VAR = "--gc-standalone-bottom-gap";
 /** Diferença mínima (px) entre a janela e o visual viewport pra considerar teclado aberto. */
 export const KEYBOARD_THRESHOLD_PX = 100;
 
@@ -23,6 +31,24 @@ export interface VisualViewportSnapshot {
   height: number;
   offsetTop: number;
   innerHeight: number;
+  /** Web app aberta pelo ícone da tela inicial. */
+  standalone?: boolean;
+  /** Altura física da tela na orientação atual. */
+  physicalHeight?: number;
+  /** `document.documentElement.clientHeight`: onde o WebKit acha que a tela termina. */
+  clientHeight?: number;
+}
+
+/** No iOS `screen.width/height` não giram: retrato usa o lado maior, paisagem o menor. */
+export function physicalViewportHeight(
+  screenWidth: number,
+  screenHeight: number,
+  innerWidth: number,
+  innerHeight: number
+): number {
+  return innerWidth > innerHeight
+    ? Math.min(screenWidth, screenHeight)
+    : Math.max(screenWidth, screenHeight);
 }
 
 export function isKeyboardOpen(snapshot: VisualViewportSnapshot): boolean {
@@ -33,19 +59,31 @@ export function applyVisualViewport(
   root: HTMLElement,
   snapshot: VisualViewportSnapshot | null
 ): void {
-  if (!snapshot) {
-    root.style.removeProperty(VISUAL_VIEWPORT_HEIGHT_VAR);
-    root.style.removeProperty(VISUAL_VIEWPORT_OFFSET_TOP_VAR);
-    root.removeAttribute(KEYBOARD_OPEN_ATTR);
+  if (snapshot?.standalone) {
+    const gap = Math.max(0, Math.round((snapshot.physicalHeight ?? 0) - (snapshot.clientHeight ?? 0)));
+    root.setAttribute(STANDALONE_ATTR, "");
+    root.style.setProperty(STANDALONE_BOTTOM_GAP_VAR, `${gap}px`);
+  } else {
+    root.removeAttribute(STANDALONE_ATTR);
+    root.style.removeProperty(STANDALONE_BOTTOM_GAP_VAR);
+  }
+
+  if (snapshot && isKeyboardOpen(snapshot)) {
+    root.style.setProperty(VISUAL_VIEWPORT_HEIGHT_VAR, `${Math.round(snapshot.height)}px`);
+    root.style.setProperty(VISUAL_VIEWPORT_OFFSET_TOP_VAR, `${Math.round(snapshot.offsetTop)}px`);
+    root.setAttribute(KEYBOARD_OPEN_ATTR, "true");
     return;
   }
-  root.style.setProperty(VISUAL_VIEWPORT_HEIGHT_VAR, `${Math.round(snapshot.height)}px`);
-  root.style.setProperty(VISUAL_VIEWPORT_OFFSET_TOP_VAR, `${Math.round(snapshot.offsetTop)}px`);
-  if (isKeyboardOpen(snapshot)) {
-    root.setAttribute(KEYBOARD_OPEN_ATTR, "true");
-  } else {
-    root.removeAttribute(KEYBOARD_OPEN_ATTR);
-  }
+  root.style.removeProperty(VISUAL_VIEWPORT_HEIGHT_VAR);
+  root.style.removeProperty(VISUAL_VIEWPORT_OFFSET_TOP_VAR);
+  root.removeAttribute(KEYBOARD_OPEN_ATTR);
+}
+
+function isStandaloneDisplay(): boolean {
+  const displayModeStandalone =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(display-mode: standalone)").matches;
+  return displayModeStandalone || (navigator as Navigator & { standalone?: boolean }).standalone === true;
 }
 
 export function useVisualViewport(enabled: boolean): void {
@@ -63,9 +101,19 @@ export function useVisualViewport(enabled: boolean): void {
         height: viewport.height,
         offsetTop: viewport.offsetTop,
         innerHeight: window.innerHeight,
+        standalone: isStandaloneDisplay(),
+        physicalHeight: physicalViewportHeight(
+          window.screen.width,
+          window.screen.height,
+          window.innerWidth,
+          window.innerHeight
+        ),
+        clientHeight: root.clientHeight,
       };
       applyVisualViewport(root, snapshot);
-      if (isKeyboardOpen(snapshot) && (window.scrollY !== 0 || snapshot.offsetTop !== 0)) {
+      const keyboardOpen = isKeyboardOpen(snapshot);
+      // Com o teclado aberto o scroll da janela empurra o shell; fechado, é pan residual.
+      if (window.scrollY !== 0 || (keyboardOpen && snapshot.offsetTop !== 0)) {
         window.scrollTo(0, 0);
       }
     };

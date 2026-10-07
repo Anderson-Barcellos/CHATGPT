@@ -224,6 +224,15 @@ export function ViewportProbe() {
             </Link>
           </div>
 
+          {/* 16 px evita o zoom de foco do iOS; o resize do teclado já dispara nova medida. */}
+          <label className="mt-4 block text-white/70">
+            Toque para abrir o teclado, feche e confira as leituras de novo:
+            <textarea
+              rows={2}
+              className="mt-1 block w-full rounded-lg bg-black/40 p-2 text-[16px] text-white"
+            />
+          </label>
+
           {report && (
             <details className="mt-3">
               <summary className="cursor-pointer text-white/70">Leituras cruas</summary>

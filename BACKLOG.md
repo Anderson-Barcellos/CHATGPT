@@ -2,6 +2,20 @@
 
 ## Estado operacional
 
+#### iOS 27 na PWA: blur no topo e sobra embaixo (`estacionada por Anders`, 2026-09-27)
+
+Context: pelo ícone da tela inicial (PWA, `black-translucent` + `viewport-fit=cover`), o iOS 27 pinta um blur sobre o topo e o header fica borrado; embaixo o app termina em 894 de 956 px (o WebKit desconta os 62 px da status bar). Na aba do Safari não acontece. Anders decidiu esperar a Apple ("deixemos assim um tempo").
+Details: plano aprovado em `/root/.claude/plans/oi-claude-meu-velho-effervescent-swing.md` (folga `--gc-standalone-top-blur` via `--gc-safe-top` e frame esticado em standalone; fallback `statusBarStyle: "default"`, que exige reinstalar o ícone). Bloco 1 publicado: sonda em `/chat/viewport-probe`, link "Diagnóstico de tela (temporário)" na aba Ajuste (`611023b`).
+Notes: retomar com o print da sonda aberta pelo ícone. Padding sozinho resolve o topo, não a base. Remover sonda e link quando fechar, ou se a Apple corrigir.
+Achado de Anders (13:20): com a flag experimental **Fullscreen API** ligada no Safari (Ajustes → Apps → Safari → Avançado → Recursos Experimentais), a PWA abre em tela cheia, sem a sobra de baixo; o blur do topo continua. Depois de abrir e fechar o teclado a sobra volta: `useVisualViewport` grava em `--gc-visual-viewport-height` a altura curta que o WebKit informa após o teclado. Correção proposta: o hook só controla a altura com o teclado aberto e devolve ao CSS ao fechar; o dock em standalone ganha `env(safe-area-inset-bottom)` (o "Rec" encosta no indicador de home). A flag é contorno do aparelho e pode voltar ao padrão numa atualização do iOS.
+Bloco 2a implementado em 27/09 14:55 (hook só controla a altura com teclado aberto; `data-standalone` + `--gc-standalone-bottom-gap`; dock com safe area descontada; campo de texto na sonda). Build `dCx1O7ggY_iV14A1BR53I` pronta para `npm run deploy -- --from /root/.cache/chat-ios27-probe`; falta validar no iPhone e commitar.
+
+#### Modelos padrão por seção e `npm run deploy` (`publicada; script sem commit`, 2026-09-27)
+
+Context: Anders pediu Luna `medium` como padrão e refinou: Deepsearch High em Sol `high`, Deepsearch Medium em Luna `medium`, Pulse em Sol `medium`; chat, Documento (fallback), Studio e SoundCase em Luna `medium` (`6919551`, push feito). Depois pediu um script de deploy.
+Details: publicado por Anders às 12:53 com `npm run deploy -- --from /root/.cache/chat-ios27-probe` (build `uZstdqKc_MmvSHgrwQ8sT`; anterior `dsqMLjfxIWTvd7rQ7-JGu` em `/root/.cache/gaucho-deploy/20260927T155302Z/next-before`). Às 12:54 um `npm run build` acidental (autocomplete) no checkout vivo gerou `7DMbXZZvo_tF_boXyuW6o`, do mesmo código; é preciso um `systemctl restart chatgpt.service` para servidor e disco baterem, se ainda não foi feito.
+Notes: `scripts/deploy.sh`, `scripts/deploy.test.ts`, `package.json#scripts.deploy` e docs estão sem commit, aguardando Anders. Proposta aberta: `prebuild` que recusa `npm run build` no checkout vivo. `/root/.cache/chat-ios27-probe` não pode ser apagado enquanto a build dele estiver no ar (a atual veio do checkout).
+
 #### Deepsearch com prompt de agente único e modelos novos (`pronta para revisão`, 2026-09-26)
 
 Publicação autorizada por Anders em 2026-09-26 ("Bora fazer deploy e push"), incluindo os 7 commits retidos (GPT-6 do Codex, TTS Grok/OpenAI do SoundCase, faixa com anexos, prompt de Deep Research): `origin/main` avançou `b73b2a3..b33aa05`; build isolada `/chat` `dsqMLjfxIWTvd7rQ7-JGu` instalada, build anterior `g3jqXnah4B4NI5lBaGERb` em `/root/.cache/gaucho-gpt6-deploy-20260926/next-before` e assets antigos retidos. Timers Pulse/SoundCase pausados na troca e religados; sem sessões Studio ativas. `chatgpt.service` ativo; health local/público 200 `healthy`, `/chat` anônimo 307, API anônima 401, CSS da cápsula servido publicamente. Sem alteração de Apache ou dados privados.

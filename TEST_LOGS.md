@@ -208,3 +208,31 @@ Primeira execução (RED) do conjunto (settingsStore, persistência, Studio, Sou
 | Lint | `npm run lint -- --ignore-pattern '.next-before-*/**'` | exit 0; 0 erros, 1 warning anterior |
 | Build isolado `/chat` | `NEXT_PUBLIC_BASE_PATH=/chat npm run build` em `/root/.cache/chat-ios27-probe` | exit 0; BUILD_ID `uZstdqKc_MmvSHgrwQ8sT` (aviso antigo de `process.exit` no instrumentation) |
 | Whitespace | `git diff --check` | exit 0 |
+
+## 2026-09-27 — `scripts/deploy.sh` / `npm run deploy` (Claude)
+
+`scripts/deploy.test.ts`, primeira execução (RED): `Tests 4 failed | 3 passed (7)`. Os 3 de recusa passaram só porque o script ainda não existia (bash sai ≠ 0 sem tocar nada). GREEN: `7 passed (7)`. Caso novo de pasta `lib/data` e `.env.production` na cópia: RED `1 failed | 6 passed (7)` (exclude sem âncora), GREEN `7 passed (7)`.
+
+| Gate | Comando | Resultado |
+|---|---|---|
+| Suíte completa | `npm test` | exit 0; 200 arquivos/1032 testes |
+| TypeScript | `npx tsc --noEmit` | exit 0 |
+| Lint | `npm run lint -- --ignore-pattern '.next-before-*/**'` | exit 0; 0 erros, 1 warning anterior |
+| Sintaxe | `bash -n scripts/deploy.sh` | exit 0 (shellcheck não instalado) |
+| Gates numa cópia sem `data/` | `bash scripts/pre-deploy.sh --skip-build` em `/root/.cache/chat-ios27-probe` | typegen, tsc, lint e 199/1025 testes aprovados |
+| Build | — | não repetido: o código do app é o mesmo da build `uZstdqKc_MmvSHgrwQ8sT` (só scripts, docs e `package.json#scripts` mudaram) |
+| Whitespace | `git diff --check` | exit 0 |
+
+## 2026-09-27 — iOS 27 PWA, Bloco 2a: teclado e safe area do composer (Claude)
+
+`hooks/useVisualViewport.test.ts`, primeira execução (RED): `Tests 6 failed | 4 passed (10)` (altura ainda travada com teclado fechado, `physicalViewportHeight` inexistente, sem `data-standalone`/gap, sem `scrollTo` ao fechar). `app/globals.visual.test.ts` (RED): `1 failed | 14 passed (15)` (regra do dock em standalone ausente). GREEN: `10 passed (10)` e `15 passed (15)`; com `WorkspaceLayoutV2.test.tsx`, `32 passed (32)`.
+
+| Gate | Comando | Resultado |
+|---|---|---|
+| Suíte completa | `npm test` | exit 0; 200 arquivos/1037 testes |
+| TypeScript | `npx tsc --noEmit` | exit 0 |
+| Lint | `npm run lint -- --ignore-pattern '.next-before-*/**'` | exit 0; 0 erros, 1 warning anterior |
+| Build isolado `/chat` | `NEXT_PUBLIC_BASE_PATH=/chat npm run build` em `/root/.cache/chat-ios27-probe` | exit 0; BUILD_ID `dCx1O7ggY_iV14A1BR53I` |
+| Whitespace | `git diff --check` | exit 0 |
+
+QA Playwright (`next dev` isolado na 3041, `AUTH_ENABLED=false`, iPhone 15 Pro Max emulado): com `navigator.standalone = true` (dark/light) → `data-standalone` presente, gap `193px` (tela 932 − viewport 739 do emulador), sem `--gc-visual-viewport-height` em repouso, frame 739 = innerHeight, dock 2.76px (safe area 0 no Chromium); aba normal sem atributo nem mudança; zero `pageerror` e overflow. A safe area real e o ciclo do teclado só se validam no iPhone. `.next/dev` (793 MB) do dev server removido da build isolada antes do deploy.

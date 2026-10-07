@@ -241,7 +241,7 @@ npm run build
 
 `scripts/pre-deploy.sh` recusa o WorkingDirectory do serviço antes de gates, não remove `.next`, não instala dependências e não lê envs/segredos. `--skip-build` não certifica entrega completa. `scripts/test-local.sh --port <porta>` exige isolamento e porta livre, escuta em loopback, usa QA e não inicia após build falho. Fornecer credenciais sintéticas ao runtime de QA por ambiente.
 
-Publicação depende de autorização própria: instalar a build validada com backup recuperável, atualizar somente a unit necessária e então reiniciar `chatgpt.service`. Validar readiness local e pública em `/chat/api/health`, além do fluxo afetado. Porta ocupada deve falhar sem matar seu ocupante. O runner Pulse envia token por stdin ao curl, sem Bearer no argv.
+Publicação depende de autorização própria: instalar a build validada com backup recuperável, atualizar somente a unit necessária e então reiniciar `chatgpt.service`. `npm run deploy` (`scripts/deploy.sh`) automatiza esse fluxo: gates e build isolados (ou `--from <dir>` com build pronta), backup da `.next`, assets antigos retidos, restart, health local/público e rollback automático se o local falhar. Validar readiness local e pública em `/chat/api/health`, além do fluxo afetado. Porta ocupada deve falhar sem matar seu ocupante. O runner Pulse envia token por stdin ao curl, sem Bearer no argv.
 
 Para mudanças no Apache:
 

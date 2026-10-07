@@ -14,6 +14,17 @@ Smoke **pago e explícito** de Grok 4.7 (`medium`) e texto → voz Realtime, sem
 
 Executar somente em ambiente autorizado para chamadas reais; gates automatizados da entrega usam mocks.
 
+### `deploy.sh` (`npm run deploy`)
+
+Publica no checkout vivo do `chatgpt.service` (descoberto pelo `WorkingDirectory` da unit). Sem argumentos, copia o checkout para `/root/.cache/gaucho-deploy/<carimbo>/build` (sem `data/`, `.env*`, `.git` nem builds antigas; `node_modules` por hardlink), roda os gates do `pre-deploy.sh`, builda com `NEXT_PUBLIC_BASE_PATH=/chat` e só então instala. Com `--from <dir>`, instala a `.next` já validada daquele diretório.
+
+A instalação guarda a `.next` anterior em `next-before`, retém os assets antigos para abas abertas, reinicia o serviço e confere `/chat/api/health` local e público. Health local falho restaura a build anterior automaticamente; falha só no público mantém a build nova e sai com erro para conferir Apache/rede. O diretório da build precisa continuar existindo, porque a `.next` instalada referencia esse caminho.
+
+```bash
+npm run deploy
+npm run deploy -- --from /root/.cache/chat-ios27-probe
+```
+
 ### `pre-deploy.sh`
 
 Checklist local mais amplo antes de rodada sensível.

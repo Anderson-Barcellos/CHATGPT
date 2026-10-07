@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "memory:migrate": "tsx scripts/memory-v2-migrate.ts",
+    "deploy": "bash scripts/deploy.sh",
     "test": "vitest --run",
     "test:watch": "vitest"
   },
