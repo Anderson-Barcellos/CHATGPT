@@ -1658,3 +1658,11 @@ Gates do conjunto: 211 arquivos/1.075 testes, tsc e lint exit 0; build isolada `
 ### 2026-10-07 — Publicação autorizada dos controles Descobrir e Studio
 
 Anders autorizou publicar e push. Instalada build já validada `6_32NVLtusWBg1p8kSENn` via npm run deploy -- --from, exit 0; backup em `/root/.cache/gaucho-deploy/20261007T161559Z/next-before`. Serviço reiniciado; health local/público 200, agendadores ativos, asset público idêntico ao validado, configuração anônima 401. Sem dados pessoais, chamada paga ou mudança de proxy. Docs de estado conciliadas com a navegação restaurada. Push aguardando confirmação específica dos sete commits anteriores Descobrir ainda ausentes na main remota, conforme AGENTS §6; todos os demais passos de publicação concluídos. Detalhes no relatório da entrega.
+
+### 2026-10-10 — Descobrir IA sobreposto à esquerda e publicação autorizada
+
+Anders aprovou o plano e confirmou que o painel deve passar por cima, sem dividir espaço com o chat; autorizou deploy e restart. Código `a1e078c` na branch `codex/discover-sidebar-20261010`, worktree `/root/.cache/gaucho-discover-sidebar-20261010`. Feed compartilhado com a página independente, abertura pelo rail/paleta, rolagem pela altura, ampliação sem desmontagem, foco/Escape e retorno ao chat preservando rascunho e Pulse. DECISÃO: painel absoluto e rails invisíveis conservam a geometria; drawer compacto não reaparece ao fechar.
+
+Gates finais exit 0: 212 arquivos/1.084 testes, tsc, lint (warning antigo), build isolada 43/43 e QA lateral 6/6; página independente 7/7. Falhas intermediárias de geometria, foco e sincronização do teste foram corrigidas e registradas no relatório. Capturas finais inspecionadas, dados sintéticos, sem provider pago.
+
+Publicada build `6fdxaKpSv_W__7S18fxZa`, backup `/root/.cache/gaucho-deploy/20261010T183015Z/next-before`; serviço reiniciado, health local/público healthy 200, assets JS/CSS idênticos e agendadores retomados. Sem proxy, dados privados, merge ou push. Preservar worktree da build; pronta para revisão de Anders. Registro: `docs/plans/2026-10-10-descobrir-sidebar-report.md`.

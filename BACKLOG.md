@@ -2,6 +2,10 @@
 
 ## Estado operacional
 
+#### Descobrir IA na lateral esquerda (`pronta para revisão`, 2026-10-10)
+
+Plano aprovado em `docs/plans/2026-10-10-descobrir-sidebar.md`, com confirmação posterior de sobreposição: Descobrir abre à esquerda por cima do chat, sem dividir espaço, rola pela altura disponível e amplia para toda a área do aplicativo, mantendo conversa/rascunho, Pulse e leitura. Worktree `/root/.cache/gaucho-discover-sidebar-20261010`, branch `codex/discover-sidebar-20261010`, código `a1e078c`, base `9a177d9`. Validação: 212 arquivos/1.084 testes, tipos, lint e build isolada 43/43; browser final 6/6 cenários e página independente 7/7. APIs, dados privados, Studio e SoundCase preservados. Registro técnico em `docs/plans/2026-10-10-descobrir-sidebar-report.md`. Deploy e restart autorizados e concluídos: build `6fdxaKpSv_W__7S18fxZa`, backup `/root/.cache/gaucho-deploy/20261010T183015Z/next-before`, health local/público 200 healthy, JS/CSS públicos idênticos à build validada e agendadores retomados. Preservar worktree de origem. Merge e push não autorizados; aguarda revisão de Anders.
+
 #### Descobrir IA: agendamento, TTS e acesso ao Studio (`pronta para revisão`, 2026-10-07)
 
 Plano aprovado por Anders em `docs/plans/2026-10-07-descobrir-controles-tts-studio.md`; código em `8f154de`. Atualização automática a cada dois dias às 08h de São Paulo, interruptor persistente e previsão; pausa impede novos claims automáticos sem cancelar job já iniciado, manual preservado. Cada matéria abre TTS Grok/Orion sob demanda, sem Realtime; player único. Studio restaurado na navegação/rail/paleta, mantendo Descobrir e SoundCase.
