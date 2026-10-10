@@ -1,6 +1,6 @@
 # Arquitetura
 
-**Última atualização:** 2026-10-04
+**Última atualização:** 2026-10-10
 
 ## Visão Geral
 
@@ -38,6 +38,8 @@ QA isolado usa `GAUCHO_ISOLATED_RUNTIME=true`, dados sintéticos próprios e Stu
 O shell legado foi removido. Novas mudanças de UI devem seguir `workspace-v2`, tokens `--gc-*` em `app/globals.css` e os padrões atuais de componentes Radix/lucide.
 
 ## Descobrir IA
+
+No chat, rail e paleta abrem `DiscoverPanelV2` sobre a lateral esquerda, sem dividir espaço ou alterar a largura do chat/Pulse; conversas ficam ocultas atrás, mantendo seu espaço original. `useUIStore` mantém abertura e ampliação transitórias; o chat e o Pulse permanecem montados. `DiscoverFeed` compartilha a lógica da página com o painel, carregado sob demanda. O painel usa uma coluna e rolagem independente, com assuntos/automação recolhíveis. Ampliar altera apenas a geometria da mesma árvore para ocupar o aplicativo, preservando matéria, ponto de leitura e player; fechar desmonta o feed e interrompe áudio. Abaixo de 1024 px ou em paisagem curta com toque, a superfície já abre em tela cheia. Modal contém foco e torna os irmãos inertes; Escape fecha e devolve foco à navegação. A gaveta de conversas fecha ao abrir Descobrir por qualquer entrada; o atalho do rail compacto não aciona o callback que expande essa gaveta. `/discover`, os links fora do chat e Ctrl/Cmd+clique continuam disponíveis como página independente. Nenhum contrato de API ou persistência muda.
 
 `/discover` é uma página autenticada de leitura com contêiner vertical próprio, pois o shell global bloqueia a rolagem de `html`/`body`. `components/discover/DiscoverPage.tsx` mostra cards com capa, resumo e narrativa expandida; no desktop o card aberto ocupa o destaque superior e os demais seguem abaixo, enquanto no mobile a expansão permanece no lugar. Interesses são salvos por `PUT /api/discover/topics` e passam a influenciar a próxima curadoria. Descobrir IA e Studio convivem na navegação de produtos, rail e paleta; `/studio`, suas APIs e o workspace Python permanecem preservados.
 

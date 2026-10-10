@@ -5,7 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CommandPalette } from "@/components/command/CommandPalette";
 
-const mocks = vi.hoisted(() => ({ push: vi.fn(), setOpen: vi.fn() }));
+const mocks = vi.hoisted(() => ({ push: vi.fn(), setOpen: vi.fn(), openDiscoverPanel: vi.fn() }));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mocks.push }),
@@ -49,8 +49,8 @@ vi.mock("@/stores/settingsStore", () => ({
 }));
 
 vi.mock("@/stores/uiStore", () => ({
-  useUIStore: (selector: (state: { openContextPanel: () => void }) => unknown) =>
-    selector({ openContextPanel: vi.fn() }),
+  useUIStore: (selector: (state: { openContextPanel: () => void; openDiscoverPanel: () => void }) => unknown) =>
+    selector({ openContextPanel: vi.fn(), openDiscoverPanel: mocks.openDiscoverPanel }),
 }));
 
 let root: Root;
@@ -60,6 +60,7 @@ beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   mocks.push.mockReset();
   mocks.setOpen.mockReset();
+  mocks.openDiscoverPanel.mockReset();
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -71,6 +72,14 @@ afterEach(async () => {
 });
 
 describe("CommandPalette", () => {
+  it("abre Descobrir dentro do chat sem navegar", async () => {
+    await act(async () => root.render(<CommandPalette />));
+    const discover = Array.from(container.querySelectorAll("button")).find((button) => button.textContent?.includes("Descobrir IA"));
+    await act(async () => discover!.click());
+    expect(mocks.openDiscoverPanel).toHaveBeenCalledOnce();
+    expect(mocks.push).not.toHaveBeenCalled();
+    expect(mocks.setOpen).toHaveBeenCalledWith(false);
+  });
   it("restaura o atalho do Studio sem remover Descobrir IA ou SoundCase", async () => {
     await act(async () => root.render(<CommandPalette />));
 

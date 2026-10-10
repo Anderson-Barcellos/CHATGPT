@@ -225,6 +225,14 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
   const { activeConversationId, isStreaming, setActiveConversationId } = useChatStore();
   const isMobile = useIsMobile();
   const openSoundCasePanel = useUIStore((state) => state.openSoundCasePanel);
+  const openDiscoverPanel = useUIStore((state) => state.openDiscoverPanel);
+  const handleDiscoverClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    openDiscoverPanel();
+    // No rail compacto, onClose expande a lista de conversas; não é um fechamento.
+    if (!compact) onClose?.();
+  };
 
   // No mobile o SoundCase abre como painel lateral direito, dentro do shell do chat;
   // o href continua valendo para acesso direto, nova aba e long-press.
@@ -427,6 +435,7 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
         </Link>
         <Link
           href="/discover"
+          onClick={handleDiscoverClick}
           title="Abrir Descobrir IA"
           className={cn(
             "flex size-8 shrink-0 items-center justify-center",
@@ -619,7 +628,7 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
           asChild
           className={cn("h-9 w-full justify-start px-2 text-xs", RAIL_CONTROL_BUTTON_CLASS)}
         >
-          <Link href="/discover">
+          <Link href="/discover" onClick={handleDiscoverClick}>
             <Newspaper className="mr-2 size-4" />
             Descobrir IA
           </Link>

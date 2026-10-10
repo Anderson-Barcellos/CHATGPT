@@ -6,6 +6,7 @@ import { ArrowLeft, ChevronDown, Newspaper, Plus, RefreshCw, Sparkles, Volume2, 
 import { ChatMarkdown } from "@/components/chat/ChatMarkdown";
 import { MiniAudioPlayer } from "@/components/chat/MiniAudioPlayer";
 import { ProductNav } from "@/components/navigation/ProductNav";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { apiUrl } from "@/lib/utils";
 import type { DiscoverState } from "@/lib/discover/types";
 import { MOBILE_MEDIA_QUERY } from "@/lib/layout/breakpoints";
@@ -23,6 +24,10 @@ interface ScheduleUpdateResponse {
 
 interface DiscoverRefreshResponse {
   status?: "started" | "running" | "completed" | "failed";
+}
+
+interface DiscoverFeedProps {
+  embedded?: boolean;
 }
 
 async function responseJson<T>(response: Response): Promise<T> {
@@ -47,7 +52,7 @@ function formatScheduledAt(value: string | null | undefined): string {
   }).format(date);
 }
 
-export function DiscoverPage() {
+export function DiscoverFeed({ embedded = false }: DiscoverFeedProps) {
   const [state, setState] = useState<ViewState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -179,7 +184,7 @@ export function DiscoverPage() {
   const toggleArticle = (id: string, open: boolean) => {
     const next = open ? null : id;
     setExpanded(next);
-    if (!next || window.matchMedia(MOBILE_MEDIA_QUERY).matches) return;
+    if (!next || embedded || window.matchMedia(MOBILE_MEDIA_QUERY).matches) return;
     window.requestAnimationFrame(() => {
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       articleRefs.current.get(id)?.scrollIntoView({
@@ -189,20 +194,59 @@ export function DiscoverPage() {
     });
   };
 
+  const automaticSchedule = (
+    <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3" aria-label="Atualização automática">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold">Atualização automática <span className={scheduleEnabled === undefined ? "text-muted-foreground" : scheduleEnabled ? "text-primary" : "text-muted-foreground"}>{scheduleEnabled === undefined ? "Carregando…" : scheduleEnabled ? "Ativa" : "Pausada"}</span></p>
+        <p className="mt-0.5 text-xs text-muted-foreground">{scheduleEnabled === undefined ? "Carregando a preferência de atualização automática…" : <>A cada dois dias, às 08h (São Paulo) · {scheduleEnabled ? `Próxima previsão: ${formatScheduledAt(state?.nextScheduledAt)}` : "Pausada até tu reativar."}</>}</p>
+        {savingSchedule && <p className="mt-1 text-xs font-medium text-primary" aria-live="polite">Salvando preferência…</p>}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-label="Atualização automática"
+        aria-checked={Boolean(scheduleEnabled)}
+        disabled={savingSchedule || loading || !state}
+        onClick={() => void saveSchedule(!scheduleEnabled)}
+        className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:cursor-wait disabled:opacity-60 ${scheduleEnabled ? "bg-primary" : "bg-muted"}`}
+      >
+        <span className={`size-5 rounded-full bg-background shadow-sm transition-transform ${scheduleEnabled ? "translate-x-6" : "translate-x-1"}`} />
+        <span className="sr-only">{savingSchedule ? "Salvando atualização automática" : scheduleEnabled ? "Pausar atualização automática" : "Ativar atualização automática"}</span>
+      </button>
+    </section>
+  );
+
+  const topicPreferences = (
+    <div className="rounded-2xl border border-border bg-card p-5">
+      <h2 className="text-lg font-semibold">Teus assuntos</h2>
+      <p className="mt-1 text-sm text-muted-foreground">Eles ganham prioridade na próxima curadoria. IA geral continua no feed.</p>
+      <div className="mt-4 flex flex-wrap gap-2">{state?.topics.map((topic) => <button key={topic} type="button" disabled={saving} onClick={() => void saveTopics(state.topics.filter((item) => item !== topic))} title={`Remover ${topic}`} className="inline-flex min-h-9 items-center gap-1 rounded-full bg-primary/10 px-3 text-xs text-primary hover:bg-primary/20">{topic}<X className="size-3" /></button>)}</div>
+      <form className="mt-4 flex gap-2" onSubmit={(event) => { event.preventDefault(); if (state && draft.trim()) void saveTopics([...state.topics, draft]); }}>
+        <input value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={60} placeholder="Outro assunto" aria-label="Novo assunto" className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-sm" />
+        <button type="submit" disabled={saving || !draft.trim()} aria-label="Adicionar assunto" className="min-h-10 min-w-10 rounded-lg bg-primary text-primary-foreground disabled:opacity-50"><Plus className="mx-auto size-4" /></button>
+      </form>
+      <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sugestões</p>
+      <div className="mt-2 flex flex-wrap gap-2">{state?.suggestedTopics.filter((topic) => !state.topics.includes(topic)).map((topic) => <button key={topic} type="button" disabled={saving} onClick={() => void saveTopics([...state.topics, topic])} className="min-h-9 rounded-full border border-border px-3 text-xs hover:bg-accent">+ {topic}</button>)}</div>
+    </div>
+  );
+
   return (
-    <div data-discover-scroll-root className="gc-chat-ui h-dvh touch-pan-y overflow-x-hidden overflow-y-auto overscroll-y-contain bg-background text-foreground">
-      <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
+    <div
+      data-discover-scroll-root
+      className={`gc-chat-ui touch-pan-y overflow-x-hidden overflow-y-auto overscroll-y-contain bg-background text-foreground ${embedded ? "flex min-h-0 flex-1 flex-col" : "h-dvh"}`}
+    >
+      {!embedded && <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 md:px-6">
           <Link href="/" aria-label="Voltar ao Chat" className="rounded-lg p-2 hover:bg-accent"><ArrowLeft className="size-5" /></Link>
           <div className="mr-auto flex min-w-0 items-center gap-2 font-semibold"><Newspaper className="size-5 shrink-0 text-primary" /> <span className="truncate">Descobrir IA</span></div>
           <ProductNav active="discover" compact className="ml-auto max-[430px]:w-full max-[430px]:justify-center" />
         </div>
-      </header>
-      <main className="mx-auto grid max-w-6xl gap-8 px-4 py-8 md:grid-cols-[minmax(0,1fr)_17rem] md:px-6">
+      </header>}
+      <main className={embedded ? "mx-auto w-full max-w-3xl px-4 py-5 sm:px-5" : "mx-auto grid max-w-6xl gap-8 px-4 py-8 md:grid-cols-[minmax(0,1fr)_17rem] md:px-6"}>
         <section className="min-w-0">
-          <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+          <div className={`${embedded ? "mb-5" : "mb-7"} flex flex-wrap items-end justify-between gap-4`}>
             <div><p className="text-xs font-semibold uppercase tracking-widest text-primary">Curadoria para Anders</p>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">O que está acontecendo em IA</h1>
+              <h1 className={`mt-1 font-semibold tracking-tight ${embedded ? "text-2xl" : "text-3xl md:text-4xl"}`}>O que está acontecendo em IA</h1>
               <p className="mt-2 text-sm text-muted-foreground">Novidades com contexto, leitura leve e fontes para ir além.</p>
             </div>
             <button type="button" onClick={() => void refresh()} disabled={busy || loading || refreshing}
@@ -210,35 +254,32 @@ export function DiscoverPage() {
               <RefreshCw className={`size-4 ${busy || refreshing ? "animate-spin" : ""}`} />{busy || refreshing ? "Atualizando…" : "Buscar novidades"}
             </button>
           </div>
-          <section className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3" aria-label="Atualização automática">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold">Atualização automática <span className={scheduleEnabled === undefined ? "text-muted-foreground" : scheduleEnabled ? "text-primary" : "text-muted-foreground"}>{scheduleEnabled === undefined ? "Carregando…" : scheduleEnabled ? "Ativa" : "Pausada"}</span></p>
-              <p className="mt-0.5 text-xs text-muted-foreground">{scheduleEnabled === undefined ? "Carregando a preferência de atualização automática…" : <>A cada dois dias, às 08h (São Paulo) · {scheduleEnabled ? `Próxima previsão: ${formatScheduledAt(state?.nextScheduledAt)}` : "Pausada até tu reativar."}</>}</p>
-              {savingSchedule && <p className="mt-1 text-xs font-medium text-primary" aria-live="polite">Salvando preferência…</p>}
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-label="Atualização automática"
-              aria-checked={Boolean(scheduleEnabled)}
-              disabled={savingSchedule || loading || !state}
-              onClick={() => void saveSchedule(!scheduleEnabled)}
-              className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:cursor-wait disabled:opacity-60 ${scheduleEnabled ? "bg-primary" : "bg-muted"}`}
-            >
-              <span className={`size-5 rounded-full bg-background shadow-sm transition-transform ${scheduleEnabled ? "translate-x-6" : "translate-x-1"}`} />
-              <span className="sr-only">{savingSchedule ? "Salvando atualização automática" : scheduleEnabled ? "Pausar atualização automática" : "Ativar atualização automática"}</span>
-            </button>
-          </section>
+          {embedded ? (
+            <Collapsible className="group mb-5 rounded-2xl border border-border bg-card" defaultOpen={false}>
+              <CollapsibleTrigger asChild>
+                <button type="button" className="flex min-h-11 w-full items-center justify-between gap-3 px-4 text-left text-sm font-semibold hover:bg-accent/60">
+                  Preferências do feed
+                  <ChevronDown className="size-4 transition-transform group-data-[state=open]:rotate-180" />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="border-t border-border px-4 py-4">
+                <div className="space-y-4">
+                  {automaticSchedule}
+                  {topicPreferences}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          ) : <div className="mb-5">{automaticSchedule}</div>}
           {error && <p role="alert" className="mb-4 rounded-xl border border-destructive/40 p-3 text-sm text-destructive">{error}</p>}
           {state?.job.status === "failed" && <p role="status" className="mb-4 rounded-xl border border-amber-500/40 p-3 text-sm">A última atualização falhou: {state.job.error}. As matérias anteriores seguem disponíveis.</p>}
           {loading && !state && <p role="status" className="py-16 text-center text-muted-foreground">Carregando notícias…</p>}
           {!loading && state?.articles.length === 0 && <div className="rounded-2xl border border-dashed border-border p-10 text-center"><Sparkles className="mx-auto mb-3 size-7 text-primary" /><p className="font-medium">O feed ainda está vazio.</p><p className="mt-1 text-sm text-muted-foreground">Busca as primeiras novidades para começar.</p></div>}
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className={`grid gap-5 ${embedded ? "" : "md:grid-cols-2"}`}>
             {state?.articles.map((article) => {
               const open = expanded === article.id;
               return <article key={article.id} ref={(node) => { if (node) articleRefs.current.set(article.id, node); else articleRefs.current.delete(article.id); }}
                 data-discover-article={article.id}
-                className={`min-w-0 scroll-mt-20 overflow-hidden rounded-2xl border border-border bg-card shadow-sm ${open ? "md:order-first md:col-span-2" : ""}`}>
+                className={`min-w-0 scroll-mt-20 overflow-hidden rounded-2xl border border-border bg-card shadow-sm ${open && !embedded ? "md:order-first md:col-span-2" : ""}`}>
                 {article.image ? (
                   // A capa privada requer cookie e vem da rota autenticada do app.
                   // eslint-disable-next-line @next/next/no-img-element
@@ -274,20 +315,14 @@ export function DiscoverPage() {
             })}
           </div>
         </section>
-        <aside className="min-w-0 md:pt-24">
-          <div className="rounded-2xl border border-border bg-card p-5 md:sticky md:top-24">
-            <h2 className="text-lg font-semibold">Teus assuntos</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Eles ganham prioridade na próxima curadoria. IA geral continua no feed.</p>
-            <div className="mt-4 flex flex-wrap gap-2">{state?.topics.map((topic) => <button key={topic} type="button" disabled={saving} onClick={() => void saveTopics(state.topics.filter((item) => item !== topic))} title={`Remover ${topic}`} className="inline-flex min-h-9 items-center gap-1 rounded-full bg-primary/10 px-3 text-xs text-primary hover:bg-primary/20">{topic}<X className="size-3" /></button>)}</div>
-            <form className="mt-4 flex gap-2" onSubmit={(event) => { event.preventDefault(); if (state && draft.trim()) void saveTopics([...state.topics, draft]); }}>
-              <input value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={60} placeholder="Outro assunto" aria-label="Novo assunto" className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-sm" />
-              <button type="submit" disabled={saving || !draft.trim()} aria-label="Adicionar assunto" className="min-h-10 min-w-10 rounded-lg bg-primary text-primary-foreground disabled:opacity-50"><Plus className="mx-auto size-4" /></button>
-            </form>
-            <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sugestões</p>
-            <div className="mt-2 flex flex-wrap gap-2">{state?.suggestedTopics.filter((topic) => !state.topics.includes(topic)).map((topic) => <button key={topic} type="button" disabled={saving} onClick={() => void saveTopics([...state.topics, topic])} className="min-h-9 rounded-full border border-border px-3 text-xs hover:bg-accent">+ {topic}</button>)}</div>
-          </div>
-        </aside>
+        {!embedded && <aside className="min-w-0 md:pt-24">
+          <div className="md:sticky md:top-24">{topicPreferences}</div>
+        </aside>}
       </main>
     </div>
   );
+}
+
+export function DiscoverPage() {
+  return <DiscoverFeed />;
 }

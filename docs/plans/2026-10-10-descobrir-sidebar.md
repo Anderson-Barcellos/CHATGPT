@@ -3,6 +3,9 @@
 ## Entrevista e aprovação
 Anders confirmou: alternar com conversas, altura toda e ampliável, ampliação em tela cheia. Em 2026-10-10 autorizou: “Implement the proposed plan.”
 
+### 1.1 Atualização de autorização
+Durante a implementação, Anders autorizou: “Depois pode dar o deploy e reiniciar que eu checo meu velho!”. Publicação da build validada e restart de `chatgpt.service` estão autorizados, com health local/público e conferência de assets. Isso prevalece sobre a exclusão de deploy/restart abaixo; merge e push continuam sem autorização. Sobre o encaixe, confirmou: “Painel rola sobre e não divide espaço! Semelhante a imagem da janela de mensagens”. Portanto a lateral é sobreposta, mantendo largura e posição do chat/Pulse; conversas ficam ocultas atrás, preservando seu espaço no layout. Ampliar continua ocupando toda a área do aplicativo. Essa decisão prevalece sobre a divisão de espaço inicialmente proposta.
+
 Objetivo: abrir notícias no lugar das conversas sem sair do chat; ampliar para toda a área do aplicativo e retornar preservando leitura, conversa e rascunho.
 
 Fica fora: curadoria, modelos, dados persistidos, frequência, Studio, SoundCase, deploy, restart e push.

@@ -3,7 +3,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DiscoverPage } from "./DiscoverPage";
+import { DiscoverFeed, DiscoverPage } from "./DiscoverPage";
 
 vi.mock("@/components/chat/ChatMarkdown", () => ({ ChatMarkdown: ({ content }: { content: string }) => <div>{content}</div> }));
 vi.mock("@/components/navigation/ProductNav", () => ({ ProductNav: () => <nav>Produtos</nav> }));
@@ -39,9 +39,9 @@ let reducedMotion = false;
 let animationFrames: FrameRequestCallback[];
 const scrollIntoView = vi.fn();
 
-async function renderPage(): Promise<void> {
+async function renderPage(element = <DiscoverPage />): Promise<void> {
   await act(async () => {
-    root.render(<DiscoverPage />);
+    root.render(element);
     await new Promise((resolve) => setTimeout(resolve, 0));
   });
 }
@@ -96,6 +96,30 @@ describe("Descobrir IA", () => {
     expect(schedule?.getAttribute("aria-checked")).toBe("true");
     expect(container.textContent).toContain("A cada dois dias, às 08h (São Paulo)");
     expect(container.textContent).toContain("Próxima previsão:");
+  });
+
+  it("mantém loading, vazio e erro também na moldura incorporada", async () => {
+    let resolveFeed: ((response: Response) => void) | undefined;
+    const pendingFeed = new Promise<Response>((resolve) => { resolveFeed = resolve; });
+    vi.stubGlobal("fetch", vi.fn(() => pendingFeed));
+
+    await act(async () => { root.render(<DiscoverFeed embedded />); });
+    expect(container.querySelector('[role="status"]')?.textContent).toContain("Carregando notícias");
+
+    await act(async () => {
+      resolveFeed!(new Response(JSON.stringify({
+        topics: [], articles: [], job: { status: "idle" }, suggestedTopics: [],
+        schedule: { enabled: true }, nextScheduledAt: null,
+      }), { status: 200, headers: { "Content-Type": "application/json" } }));
+      await Promise.resolve();
+    });
+    expect(container.textContent).toContain("O feed ainda está vazio.");
+
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ message: "Falha sintética." }), {
+      status: 500, headers: { "Content-Type": "application/json" },
+    })));
+    await renderPage(<DiscoverFeed embedded key="erro" />);
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("Falha sintética.");
   });
 
   it("impede uma leitura iniciada durante o PUT de reativar a agenda pausada", async () => {
@@ -273,6 +297,49 @@ describe("Descobrir IA", () => {
     await clickRead("segunda");
     expect(article("segunda").className).not.toContain("md:order-first");
     expect(scrollIntoView).toHaveBeenCalledTimes(1);
+  });
+
+  it("incorpora o feed em uma coluna sem cabeçalho de produto, reordenação ou rolagem forçada", async () => {
+    await renderPage(<DiscoverFeed embedded />);
+
+    const scrollRoot = container.querySelector("[data-discover-scroll-root]")!;
+    expect(scrollRoot.className).toContain("flex-1");
+    expect(scrollRoot.className).toContain("min-h-0");
+    expect(scrollRoot.className).not.toContain("h-dvh");
+    expect(container.querySelector("header")).toBeNull();
+    expect(container.querySelector("nav")).toBeNull();
+    expect(container.querySelector("main")?.className).toContain("max-w-3xl");
+    expect(container.querySelector("main")?.className).not.toContain("md:grid-cols");
+
+    const preferences = Array.from(container.querySelectorAll("button")).find((candidate) =>
+      candidate.textContent?.includes("Preferências do feed")
+    )!;
+    expect(preferences.getAttribute("aria-expanded")).toBe("false");
+    expect(container.querySelector('[role="switch"]')).toBeNull();
+
+    await act(async () => preferences.click());
+    expect(preferences.getAttribute("aria-expanded")).toBe("true");
+    expect(container.querySelector('[role="switch"]')?.getAttribute("aria-checked")).toBe("true");
+
+    await clickRead("segunda");
+    expect(article("segunda").className).not.toContain("md:order-first");
+    expect(article("segunda").className).not.toContain("md:col-span-2");
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it("preserva a leitura e o player em um rerender do painel incorporado", async () => {
+    await renderPage(<DiscoverFeed embedded />);
+    await clickRead("primeira");
+
+    const firstAudio = Array.from(article("primeira").querySelectorAll("button")).find((candidate) =>
+      candidate.textContent?.includes("Ouvir matéria")
+    )!;
+    await act(async () => firstAudio.click());
+
+    await renderPage(<DiscoverFeed embedded />);
+
+    expect(article("primeira").textContent).toContain("Conteúdo 1");
+    expect(container.querySelector("[data-mini-audio-player]")?.getAttribute("data-message-id")).toBe("discover-primeira");
   });
 
   it("usa movimento imediato quando a preferência reduz animações", async () => {

@@ -7,6 +7,7 @@ import {
   type Ref,
   type ReactNode,
   useCallback,
+  useEffect,
   useState,
 } from "react";
 import {
@@ -65,6 +66,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { useVisualViewport } from "@/hooks/useVisualViewport";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/uiStore";
+import { DiscoverPanelV2 } from "@/components/workspace-v2/DiscoverPanelV2";
 import type { FileAttachment, ResponseMode } from "@/types";
 
 const RESPONSE_MODE_LABELS: Record<ResponseMode, string> = {
@@ -227,6 +229,7 @@ export function WorkspaceFrameV2({
 }: WorkspaceFrameV2Props) {
   const { setOpen: openCommandPalette } = useCommandPaletteContext();
   const openContextPanel = useUIStore((state) => state.openContextPanel);
+  const discoverOpen = useUIStore((state) => state.discoverPanelOpen);
   const isMobile = useIsMobile();
   useVisualViewport(isMobile);
   const [internalSidebarOpen, setInternalSidebarOpen] = useState(false);
@@ -237,6 +240,9 @@ export function WorkspaceFrameV2({
   const [contextExpanded, setContextExpanded] = useState(false);
   const contextOpen = mobileContextOpen ?? internalContextOpen;
   const setContextOpen = onMobileContextOpenChange ?? setInternalContextOpen;
+  useEffect(() => useUIStore.subscribe((state, previous) => {
+    if (state.discoverPanelOpen && !previous.discoverPanelOpen) setSidebarOpen(false);
+  }), [setSidebarOpen]);
   const handleFocusComposer = useCallback(() => {
     const composerInput = document.querySelector<HTMLTextAreaElement>("textarea");
     const composerShell = composerInput?.closest("footer");
@@ -258,10 +264,11 @@ export function WorkspaceFrameV2({
         className="gc-subtle-grid pointer-events-none absolute inset-0 opacity-35"
       />
       <div className="relative z-10 flex h-full flex-col p-[var(--gc-shell-gutter)]">
-        <div className="gc-clinical-shell gc-safe-x flex min-h-0 flex-1 overflow-hidden border border-[color:var(--gc-border-soft)] backdrop-blur-xl md:rounded-[1.65rem]">
+        <div className="gc-clinical-shell gc-safe-x relative flex min-h-0 flex-1 overflow-hidden border border-[color:var(--gc-border-soft)] backdrop-blur-xl md:rounded-[1.65rem]">
+          {discoverOpen && <DiscoverPanelV2 />}
           <aside
             data-workspace-region="sidebar"
-            className="gc-clinical-rail hidden min-h-0 w-[var(--gc-shell-rail-width)] shrink-0 overflow-hidden border-r border-[color:var(--gc-border)] lg:block"
+            className={cn("gc-clinical-rail hidden min-h-0 w-[var(--gc-shell-rail-width)] shrink-0 overflow-hidden border-r border-[color:var(--gc-border)] lg:block", discoverOpen && "invisible")}
           >
             <FadeIn duration={0.24} className="h-full">
               {sidebar}
@@ -271,7 +278,7 @@ export function WorkspaceFrameV2({
           {tabletSidebar && (
             <aside
               data-workspace-region="tablet-rail"
-              className="gc-clinical-rail hidden min-h-0 w-12 shrink-0 overflow-hidden border-r border-[color:var(--gc-border)] md:block lg:hidden"
+              className={cn("gc-clinical-rail hidden min-h-0 w-12 shrink-0 overflow-hidden border-r border-[color:var(--gc-border)] md:block lg:hidden", discoverOpen && "invisible")}
             >
               <FadeIn duration={0.24} className="h-full">
                 {tabletSidebar}
@@ -326,6 +333,7 @@ export function WorkspaceFrameV2({
 
                 <button
                   type="button"
+                  aria-label="Buscar conversas, notas e rotinas"
                   onClick={() => openCommandPalette(true)}
                   className="gc-clinical-input-surface mx-3 hidden h-8 min-w-[13rem] max-w-[24rem] flex-1 items-center gap-2 rounded-xl border border-[color:var(--gc-border-soft)] px-3 text-left text-[11px] text-muted-foreground transition-colors hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:flex"
                 >
@@ -494,8 +502,9 @@ export function WorkspaceFrameV2({
         </div>
       </div>
 
-      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+      <Sheet open={sidebarOpen && !discoverOpen} onOpenChange={setSidebarOpen}>
         <SheetContent
+          onCloseAutoFocus={(event) => { if (discoverOpen) event.preventDefault(); }}
           side="left"
           showCloseButton={false}
           className="gc-chat-ui gc-clinical-rail w-[92vw] max-w-[20rem] gap-0 border-[color:var(--gc-border)] p-0 gc-safe-top gc-safe-left"
