@@ -1666,3 +1666,7 @@ Anders aprovou o plano e confirmou que o painel deve passar por cima, sem dividi
 Gates finais exit 0: 212 arquivos/1.084 testes, tsc, lint (warning antigo), build isolada 43/43 e QA lateral 6/6; página independente 7/7. Falhas intermediárias de geometria, foco e sincronização do teste foram corrigidas e registradas no relatório. Capturas finais inspecionadas, dados sintéticos, sem provider pago.
 
 Publicada build `6fdxaKpSv_W__7S18fxZa`, backup `/root/.cache/gaucho-deploy/20261010T183015Z/next-before`; serviço reiniciado, health local/público healthy 200, assets JS/CSS idênticos e agendadores retomados. Sem proxy, dados privados, merge ou push. Preservar worktree da build; pronta para revisão de Anders. Registro: `docs/plans/2026-10-10-descobrir-sidebar-report.md`.
+
+### 2026-10-10 — Aceite e fechamento da lateral Descobrir
+
+Anders aprovou o resultado (“Show de bola! Fechadinho meu velho!”) e autorizou commit e push para atualizar a main. Fetch exit 0 e divergência inicial `0/0` em `9a177d9`; nenhuma entrega anterior pendente no push. Fechamento documental e integração dos três commits da lateral por fast-forward, seguidos de push normal e conferência da divergência. Build publicada preservada, sem rebuild/restart. Estado canônico atualizado para fechada; evidência Git em `/root/.cache/gaucho-discover-sidebar-evidence/git-closeout.log`.

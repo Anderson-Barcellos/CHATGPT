@@ -302,6 +302,6 @@ Antes de alocar portas novas, consulte `/etc/apache2/APACHE.md` e use:
 
 ## Publicação de 2026-10-10 — Descobrir sobreposto
 
-Com autorização explícita de Anders, `npm run deploy -- --from /root/.cache/gaucho-discover-sidebar-20261010` publicou a build validada `6fdxaKpSv_W__7S18fxZa` (código `a1e078c`, branch `codex/discover-sidebar-20261010`). Preservar essa worktree: a build referencia a origem. Backup em `/root/.cache/gaucho-deploy/20261010T183015Z/next-before`. Main fonte não recebeu merge; push pendente de autorização.
+Com autorização explícita de Anders, `npm run deploy -- --from /root/.cache/gaucho-discover-sidebar-20261010` publicou a build validada `6fdxaKpSv_W__7S18fxZa` (código `a1e078c`, branch `codex/discover-sidebar-20261010`). Preservar essa worktree: a build referencia a origem. Backup em `/root/.cache/gaucho-deploy/20261010T183015Z/next-before`. Na publicação, main fonte ainda não havia recebido a entrega. Anders posteriormente aceitou e fechou a entrega, autorizando integração e push na main, sem nova alteração do runtime.
 
 `chatgpt.service` reiniciado; health local/público HTTP 200 `healthy`; JavaScript e CSS públicos conferidos por SHA-256. Discover/Pulse/SoundCase timers e path SoundCase retomados. Porta 3040, proxy `/chat`, cookies e vhost preservados, sem reload Apache. Registro completo em `docs/plans/2026-10-10-descobrir-sidebar-report.md`.

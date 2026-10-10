@@ -1,6 +1,6 @@
 # Descobrir IA na lateral esquerda — registro técnico
 
-Data: 2026-10-10. Estado: pronta para revisão, publicada com restart autorizado.
+Data: 2026-10-10. Estado: fechada por Anders, publicada com restart autorizado.
 
 ## Resultado e escopo
 
@@ -60,3 +60,7 @@ Anders autorizou explicitamente deploy e restart após validação. Código regi
 Agendadores Discover/Pulse/SoundCase e path SoundCase foram pausados durante a troca; workers estavam inativos e não havia unidade Studio ativa. Todos os quatro acionadores retomaram seu estado ativo. `chatgpt.service` reiniciado via systemd: MainPID `1408412`, processo Next `1408428`, active/running. Health local `http://127.0.0.1:3040/chat/api/health` e público `https://ultrassom.ai/chat/api/health`: HTTP 200 e `healthy`, basePath `/chat`. API Discover anônima: 401. Nenhuma alteração de proxy, cookies ou portas; Apache não precisou de reload/configtest.
 
 Assets públicos comparados por SHA-256 com a build validada: `0rmxsdwhg2p_o.js` e `2mq_d5osd0u6j.css`, ambos idênticos. Evidências `deploy.log`, `deploy-exit.json`, `deploy-schedulers.json`, `deploy-schedulers-restored.json` e `publication-checks.json`. Publicação registrada também em `/etc/apache2/APACHE.md` e `docs/INFRASTRUCTURE.md`. Fluxo autenticado foi validado em runtime isolado com fixtures; inspeção da sessão real fica com Anders, sem leitura de suas credenciais ou notícias privadas. Entrega aguarda revisão/fechamento de Anders.
+
+### Aceite e sincronização Git
+
+Em seguida, Anders confirmou “Show de bola! Fechadinho meu velho!” e autorizou commit e push para manter a main em dia. Essa autorização supera os limites de integração/push registrados na etapa de publicação acima. `git fetch origin` terminou com exit 0; `git rev-list --left-right --count origin/main...main` retornou `0 0`, ambas em `9a177d9`. Worktrees limpas. Somente os três commits da entrega (`9d1e9a2`, `a1e078c`, `7d1e5e9`) e o registro de fechamento entram na sincronização, por fast-forward e push normal, sem force-push. Verificação documental: `git diff --check`, exit 0. Nenhum código mudou após a validação publicada; não se repetem build, testes de aplicação ou restart para este fechamento documental. Evidência final de integração/push em `/root/.cache/gaucho-discover-sidebar-evidence/git-closeout.log`.
