@@ -286,7 +286,7 @@ O TTS padrão do Chat/Pulse usa `/api/tts/xai` com voz Orion e MP3 24 kHz/128 kb
 - Texto é sanitizado e dividido em chunks em `lib/tts/speechText.ts`.
 - `hooks/useAssistantTts.ts` faz cache em memória, fila turbo e controle de playback.
 - Cada trecho é gerado com as mesmas configurações MP3; o hook preserva a ordem na reprodução. Para baixar o áudio completo, envia os trechos já gerados a `/api/tts/xai/merge`, que usa `ffmpeg` para remuxar um único `.mp3` decodificável sem nova geração paga. Um trecho único é baixado diretamente. `ttsPreferences.mode` e `speed` afetam o TTS xAI; os campos legados `voice`, `format` e `instructions` permanecem persistidos para compatibilidade e não são enviados à xAI.
-- `/api/realtime/grok-session` emite token efêmero autenticado para `grok-voice-latest`; o browser conecta por WebSocket à xAI, envia o texto sanitizado em turnos de até 3.200 caracteres e reproduz PCM com a voz Orion. Chat e Pulse expõem um único alto-falante que abre `MiniAudioPlayer`; dentro dele, o usuário alterna entre TTS Orion e Grok Realtime. `/api/realtime/tts-call` permanece como rota legada OpenAI, fora do player.
+- `/api/realtime/grok-session` emite token efêmero autenticado para `grok-voice-latest`; o browser conecta por WebSocket à xAI, envia o texto sanitizado em turnos de até 3.200 caracteres e reproduz PCM com a voz Orion. Chat e Pulse expõem um único alto-falante que abre `MiniAudioPlayer`; dentro dele, o usuário alterna entre **Grok TTS · Orion** e Grok Realtime. `/api/realtime/tts-call` permanece como rota legada OpenAI, fora do player.
 
 ## Modelos
 

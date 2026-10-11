@@ -51,7 +51,8 @@ describe("MiniAudioPlayer", () => {
     );
 
     expect(markup).toContain('data-audio-engine="standard"');
-    expect(markup).toContain('aria-label="Escolher TTS Orion"');
+    expect(markup).toContain('aria-label="Escolher Grok TTS com voz Orion"');
+    expect(markup).toContain("Grok TTS · Orion");
     expect(markup).toContain('aria-pressed="true"');
     expect(markup).toContain("Grok Realtime");
     expect(markup).toContain('aria-label="Tocar"');
@@ -70,7 +71,7 @@ describe("MiniAudioPlayer", () => {
       />
     );
 
-    expect(markup).toContain("TTS Orion");
+    expect(markup).toContain("Grok TTS · Orion");
     expect(markup).not.toContain("Grok Realtime");
     expect(realtimeTts.start).not.toHaveBeenCalled();
   });

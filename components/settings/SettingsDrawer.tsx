@@ -654,9 +654,9 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                       </h3>
                       <div className="gc-refined-panel space-y-4 rounded-[1.35rem] border p-[var(--gc-mobile-settings-card-pad)]">
                         <p className="text-micro leading-relaxed text-muted-foreground">
-                          Chat e Pulse usam Orion no TTS MP3 e no Grok Realtime.
-                          O modo e a velocidade abaixo afetam o TTS MP3; o
-                          Realtime segue sua própria cadência.
+                          Chat e Pulse usam Grok TTS com voz Orion no MP3 e
+                          Orion no Grok Realtime. O modo e a velocidade abaixo
+                          afetam o TTS MP3; o Realtime segue sua própria cadência.
                         </p>
                         <label className="flex flex-col gap-1 text-xs">
                           <span className="text-muted-foreground">

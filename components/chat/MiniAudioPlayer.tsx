@@ -134,17 +134,17 @@ export function MiniAudioPlayer({
           >
             <button
               type="button"
-              aria-label="Escolher TTS Orion"
+              aria-label="Escolher Grok TTS com voz Orion"
               aria-pressed={isStandard}
               onClick={() => selectEngine("standard")}
               className={cn(
-                "h-6 rounded-md px-2 transition-colors",
+                "h-6 whitespace-nowrap rounded-md px-1.5 transition-colors",
                 isStandard
                   ? "bg-background font-medium text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              TTS Orion
+              Grok TTS · Orion
             </button>
             <button
               type="button"
@@ -152,7 +152,7 @@ export function MiniAudioPlayer({
               aria-pressed={!isStandard}
               onClick={() => selectEngine("realtime")}
               className={cn(
-                "h-6 rounded-md px-2 transition-colors",
+                "h-6 whitespace-nowrap rounded-md px-1.5 transition-colors",
                 !isStandard
                   ? "bg-background font-medium text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -162,7 +162,9 @@ export function MiniAudioPlayer({
             </button>
           </div>
         ) : (
-          <span className="text-micro font-medium text-foreground">TTS Orion</span>
+          <span className="text-micro font-medium text-foreground">
+            Grok TTS · Orion
+          </span>
         )}
 
         <PlayerButton title="Fechar player de áudio" onClick={close}>
