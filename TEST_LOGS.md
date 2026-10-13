@@ -236,3 +236,48 @@ Primeira execução (RED) do conjunto (settingsStore, persistência, Studio, Sou
 | Whitespace | `git diff --check` | exit 0 |
 
 QA Playwright (`next dev` isolado na 3041, `AUTH_ENABLED=false`, iPhone 15 Pro Max emulado): com `navigator.standalone = true` (dark/light) → `data-standalone` presente, gap `193px` (tela 932 − viewport 739 do emulador), sem `--gc-visual-viewport-height` em repouso, frame 739 = innerHeight, dock 2.76px (safe area 0 no Chromium); aba normal sem atributo nem mudança; zero `pageerror` e overflow. A safe area real e o ciclo do teclado só se validam no iPhone. `.next/dev` (793 MB) do dev server removido da build isolada antes do deploy.
+
+## 2026-10-12 — Descobrir IA com a largura do painel operacional (Claude)
+
+Teste novo em `app/globals.visual.test.ts`: "gives Descobrir the same token-driven width as the right context panel" (Descobrir usa `--gc-shell-context-width`, salto 2xl vira token em `@media (min-width: 96rem)`, um só `:root` com tokens `--gc-shell-*`, sem `2xl:w-[` no `WorkspaceLayoutV2.tsx`, sem regra CSS duplicando a largura do painel recolhido).
+
+Primeira execução (RED), `npx vitest run app/globals.visual.test.ts`:
+
+```
+ × gives Descobrir the same token-driven width as the right context panel
+   AssertionError: expected '…width: 360px;\n  max-width: 32%;…' to contain 'width: var(--gc-shell-context-width);'
+ Test Files  1 failed (1)
+      Tests  1 failed | 15 passed (16)
+```
+
+Após implementação (GREEN), `npx vitest run app/globals.visual.test.ts components/workspace-v2`:
+
+```
+ Test Files  8 passed (8)
+      Tests  34 passed (34)
+```
+
+Gates completos em cópia isolada `/root/.cache/chat-discover-width-20261012` (sem `.env*`, `.git` e `data`):
+
+```
+npm test           → 212 files, 1086 passed
+npx tsc --noEmit   → exit 0
+npm run lint       → 0 errors, 1 warning pré-existente (CommandComposerContainerV2.test.tsx, não tocado)
+npm run build      → exit 0 (NEXT_PUBLIC_BASE_PATH=/chat)
+```
+
+Teste novo em `app/globals.visual.test.ts`: "lets the mobile panel density win over the desktop Atmosphere panel spacing" (os quatro tokens `--gc-mobile-context-header-*`/`--gc-mobile-panel-content-*` em um único `:root` anterior ao bloco mobile de 0,6375rem, preservando 0,55rem no desktop).
+
+Primeira execução (RED), `npx vitest run app/globals.visual.test.ts`:
+
+```
+ × lets the mobile panel density win over the desktop Atmosphere panel spacing
+   AssertionError: expected [ …(2) ] to have a length of 1 but got 2
+      Tests  1 failed | 16 passed (17)
+```
+
+Após implementação (GREEN), `npx vitest run app/globals.visual.test.ts components/workspace-v2 components/settings`:
+
+```
+      Tests  35 passed (35)
+```

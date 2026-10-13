@@ -450,10 +450,10 @@ export function WorkspaceFrameV2({
               className={cn(
                 "gc-clinical-panel hidden min-h-0 shrink-0 overflow-hidden border-l border-[color:var(--gc-border)] transition-[width] duration-200 xl:block",
                 contextCollapsed
-                  ? "w-12"
+                  ? "w-[2.85rem]"
                 : contextExpanded
-                  ? "w-[var(--gc-shell-context-expanded-width)] 2xl:w-[34rem]"
-                  : "w-[var(--gc-shell-context-width)] 2xl:w-[24rem]"
+                  ? "w-[var(--gc-shell-context-expanded-width)]"
+                  : "w-[var(--gc-shell-context-width)]"
               )}
             >
             {contextCollapsed ? (

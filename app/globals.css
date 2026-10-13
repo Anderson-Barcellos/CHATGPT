@@ -194,16 +194,12 @@ body {
   --gc-mobile-welcome-suggestion-min-height: 6.55rem;
   --gc-mobile-welcome-suggestion-gap: 0.4375rem;
   --gc-mobile-welcome-suggestion-pad: 0.6875rem;
-  --gc-mobile-context-header-x: 0.75rem;
-  --gc-mobile-context-header-y: 0.75rem;
-  --gc-mobile-panel-content-pad: 0.75rem;
-  --gc-mobile-panel-content-gap: 0.75rem;
+  --gc-mobile-context-header-x: 0.65rem;
+  --gc-mobile-context-header-y: 0.6rem;
+  --gc-mobile-panel-content-pad: 0.55rem;
+  --gc-mobile-panel-content-gap: 0.5rem;
   --gc-mobile-settings-card-pad: 1rem;
   --gc-mobile-settings-section-gap: 1.25rem;
-  --gc-shell-gutter: 0.625rem;
-  --gc-shell-rail-width: 15.5rem;
-  --gc-shell-context-width: 19.5rem;
-  --gc-shell-context-expanded-width: 27.5rem;
 
   /* ── Typography ─────────────────────────────────────── */
   --gc-text-nano: 0.625rem;
@@ -1123,10 +1119,14 @@ body {
   --gc-shell-rail-width: 14.5rem;
   --gc-shell-context-width: 18rem;
   --gc-shell-context-expanded-width: 26rem;
-  --gc-mobile-context-header-x: 0.65rem;
-  --gc-mobile-context-header-y: 0.6rem;
-  --gc-mobile-panel-content-pad: 0.55rem;
-  --gc-mobile-panel-content-gap: 0.5rem;
+}
+
+/* Laterais do shell crescem juntas no 2xl; Descobrir herda a largura da direita. */
+@media (min-width: 96rem) {
+  :root {
+    --gc-shell-context-width: 24rem;
+    --gc-shell-context-expanded-width: 34rem;
+  }
 }
 
 .dark {
@@ -1451,10 +1451,6 @@ body {
   background: rgb(5 16 30 / 42%);
 }
 
-.gc-atmosphere-shell [data-workspace-region="context"][data-collapsed="true"] {
-  width: 2.85rem;
-}
-
 .gc-atmosphere-shell [data-workspace-region="context"] > div {
   gap: 0.75rem;
 }
@@ -1745,8 +1741,7 @@ body {
   z-index: 45;
   display: flex;
   flex-direction: column;
-  width: 360px;
-  max-width: 32%;
+  width: var(--gc-shell-context-width);
   min-height: 0;
   overflow: hidden;
   border-right: 1px solid var(--gc-border);
@@ -1761,9 +1756,7 @@ body {
 }
 
 .gc-discover-panel[data-discover-fullscreen="true"] {
-  position: absolute;
   inset: 0;
-  z-index: 45;
   width: 100%;
   max-width: none;
   height: 100%;

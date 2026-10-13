@@ -116,4 +116,28 @@ describe("Gaucho Chat visual contract", () => {
     expect(rootMobile).not.toContain("--gc-shell-rail-width");
     expect(rootMobile).not.toContain("--gc-shell-gutter");
   });
+
+  it("gives Descobrir the same token-driven width as the right context panel", () => {
+    const layout = readFileSync(new URL("../components/workspace-v2/WorkspaceLayoutV2.tsx", import.meta.url), "utf8");
+    const discoverBlock = css.match(/\.gc-atmosphere-shell \.gc-discover-panel\s*\{([^}]*)\}/)?.[1] ?? "";
+    const shellTokenBlocks = css.match(/:root\s*\{[^}]*--gc-shell-rail-width:[^}]*\}/g) ?? [];
+
+    expect(discoverBlock).toContain("width: var(--gc-shell-context-width);");
+    expect(discoverBlock).not.toMatch(/360px|max-width/);
+    expect(css).toMatch(/@media \(min-width: 96rem\)\s*\{\s*:root\s*\{[^}]*--gc-shell-context-width:\s*24rem;[^}]*--gc-shell-context-expanded-width:\s*34rem;/);
+    expect(shellTokenBlocks).toHaveLength(1);
+    expect(layout).not.toContain("2xl:w-[");
+    expect(css).not.toMatch(/\[data-workspace-region="context"\]\[data-collapsed="true"\]\s*\{[^}]*width/);
+  });
+
+  it("lets the mobile panel density win over the desktop Atmosphere panel spacing", () => {
+    const panelTokens = /--gc-mobile-(?:context-header-[xy]|panel-content-(?:pad|gap)):/;
+    const rootBlocks = css.match(/^:root\s*\{[^}]*\}/gm) ?? [];
+    const mobileRoot = css.indexOf("    --gc-mobile-context-header-x: 0.6375rem;");
+
+    expect(mobileRoot).toBeGreaterThan(-1);
+    expect(rootBlocks.filter((block) => panelTokens.test(block))).toHaveLength(1);
+    expect(css.indexOf(rootBlocks.find((block) => panelTokens.test(block)) ?? "@@")).toBeLessThan(mobileRoot);
+    expect(css).toContain("  --gc-mobile-panel-content-pad: 0.55rem;");
+  });
 });
