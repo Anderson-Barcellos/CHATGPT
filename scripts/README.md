@@ -29,6 +29,8 @@ Publica no checkout vivo do `chatgpt.service` (descoberto pelo `WorkingDirectory
 
 A instalação guarda a `.next` anterior em `next-before`, retém os assets antigos para abas abertas, reinicia o serviço e confere `/chat/api/health` local e público. Health local falho restaura a build anterior automaticamente; falha só no público mantém a build nova e sai com erro para conferir Apache/rede. O diretório da build precisa continuar existindo, porque a `.next` instalada referencia esse caminho.
 
+O build e o health público usam `https://sonaris.us/chat` por padrão. `GAUCHO_DEPLOY_APP_URL` altera a URL usada no build; `GAUCHO_HEALTH_PUBLIC_URL` altera o endpoint de verificação. A configuração pública do serviço deve acompanhar o domínio escolhido.
+
 ```bash
 npm run deploy
 npm run deploy -- --from /root/.cache/chat-ios27-probe

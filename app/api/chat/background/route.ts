@@ -19,8 +19,6 @@ import {
   updateBackgroundJobByResponseId,
   upsertBackgroundJob,
 } from "@/lib/server/chatBackgroundJobStore";
-import { GROK_MODEL } from "@/lib/server/xaiChat";
-import { startXAIBackgroundJob } from "@/lib/server/xaiBackground";
 
 type BackgroundCreateBody = ChatRequestBody & {
   conversationId?: string;
@@ -88,36 +86,6 @@ export async function POST(request: NextRequest) {
         message: "Modelo nao permitido.",
         code: "chat_model_not_allowed",
       });
-    }
-
-    if (effectiveModel === GROK_MODEL) {
-      const responseId = `xai-${crypto.randomUUID()}`;
-      await upsertBackgroundJob({
-        responseId,
-        conversationId,
-        assistantMessageId,
-        responseMode,
-        provider: "xai",
-        status: "queued",
-      });
-      const initial = {
-        id: responseId,
-        status: "queued",
-        error: null,
-        output: [],
-      } as unknown as OpenAI.Responses.Response;
-      const message = await applyBackgroundResponseToConversation({
-        conversationId,
-        assistantMessageId,
-        response: initial,
-        provider: "xai",
-      });
-      if (!message) {
-        await updateBackgroundJobByResponseId(responseId, { status: "failed", error: "Mensagem vinculada não encontrada." });
-        return jsonError(404, "Conversation message not found", { message: "Não encontrei a mensagem para vincular o job.", code: "background_message_not_found" });
-      }
-      startXAIBackgroundJob({ responseId, conversationId, assistantMessageId, body: { ...body, model: GROK_MODEL } });
-      return NextResponse.json({ responseId, status: "queued", message });
     }
 
     const openai = createOpenAIClient();

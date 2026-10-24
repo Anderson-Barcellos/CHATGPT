@@ -1,7 +1,9 @@
 import { PulseTaskProposal, PulseRecurrenceType } from "@/lib/pulse/types";
-import { createXAIClient } from "@/lib/server/xaiChat";
+import { createOpenAIClient } from "@/lib/server/chatRequest";
 
-const DEFAULT_MODEL = "grok-4.7";
+const DEFAULT_MODEL = "gpt-6-luna";
+// Overrides antigos de env continuam válidos e caem no Luna.
+const LEGACY_MODELS = new Set(["gpt-5.4-mini", "grok-4.7"]);
 
 interface RawPulseProposal {
   canCreate?: unknown;
@@ -148,10 +150,10 @@ Regras:
 
 function resolvePulseExtractionModel(): string {
   const configured = process.env.PULSE_EXTRACT_MODEL?.trim();
-  if (!configured || configured === "gpt-5.4-mini") return DEFAULT_MODEL;
+  if (!configured || LEGACY_MODELS.has(configured)) return DEFAULT_MODEL;
   if (configured === DEFAULT_MODEL) return configured;
   throw new PulseTaskExtractionError(
-    "PULSE_EXTRACT_MODEL precisa usar grok-4.7 neste provider.",
+    "PULSE_EXTRACT_MODEL precisa usar gpt-6-luna neste provider.",
     "pulse_task_model_not_supported",
     500
   );
@@ -159,12 +161,12 @@ function resolvePulseExtractionModel(): string {
 
 export async function extractPulseTaskFromText(
   input: { text?: unknown; now?: unknown },
-  client = createXAIClient()
+  client = createOpenAIClient()
 ): Promise<PulseTaskProposal> {
   if (!client) {
     throw new PulseTaskExtractionError(
-      "XAI_API_KEY não configurada no servidor.",
-      "pulse_task_xai_api_key_missing",
+      "OPENAI_API_KEY não configurada no servidor.",
+      "pulse_task_openai_api_key_missing",
       503
     );
   }
@@ -184,7 +186,7 @@ export async function extractPulseTaskFromText(
     instructions: buildInstructions(Number.isNaN(now.getTime()) ? new Date() : now),
     input: [{ role: "user", content: [{ type: "input_text", text }] }],
     max_output_tokens: 1200,
-    reasoning: { effort: "medium" },
+    reasoning: { effort: "low" },
     text: { format: pulseTaskExtractionSchema },
   });
 

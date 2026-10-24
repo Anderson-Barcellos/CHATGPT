@@ -20,17 +20,46 @@ describe("settings store model defaults", () => {
     expect(useSettingsStore.getState().parameters.reasoningSummary).toBe("detailed");
   });
 
-  it("defaults GPT-6 Sol to medium standard reasoning", () => {
-    useSettingsStore.getState().updateParameters({ model: "gpt-6-sol" });
+  it("defaults GPT-6.1 Sol to medium standard reasoning", () => {
+    useSettingsStore.getState().updateParameters({ model: "gpt-6.1-sol" });
 
     expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("medium");
     expect(useSettingsStore.getState().parameters.reasoningMode).toBe("standard");
   });
 
-  it("maps a legacy Terra selection to GPT-6 Sol", () => {
+  it.each(["claude-sonnet-5-5", "claude-opus-5-5"])(
+    "configura %s com reasoning medium e limita os esforços suportados",
+    (model) => {
+      useSettingsStore.getState().updateParameters({ model });
+
+      expect(useSettingsStore.getState().parameters).toMatchObject({
+        model,
+        reasoningEffort: "medium",
+        reasoningMode: "standard",
+        codeInterpreterEnabled: false,
+      });
+
+      useSettingsStore.getState().updateParameters({
+        reasoningEffort: "max",
+        reasoningMode: "pro",
+        codeInterpreterEnabled: true,
+      });
+
+      expect(useSettingsStore.getState().parameters).toMatchObject({
+        reasoningEffort: "medium",
+        reasoningMode: "standard",
+        codeInterpreterEnabled: false,
+      });
+    }
+  );
+
+  it("maps legacy Terra and GPT-6 Sol selections to GPT-6.1 Sol", () => {
+    useSettingsStore.getState().updateParameters({ model: "gpt-6-sol" });
+    expect(useSettingsStore.getState().parameters.model).toBe("gpt-6.1-sol");
+
     useSettingsStore.getState().updateParameters({ model: "gpt-5.6-terra" });
 
-    expect(useSettingsStore.getState().parameters.model).toBe("gpt-6-sol");
+    expect(useSettingsStore.getState().parameters.model).toBe("gpt-6.1-sol");
     expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("medium");
     expect(useSettingsStore.getState().parameters.reasoningMode).toBe("standard");
     expect(useSettingsStore.getState().parameters.maxOutputTokens).toBe(128_000);
@@ -59,11 +88,26 @@ describe("settings store model defaults", () => {
     }
   );
 
-  it("resolve o mini legado para Grok com reasoning medium fixo", () => {
+  it("resolve o mini e o Grok legados para o GPT-6 Luna", () => {
     useSettingsStore.getState().updateParameters({ model: "gpt-5.4-mini" });
+    expect(useSettingsStore.getState().parameters.model).toBe("gpt-6-luna");
 
-    expect(useSettingsStore.getState().parameters.model).toBe("grok-4.7");
+    useSettingsStore.getState().updateParameters({ model: "grok-4.7" });
+    expect(useSettingsStore.getState().parameters.model).toBe("gpt-6-luna");
     expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("medium");
+  });
+
+  it("devolve o esforço none do GPT-6.1 Sol ao default suportado", () => {
+    useSettingsStore.getState().updateParameters({ model: "gpt-6.1-sol", reasoningEffort: "none" });
+
+    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("medium");
+  });
+
+  it("mantém o modo Pro escolhido no GPT-5.6 Sol", () => {
+    useSettingsStore.getState().updateParameters({ model: "gpt-5.6-sol", reasoningMode: "pro" });
+
+    expect(useSettingsStore.getState().parameters.model).toBe("gpt-5.6-sol");
+    expect(useSettingsStore.getState().parameters.reasoningMode).toBe("pro");
   });
 
   it("falls legacy removed models back to the current default", () => {
@@ -84,11 +128,11 @@ describe("settings store model defaults", () => {
     expect(useSettingsStore.getState().parameters.model).toBe("chat-latest");
   });
 
-  it("locks DeepSeek V4 Pro to maximum reasoning and high verbosity", () => {
+  it("locks DeepSeek V4.1 Flash to low reasoning and high verbosity", () => {
     useSettingsStore.getState().updateParameters({ model: "deepseek-v4-pro" });
 
-    expect(useSettingsStore.getState().parameters.model).toBe("deepseek-v4-pro");
-    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("xhigh");
+    expect(useSettingsStore.getState().parameters.model).toBe("deepseek-flash");
+    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("low");
     expect(useSettingsStore.getState().parameters.verbosity).toBe("high");
 
     useSettingsStore.getState().updateParameters({
@@ -96,42 +140,21 @@ describe("settings store model defaults", () => {
       verbosity: "medium",
     });
 
-    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("xhigh");
+    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("low");
     expect(useSettingsStore.getState().parameters.verbosity).toBe("high");
   });
 
-  it("locks GPT-6 Astra to medium reasoning and verbosity", () => {
-    useSettingsStore.getState().updateParameters({ model: "gpt-6-astra" });
+  it.each(["gpt-6-astra", "gemini-3.8-flash", "gemini-3.7-flash"])(
+    "resolve a preferência antiga de chat %s para Luna medium",
+    (model) => {
+      useSettingsStore.getState().updateParameters({ model });
 
-    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("medium");
-    expect(useSettingsStore.getState().parameters.verbosity).toBe("medium");
-
-    useSettingsStore.getState().updateParameters({
-      reasoningEffort: "max",
-      verbosity: "high",
-    });
-
-    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("medium");
-    expect(useSettingsStore.getState().parameters.verbosity).toBe("medium");
-  });
-
-  it("defaults Gemini 3.8 Flash to high, remembers valid levels and rejects minimal", () => {
-    useSettingsStore.getState().updateParameters({ model: "gemini-3.8-flash" });
-
-    expect(useSettingsStore.getState().parameters.model).toBe("gemini-3.8-flash");
-    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("high");
-    expect(useSettingsStore.getState().parameters.reasoningMode).toBe("standard");
-    expect(useSettingsStore.getState().parameters.maxOutputTokens).toBe(65_536);
-
-    useSettingsStore.getState().updateParameters({ reasoningEffort: "low" });
-    useSettingsStore.getState().updateParameters({ model: "gpt-6-luna" });
-    useSettingsStore.getState().updateParameters({ model: "gemini-3.8-flash" });
-
-    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("low");
-
-    useSettingsStore.getState().updateParameters({ reasoningEffort: "minimal" });
-    expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("high");
-  });
+      expect(useSettingsStore.getState().parameters).toMatchObject({
+        model: "gpt-6-luna",
+        reasoningEffort: "medium",
+      });
+    }
+  );
 
   it("keeps max effort per model and clamps unsupported Pro mode", () => {
     useSettingsStore.getState().updateParameters({
@@ -139,7 +162,7 @@ describe("settings store model defaults", () => {
       reasoningMode: "pro",
       reasoningEffort: "max",
     });
-    useSettingsStore.getState().updateParameters({ model: "gpt-6-sol" });
+    useSettingsStore.getState().updateParameters({ model: "gpt-6.1-sol" });
 
     expect(useSettingsStore.getState().parameters.reasoningMode).toBe("standard");
     expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("medium");

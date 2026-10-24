@@ -21,7 +21,7 @@ import type {
   ChatBackgroundJobRecord,
 } from "@/lib/server/chatBackgroundJobStore";
 import { listConversations } from "@/app/api/conversations/data";
-import { isXAIBackgroundJobActive, recoverInterruptedXAIBackgroundJob } from "@/lib/server/xaiBackground";
+import { recoverInterruptedXAIBackgroundJob } from "@/lib/server/xaiBackground";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -103,20 +103,12 @@ async function reconcileJob(
 ): Promise<ReconcileResult> {
   try {
     if (job.provider === "xai") {
-      if (isXAIBackgroundJobActive(job.responseId)) {
-        return {
-          responseId: job.responseId,
-          conversationId: job.conversationId,
-          assistantMessageId: job.assistantMessageId,
-          status: job.status,
-        };
-      }
       const message = await recoverInterruptedXAIBackgroundJob(job);
       return {
         responseId: job.responseId,
         conversationId: job.conversationId,
         assistantMessageId: job.assistantMessageId,
-        status: message ? "failed" : "failed",
+        status: "failed",
         ...(message ? { message } : { error: "Mensagem vinculada não encontrada." }),
       };
     }

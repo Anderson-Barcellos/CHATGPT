@@ -88,6 +88,52 @@ afterEach(async () => {
 });
 
 describe("Descobrir IA", () => {
+  it("confirma exclusão individual e desmonta a matéria/player somente após sucesso", async () => {
+    await renderPage();
+    const listen = Array.from(article("primeira").querySelectorAll("button")).find(b => b.textContent?.includes("Ouvir matéria"))!;
+    await act(async () => listen.click());
+    await clickRead("primeira");
+    await act(async () => article("primeira").querySelector<HTMLButtonElement>('[aria-label="Apagar notícia: Matéria 1"]')!.click());
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain("Matéria 1");
+    expect(vi.mocked(fetch).mock.calls.filter(([, options]) => options?.method === "DELETE")).toHaveLength(0);
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ deletedIds: ["primeira"] })));
+    await act(async () => Array.from(document.querySelectorAll('button')).find(b => b.textContent === "Confirmar exclusão")!.click());
+    expect(article("primeira")).toBeNull();
+    expect(container.querySelector('[data-mini-audio-player]')).toBeNull();
+    expect(article("segunda")).not.toBeNull();
+  });
+
+  it("seleciona várias, cancela sem apagar e mantém seleção para tentar após erro", async () => {
+    await renderPage(<DiscoverFeed embedded />);
+    await act(async () => Array.from(container.querySelectorAll('button')).find(b => b.textContent === "Selecionar notícias")!.click());
+    await act(async () => {
+      article("primeira").querySelector<HTMLInputElement>('input[type="checkbox"]')!.click();
+      article("segunda").querySelector<HTMLInputElement>('input[type="checkbox"]')!.click();
+    });
+    const open = () => Array.from(container.querySelectorAll('button')).find(b => b.textContent?.includes("Apagar selecionadas"))!.click();
+    await act(async () => open());
+    await act(async () => Array.from(document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')).find(b => b.textContent === "Cancelar")!.click());
+    expect(article("primeira")).not.toBeNull();
+    expect(vi.mocked(fetch).mock.calls.filter(([, options]) => options?.method === "DELETE")).toHaveLength(0);
+    await act(async () => open());
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ message: "Falha ao apagar" }), { status: 500 }));
+    await act(async () => Array.from(document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')).find(b => b.textContent === "Confirmar exclusão")!.click());
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain("Falha ao apagar");
+    expect(article("primeira")).not.toBeNull();
+    expect(article("segunda").querySelector<HTMLInputElement>('input')!.checked).toBe(true);
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ deletedIds: ["primeira", "segunda"] })));
+    await act(async () => Array.from(document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')).find(b => b.textContent === "Confirmar exclusão")!.click());
+    const call = vi.mocked(fetch).mock.calls.at(-1)!;
+    expect(JSON.parse(call[1]!.body as string)).toEqual({ ids: ["primeira", "segunda"] });
+    expect(container.querySelectorAll('[data-discover-article]')).toHaveLength(1);
+  });
+
+  it("bloqueia exclusão enquanto a atualização está rodando", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ topics: [], articles: ARTICLES, suggestedTopics: [], job: { status: "running" } })));
+    await renderPage();
+    expect(article("primeira").querySelector<HTMLButtonElement>('[aria-label^="Apagar notícia"]')!.disabled).toBe(true);
+  });
+
   it("mantém o escopo Lexend e mostra a atualização automática prevista", async () => {
     await renderPage();
 

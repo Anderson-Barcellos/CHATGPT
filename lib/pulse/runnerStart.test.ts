@@ -5,10 +5,7 @@ const files = vi.hoisted(() => new Map<string, unknown>());
 const openai = vi.hoisted(() => ({
   responses: { create: vi.fn() },
 }));
-const xai = vi.hoisted(() => ({
-  client: null as { responses: { create: ReturnType<typeof vi.fn> } } | null,
-  create: vi.fn(),
-}));
+const openaiKey = vi.hoisted(() => ({ missing: false }));
 
 vi.mock("@/lib/server/jsonFileStore", () => {
   const chains = new Map<string, Promise<unknown>>();
@@ -27,11 +24,7 @@ vi.mock("@/lib/server/jsonFileStore", () => {
   };
 });
 vi.mock("@/lib/server/chatRequest", () => ({
-  createOpenAIClient: () => openai,
-}));
-vi.mock("@/lib/server/xaiChat", () => ({
-  GROK_MODEL: "grok-4.7",
-  createXAIClient: () => xai.client,
+  createOpenAIClient: () => (openaiKey.missing ? null : openai),
 }));
 vi.mock("@/lib/pulse/context", () => ({
   buildPulseSystemPrompt: async () => "instructions",
@@ -46,7 +39,7 @@ const task: PulseTask = {
   emoji: "📡",
   prompt: "Pesquise.",
   executionPrompt: "Pesquise novidades.",
-  model: "gpt-6-sol",
+  model: "gpt-6.1-sol",
   status: "active",
   schedule: { recurrenceType: "daily", time: "09:00" } as unknown as PulseTask["schedule"],
   nextRunAt: new Date(now.getTime() - 60_000).toISOString(),
@@ -72,8 +65,7 @@ beforeEach(() => {
   files.clear();
   files.set("pulse-tasks.json", [task]);
   openai.responses.create.mockReset();
-  xai.create.mockReset();
-  xai.client = { responses: { create: xai.create } };
+  openaiKey.missing = false;
 });
 
 describe("Pulse manual start", () => {
@@ -123,29 +115,29 @@ describe("Pulse manual start", () => {
   it("finaliza o run agendado como failed quando falta a chave do provider", async () => {
     const grokTask = { ...task, model: "grok-4.7" as const };
     files.set("pulse-tasks.json", [grokTask]);
-    xai.client = null;
+    openaiKey.missing = true;
 
     const result = await runDuePulseTasks(now);
 
     expect(result.startedCount).toBe(1);
     expect(result.runs[0]).toMatchObject({
       status: "failed",
-      error: "XAI_API_KEY nao configurada no servidor.",
-      modelUsed: "grok-4.7",
+      error: "OPENAI_API_KEY nao configurada no servidor.",
+      modelUsed: "gpt-6-luna",
       reasoningEffort: "medium",
     });
     expect(runs()[0]).toMatchObject({
       status: "failed",
-      error: "XAI_API_KEY nao configurada no servidor.",
+      error: "OPENAI_API_KEY nao configurada no servidor.",
     });
-    expect(xai.create).not.toHaveBeenCalled();
+    expect(openai.responses.create).not.toHaveBeenCalled();
   });
 
-  it("usa Grok medium para texto e Luna OpenAI para preservar a imagem", async () => {
+  it("roda a rotina salva com Grok no Luna, com busca web e imagem da OpenAI", async () => {
     const grokTask = { ...task, model: "grok-4.7" as const };
     files.set("pulse-tasks.json", [grokTask]);
-    xai.create.mockResolvedValue({
-      id: "grok-response",
+    openai.responses.create.mockResolvedValue({
+      id: "luna-response",
       status: "completed",
       error: null,
       incomplete_details: null,
@@ -154,35 +146,11 @@ describe("Pulse manual start", () => {
       output: [
         {
           type: "message",
-          id: "grok-message",
+          id: "luna-message",
           role: "assistant",
           status: "completed",
-          content: [
-            {
-              type: "output_text",
-              text: "Radar com fonte",
-              annotations: [
-                {
-                  type: "url_citation",
-                  title: "Fonte",
-                  url: "https://fonte.test/radar",
-                  start_index: 0,
-                  end_index: 5,
-                },
-              ],
-            },
-          ],
+          content: [{ type: "output_text", text: "Radar com fonte", annotations: [] }],
         },
-      ],
-    });
-    openai.responses.create.mockResolvedValue({
-      id: "openai-image",
-      status: "completed",
-      error: null,
-      incomplete_details: null,
-      usage: null,
-      output_text: "",
-      output: [
         {
           type: "image_generation_call",
           id: "image-call",
@@ -194,27 +162,21 @@ describe("Pulse manual start", () => {
 
     const result = await runDuePulseTasks(now);
 
-    expect(xai.create).toHaveBeenCalledWith(expect.objectContaining({
-      model: "grok-4.7",
-      reasoning: { effort: "medium" },
-      tools: [{ type: "web_search" }],
-    }));
-    expect(xai.create.mock.calls[0][0]).not.toHaveProperty("text");
+    expect(openai.responses.create).toHaveBeenCalledTimes(1);
     expect(openai.responses.create).toHaveBeenCalledWith(expect.objectContaining({
       model: "gpt-6-luna",
       reasoning: { effort: "medium" },
-      tools: [expect.objectContaining({
-        type: "image_generation",
-        model: "gpt-image-2",
-      })],
+      text: { verbosity: "high" },
+      tools: [
+        expect.objectContaining({ type: "web_search_preview" }),
+        expect.objectContaining({ type: "image_generation", model: "gpt-image-2" }),
+      ],
     }));
     expect(result.runs[0]).toMatchObject({
       status: "completed",
       content: "Radar com fonte",
-      citations: [{ title: "Fonte", url: "https://fonte.test/radar" }],
       imageBase64: "imagem-base64",
-      imageMimeType: "image/png",
-      modelUsed: "grok-4.7",
+      modelUsed: "gpt-6-luna",
       reasoningEffort: "medium",
     });
   });

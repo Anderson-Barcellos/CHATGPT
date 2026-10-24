@@ -62,6 +62,39 @@ export async function saveDiscoverSchedule(value: unknown): Promise<DiscoverStat
   });
 }
 
+export class DiscoverDeleteError extends Error {
+  constructor(message: string, readonly status: 400 | 409) { super(message); }
+}
+
+export async function deleteDiscoverArticles(value: unknown): Promise<{ deletedIds: string[] }> {
+  if (!Array.isArray(value) || value.length < 1 || value.length > 60 ||
+      value.some((id) => typeof id !== "string" || !/^[a-zA-Z0-9_-]{1,128}$/.test(id))) {
+    throw new DiscoverDeleteError("Selecione de 1 a 60 notícias válidas para apagar.", 400);
+  }
+  const ids = new Set<string>(value);
+  return withDataFileLock(FILE, async () => {
+    const state = await readDiscoverState();
+    if (state.job.status === "running") {
+      throw new DiscoverDeleteError("Aguarde a atualização terminar para apagar notícias.", 409);
+    }
+    const articles = state.articles.filter((article) => !ids.has(article.id));
+    if (articles.length !== state.articles.length) {
+      await writeDataFile(FILE, { ...state, articles });
+      const retainedImages = new Set(articles.map((article) => article.image));
+      const removedImages = new Set(state.articles.filter((article) => ids.has(article.id)).map((article) => article.image));
+      for (const image of removedImages) {
+        if (!image || retainedImages.has(image) || !/^[0-9a-f-]{36}$/i.test(image)) continue;
+        try { await fs.unlink(path.join(IMAGE_DIR, `${image}.png`)); }
+        catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== "ENOENT") console.warn("[discover] Capa excluída do feed; limpeza do arquivo pendente.");
+        }
+      }
+    }
+    // Idempotente: uma repetição após perda da resposta também remove cards antigos do cliente.
+    return { deletedIds: [...ids] };
+  });
+}
+
 export type DiscoverClaim = "started" | "running" | "not_due" | "paused";
 
 export async function claimDiscoverJob(kind: "daily" | "manual" | "rewrite", now = new Date()): Promise<DiscoverClaim> {

@@ -19,6 +19,7 @@ class FakeVisualViewport extends EventTarget {
   height = 956;
   offsetTop = 0;
   width = 440;
+  scale = 1;
 }
 
 let root: Root | null = null;
@@ -86,9 +87,19 @@ describe("isKeyboardOpen", () => {
     expect(isKeyboardOpen({ height: 956 - KEYBOARD_THRESHOLD_PX, offsetTop: 0, innerHeight: 956 })).toBe(false);
     expect(isKeyboardOpen({ height: 560, offsetTop: 0, innerHeight: 956 })).toBe(true);
   });
+
+  it("não confunde zoom ou viewport reduzido sem foco com teclado", () => {
+    expect(isKeyboardOpen({ height: 478, offsetTop: 0, innerHeight: 956, scale: 2, hasEditableFocus: true })).toBe(false);
+    expect(isKeyboardOpen({ height: 560, offsetTop: 0, innerHeight: 956, scale: 1, hasEditableFocus: false })).toBe(false);
+  });
 });
 
 describe("applyVisualViewport", () => {
+  it("acompanha o pan visual e a rolagem da página sem perder a posição do shell", () => {
+    const el = document.createElement("div");
+    applyVisualViewport(el, { height: 480, offsetTop: 40, scrollY: 80, innerHeight: 844, hasEditableFocus: true });
+    expect(el.style.getPropertyValue(VISUAL_VIEWPORT_OFFSET_TOP_VAR)).toBe("120px");
+  });
   it("grava a altura como variável CSS e marca teclado aberto no root", () => {
     const el = document.createElement("div");
     applyVisualViewport(el, { height: 560.4, offsetTop: 0, innerHeight: 956 });
@@ -160,6 +171,9 @@ describe("useVisualViewport", () => {
     viewport.height = 560;
     viewport.offsetTop = 120;
     await act(async () => {
+      const input = document.createElement("textarea");
+      container!.appendChild(input);
+      input.focus();
       viewport.dispatchEvent(new Event("resize"));
     });
     await flush();
@@ -167,7 +181,7 @@ describe("useVisualViewport", () => {
     expect(document.documentElement.style.getPropertyValue(VISUAL_VIEWPORT_HEIGHT_VAR)).toBe("560px");
     expect(document.documentElement.style.getPropertyValue(VISUAL_VIEWPORT_OFFSET_TOP_VAR)).toBe("120px");
     expect(document.documentElement.getAttribute(KEYBOARD_OPEN_ATTR)).toBe("true");
-    expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
+    expect(window.scrollTo).not.toHaveBeenCalled();
 
     // Teclado fecha com a altura curta do WebKit: nada fica travado no shell.
     viewport.height = 894;
@@ -184,16 +198,40 @@ describe("useVisualViewport", () => {
 
   it("limpa o pan residual quando o teclado fecha com a janela rolada", async () => {
     await mount(true);
+    const input = document.createElement("textarea");
+    container!.appendChild(input);
+    await act(async () => {
+      input.focus();
+      viewport.height = 560;
+      viewport.dispatchEvent(new Event("resize"));
+    });
     await flush();
     vi.mocked(window.scrollTo).mockClear();
 
     Object.defineProperty(window, "scrollY", { value: 40, configurable: true, writable: true });
     await act(async () => {
+      viewport.height = 956;
       viewport.dispatchEvent(new Event("resize"));
     });
     await flush();
 
     expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
+  });
+
+  it("preserva zoom e pan manual mesmo com campo focado", async () => {
+    await mount(true);
+    const input = document.createElement("textarea");
+    container!.appendChild(input);
+    await act(async () => {
+      input.focus();
+      viewport.scale = 2;
+      viewport.height = 478;
+      Object.defineProperty(window, "scrollY", { value: 40, configurable: true });
+      viewport.dispatchEvent(new Event("resize"));
+    });
+    await flush();
+    expect(document.documentElement.hasAttribute(KEYBOARD_OPEN_ATTR)).toBe(false);
+    expect(window.scrollTo).not.toHaveBeenCalled();
   });
 
   it("marca standalone e mede a faixa de baixo a partir da tela e do clientHeight", async () => {

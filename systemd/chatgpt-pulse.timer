@@ -1,6 +1,6 @@
 [Unit]
 Description=Run Gaucho Chat Pulse due-task check every minute
-Documentation=https://ultrassom.ai/chat
+Documentation=https://sonaris.us/chat
 
 [Timer]
 OnBootSec=2min

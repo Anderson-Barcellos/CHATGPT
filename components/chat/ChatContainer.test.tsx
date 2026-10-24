@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { getChatMessageRenderKey } from "@/components/chat/ChatContainer";
+import {
+  getChatMessageRenderKey,
+  getWelcomeSuggestions,
+} from "@/components/chat/ChatContainer";
 import { ChatContainer } from "@/components/chat/ChatContainer";
 import type { Message } from "@/types";
 
@@ -78,5 +81,12 @@ describe("ChatContainer welcome", () => {
     );
 
     expect(markup).toContain("Tuas conversas recentes vão aparecer aqui.");
+  });
+
+  it("oculta a ação de gerar imagem quando Claude está selecionado, sem ocultar análise de imagem", () => {
+    const labels = getWelcomeSuggestions(false).map((suggestion) => suggestion.label);
+
+    expect(labels).not.toContain("Gerar imagem");
+    expect(labels).toContain("Analisar imagem");
   });
 });

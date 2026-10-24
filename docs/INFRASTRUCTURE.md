@@ -1,10 +1,14 @@
 # Infraestrutura
 
-**Última atualização:** 2026-10-04 (Descobrir IA publicado)
-**Produção:** `https://ultrassom.ai/chat`
+**Última atualização:** 2026-10-21 (correções mobile publicadas)
+**Produção:** `https://sonaris.us/chat` — host `srv1927271`
 **Porta local:** `3040`
 
 ## Topologia
+
+Refinamento posterior do gesto em 21/10: build atual `VpqUQkfWDgyJNn4Tx8i-w`, origem `/root/.cache/gaucho-press-20261021/source` (preservar), backup `/root/.cache/gaucho-deploy/20261021T172749Z/next-before`. Restart de `chatgpt.service` com health local/público 200; agendadores restaurados. Mantida a mesma base funcional, incluindo DeepSeek `max`.
+
+Publicação mobile em 21/10: build `6dxYdQfcARJRrT0-1qEkK`, fonte `/root/.cache/gaucho-mobile-20261021/source` (preservar), backup `/root/.cache/gaucho-deploy/20261021T163104Z/next-before`. Serviço reiniciado, health local/público 200 healthy e assets novos conferidos byte a byte. Agendadores pausados somente durante a troca e restaurados ao estado anterior. Sem mudança de porta, proxy, DNS, credenciais ou dados pessoais. A build preserva o DeepSeek `max` publicado anteriormente; seis arquivos `low` do checkout são WIP de outra frente e não representam esse comportamento vivo. Os registros antigos abaixo são históricos.
 
 Publicação de segurança: fonte `2584921`, build `fQ5aGOE2G9BIiCdmil9-L`, unit instalada sem `fuser`, serviço reiniciado e readiness/liveness local e público 200. Autenticação obrigatória, locks exclusivos e propriedade das novas sessões Studio estão ativos. Agendadores restaurados após o corte, sem sessões legadas ativas. Backup da build anterior e da unit em `/root/.cache/gaucho-security-deploy-20260922`; 20 assets anteriores retidos. Domínio, proxy e cookies preservados. Evidência detalhada no relatório `docs/plans/2026-09-22-review-seguranca-operacao-report.md`.
 
@@ -33,13 +37,13 @@ O `<Location /chat>` mantém `ProxyPassReverseCookiePath / /chat` escopado ao se
 Não transcreva segredos de `.env.production` ou `.env.local` em docs, issues ou commits.
 O nome público do app é `Gaucho Chat`; a descrição `Celer - Cliente IA Multi-Modal` na unit systemd é apenas um rótulo histórico interno.
 O repositório nao usa mais stack de deploy por Docker/Nginx; o runtime valido aqui e Apache + `chatgpt.service`.
-OpenAI, DeepSeek V4 Pro e Gemini 3.8 Flash são acessados apenas server-side; suas chaves não devem aparecer no cliente nem em logs.
+OpenAI, DeepSeek V4.1 Flash, Gemini 3.8 Flash e a voz xAI são acessados apenas server-side; suas chaves não devem aparecer no cliente nem em logs.
 
 A fundação Memory V2 E1/E2 está instalada no código, mas não ativa em produção. Sem `MEMORY_V2_ENABLED=true`, JSON continua como autoridade exclusiva. Com a flag, SQLite passa a ser a autoridade exclusiva; não existe dual-write. O CLI de migração é dry-run por padrão, nenhum dado real foi migrado e qualquer cutover exige uma entrega operacional própria.
 
 ## Apache
 
-O Apache serve `ultrassom.ai` e repassa o app para o Next local.
+O domínio de destino do Gaúcho Chat é `sonaris.us`, com prefixo `/chat`. O Apache repassa o app para o Next local. Referências históricas a `ultrassom.ai` descrevem o servidor antigo.
 
 Regras essenciais para `/chat`:
 
@@ -82,6 +86,12 @@ systemctl is-active apache2
 
 `chatgpt.service` roda `npm start` em `/root/CHATGPT`.
 
+Ditado Realtime publicado com autorização em 23/10/2026: `chatgpt-transcription.service` executa `scripts/transcription-server.ts` via tsx, somente em `127.0.0.1:3041`. Porta conferida pelo check-port.sh, agora ocupada exclusivamente pela ponte em loopback. Consome a mesma `.env.production` para `AUTH_ENABLED`, `AUTH_USERNAME`, `AUTH_PASSWORD`, `JWT_SECRET` e `OPENAI_API_KEY`, sem criar outra credencial. `NEXT_PUBLIC_BASE_PATH=/chat`; `TRANSCRIPTION_PORT` permite porta isolada de QA. Boot recusa auth desativada ou chave ausente. `/health` local só comprova prontidão da ponte, não transcrição no provedor.
+
+`deploy/apache-chat.conf` contém a rota específica `/chat/api/transcribe/realtime` antes das rotas genéricas, com upgrade WebSocket e Host preservado. `deploy/install.sh` instala e verifica a nova unit. Para publicação dirigida: promover os arquivos e dependências validados, instalar/ativar a unit, instalar snippet, executar `apache2ctl configtest` antes do reload e registrar a porta/serviço em `/etc/apache2/APACHE.md`. Reiniciar o Next com a build validada e a ponte com a mesma configuração; conferir saúde local/pública, autenticação e ditado completo. `scripts/deploy.sh` atualiza somente a build Next; não substitui a instalação da ponte/snippet. Não executar o instalador completo para uma atualização dirigida sem revisar seus efeitos em Studio/agendadores.
+
+Configuração de destino (2026-10-11): os drop-ins `20-xai.conf` e `30-discover.conf` carregam as configurações privadas externas ao Git. `40-host.conf` carrega por último `/etc/chatgpt/host.env`, copiado de `deploy/host-environment.conf`, com `NEXT_PUBLIC_APP_URL=https://sonaris.us/chat`, prefixo `/chat` e callback Google explícito `https://sonaris.us/chat/api/integrations/google/auth/callback`. A URL explícita evita herdar o domínio anterior ou repetir o prefixo ao montar o callback. O cadastro externo do cliente OAuth precisa aceitar esse endereço para novas conexões. O timer Discover é instalado pelo provisionamento e só ativado explicitamente no host responsável pela curadoria; o interruptor do app continua controlando a pausa e a frequência de dois dias.
+
 Registro histórico (2026-09-09): a publicação SoundCase SC3 usou a build isolada `ZvnMJP226jtiS-Y0va9fo`, produzida em `/root/.cache/soundcase-sc3-review-rd4pjy52`, com backup em `/root/.cache/chatgpt-next-before-sc3-20260909T042041Z` e evidência em `/root/.cache/sc3-deploy-result.json`. Esses caminhos descrevem aquela rodada, não a publicação atual; consultar o estado operacional no `BACKLOG.md` antes de qualquer rollback.
 
 Configuração relevante:
@@ -115,9 +125,9 @@ Obrigatórias em produção:
 |---|---|
 | `OPENAI_API_KEY` | Chave server-side da OpenAI |
 | `STUDIO_OPENAI_API_KEY` | Chave OpenAI de escopo restrito (limite de gasto próprio) que a jail do Studio recebe como `OPENAI_API_KEY` no runner, terminal e kernel; a chave principal nunca entra na jail. Sem ela, a jail fica sem chave alguma (`openai` dentro do Studio falha com erro de autenticação) |
-| `DEEPSEEK_API_KEY` | Chave server-side do DeepSeek V4 Pro para chat padrão e autocomplete FIM do Studio |
+| `DEEPSEEK_API_KEY` | Chave server-side do DeepSeek V4.1 Flash (`deepseek-flash`) para chat padrão e autocomplete FIM do Studio |
 | `GEMINI_API_KEY` | Chave server-side do Gemini 3.8 Flash para chat padrão |
-| `XAI_API_KEY` / `GROK_API_KEY` | Chave server-side xAI para Grok 4.7 e SoundCase Realtime experimental; `XAI_API_KEY` tem precedência. Nunca enviar a chave permanente ao browser |
+| `XAI_API_KEY` / `GROK_API_KEY` | Chave server-side xAI só para voz: TTS Orion (`/api/tts/xai`), Grok Realtime do Chat/Pulse e SoundCase. O Grok não é mais modelo de texto desde 2026-10-13; `XAI_API_KEY` tem precedência. Nunca enviar a chave permanente ao browser |
 | `NEXT_PUBLIC_BASE_PATH` | Deve ser `/chat` |
 | `NEXT_PUBLIC_APP_URL` | URL pública completa |
 | `PORT` | Deve ser `3040` |
@@ -134,7 +144,7 @@ A configuração em `.bashrc` serve ao shell que a carrega; não disponibiliza a
 
 | Variável | Propósito |
 |---|---|
-| `DEEPSEEK_WEB_CONTEXT_MODEL` | Modelo OpenAI usado pelo helper `fresh_web_context`; fallback `gpt-5.6-luna` |
+| `DEEPSEEK_WEB_CONTEXT_MODEL` | Modelo OpenAI usado pelo helper `fresh_web_context`; fallback `gpt-6-luna` |
 | `MEMORY_V2_ENABLED` | Ativa SQLite como autoridade exclusiva de conversas; permanece desligada em produção |
 | `MEMORY_V2_DATABASE_PATH` | Caminho opcional do banco SQLite; default `data/memory-v2.sqlite` |
 
@@ -148,7 +158,7 @@ Pulse:
 |---|---|
 | `PULSE_RUNNER_TOKEN` | Obrigatório: protege `/api/pulse/run-due` (sem ele a rota responde `503`); lido por `chatgpt-pulse.service` via `EnvironmentFile` e enviado como Bearer por `scripts/run-pulse-due.sh` |
 | `PULSE_RUNNER_URL` | Override opcional do endpoint local do runner |
-| `PULSE_EXTRACT_MODEL` | Modelo opcional para interpretar prompts de rotina |
+| `PULSE_EXTRACT_MODEL` | Modelo opcional para interpretar prompts de rotina; aceita vazio ou `gpt-6-luna` (padrão, reasoning `low`); `gpt-5.4-mini`/`grok-4.7` legados caem no Luna e outros valores falham. `CALENDAR_DRAFT_MODEL` segue a mesma regra para o rascunho de agenda |
 | `PULSE_RUN_MODEL` | Override opcional global; sem ele, cada rotina escolhe Mini (default), Sol ou Terra |
 | `PULSE_MAX_OUTPUT_TOKENS` | Orçamento de saída do runner; default `25000`, limitado entre 8k e 32k |
 | `PULSE_REASONING_EFFORT` | Override opcional de effort; default `medium`, com `none`/`minimal` coeridos para `low` |
@@ -292,6 +302,14 @@ Nunca coloque as credenciais reais nesses comandos quando eles forem virar docum
 
 ## Registro de Portas
 
+### Anthropic publicada em 2026-10-15
+
+`ANTHROPIC_API_KEY` foi provisionada em `/etc/chatgpt/anthropic.env` (root, 0600). A primeira origem indicada, `/root/STT/.env`, retornou 401. Anders então indicou `CLAUDE_KEY` no `/root/.bashrc` do servidor antigo (145.223.26.62); somente essa variável foi transferida por SSH e mapeada para `ANTHROPIC_API_KEY`, sem emitir seu valor. STT e servidor antigo não foram alterados. `/root/.bashrc` deste host carrega a fonte protegida; backup privado em `/root/.cache/gaucho-claude-20261015/private-backups/bashrc.before`. Nunca imprimir ou versionar valores.
+
+O drop-in versionado `systemd/chatgpt.service.d/50-anthropic.conf` foi instalado e carregado por `chatgpt.service` após autorização explícita de Anders em 2026-10-15. Shell e serviço consomem a mesma fonte. Nenhuma alteração de proxy/porta foi necessária.
+
+Probe de acesso em 2026-10-15: após a atualização da credencial, Models API retornou HTTP 200 e o ID esperado para ambos os modelos Claude. Nenhum conteúdo pessoal foi enviado. Evidência sanitizada em `/root/.cache/gaucho-claude-20261015/evidence/anthropic-models.json`.
+
 Antes de alocar portas novas, consulte `/etc/apache2/APACHE.md` e use:
 
 ```bash
@@ -305,3 +323,17 @@ Antes de alocar portas novas, consulte `/etc/apache2/APACHE.md` e use:
 Com autorização explícita de Anders, `npm run deploy -- --from /root/.cache/gaucho-discover-sidebar-20261010` publicou a build validada `6fdxaKpSv_W__7S18fxZa` (código `a1e078c`, branch `codex/discover-sidebar-20261010`). Preservar essa worktree: a build referencia a origem. Backup em `/root/.cache/gaucho-deploy/20261010T183015Z/next-before`. Na publicação, main fonte ainda não havia recebido a entrega. Anders posteriormente aceitou e fechou a entrega, autorizando integração e push na main, sem nova alteração do runtime.
 
 `chatgpt.service` reiniciado; health local/público HTTP 200 `healthy`; JavaScript e CSS públicos conferidos por SHA-256. Discover/Pulse/SoundCase timers e path SoundCase retomados. Porta 3040, proxy `/chat`, cookies e vhost preservados, sem reload Apache. Registro completo em `docs/plans/2026-10-10-descobrir-sidebar-report.md`.
+
+## Publicação no novo host — 2026-10-11
+
+Domínio de destino `https://sonaris.us/chat`; código base `b8cc7b9` com ajustes locais de provisionamento/domínio. Publicada build `iBusu7Tfp4qfNU5z-P428`, originada de `/root/.cache/chatgpt-equalize-20261011/source` (preservar), backup anterior em `/root/.cache/gaucho-deploy/20261011T220824Z/next-before`. Drop-ins xAI/Discover/host carregados; serviço reiniciado e health local/público healthy 200. Catálogo Grok autenticado real: 28 vozes local/público, cache privado/no-store. Catálogo OpenAI 200; smoke de ownership Studio 5/5. Google OAuth permanece não configurado e desconectado nos dois hosts. Configuração de callback no novo é explícita para sonaris.us.
+
+Units e runner Discover instalados, com token interno configurado (requisição com token inválido retorna 401, em vez do 503 anterior). Após aprovação explícita de Anders, corte concluído em 2026-10-11: antigo como fonte dos dados; backup integral do estado anterior do novo em `/var/backups/chatgpt-equalize-20261011/cutover-20261011T221614Z/new-before`; cópia consistente de `data/`, `/root/studio-projects/` e configuração privada, verificada por checksum dry-run antes de subir o serviço. Novo é o único executor: Pulse/SoundCase/Discover timers e SoundCase path enabled/active; os mesmos agendadores do antigo disabled/inactive. Chat antigo permanece ativo para consulta/retorno, sem desligar o host. Health local/público healthy; 46 conversas, 18 memórias e persona nos dois hosts. Studio habilitado com step-up e kernel real sintético validado dentro da jail. Nenhuma alteração de porta/proxy/cookies ou reload Apache. Registro técnico `/root/.cache/chatgpt-equalize-20261011/RELATORIO.md` e estado atual no BACKLOG.
+
+## Publicação autorizada — 2026-10-15
+
+Anders autorizou publicar e comitar. Fonte original conferida contra baseline, sem divergências. DECISÃO: preservar o WIP anterior na main; aplicar somente o patch desta entrega e importar os commits na branch codex/claude-chat-20261015, sem merge do histórico sintético. Commits de implementação 7e444d2 e documentação 40d44c6.
+
+Drop-in 50-anthropic instalado, daemon-reload e publicação via scripts/deploy.sh --from /root/.cache/gaucho-claude-20261015/source, exit 0. Build s8Q5n0uSF_K2_bQfWeKMa; backup /root/.cache/gaucho-deploy/20261015T110653Z/next-before. Preservar a origem da build. Serviço reiniciado e active; health local/público 200 healthy. Chamadas sintéticas autenticadas na rota pública com Sonnet e Opus: 200, texto e conclusão SSE em ambos, sem tools e sem persistir conversa. Chunk público dos modelos idêntico à build validada. Evidências: deploy.log, published-results.json e public-assets.json no diretório evidence da entrega.
+
+Nenhuma mudança em proxy/porta, nenhum reload Apache ou push. Chave carregada no processo e nunca emitida. APACHE.md atualizado. Gates de código anteriores permanecem válidos: publicação não alterou código; somente registros operacionais foram atualizados.

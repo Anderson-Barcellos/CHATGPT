@@ -119,6 +119,7 @@ try {
     await panel.locator('[data-discover-scroll-root]').evaluate(node => { window.__qaScroll = node; node.scrollTop = 1000; });
     const countBefore = reads, audioBefore = spoken.length;
     if (!compact) {
+      const sidebarWidth = await panel.evaluate(node => node.getBoundingClientRect().width);
       await page.screenshot({ path: path.join(output, `sidebar-${width}-${theme}.png`) });
       await panel.getByRole('button', { name: 'Ampliar leitura' }).click();
       assert.equal(await panel.getAttribute('role'), 'dialog');
@@ -129,7 +130,9 @@ try {
       await page.screenshot({ path: path.join(output, `fullscreen-${width}-${theme}.png`) });
       await panel.getByRole('button', { name: 'Reduzir leitura' }).click();
       assert.equal(await panel.getAttribute('data-discover-fullscreen'), 'false');
-      assert.ok(await panel.evaluate(node => node.getBoundingClientRect().width <= Math.min(360, node.parentElement.clientWidth * 0.32) + 1), 'Reduzir restaura a largura física da lateral');
+      await until(async () => Math.abs(await panel.evaluate(node => node.getBoundingClientRect().width) - sidebarWidth) <= 1, 'geometria da lateral restaurada após reduzir');
+      const restoredWidth = await panel.evaluate(node => node.getBoundingClientRect().width);
+      assert.ok(Math.abs(restoredWidth - sidebarWidth) <= 1, `Reduzir restaura a largura física da lateral: ${sidebarWidth} → ${restoredWidth}`);
       assert.equal(await page.locator('[data-workspace-region="chat"]').evaluate(node => node.getBoundingClientRect().width), chatWidthBefore);
       assert.equal(await panel.getByRole('button', { name: 'Recolher', exact: true }).count(), 1);
       assert.equal(await panel.locator('[data-audio-engine]').count(), 1);

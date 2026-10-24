@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { resolvePulseExecutionProfile } from "./config";
 import type { PulseTask } from "./types";
 
-const task = { model: "gpt-6-sol" } as PulseTask;
+const task = { model: "gpt-6.1-sol" } as PulseTask;
 const originalModel = process.env.PULSE_RUN_MODEL;
 const originalEffort = process.env.PULSE_REASONING_EFFORT;
 
@@ -19,24 +19,25 @@ describe("Pulse execution profile", () => {
     delete process.env.PULSE_REASONING_EFFORT;
 
     expect(resolvePulseExecutionProfile(task)).toEqual({
-      model: "gpt-6-sol",
+      model: "gpt-6.1-sol",
       reasoningEffort: "medium",
     });
   });
 
   it("keeps environment overrides as the operational escape hatch", () => {
-    process.env.PULSE_RUN_MODEL = "grok-4.7";
+    process.env.PULSE_RUN_MODEL = "gpt-6-luna";
     process.env.PULSE_REASONING_EFFORT = "high";
 
     expect(resolvePulseExecutionProfile(task)).toEqual({
-      model: "grok-4.7",
-      reasoningEffort: "medium",
+      model: "gpt-6-luna",
+      reasoningEffort: "high",
     });
   });
 
   it("normalizes legacy task and environment models before execution", () => {
     delete process.env.PULSE_RUN_MODEL;
-    expect(resolvePulseExecutionProfile({ model: "gpt-5.6-terra" })).toMatchObject({ model: "gpt-6-sol" });
+    expect(resolvePulseExecutionProfile({ model: "gpt-5.6-terra" })).toMatchObject({ model: "gpt-6.1-sol" });
+    expect(resolvePulseExecutionProfile({ model: "gpt-6-sol" })).toMatchObject({ model: "gpt-6.1-sol" });
     process.env.PULSE_RUN_MODEL = "gpt-5.6-luna";
     expect(resolvePulseExecutionProfile(task)).toMatchObject({ model: "gpt-6-luna" });
   });

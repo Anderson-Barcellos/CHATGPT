@@ -76,6 +76,7 @@ function createDeployHarness() {
       "#!/usr/bin/env bash",
       "printf 'npm %s|base=%s|cwd=%s\\n' \"$*\" \"${NEXT_PUBLIC_BASE_PATH:-}\" \"$PWD\" >> \"$FAKE_CALLS\"",
       "if [[ \"$1 $2\" == 'run build' ]]; then",
+      "  printf 'build-app-url=%s\\n' \"${NEXT_PUBLIC_APP_URL:-}\" >> \"$FAKE_CALLS\"",
       "  mkdir -p .next/static/chunks && printf 'gated-build' > .next/BUILD_ID && printf '//' > .next/static/chunks/gated.js",
       "fi",
       "",
@@ -135,8 +136,19 @@ describe("deploy.sh", () => {
     const calls = harness.calls();
     expect(calls.match(/systemctl restart chatgpt\.service/g)).toHaveLength(1);
     expect(calls).toContain("curl http://127.0.0.1:3040/chat/api/health");
-    expect(calls).toContain("curl https://ultrassom.ai/chat/api/health");
+    expect(calls).toContain("curl https://sonaris.us/chat/api/health");
     expect(result.stdout).toContain("new-build");
+  });
+
+  it("preserva um endpoint público explícito para publicar em outro host", () => {
+    const harness = createDeployHarness();
+    const result = runDeploy(["--from", harness.buildDirectory], {
+      ...harness.env,
+      GAUCHO_HEALTH_PUBLIC_URL: "https://example.org/chat/api/health",
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(harness.calls()).toContain("curl https://example.org/chat/api/health");
+    expect(harness.calls()).not.toContain("curl https://sonaris.us/chat/api/health");
   });
 
   it("restaura a build anterior se o health local falhar", () => {
@@ -215,6 +227,7 @@ describe("deploy.sh", () => {
       expect(calls).toContain("tsc --noEmit");
       expect(calls).toContain(`npm test|base=|cwd=${isolated}`);
       expect(calls).toContain(`npm run build|base=/chat|cwd=${isolated}`);
+      expect(calls).toContain("build-app-url=https://sonaris.us/chat");
       expect(calls.indexOf("npm run build")).toBeLessThan(calls.indexOf("systemctl restart"));
       expect(existsSync(join(isolated, "data"))).toBe(false);
       expect(existsSync(join(isolated, ".env.production"))).toBe(false);

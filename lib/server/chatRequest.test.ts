@@ -25,7 +25,7 @@ describe("buildResponseCreateParams", () => {
   it("drops legacy Pro mode while retaining max effort for GPT-6", () => {
     const params = buildResponseCreateParams({
       input: [{ role: "user", content: "Teste" }],
-      model: "gpt-6-sol",
+      model: "gpt-6.1-sol",
       reasoning: { mode: "pro", effort: "max", summary: "detailed" },
     });
 
@@ -108,14 +108,38 @@ describe("buildResponseCreateParams", () => {
     expect(resolveRequestedModel("chat-latest")).toBe("chat-latest");
   });
 
-  it("allows DeepSeek V4 Pro as a selectable chat model", () => {
-    expect(resolveRequestedModel("deepseek-v4-pro")).toBe("deepseek-v4-pro");
+  it("encaminha o DeepSeek V4 Pro salvo para o V4.1 Flash", () => {
+    expect(resolveRequestedModel("deepseek-flash")).toBe("deepseek-flash");
+    expect(resolveRequestedModel("deepseek-v4-pro")).toBe("deepseek-flash");
   });
 
-  it("maps old model IDs to GPT-6 for new requests", () => {
-    expect(resolveRequestedModel("gpt-5.6-terra")).toBe("gpt-6-sol");
-    expect(resolveRequestedModel("gpt-5.6-sol")).toBe("gpt-6-sol");
+  it("leva o GPT-6 Sol e o Terra ao 6.1 Sol e mantém o GPT-5.6 Sol próprio", () => {
+    expect(resolveRequestedModel("gpt-6-sol")).toBe("gpt-6.1-sol");
+    expect(resolveRequestedModel("gpt-5.6-terra")).toBe("gpt-6.1-sol");
+    expect(resolveRequestedModel("gpt-5.6-sol")).toBe("gpt-5.6-sol");
     expect(resolveRequestedModel("gpt-5.6-luna")).toBe("gpt-6-luna");
+  });
+
+  it("não manda o esforço none ao GPT-6.1 Sol, que o recusa", () => {
+    const params = buildResponseCreateParams({
+      input: [{ role: "user", content: "Teste" }],
+      model: "gpt-6-sol",
+      reasoning: { effort: "none" },
+    });
+
+    expect(params.model).toBe("gpt-6.1-sol");
+    expect(params.reasoning).toEqual({});
+  });
+
+  it("preserva o modo Pro no GPT-5.6 Sol", () => {
+    const params = buildResponseCreateParams({
+      input: [{ role: "user", content: "Teste" }],
+      model: "gpt-5.6-sol",
+      reasoning: { mode: "pro", effort: "high" },
+    });
+
+    expect(params.model).toBe("gpt-5.6-sol");
+    expect(params.reasoning).toEqual({ effort: "high", mode: "pro" });
   });
 
   it("forces GPT-6 Astra reasoning and verbosity to medium", () => {
@@ -144,14 +168,15 @@ describe("buildResponseCreateParams", () => {
     expect(resolveRequestedModel("gemini-3.7-flash")).toBe("gemini-3.8-flash");
   });
 
-  it("maps the persisted GPT-5.4 mini id to Grok 4.7", () => {
-    expect(resolveRequestedModel("gpt-5.4-mini")).toBe("grok-4.7");
+  it("leva o Grok e o mini salvos ao GPT-6 Luna", () => {
+    expect(resolveRequestedModel("grok-4.7")).toBe("gpt-6-luna");
+    expect(resolveRequestedModel("gpt-5.4-mini")).toBe("gpt-6-luna");
     const params = buildResponseCreateParams({
       input: [{ role: "user", content: "Teste" }],
-      model: "gpt-5.4-mini",
+      model: "grok-4.7",
       reasoning: { effort: "high" },
     });
-    expect(params.model).toBe("grok-4.7");
-    expect(params.reasoning).toEqual({ effort: "medium" });
+    expect(params.model).toBe("gpt-6-luna");
+    expect(params.reasoning).toEqual({ effort: "high" });
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   CalendarPlus,
@@ -74,9 +74,11 @@ export function WorkspaceCapturesPanelV2({
     isSupported,
     recordingDurationMs,
     status: speechStatus,
+    transcriptPreview,
     startRecording,
     stopRecording,
   } = useSpeechToText();
+  const recordActionRef = useRef(false);
   const [notes, setNotes] = useState<WorkspaceNote[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -84,6 +86,7 @@ export function WorkspaceCapturesPanelV2({
   const [copiedNoteId, setCopiedNoteId] = useState<string | null>(null);
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [failedTranscript, setFailedTranscript] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedNoteIds, setExpandedNoteIds] = useState<Set<string>>(
     () => new Set()
@@ -161,6 +164,7 @@ export function WorkspaceCapturesPanelV2({
           }
         }
       } catch (error) {
+        setFailedTranscript(text);
         toast.error(readableError(error, "Nao consegui salvar a captura local."));
       } finally {
         setIsSaving(false);
@@ -191,15 +195,21 @@ export function WorkspaceCapturesPanelV2({
   );
 
   const handleRecordClick = useCallback(async () => {
-    if (isRecording) {
-      const transcript = await stopRecording();
-      if (transcript) {
-        await saveTranscript(transcript);
+    if (recordActionRef.current) return;
+    recordActionRef.current = true;
+    try {
+      if (isRecording) {
+        const transcript = await stopRecording();
+        if (transcript) {
+          await saveTranscript(transcript);
+        }
+        return;
       }
-      return;
-    }
 
-    await startRecording();
+      await startRecording();
+    } finally {
+      recordActionRef.current = false;
+    }
   }, [isRecording, saveTranscript, startRecording, stopRecording]);
 
   const handleDelete = useCallback(async (noteId: string) => {
@@ -304,6 +314,16 @@ export function WorkspaceCapturesPanelV2({
             />
           </div>
         )}
+        {transcriptPreview && (isRecording || isTranscribing || speechStatus === "error") && (
+          <div className="mt-2 border-t border-[color:var(--gc-border-soft)] pt-2">
+            <p className="text-nano text-muted-foreground">
+              {speechStatus === "error" ? "Texto parcial preservado — captura não salva" : "Prévia da captura"}
+            </p>
+            <p role="status" aria-live="polite" className="mt-1 max-h-40 overflow-y-auto whitespace-pre-wrap break-words text-xs text-foreground">
+              {transcriptPreview}
+            </p>
+          </div>
+        )}
       </div>
 
       {(speechError || loadError) && (
@@ -311,6 +331,20 @@ export function WorkspaceCapturesPanelV2({
           <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
           {speechError || loadError}
         </p>
+      )}
+
+      {failedTranscript && (
+        <div className="mb-3 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-xs">
+          <p className="font-medium">Não consegui salvar a nota. Teu texto está preservado aqui.</p>
+          <p className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap break-words">{failedTranscript}</p>
+          <Button type="button" size="sm" variant="ghost" className="mt-2" onClick={() => {
+            void navigator.clipboard.writeText(failedTranscript)
+              .then(() => toast.success("Texto copiado."))
+              .catch(() => toast.error("Não consegui copiar. Seleciona o texto para copiar manualmente."));
+          }}>
+            <Copy className="size-3" /> Copiar texto preservado
+          </Button>
+        </div>
       )}
 
       {visibleNotes.length > 0 ? (

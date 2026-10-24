@@ -3,7 +3,7 @@ import type { ChatRequestBody } from "@/lib/server/chatRequest";
 import type { AssistantStreamEvent } from "@/lib/chat/streamMachine";
 import { extractResponseOutput } from "@/lib/chat/responseToMessagePatch";
 
-export const DEEPSEEK_MODEL = "deepseek-v4-pro";
+export const DEEPSEEK_MODEL = "deepseek-flash";
 export const FRESH_WEB_CONTEXT_TOOL_NAME = "fresh_web_context";
 const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
 const DEFAULT_WEB_CONTEXT_MODEL = "gpt-6-luna";
@@ -20,7 +20,7 @@ type DeepSeekChatCompletionParams =
     "reasoning_effort"
   > & {
     extra_body: { thinking: { type: "enabled" } };
-    reasoning_effort: "max";
+    reasoning_effort: "low";
   };
 
 export type DeepSeekToolCall = {
@@ -73,7 +73,7 @@ function stringifyContent(content: InputMessage["content"]): string {
     .map((part) => {
       if (part.type === "input_image") {
         throw new Error(
-          "DeepSeek V4 Pro ainda esta habilitado apenas para texto neste chat."
+          "DeepSeek V4.1 Flash ainda esta habilitado apenas para texto neste chat."
         );
       }
 
@@ -150,7 +150,7 @@ export function buildDeepSeekChatCompletionParams({
     model: DEEPSEEK_MODEL,
     messages,
     max_tokens: Math.max(Math.round(maxOutputTokens ?? 4096), 1),
-    reasoning_effort: "max",
+    reasoning_effort: "low",
     stream: true,
     stream_options: { include_usage: true },
     tools: [buildFreshWebContextTool()],
@@ -282,8 +282,8 @@ export function buildOpenAIWebContextParams(
   query: string,
   { model = process.env.DEEPSEEK_WEB_CONTEXT_MODEL?.trim() || DEFAULT_WEB_CONTEXT_MODEL } = {}
 ): OpenAI.Responses.ResponseCreateParamsNonStreaming {
-  const effectiveModel = model === "gpt-5.6-sol" || model === "gpt-5.6-terra"
-    ? "gpt-6-sol"
+  const effectiveModel = model === "gpt-6-sol" || model === "gpt-5.6-terra"
+    ? "gpt-6.1-sol"
     : model === "gpt-5.6-luna" ? "gpt-6-luna" : model;
   return {
     model: effectiveModel,

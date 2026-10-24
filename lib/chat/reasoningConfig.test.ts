@@ -31,7 +31,7 @@ describe("buildReasoningConfig", () => {
 
   it("omits standard mode from the API payload", () => {
     expect(
-      buildReasoningConfig("gpt-6-sol", "medium", "detailed", "standard")
+      buildReasoningConfig("gpt-6.1-sol", "medium", "detailed", "standard")
     ).toEqual({ effort: "medium", summary: "detailed" });
   });
 

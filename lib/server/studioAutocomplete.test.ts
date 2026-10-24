@@ -106,7 +106,7 @@ describe("Studio autocomplete server contract", () => {
     });
     expect(STUDIO_FIM_PROVIDERS.deepseek).toEqual({
       baseURL: "https://api.deepseek.com/beta",
-      model: "deepseek-v4-pro",
+      model: "deepseek-flash",
       envKey: "DEEPSEEK_API_KEY",
     });
   });
@@ -120,7 +120,7 @@ describe("Studio autocomplete server contract", () => {
       temperature: 0.1,
     });
     expect(buildStudioFimParams("deepseek", validRequest)).toEqual({
-      model: "deepseek-v4-pro",
+      model: "deepseek-flash",
       prompt: validRequest.prefix,
       suffix: validRequest.suffix,
       max_tokens: 256,

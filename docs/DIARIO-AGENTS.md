@@ -1676,3 +1676,90 @@ Anders aprovou o resultado (“Show de bola! Fechadinho meu velho!”) e autoriz
 Codex: Anders aprovou explicitar no player do Pulse que o TTS já existente é o Grok TTS com voz Orion. O `MiniAudioPlayer` compartilhado por Pulse, Chat e Descobrir agora mostra **Grok TTS · Orion**; Grok Realtime permanece como alternativa manual onde permitido. O Descobrir continua somente com TTS, e abrir ou trocar o motor não inicia geração. O seletor foi compactado para não quebrar linha no painel estreito. Rotas xAI, chunks, cache, remux/download, preferências, SoundCase e dados privados não mudaram.
 
 Validação: focados `3` arquivos/`15` testes, exit 0; suíte completa `212` arquivos/`1.084` testes, exit 0; `npx tsc --noEmit`, exit 0; lint dos fontes com exclusão do backup preexistente `.next-before-sc2-20260906T170822Z`, exit 0, zero erros e um warning anterior em `CommandComposerContainerV2.test.tsx`; o `npm run lint` literal foi interrompido com exit 130 após ficar preso varrendo esse backup de 969 MB. Build final isolada, sem arquivos `.env` copiados e com configuração sintética explícita, exit 0, `43/43` páginas e três warnings anteriores de instrumentation/NFT do Studio. Smoke Playwright em 1440 px dark e 390 px light, exit 0: rótulo inicial correto, troca manual para Realtime, zero geração ao abrir, zero overflow/pageerror; capturas inspecionadas em `/root/.cache/gaucho-grok-tts-label-evidence/`. `git diff --check`, exit 0. Sem publicação, restart, commit, push ou chamada paga.
+
+
+### 2026-10-11 — Equalização operacional para sonaris.us
+
+Codex: Anders autorizou usar o Gaúcho Chat antigo como referência e equalizar o novo para sonaris.us/chat, mantendo a desativação do servidor antigo para depois. Configuração xAI e autenticação interna Discover provisionadas sem emitir segredos; runner/units Discover instalados; domínio/callback separados das credenciais herdadas por drop-in 40-host. Instalador e deploy atualizados. Build iBusu7Tfp4qfNU5z-P428 publicada de /root/.cache/chatgpt-equalize-20261011/source (preservar), backup /root/.cache/gaucho-deploy/20261011T220824Z/next-before; serviço saudável local/público.
+
+Validação: 212 arquivos/1.085 testes, tipos/lint/build 43/43, units, seis cenários de browser, cinco checks de ownership Studio e quatro cenários de login/health publicados, exit 0. Catálogo Grok real 28 vozes local/público; catálogo OpenAI 200. Sem geração paga. Google legado desconectado como no antigo. Dados atuais preservados e automações antigas intocadas. Perguntas sobre autoridade dos dados e troca dos agendadores ainda sem resposta; timer Discover novo instalado, disabled/inactive. Sem commit/push. Estado canônico no BACKLOG; evidência /root/.cache/chatgpt-equalize-20261011/RELATORIO.md.
+
+
+### 2026-10-11 — Corte de dados e automações aprovado e concluído
+
+Codex: Anders confirmou “Perfeito! Podemos fazer assim sim!” para backup completo do novo, antigo como referência dos dados e novo como único executor. Workers drenados e os dois chats parados durante cópia opaca de data/, Studio e configuração privada; checksum dry-run confirmou igualdade antes da promoção. Backup integral anterior do novo em /var/backups/chatgpt-equalize-20261011/cutover-20261011T221614Z/new-before. Dados reais não usados como fixture nem emitidos em logs.
+
+Novo saudável em sonaris.us/chat, com Pulse/SoundCase/Discover timers e path SoundCase enabled/active; quatro unidades antigas disabled/inactive e chat antigo restaurado/healthy, sem desligar o host. Health em ambos: 46 conversas, 18 memórias e persona. Probe real pós-corte: Grok 28 vozes, OpenAI 200, Studio enabled com step-up preservado; kernel Python real em fixture própria da jail executou NumPy/Pandas/Matplotlib/ipykernel, exit 0. Código/build inalterados nesta transferência; gates anteriores reutilizados e verificações pós-corte focadas nos dados, consumidores e automações. APACHE.md dos dois hosts atualizado; AGENTS/CLAUDE e estado canônico alinhados ao novo domínio. Sem commit/push. Registro completo /root/.cache/chatgpt-equalize-20261011/RELATORIO.md; desativação definitiva do antigo fica para decisão posterior.
+
+
+### 2026-10-13 — Modelos: DeepSeek V4.1 Flash, GPT-6.1 Sol, GPT-5.6 Sol de volta, Grok fora do texto
+
+Claude: pedido de Anders “colocar o modelo do deep seek como o 4.1 flash, testar se o 6.1-sol está funcionando (e se sim colocar no lugar do 6) e colocar o 5.6-sol de volta! Tirando o grok”; sobre o Grok, escolheu tirá-lo das opções visíveis. Probes reais confirmaram 6.1 Sol (recusa `none`), 5.6 Sol Pro e `deepseek-flash`. Catálogo: `deepseek-flash` (sem vision) substitui `deepseek-v4-pro`; `gpt-6.1-sol` substitui `gpt-6-sol`/`gpt-5.6-terra` como alias; `gpt-5.6-sol` volta com Pro em chat, Pulse e Studio ($5/$30 de novo para rotinas salvas nele). Grok sai de chat, Pulse e Studio; `grok-4.7` e `gpt-5.4-mini` resolvem para `gpt-6-luna`; extrações do Pulse e rascunho de agenda em Luna `low`. `xaiChat` apagado; `xaiBackground` só cancela/recupera jobs xAI legados. Chave xAI permanece só para a voz (Orion/TTS e Realtime intocados). Docs MODELS/ARCHITECTURE/API/INFRASTRUCTURE, README, CLAUDE e AGENTS alinhados. Gates em cópia isolada: 1093 passed, tsc 0, lint 0 erros, build 0. Deploy, commit e push aguardam ok de Anders; push depende de `gh auth login` no host novo.
+
+### 2026-10-15 — Claude no chat preparado e validado
+
+Codex: plano aprovado implementado em snapshot isolado para preservar produção com WIP. Sonnet/Opus 5.5 no chat, medium inicial e teto high; Gemini/Astra ocultos das novas escolhas, Studio/Pulse/históricos preservados. CLAUDE_KEY indicada por Anders no antigo provisionada em fonte privada local e carregada pelo bash; drop-in somente preparado.
+
+Gates: 1.126 testes, tipos, lint, build 43/43 e oito checks browser aprovados; API real validada com texto/imagem nos dois modelos e web/memória no Sonnet. Dados sintéticos removidos; nenhum deploy/restart/push. Pronta para revisão. Relatório: docs/plans/2026-10-15-claude-no-chat-report.md. Integrar somente diff contra e473f31, sem merge do histórico sintético. Nova instrução de não delegar sem convite explícito respeitada no fechamento, conduzido só pelo principal.
+
+## Publicação autorizada — 2026-10-15
+
+Anders autorizou publicar e comitar. Fonte original conferida contra baseline, sem divergências. DECISÃO: preservar o WIP anterior na main; aplicar somente o patch desta entrega e importar os commits na branch codex/claude-chat-20261015, sem merge do histórico sintético. Commits de implementação 7e444d2 e documentação 40d44c6.
+
+Drop-in 50-anthropic instalado, daemon-reload e publicação via scripts/deploy.sh --from /root/.cache/gaucho-claude-20261015/source, exit 0. Build s8Q5n0uSF_K2_bQfWeKMa; backup /root/.cache/gaucho-deploy/20261015T110653Z/next-before. Preservar a origem da build. Serviço reiniciado e active; health local/público 200 healthy. Chamadas sintéticas autenticadas na rota pública com Sonnet e Opus: 200, texto e conclusão SSE em ambos, sem tools e sem persistir conversa. Chunk público dos modelos idêntico à build validada. Evidências: deploy.log, published-results.json e public-assets.json no diretório evidence da entrega.
+
+Nenhuma mudança em proxy/porta, nenhum reload Apache ou push. Chave carregada no processo e nunca emitida. APACHE.md atualizado. Gates de código anteriores permanecem válidos: publicação não alterou código; somente registros operacionais foram atualizados.
+
+## 2026-10-21 — Revisão mobile implementada e publicada
+
+Codex, sozinho: Anders autorizou implementar os achados de UX mobile e publicar/reiniciar no Sonaris. Campos mobile com 16 px, zoom separado de teclado, pan acompanhado, reedição limitada e protegida de auto-scroll, Enter para nova linha, bloqueio de reenvio durante geração preservando o texto e gesto de segurar com tolerância/cancelamento/feedback reduzível. Editor substitui temporariamente o composer no mobile; desktop preservado.
+
+DECISÃO: na checagem pré-publicação, a auditoria paralela no BACKLOG revelou seis arquivos DeepSeek pendentes que diferiam da build viva. A candidata foi reconciliada com o comportamento publicado `max`, mantendo o WIP `low` intacto no checkout. Publicação abrange somente mobile. Validado com 215 arquivos/1.139 testes, tipos/lint/build e 17 verificações de navegador pertinentes ao shell/chat/Descobrir. Teclado nativo do iPhone continua dependente da conferência no aparelho.
+
+Build `6dxYdQfcARJRrT0-1qEkK` publicada via deploy existente, serviço reiniciado, local/público 200 healthy, JS/CSS públicos idênticos à candidata. Agendadores restaurados; auth anônima preservada. Origem a manter: `/root/.cache/gaucho-mobile-20261021/source`; backup `/root/.cache/gaucho-deploy/20261021T163104Z/next-before`. Evidência completa em `/root/.cache/gaucho-mobile-20261021/evidence` e comandos/tentativas em `TEST_LOGS.md`. Sem commit/push, proxy ou alteração de dados privados.
+
+## 2026-10-21 — Intervalo antes do gesto de edição
+
+Codex: Anders observou feedback imediato ao iniciar rolagem. Corrigidos hook e integração: feedback aos 450 ms, menu aos 900 ms e contextmenu de toque sem antecipação. Arrasto cancela ambos os timers; clique direito preservado. 1.141 testes, lint, tipos e build aprovados; Chrome mobile/desktop abriu menu/edição após a espera e preservou toque curto/arrasto. Publicada build `VpqUQkfWDgyJNn4Tx8i-w`, restart e health local/público healthy, assets conferidos. Fonte `/root/.cache/gaucho-press-20261021/source`, backup `/root/.cache/gaucho-deploy/20261021T172749Z/next-before`; registros em TEST_LOGS. WIP alheio e dados privados preservados; sem commit/push. Safari físico continua fora da validação automatizada.
+
+## 2026-10-23 — Ditado Realtime preparado para chat e notas
+
+Codex, sozinho, por pedido de Anders: integração em worktree isolada, mantendo microfones existentes, prévia durante captura, rascunho preservado, sem envio automático e nota única ao parar. Fallback integral em memória, cancelamento e preservação em falha. Candidata conciliada com DeepSeek max publicado; WIP low vivo preservado. 1.193 testes, tipos, lint, build e oito cenários Chrome sintéticos aprovados. Sem publicação/commit/push. Decisões, comandos, evidências, limitações e promoção dirigida em `docs/DITADO-REALTIME.md`; fonte `/root/worktrees/gaucho-ditado-realtime`.
+
+
+### 2026-10-23 — Ditado publicado
+
+Anders autorizou atualizar o deploy. Publicada BDr0Qzt70HLiGVp34_yrF, ponte 3041 enabled/active, Apache validado/recarregado e chat reiniciado. Saúde local/pública, auth/origem, Realtime e fallback OpenAI reais, Chrome público sintético desktop/mobile e assets aprovados. Dados e WIP preservados; sem commit/push. Registro e backups em `docs/DITADO-REALTIME.md`.
+
+## 2026-10-23 — Codex: exclusão de notícias preparada
+
+Codex implementou sozinho exclusão individual/em lote no feed e na API, confirmação/retry e integração do foco no painel mobile. 1.213 testes, tipos/lint/build e três harnesses Chrome aprovados. Relatório canônico: docs/DESCOBRIR-EXCLUSAO.md. Candidata /root/worktrees/gaucho-discover-delete; produção/WIP intactos. Publicação pendente de autorização; sem commit/push.
+
+23/10/2026 — Codex: exclusão Descobrir publicada por autorização de Anders. Deploy exit 0; health 200 local/público; auth DELETE 401/400; Chrome público 1440/390 com fixtures interceptadas, exit 0; 24 assets e worklet idênticos. Backup e limites em docs/DESCOBRIR-EXCLUSAO.md.
+
+## 2026-10-24 — Codex: consolidação Git e bloqueio de escrita no GitHub
+
+Anders pediu organizar e sincronizar a árvore local e o remoto, após a conferência de 91 arquivos modificados, dois removidos, 31 novos e um commit local anterior (`c59ea2d`). Trabalho conduzido sozinho. DECISÃO: consolidar o conjunto interdependente já existente em um commit, preservando todo o conteúdo funcional, as remoções de `xaiChat` e a finalização de jobs legados em `xaiBackground`. Não reconstruir artificialmente o histórico das entregas ou incorporar branches com baselines sintéticos. O commit anterior de largura do Descobrir integra o envio solicitado.
+
+Preservação: worktree destacada de `c59ea2d` em `/root/.cache/gaucho-git-sync-20261024T151752Z/source`; patch binário, inventário e hashes do código em `evidence/` ao lado. Somente arquivos rastreados ou não ignorados; nenhum `data/` ou arquivo privado de ambiente copiado. Checagem de padrões de chaves, tokens e JWTs nos 124 caminhos pendentes sem achados, com saída apenas de localizações. Manifesto reconferido antes da integração documental: zero drift no checkout original. Comparação com `/root/worktrees/gaucho-discover-delete` confirmou identidade dos demais arquivos e seis diferenças específicas de DeepSeek (`max` publicado versus `low` local).
+
+DECISÃO: conservar DeepSeek `low` como código local versionado; publicação não faz parte da sincronização Git. `docs/MODELS.md` corrigido para distinguir código e release. QA anterior de ditado/mobile permanece evidência histórica, com fontes idênticas exceto a descrição do DeepSeek no composer; a rodada atual repete testes completos e os três harnesses Descobrir em todas as suas dimensões. Safari/iPhone físico, microfone pessoal e chamadas pagas não foram exercitados.
+
+Comandos e resultados reais, todos no ambiente isolado, sem credenciais de providers:
+
+| Comando | Resultado | Evidência em `evidence/` |
+| --- | --- | --- |
+| `npm ci --no-audit --no-fund` | exit 0; 866 pacotes instalados a partir do lockfile | `npm-ci.log` |
+| `NEXT_PUBLIC_BASE_PATH=/chat npx --no-install next typegen` | exit 0 | `typegen.log` |
+| `npx --no-install tsc --noEmit` | exit 0 | `types.log` |
+| `npm run lint` | exit 0; zero erros, um warning `_content` no teste do composer | `lint.log` |
+| `npm test` | exit 0; 223 arquivos, 1.213 testes, zero falhas/skips | `tests.log` |
+| `npm run build` com base `/chat` e URL `https://sonaris.us/chat` | exit 0; 43/43 páginas; build `1oA-04IM57A9zd-XoxMmN` | `build.log` |
+| `node scripts/qa-discover-delete.mjs` | exit 0; cinco cenários, exclusão individual/lote, cancelar, erro/retry, persistência e auth | `browser-delete.log`, `delete/` |
+| `node scripts/qa-discover-controls.mjs` | exit 0; sete verificações, seis combinações largura/tema e preservação das fixtures | `browser-controls.log`, `controls/` |
+| `node scripts/qa-discover-sidebar.mjs` | exit 0; seis cenários, expansão/redução, foco, rascunho, áudio e paleta | `browser-sidebar.log`, `sidebar/` |
+| `bash -n deploy/install.sh scripts/deploy.sh` e `git diff --check` | exit 0 | conferência final |
+
+Os três avisos de build são de instrumentação Edge e tracing Studio, nas mesmas fontes da release anterior. Captura mobile da confirmação de exclusão inspecionada. Harnesses encerraram suas instâncias e removeram seus dados sintéticos. `gates.json` e `browser-gates.json` registram códigos e durações; `preservation-check.json` registra a build publicada original, `lC8e60dlN4-pot2IHPGo4`. Nenhuma compilação no checkout vivo, restart, alteração de Apache ou escrita de dados pessoais.
+
+Ensaio de envio: Git HTTPS sem helper exit 128 (sessão sem credencial carregada). Carregada a credencial já existente, sem ler ou imprimir seu valor, e usada somente neste comando com `credential.helper=!gh auth git-credential`; conta confirmada como `Anderson-Barcellos`. Novo ensaio exit 128/HTTP 403, recusado pelo GitHub. SSH em BatchMode exit 255, `Permission denied (publickey)`. Não há autenticação alternativa no GitHub CLI configurada neste host. Nenhuma configuração global ou credencial alterada. Logs `push-dry-run.log`, `push-dry-run-authenticated.log` e `github-ssh-check.log`. Pedido de liberação da escrita apresentado a Anders; sincronização remota permanece bloqueada, enquanto o conjunto local fica validado para commit.

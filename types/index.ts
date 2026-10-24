@@ -317,6 +317,7 @@ export type ModelFamily =
   | "gpt-6"
   | "deepseek"
   | "gemini"
+  | "anthropic"
   | "grok"
   | "dall-e"
   | "gpt-image";

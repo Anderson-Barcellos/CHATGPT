@@ -32,6 +32,12 @@ command -v npm  >/dev/null || die "npm ausente"
 
 log "1/8 Configuração"
 [[ -f "$ENV_FILE" ]] || die "falta $ENV_FILE — copiar .env.example, preencher e chmod 600"
+for config in /etc/chatgpt/xai.env /etc/chatgpt/discover.env; do
+  [[ -f "$config" ]] || die "falta $config — provisionar a configuração privada antes de instalar"
+  chmod 600 "$config"
+done
+install -d -m 700 /etc/chatgpt
+install -m 600 "$ROOT/deploy/host-environment.conf" /etc/chatgpt/host.env
 chmod 600 "$ENV_FILE"
 for v in JWT_SECRET AUTH_PASSWORD OPENAI_API_KEY PULSE_RUNNER_TOKEN SOUNDCASE_WORKER_TOKEN; do
   grep -qE "^$v=." "$ENV_FILE" || warn "$v vazio em .env.production (runner/worker devolvem 503 sem token)"
@@ -56,7 +62,7 @@ log "3/8 Node (npm ci + next build; nativos better-sqlite3/node-pty/lancedb reco
 if [[ "${SKIP_BUILD:-0}" == "1" ]]; then
   warn "SKIP_BUILD=1: npm ci e build pulados"
 else
-  (cd "$ROOT" && npm ci --no-audit --no-fund --loglevel=error && NODE_ENV=production NEXT_PUBLIC_BASE_PATH=/chat npm run build)
+  (cd "$ROOT" && npm ci --no-audit --no-fund --loglevel=error && NODE_ENV=production NEXT_PUBLIC_BASE_PATH=/chat NEXT_PUBLIC_APP_URL=https://sonaris.us/chat npm run build)
 fi
 [[ -f "$ROOT/.next/BUILD_ID" ]] || die ".next/BUILD_ID ausente: build falhou"
 
@@ -70,18 +76,37 @@ if [[ -f "$FREEZE" ]]; then
 fi
 
 log "5/8 Units systemd (fontes: systemd/)"
-for u in chatgpt.service chatgpt-pulse.service chatgpt-pulse.timer chatgpt-soundcase.service chatgpt-soundcase.timer chatgpt-soundcase.path; do
+for u in chatgpt.service chatgpt-transcription.service chatgpt-pulse.service chatgpt-pulse.timer chatgpt-soundcase.service chatgpt-soundcase.timer chatgpt-soundcase.path chatgpt-discover.service chatgpt-discover.timer; do
   install -m 644 "$ROOT/systemd/$u" "$UNIT_DIR/$u"
 done
+install -d -m 755 "$UNIT_DIR/chatgpt.service.d"
+for config in 20-xai.conf 30-discover.conf 40-host.conf; do
+  install -m 644 "$ROOT/systemd/chatgpt.service.d/$config" "$UNIT_DIR/chatgpt.service.d/$config"
+done
+install -d -m 755 /usr/local/libexec
+install -m 700 "$ROOT/scripts/run-discover-due.sh" /usr/local/libexec/chatgpt-discover-run-due.sh
 systemctl daemon-reload
 systemctl enable --now chatgpt.service chatgpt-pulse.timer chatgpt-soundcase.timer chatgpt-soundcase.path >/dev/null 2>&1
 systemctl restart chatgpt.service   # pega build/código novos mesmo se já estava ativo
+systemctl enable --now chatgpt-transcription.service
+systemctl restart chatgpt-transcription.service
+# A ativação do Discover fica explícita para permitir preparar um host espelho
+# sem executar curadoria enquanto o servidor anterior ainda é o executor.
+if [[ "${ENABLE_DISCOVER_TIMER:-0}" == "1" ]]; then
+  systemctl enable --now chatgpt-discover.timer
+fi
 
 log "6/8 Snippet Apache → $SNIPPET_DIR/chat.conf (instalado, NÃO incluído no vhost)"
 install -d -m 755 "$SNIPPET_DIR"
 install -m 644 "$ROOT/deploy/apache-chat.conf" "$SNIPPET_DIR/chat.conf"
 
 log "7/8 Verificação"
+transcription_ready=0
+for _ in $(seq 1 30); do
+  if curl --fail --silent http://127.0.0.1:3041/health >/dev/null; then transcription_ready=1; break; fi
+  sleep 1
+done
+[[ "$transcription_ready" == "1" ]] || die "ponte de ditado indisponível"
 code=000
 for _ in $(seq 1 60); do
   code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3040/chat/api/health || true)

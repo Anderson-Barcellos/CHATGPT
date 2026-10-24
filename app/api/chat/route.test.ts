@@ -5,10 +5,11 @@ const geminiMocks = vi.hoisted(() => ({
   createClient: vi.fn(),
   createEventStream: vi.fn(),
 }));
-const xaiMocks = vi.hoisted(() => ({
+
+const anthropicMocks = vi.hoisted(() => ({
   createClient: vi.fn(),
   createEventStream: vi.fn(),
-  createResponse: vi.fn(),
+  isInputError: vi.fn(),
 }));
 
 vi.mock("@/lib/server/auth", () => ({
@@ -22,18 +23,19 @@ vi.mock("@/lib/server/geminiChat", () => ({
   createGeminiEventStream: geminiMocks.createEventStream,
 }));
 
+vi.mock("@/lib/server/anthropicChat", () => ({
+  createAnthropicClient: anthropicMocks.createClient,
+  createAnthropicEventStream: anthropicMocks.createEventStream,
+  isAnthropicInputError: anthropicMocks.isInputError,
+}));
+
 vi.mock("@/lib/server/chatToolOrchestrator", () => ({
   createMemoryToolEventStream: vi.fn(),
   createResponseWithMemoryTools: vi.fn(),
 }));
-vi.mock("@/lib/server/xaiChat", () => ({
-  GROK_MODEL: "grok-4.7",
-  createXAIClient: xaiMocks.createClient,
-  createXAIEventStream: xaiMocks.createEventStream,
-  createXAIResponse: xaiMocks.createResponse,
-}));
 
 import { POST } from "@/app/api/chat/route";
+import { createMemoryToolEventStream, createResponseWithMemoryTools } from "@/lib/server/chatToolOrchestrator";
 
 function requestFor(body: Record<string, unknown>) {
   return new NextRequest("http://localhost/chat/api/chat", {
@@ -107,59 +109,127 @@ describe("Gemini chat route", () => {
   });
 });
 
-describe("Grok chat route", () => {
+describe("Claude na rota", () => {
   beforeEach(() => {
-    xaiMocks.createClient.mockReset();
-    xaiMocks.createEventStream.mockReset();
-    xaiMocks.createResponse.mockReset();
+    anthropicMocks.createClient.mockReset();
+    anthropicMocks.createEventStream.mockReset();
+    anthropicMocks.isInputError.mockReturnValue(false);
   });
 
-  it("resolve o mini legado e encaminha stream ao adaptador xAI", async () => {
+  it("encaminha Claude streaming pelo adaptador oficial", async () => {
     const client = {};
     const stream = new ReadableStream<Uint8Array>({
-      start(controller) { controller.close(); },
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
+        controller.close();
+      },
     });
-    xaiMocks.createClient.mockReturnValue(client);
-    xaiMocks.createEventStream.mockReturnValue(stream);
-    const response = await POST(requestFor({ model: "gpt-5.4-mini" }));
+    anthropicMocks.createClient.mockReturnValue(client);
+    anthropicMocks.createEventStream.mockReturnValue(stream);
+
+    const response = await POST(requestFor({ model: "claude-sonnet-5-5" }));
+
     expect(response.status).toBe(200);
-    expect(xaiMocks.createEventStream).toHaveBeenCalledWith(
+    expect(response.headers.get("Content-Type")).toContain("text/event-stream");
+    expect(anthropicMocks.createEventStream).toHaveBeenCalledWith(
       client,
-      expect.objectContaining({ model: "grok-4.7" }),
+      expect.objectContaining({ model: "claude-sonnet-5-5" }),
       expect.any(AbortSignal)
     );
   });
 
-  it("expõe erro explícito quando a credencial xAI não está disponível", async () => {
-    xaiMocks.createClient.mockReturnValue(null);
-    const response = await POST(requestFor({ model: "grok-4.7" }));
+  it("retorna 503 específico quando a chave Anthropic não está disponível", async () => {
+    anthropicMocks.createClient.mockReturnValue(null);
+
+    const response = await POST(requestFor({ model: "claude-opus-5-5" }));
+
     expect(response.status).toBe(503);
-    await expect(response.json()).resolves.toMatchObject({ code: "chat_xai_api_key_missing" });
+    expect(await response.json()).toMatchObject({
+      code: "chat_anthropic_api_key_missing",
+    });
   });
 
-  it("preserva o contrato nonstream do mini legado pelo adaptador xAI", async () => {
-    const client = {};
-    const providerResponse = {
-      id: "xai-nonstream",
-      status: "completed",
-      output_text: "Resposta sem stream",
-      output: [],
-    };
-    xaiMocks.createClient.mockReturnValue(client);
-    xaiMocks.createResponse.mockResolvedValue(providerResponse);
-
+  it.each([
+    [{ responseMode: "document" }, "chat_anthropic_mode_not_supported"],
+    [{ stream: false }, "chat_anthropic_stream_required"],
+  ])("rejeita requisição Claude incompatível %o", async (overrides, code) => {
     const response = await POST(requestFor({
-      model: "gpt-5.4-mini",
-      stream: false,
+      model: "claude-sonnet-5-5",
+      ...overrides,
     }));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ code });
+  });
+});
+
+describe("modelos legados de Grok e mini", () => {
+  beforeEach(() => {
+    vi.stubEnv("OPENAI_API_KEY", "chave-de-teste");
+    vi.mocked(createMemoryToolEventStream).mockReset();
+    vi.mocked(createResponseWithMemoryTools).mockReset();
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it.each(["grok-4.7", "gpt-5.4-mini"])("encaminha %s ao OpenAI no GPT-6 Luna, com stream", async (model) => {
+    vi.mocked(createMemoryToolEventStream).mockReturnValue(new ReadableStream<Uint8Array>({
+      start(controller) { controller.close(); },
+    }));
+
+    const response = await POST(requestFor({ model }));
+
+    expect(response.status).toBe(200);
+    expect(createMemoryToolEventStream).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ model: "gpt-6-luna" }),
+      expect.any(AbortSignal)
+    );
+  });
+
+  it("preserva o contrato nonstream do Grok legado pelo OpenAI", async () => {
+    const providerResponse = { id: "resp-luna", status: "completed", output_text: "ok", output: [] };
+    vi.mocked(createResponseWithMemoryTools).mockResolvedValue(providerResponse as never);
+
+    const response = await POST(requestFor({ model: "grok-4.7", stream: false }));
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual(providerResponse);
-    expect(xaiMocks.createResponse).toHaveBeenCalledWith(
-      client,
-      expect.objectContaining({ model: "grok-4.7", stream: false }),
+    expect(createResponseWithMemoryTools).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ model: "gpt-6-luna" }),
       expect.any(AbortSignal)
     );
-    expect(xaiMocks.createEventStream).not.toHaveBeenCalled();
+  });
+});
+
+describe("DeepSeek V4.1 Flash na rota", () => {
+  it("nomeia o V4.1 Flash ao recusar modo que não seja chat padrão", async () => {
+    const response = await POST(requestFor({ model: "deepseek-flash", responseMode: "deepsearch" }));
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.code).toBe("chat_deepseek_mode_not_supported");
+    expect(body.message).toContain("DeepSeek V4.1 Flash");
+    expect(body.message).not.toContain("V4 Pro");
+  });
+
+  it("nomeia o V4.1 Flash ao exigir streaming", async () => {
+    const response = await POST(requestFor({ model: "deepseek-flash", stream: false }));
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.code).toBe("chat_deepseek_stream_required");
+    expect(body.message).toContain("DeepSeek V4.1 Flash");
+    expect(body.message).not.toContain("V4 Pro");
+  });
+
+  it("aceita o id antigo deepseek-v4-pro e cobra pelo nome novo", async () => {
+    const response = await POST(requestFor({ model: "deepseek-v4-pro", stream: false }));
+    const body = await response.json();
+
+    expect(body.code).toBe("chat_deepseek_stream_required");
+    expect(body.message).toContain("DeepSeek V4.1 Flash");
   });
 });

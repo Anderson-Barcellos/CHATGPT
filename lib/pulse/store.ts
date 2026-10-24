@@ -2,6 +2,7 @@ import { readDataFile, withDataFileLock, writeDataFile } from "@/lib/server/json
 import {
   DEFAULT_PULSE_MODEL,
   PULSE_MODELS,
+  resolveLegacyPulseModel,
   type PulseModel,
   PulseRun,
   PulseTask,
@@ -26,13 +27,9 @@ function cleanEmoji(value: unknown): string {
 
 function parsePulseModel(value: unknown): PulseModel {
   if (value === undefined || value === null || value === "") return DEFAULT_PULSE_MODEL;
-  // Compatibilidade de dados já persistidos: a leitura os executa no novo
-  // provider sem migrar nem regravar os JSONs privados do Anders.
-  if (value === "gpt-5.4-mini") return "grok-4.7";
-  if (value === "gpt-5.6-sol" || value === "gpt-5.6-terra") return "gpt-6-sol";
-  if (value === "gpt-5.6-luna") return "gpt-6-luna";
-  if (typeof value === "string" && PULSE_MODELS.includes(value as (typeof PULSE_MODELS)[number])) {
-    return value as (typeof PULSE_MODELS)[number];
+  const resolved = typeof value === "string" ? resolveLegacyPulseModel(value) : value;
+  if (typeof resolved === "string" && PULSE_MODELS.includes(resolved as (typeof PULSE_MODELS)[number])) {
+    return resolved as (typeof PULSE_MODELS)[number];
   }
   throw new Error("Modelo Pulse invalido.");
 }

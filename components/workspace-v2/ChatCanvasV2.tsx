@@ -9,7 +9,7 @@ import type { Conversation, Message } from "@/types";
 interface ChatCanvasV2Props {
   messages: Message[];
   isLoading: boolean;
-  editAndResend: (messageId: string, newContent: string) => Promise<void>;
+  editAndResend: (messageId: string, newContent: string) => Promise<void | boolean>;
   deleteMessage: (messageId: string) => Promise<void>;
   recentConversations: Pick<Conversation, "id" | "title" | "updatedAt">[];
   activeConversationId: string | null;

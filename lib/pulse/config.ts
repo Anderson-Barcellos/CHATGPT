@@ -1,5 +1,6 @@
 import {
   DEFAULT_PULSE_MODEL,
+  resolveLegacyPulseModel,
   type PulseExecutionReasoningEffort,
   type PulseTask,
 } from "@/lib/pulse/types";
@@ -34,13 +35,10 @@ export function resolvePulseExecutionProfile(
   task: Pick<PulseTask, "model">
 ): PulseExecutionProfile {
   const requestedModel = process.env.PULSE_RUN_MODEL?.trim() || task.model || DEFAULT_PULSE_MODEL;
-  const model = requestedModel === "gpt-5.4-mini" ? "grok-4.7"
-    : requestedModel === "gpt-5.6-sol" || requestedModel === "gpt-5.6-terra" ? "gpt-6-sol"
-    : requestedModel === "gpt-5.6-luna" ? "gpt-6-luna"
-    : requestedModel;
+  const model = resolveLegacyPulseModel(requestedModel);
   return {
     model,
-    reasoningEffort: model === "grok-4.7" || model === "gpt-6-astra"
+    reasoningEffort: model === "gpt-6-astra"
       ? "medium"
       : resolveReasoningEffort(),
   };

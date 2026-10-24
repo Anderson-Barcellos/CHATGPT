@@ -613,7 +613,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                         </div>
                         {isDeepSeekSelected && (
                           <p className="text-micro text-muted-foreground">
-                            DeepSeek V4 Pro usa verbosity alta fixa neste fluxo.
+                            DeepSeek V4.1 Flash usa verbosity alta fixa neste fluxo.
                           </p>
                         )}
                         {fixedVerbosity && (

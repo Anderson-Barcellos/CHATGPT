@@ -22,10 +22,12 @@ import { QuickActionsBar } from "@/components/chat/QuickActionsBar";
 import { useNotes } from "@/hooks/useNotes";
 import { StickyNote } from "lucide-react";
 import { useUIStore } from "@/stores/uiStore";
+import { useMessageLongPress } from "@/hooks/useMessageLongPress";
 
 interface MessageBubbleProps {
   message: Message;
-  onEdit?: (id: string, newContent: string) => void;
+  onEdit?: (id: string, newContent: string) => void | boolean | Promise<void | boolean>;
+  editDisabled?: boolean;
   onDelete?: (id: string) => void;
   onRegenerate?: () => void;
 }
@@ -52,7 +54,7 @@ function formatTime(date: Date): string {
   }
 }
 
-export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDelete, onRegenerate }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDelete, onRegenerate, editDisabled = false }: MessageBubbleProps) {
   const shouldReduceMotion = useReducedMotion();
   // No celular a animação `layout` por balão custa GPU durante a rolagem e o streaming.
   const isMobile = useIsMobile();
@@ -65,43 +67,63 @@ export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDe
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const editRef = useRef<HTMLTextAreaElement>(null);
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const editPanelRef = useRef<HTMLDivElement>(null);
+  const [editPending, setEditPending] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const openMenu = useCallback(() => {
+    setMenuOpen(true);
+    navigator.vibrate?.(30);
+  }, []);
+  const longPress = useMessageLongPress(!isEditing && Boolean(onEdit || onDelete), openMenu);
   const deleteTitle = isUser ? "Excluir este turno?" : "Excluir esta resposta?";
   const deleteDescription = isUser
     ? "Isso remove a tua mensagem e a resposta gerada a partir dela. Use editar se tu quiser refazer esse ponto da conversa."
     : "Isso remove somente esta resposta do assistente desta conversa.";
   const deleteLabel = isUser ? "Excluir turno" : "Excluir resposta";
 
-  const handleTouchStart = useCallback(() => {
-    if (isEditing) return;
-    longPressTimer.current = setTimeout(() => {
-      longPressTimer.current = null;
-      setMenuOpen(true);
-      if (navigator.vibrate) navigator.vibrate(30);
-    }, 500);
-  }, [isEditing]);
-
-  const handleTouchEnd = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  }, []);
-
   useEffect(() => {
-    if (isEditing && editRef.current) {
-      editRef.current.focus();
-      editRef.current.style.height = "auto";
-      editRef.current.style.height = `${editRef.current.scrollHeight}px`;
-    }
+    if (!isEditing || !editRef.current) return;
+    const textarea = editRef.current;
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+    textarea.focus({ preventScroll: true });
+    let frame: number | null = null;
+    const reveal = () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const panel = editPanelRef.current;
+        const viewport = panel?.closest<HTMLElement>("[data-radix-scroll-area-viewport]");
+        if (!panel || !viewport) return;
+        const area = viewport.getBoundingClientRect();
+        const bounds = panel.getBoundingClientRect();
+        if (bounds.top < area.top + 8) viewport.scrollTop += bounds.top - area.top - 8;
+        else if (bounds.bottom > area.bottom - 8) viewport.scrollTop += bounds.bottom - area.bottom + 8;
+      });
+    };
+    reveal();
+    window.visualViewport?.addEventListener("resize", reveal);
+    window.visualViewport?.addEventListener("scroll", reveal);
+    textarea.addEventListener("focus", reveal);
+    return () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+      window.visualViewport?.removeEventListener("resize", reveal);
+      window.visualViewport?.removeEventListener("scroll", reveal);
+      textarea.removeEventListener("focus", reveal);
+    };
   }, [isEditing]);
 
-  const handleSaveEdit = useCallback(() => {
-    if (editContent.trim() && onEdit) {
-      onEdit(message.id, editContent.trim());
-      setIsEditing(false);
-    }
-  }, [editContent, message.id, onEdit]);
+  const handleSaveEdit = useCallback(async () => {
+    if (!editContent.trim() || !onEdit || editDisabled || editPending) return;
+    setEditPending(true);
+    setEditError(null);
+    try {
+      const accepted = await onEdit(message.id, editContent.trim());
+      if (accepted === false) setEditError("Aguarde a resposta terminar para reenviar. Teu texto está preservado.");
+      else setIsEditing(false);
+    } catch {
+      setEditError("Não consegui reenviar. Teu texto está preservado para tentar novamente.");
+    } finally { setEditPending(false); }
+  }, [editContent, message.id, onEdit, editDisabled, editPending]);
 
   const handleCancelEdit = useCallback(() => {
     setEditContent(message.content);
@@ -138,16 +160,18 @@ export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDe
     >
       <div className={cn("gc-message-frame w-full max-w-full min-w-0", isUser && "order-first")}>
         <Card
+          data-pressing={longPress.pressing || undefined}
           className={cn(
-            "relative w-full min-w-0 gap-0 overflow-hidden break-words border px-3 py-2.5 text-left text-body-sm leading-relaxed md:px-5 md:py-4 md:text-body",
+            "gc-message-card relative w-full min-w-0 gap-0 overflow-hidden break-words border px-3 py-2.5 text-left text-body-sm leading-relaxed md:px-5 md:py-4 md:text-body",
             isUser
               ? "gc-user-bubble rounded-2xl rounded-br-md md:max-w-[76%] min-[1490px]:max-w-[78%]"
               : "gc-assistant-bubble rounded-[1.6rem] rounded-bl-md text-foreground/90 md:max-w-[48rem] min-[1490px]:max-w-[54rem]"
           )}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-          onTouchMove={handleTouchEnd}
-          onContextMenu={(onEdit || onDelete) ? (e) => { e.preventDefault(); setMenuOpen(true); } : undefined}
+          onTouchStart={longPress.onTouchStart}
+          onTouchEnd={longPress.onTouchEnd}
+          onTouchMove={longPress.onTouchMove}
+          onTouchCancel={longPress.onTouchCancel}
+          onContextMenu={longPress.onContextMenu}
         >
           {isUser ? (
             <div className="gc-message-avatar-inside float-left mr-2 flex size-[1.6rem] items-center justify-center overflow-hidden rounded-[0.46rem] border border-[color:var(--gc-border)] bg-[var(--gc-surface-control)] shadow-[0_0_13px_rgba(14,116,144,0.10)] md:size-8 md:rounded-lg">
@@ -218,8 +242,10 @@ export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDe
           )}
 
           {isEditing ? (
-            <div className="flex flex-col gap-2">
+            <div ref={editPanelRef} className="gc-message-editor flex flex-col gap-2">
               <textarea
+                aria-label="Editar mensagem"
+                disabled={editPending}
                 ref={editRef}
                 value={editContent}
                 onChange={(e) => {
@@ -228,19 +254,20 @@ export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDe
                   e.target.style.height = `${e.target.scrollHeight}px`;
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSaveEdit(); }
+                  if (e.key === "Enter" && !e.shiftKey && !isMobile && !e.nativeEvent.isComposing) { e.preventDefault(); void handleSaveEdit(); }
                   if (e.key === "Escape") handleCancelEdit();
                 }}
                 className="min-h-[var(--gc-mobile-textarea-min-height)] w-full resize-none rounded-lg bg-background/50 px-[var(--gc-mobile-textarea-px)] pb-[var(--gc-mobile-textarea-pb)] pt-[var(--gc-mobile-textarea-pt)] text-body-sm leading-relaxed text-foreground outline-none ring-1 ring-primary/30 focus:ring-primary/60 md:min-h-[40px] md:p-2 md:text-sm"
               />
               <p className="text-micro leading-relaxed text-muted-foreground/80">
-                Ao salvar, o chat refaz a conversa a partir desta mensagem.
+                {editDisabled ? "Aguarde a resposta terminar para reenviar. Teu texto está preservado." : "Ao salvar, o chat refaz a conversa a partir desta mensagem."}
               </p>
+              {editError && <p role="alert" className="text-xs text-destructive">{editError}</p>}
               <div className="flex justify-end gap-1.5">
-                <Button variant="ghost" size="sm" className="h-6 px-2 text-micro md:h-7 md:text-xs" onClick={handleCancelEdit}>
+                <Button variant="ghost" size="sm" disabled={editPending} className="h-10 px-3 text-xs md:h-7 md:px-2" onClick={handleCancelEdit}>
                   <X className="h-3 w-3 mr-1" />Cancelar
                 </Button>
-                <Button size="sm" className="h-6 px-2 text-micro md:h-7 md:text-xs" onClick={handleSaveEdit} disabled={!editContent.trim()}>
+                <Button size="sm" className="h-10 px-3 text-xs md:h-7 md:px-2" onClick={() => void handleSaveEdit()} disabled={!editContent.trim() || editDisabled || editPending}>
                   <Send className="h-3 w-3 mr-1" />Enviar
                 </Button>
               </div>
@@ -348,7 +375,9 @@ export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDe
               <DropdownMenuContent align={isUser ? "end" : "start"} className="gc-chat-ui w-52">
                 {isUser && onEdit && (
                   <DropdownMenuItem
+                    disabled={editDisabled}
                     onClick={() => {
+                      setEditError(null);
                       setEditContent(message.content);
                       setIsEditing(true);
                       setMenuOpen(false);

@@ -51,9 +51,10 @@ export const MEMORY_TOOL_NAMES = {
 export type MemoryToolName = (typeof MEMORY_TOOL_NAMES)[keyof typeof MEMORY_TOOL_NAMES];
 
 const LEGACY_MODEL_FALLBACKS: Record<string, string> = {
-  "gpt-5.6-sol": "gpt-6-sol",
+  "gpt-6-sol": "gpt-6.1-sol",
   "gpt-5.6-luna": "gpt-6-luna",
-  "gpt-5.6-terra": "gpt-6-sol",
+  "gpt-5.6-terra": "gpt-6.1-sol",
+  "deepseek-v4-pro": "deepseek-flash",
   "gemini-3.7-flash": "gemini-3.8-flash",
   "gpt-chat-latest": "chat-latest",
   "gpt-5-chat-latest": "chat-latest",
@@ -62,9 +63,10 @@ const LEGACY_MODEL_FALLBACKS: Record<string, string> = {
   "gpt-5.1": DEFAULT_CHAT_MODEL,
   "gpt-4.1": DEFAULT_CHAT_MODEL,
   o3: DEFAULT_CHAT_MODEL,
-  // Conversas, rascunhos e rotinas já persistidos com o mini seguem abrindo;
-  // a execução nova é sempre encaminhada ao Grok, sem reescrever dados runtime.
-  "gpt-5.4-mini": "grok-4.7",
+  // Conversas, rascunhos e rotinas já persistidos com o mini ou o Grok seguem
+  // abrindo; a execução nova vai ao Luna, sem reescrever dados runtime.
+  "gpt-5.4-mini": DEFAULT_CHAT_MODEL,
+  "grok-4.7": DEFAULT_CHAT_MODEL,
 };
 
 export function createOpenAIClient(): OpenAI | null {
@@ -88,7 +90,7 @@ function supportsMemoryTools(responseMode: ResponseMode): boolean {
   return responseMode === "default";
 }
 
-function buildMemoryTools(): OpenAI.Responses.FunctionTool[] {
+export function buildMemoryTools(): OpenAI.Responses.FunctionTool[] {
   return [
     {
       type: "function",

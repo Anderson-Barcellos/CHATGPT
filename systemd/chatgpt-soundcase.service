@@ -1,6 +1,6 @@
 [Unit]
 Description=Gaucho Chat SoundCase durable worker
-Documentation=https://ultrassom.ai/chat/soundcase
+Documentation=https://sonaris.us/chat/soundcase
 After=chatgpt.service
 Requires=chatgpt.service
 

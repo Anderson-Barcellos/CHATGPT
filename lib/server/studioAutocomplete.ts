@@ -20,7 +20,7 @@ export const STUDIO_FIM_PROVIDERS = {
   },
   deepseek: {
     baseURL: "https://api.deepseek.com/beta",
-    model: "deepseek-v4-pro",
+    model: "deepseek-flash",
     envKey: "DEEPSEEK_API_KEY",
   },
 } as const;

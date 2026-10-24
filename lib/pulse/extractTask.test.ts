@@ -9,9 +9,9 @@ afterEach(() => {
   else process.env.PULSE_EXTRACT_MODEL = originalModel;
 });
 
-describe("extração de rotina Pulse com Grok", () => {
-  it("resolve o override legado para Grok medium com saída estruturada", async () => {
-    process.env.PULSE_EXTRACT_MODEL = "gpt-5.4-mini";
+describe("extração de rotina Pulse com GPT-6 Luna", () => {
+  it.each(["gpt-5.4-mini", "grok-4.7"])("resolve o override legado %s para Luna low com saída estruturada", async (legacy) => {
+    process.env.PULSE_EXTRACT_MODEL = legacy;
     const create = vi.fn().mockResolvedValue({
       output_text: JSON.stringify({
         canCreate: true,
@@ -42,8 +42,8 @@ describe("extração de rotina Pulse com Grok", () => {
       weekday: 1,
     });
     expect(create).toHaveBeenCalledWith(expect.objectContaining({
-      model: "grok-4.7",
-      reasoning: { effort: "medium" },
+      model: "gpt-6-luna",
+      reasoning: { effort: "low" },
       text: { format: expect.objectContaining({ name: "pulse_task_from_text" }) },
     }));
   });
@@ -56,5 +56,10 @@ describe("extração de rotina Pulse com Grok", () => {
     await expect(extractPulseTaskFromText({ text: "Todo dia às 9" }, client))
       .rejects.toMatchObject({ code: "pulse_task_model_not_supported" });
     expect(create).not.toHaveBeenCalled();
+  });
+
+  it("acusa a falta da chave OpenAI sem tentar outro provider", async () => {
+    await expect(extractPulseTaskFromText({ text: "Todo dia às 9" }, null))
+      .rejects.toMatchObject({ code: "pulse_task_openai_api_key_missing", status: 503 });
   });
 });

@@ -14,11 +14,17 @@ const GPT_6_REASONING_EFFORTS: ReasoningEffort[] = [
 const STANDARD_REASONING_EFFORTS: ReasoningEffort[] = [
   "none", "low", "medium", "high", "xhigh",
 ];
+// O 6.1 Sol recusa `none` na API (400); a escala começa em low.
+const GPT_61_SOL_REASONING_EFFORTS: ReasoningEffort[] = [
+  "low", "medium", "high", "xhigh", "max",
+];
+const GPT_56_REASONING_MODES: ReasoningMode[] = ["standard", "pro"];
 const GEMINI_FLASH_REASONING_EFFORTS: ReasoningEffort[] = [
   "low", "medium", "high",
 ];
-
-const GROK_47_REASONING_EFFORTS: ReasoningEffort[] = ["medium"];
+const CLAUDE_REASONING_EFFORTS: ReasoningEffort[] = [
+  "low", "medium", "high",
+];
 
 export const MODELS: Record<string, ModelInfo> = {
   "gpt-6-astra": {
@@ -37,24 +43,25 @@ export const MODELS: Record<string, ModelInfo> = {
     supportedReasoningEfforts: ["low", "medium", "high", "xhigh", "max"],
     fixedReasoningEffort: "medium",
     fixedVerbosity: "medium",
+    hiddenFromChatSelector: true,
     recommendedFor: ["Trabalho de ponta a ponta", "Coding complexo", "Pesquisa profunda"],
     badge: "Mais potente",
   },
-  "gpt-6-sol": {
-    id: "gpt-6-sol",
-    name: "GPT-6 Sol",
+  "gpt-6.1-sol": {
+    id: "gpt-6.1-sol",
+    name: "GPT-6.1 Sol",
     family: "gpt-6",
     description: "Modelo forte para analise, coding e pesquisa complexa",
     contextWindow: 1_050_000,
     maxOutput: 128_000,
-    pricing: { input: 2, output: 10, cachedInput: 0.2,
-      longContext: { threshold: 272_001, input: 4, output: 15, cachedInput: 0.4 } },
+    pricing: { input: 2, output: 10, cachedInput: 0.1,
+      longContext: { threshold: 272_001, input: 4, output: 15, cachedInput: 0.2 } },
     capabilities: ["chat", "reasoning", "vision", "function-calling", "json-mode"],
     supportsStreaming: true,
     supportsTemperature: false,
     supportsVerbosity: true,
     supportsCodeInterpreter: true,
-    supportedReasoningEfforts: GPT_6_REASONING_EFFORTS,
+    supportedReasoningEfforts: GPT_61_SOL_REASONING_EFFORTS,
     recommendedFor: ["Analise frontier", "Coding complexo", "Pesquisa profunda"],
     badge: "Equilibrado",
   },
@@ -76,33 +83,23 @@ export const MODELS: Record<string, ModelInfo> = {
     recommendedFor: ["Uso diario", "Baixa latencia", "Alto volume"],
     badge: "Default",
   },
-  "grok-4.7": {
-    id: "grok-4.7",
-    name: "Grok 4.7",
-    family: "grok",
-    description: "Modelo xAI para pesquisa, código e saídas estruturadas com raciocínio médio fixo",
-    contextWindow: 500_000,
+  "gpt-5.6-sol": {
+    id: "gpt-5.6-sol",
+    name: "GPT-5.6 Sol",
+    family: "gpt-5",
+    description: "Modelo frontier anterior, com modo Pro, para analise, coding e pesquisa complexa",
+    contextWindow: 1_050_000,
     maxOutput: 128_000,
-    pricing: {
-      input: 2,
-      output: 6,
-      cachedInput: 0.5,
-      longContext: {
-        threshold: 200_000,
-        input: 4,
-        output: 12,
-        cachedInput: 1,
-      },
-    },
+    pricing: { input: 5, output: 30, cachedInput: 0.5 },
     capabilities: ["chat", "reasoning", "vision", "function-calling", "json-mode"],
     supportsStreaming: true,
     supportsTemperature: false,
-    supportsVerbosity: false,
+    supportsVerbosity: true,
     supportsCodeInterpreter: true,
-    supportedReasoningEfforts: GROK_47_REASONING_EFFORTS,
-    fixedReasoningEffort: "medium",
-    recommendedFor: ["Pesquisa web", "Código", "Saídas estruturadas"],
-    badge: "xAI",
+    supportedReasoningEfforts: GPT_6_REASONING_EFFORTS,
+    supportedReasoningModes: GPT_56_REASONING_MODES,
+    recommendedFor: ["Analise frontier", "Coding complexo", "Pesquisa profunda"],
+    badge: "Pro",
   },
   "chat-latest": {
     id: "chat-latest",
@@ -194,14 +191,15 @@ export const MODELS: Record<string, ModelInfo> = {
     recommendedFor: ["Analise", "Coding complexo", "Raciocinio medio"],
     badge: "Reasoning",
   },
-  "deepseek-v4-pro": {
-    id: "deepseek-v4-pro",
-    name: "DeepSeek V4 Pro",
+  "deepseek-flash": {
+    id: "deepseek-flash",
+    name: "DeepSeek V4.1 Flash",
     family: "deepseek",
-    description: "Modelo DeepSeek de contexto longo para chat com raciocinio maximo fixo",
+    description: "Modelo DeepSeek de contexto longo para chat com raciocinio baixo fixo",
     contextWindow: 1_000_000,
     maxOutput: 384_000,
-    pricing: { input: 0.435, output: 0.87, cachedInput: 0.003625 },
+    // Tarifa de pico; fora do pico a DeepSeek cobra metade.
+    pricing: { input: 0.3, output: 1.2, cachedInput: 0.006 },
     capabilities: ["chat", "reasoning", "function-calling", "json-mode"],
     supportsStreaming: true,
 
@@ -224,9 +222,44 @@ export const MODELS: Record<string, ModelInfo> = {
     supportsTemperature: false,
     supportsVerbosity: false,
     supportsCodeInterpreter: false,
+    hiddenFromChatSelector: true,
     supportedReasoningEfforts: GEMINI_FLASH_REASONING_EFFORTS,
     recommendedFor: ["Chat rapido", "Pesquisa web", "Analise multimodal"],
     badge: "Gemini",
+  },
+  "claude-sonnet-5-5": {
+    id: "claude-sonnet-5-5",
+    name: "Claude Sonnet 5.5",
+    family: "anthropic",
+    description: "Modelo Claude equilibrado para análise, escrita e tarefas multimodais",
+    contextWindow: 1_000_000,
+    maxOutput: 128_000,
+    pricing: { input: 2, output: 10, cachedInput: 0.1 },
+    capabilities: ["chat", "reasoning", "vision", "function-calling", "json-mode"],
+    supportsStreaming: true,
+    supportsTemperature: false,
+    supportsVerbosity: false,
+    supportsCodeInterpreter: false,
+    supportedReasoningEfforts: CLAUDE_REASONING_EFFORTS,
+    recommendedFor: ["Análise", "Escrita", "Imagens e documentos"],
+    badge: "Claude",
+  },
+  "claude-opus-5-5": {
+    id: "claude-opus-5-5",
+    name: "Claude Opus 5.5",
+    family: "anthropic",
+    description: "Modelo Claude mais capaz para tarefas longas e raciocínio aprofundado",
+    contextWindow: 1_000_000,
+    maxOutput: 128_000,
+    pricing: { input: 4, output: 20, cachedInput: 0.2 },
+    capabilities: ["chat", "reasoning", "vision", "function-calling", "json-mode"],
+    supportsStreaming: true,
+    supportsTemperature: false,
+    supportsVerbosity: false,
+    supportsCodeInterpreter: false,
+    supportedReasoningEfforts: CLAUDE_REASONING_EFFORTS,
+    recommendedFor: ["Raciocínio complexo", "Análise longa", "Trabalho técnico"],
+    badge: "Claude",
   },
   "gpt-image-2": {
     id: "gpt-image-2",
@@ -269,15 +302,15 @@ export function isReasoningModel(modelId: string): boolean {
 }
 
 export function isDeepSeekModel(modelId: string): boolean {
-  return modelId === "deepseek-v4-pro";
+  return modelId === "deepseek-flash";
 }
 
 export function isGeminiModel(modelId: string): boolean {
   return modelId === "gemini-3.8-flash";
 }
 
-export function isGrokModel(modelId: string): boolean {
-  return modelId === "grok-4.7";
+export function isAnthropicModel(modelId: string): boolean {
+  return MODELS[modelId]?.family === "anthropic";
 }
 
 export function getFixedReasoningEffort(modelId: string): ReasoningEffort | undefined {

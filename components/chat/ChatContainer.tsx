@@ -31,13 +31,15 @@ import {
 } from "@/lib/chat/scrollState";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/uiStore";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { isAnthropicModel } from "@/lib/models/modelConfig";
 import type { Conversation, Message } from "@/types";
 
 const SUGGESTIONS = [
   { icon: Code, label: "Escrever codigo", desc: "Gere, refatore ou debug", prompt: "Me ajude a escrever um código em ", accent: "from-primary/20 to-accent/10", iconColor: "text-primary" },
   { icon: Scan, label: "Analisar imagem", desc: "DICOM, exames, fotos", prompt: "Analise a seguinte imagem: ", accent: "from-accent/20 to-primary/10", iconColor: "text-accent" },
   { icon: Lightbulb, label: "Explicar conceito", desc: "Simples, com exemplos", prompt: "Explique de forma simples e com exemplos o conceito de ", accent: "from-amber-500/20 to-primary/10", iconColor: "text-amber-600 dark:text-amber-300" },
-  { icon: Wand2, label: "Gerar imagem", desc: "Crie com DALL-E", prompt: "Gere uma imagem de ", accent: "from-rose-500/20 to-primary/10", iconColor: "text-rose-600 dark:text-rose-300" },
+  { icon: Wand2, label: "Gerar imagem", desc: "Crie com DALL-E", prompt: "Gere uma imagem de ", accent: "from-rose-500/20 to-primary/10", iconColor: "text-rose-600 dark:text-rose-300", requiresImageGeneration: true },
   { icon: FileText, label: "Resumir texto", desc: "Conciso e claro", prompt: "Resuma o seguinte texto de forma clara e concisa:\n\n", accent: "from-primary/20 to-accent/10", iconColor: "text-primary" },
   { icon: Languages, label: "Traduzir", desc: "Qualquer idioma", prompt: "Traduza o seguinte texto para ", accent: "from-emerald-500/20 to-accent/10", iconColor: "text-emerald-700 dark:text-emerald-300" },
 ];
@@ -48,6 +50,12 @@ const MOBILE_ACTIONS = [
   { icon: Wand2, label: "Revisar texto", prompt: "Revise o seguinte texto mantendo clareza clínica:\n\n" },
   { icon: CircleHelp, label: "Perguntar algo", prompt: "Quero perguntar sobre " },
 ];
+
+export function getWelcomeSuggestions(canGenerateImages: boolean) {
+  return canGenerateImages
+    ? SUGGESTIONS
+    : SUGGESTIONS.filter((suggestion) => !suggestion.requiresImageGeneration);
+}
 
 function formatConversationDate(date: Date): string {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -64,6 +72,7 @@ interface WelcomeScreenProps {
   onSelectConversation: (id: string) => void;
   onOpenConversations: () => void;
   onOpenContextPanel: () => void;
+  canGenerateImages: boolean;
 }
 
 function WelcomeScreen({
@@ -73,7 +82,10 @@ function WelcomeScreen({
   onSelectConversation,
   onOpenConversations,
   onOpenContextPanel,
+  canGenerateImages,
 }: WelcomeScreenProps) {
+  const suggestions = getWelcomeSuggestions(canGenerateImages);
+
   return (
     <div className="flex flex-1 items-start justify-center px-[var(--gc-mobile-welcome-outer-x)] py-[var(--gc-mobile-welcome-outer-y)] md:items-center md:px-5 md:py-8">
       <div className="w-full max-w-5xl">
@@ -213,7 +225,7 @@ function WelcomeScreen({
               </div>
 
               <div className="grid w-full grid-cols-2 gap-[var(--gc-mobile-welcome-suggestion-gap)] md:gap-2.5">
-                {SUGGESTIONS.map(({ icon: Icon, label, desc, prompt, accent, iconColor }) => (
+                  {suggestions.map(({ icon: Icon, label, desc, prompt, accent, iconColor }) => (
                   <button
                     key={label}
                     onClick={() => onSuggestionClick(prompt)}
@@ -252,7 +264,7 @@ function WelcomeScreen({
 interface ChatContainerProps {
   messages: Message[];
   isLoading: boolean;
-  editAndResend: (messageId: string, newContent: string) => Promise<void>;
+  editAndResend: (messageId: string, newContent: string) => Promise<void | boolean>;
   deleteMessage: (messageId: string) => Promise<void>;
   recentConversations: Pick<Conversation, "id" | "title" | "updatedAt">[];
   activeConversationId: string | null;
@@ -290,6 +302,8 @@ export function ChatContainer({
   onOpenConversations,
 }: ChatContainerProps) {
   const openContextPanel = useUIStore((state) => state.openContextPanel);
+  const model = useSettingsStore((state) => state.parameters.model);
+  const canGenerateImages = !isAnthropicModel(model);
   const regenerateLastMessage = useCallback(() => {
     const lastAssistantIdx = [...messages].reverse().findIndex((m) => m.role === "assistant");
     if (lastAssistantIdx === -1) return;
@@ -331,6 +345,12 @@ export function ChatContainer({
       }
 
       scrollFrameRef.current = window.requestAnimationFrame(() => {
+        // O editor tem prioridade sobre o acompanhamento do fim da conversa,
+        // inclusive quando resize/streaming agendou este frame antes de abrir.
+        if (container.querySelector(".gc-message-editor")) {
+          scrollFrameRef.current = null;
+          return;
+        }
         if (behavior === "smooth") {
           container.scrollTo({
             top: container.scrollHeight,
@@ -539,6 +559,7 @@ export function ChatContainer({
               onSelectConversation={onSelectConversation}
               onOpenConversations={onOpenConversations}
               onOpenContextPanel={() => openContextPanel("activity")}
+              canGenerateImages={canGenerateImages}
             />
           ) : (
             <AnimatePresence initial={false}>
@@ -552,6 +573,7 @@ export function ChatContainer({
                     key={getChatMessageRenderKey(message)}
                     message={message}
                     onEdit={editAndResend}
+                    editDisabled={isLoading}
                     onDelete={deleteMessage}
                     onRegenerate={isLastAssistant ? regenerateLastMessage : undefined}
                   />

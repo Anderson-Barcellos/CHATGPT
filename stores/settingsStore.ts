@@ -13,6 +13,7 @@ import {
   getSupportedReasoningEfforts,
   isDeepSeekModel,
   isReasoningModel,
+  modelSupportsCodeInterpreter,
   modelSupportsReasoningMode,
 } from "@/lib/models/modelConfig";
 
@@ -33,19 +34,31 @@ interface SettingsState {
 const DEFAULT_MODEL = "gpt-6-luna";
 
 const LEGACY_MODEL_FALLBACKS: Record<string, string> = {
-  "gpt-5.6-sol": "gpt-6-sol",
+  "gpt-6-sol": "gpt-6.1-sol",
   "gpt-5.6-luna": "gpt-6-luna",
-  "gpt-5.6-terra": "gpt-6-sol",
-  "gemini-3.7-flash": "gemini-3.8-flash",
+  "gpt-5.6-terra": "gpt-6.1-sol",
+  "deepseek-v4-pro": "deepseek-flash",
+  // Este store pertence ao chat. Astra e Gemini permanecem no catálogo para
+  // Studio, Pulse e históricos, mas preferências antigas do chat caem em Luna.
+  "gpt-6-astra": DEFAULT_MODEL,
+  "gemini-3.7-flash": DEFAULT_MODEL,
+  "gemini-3.8-flash": DEFAULT_MODEL,
   "gpt-chat-latest": "chat-latest",
   "gpt-5-chat-latest": "chat-latest",
   "gpt-5.1-chat-latest": DEFAULT_MODEL,
   "gpt-5.3-chat-latest": DEFAULT_MODEL,
-  "gpt-5.4-mini": "grok-4.7",
+  "gpt-5.4-mini": DEFAULT_MODEL,
+  "grok-4.7": DEFAULT_MODEL,
   "gpt-5.1": DEFAULT_MODEL,
   "gpt-4.1": DEFAULT_MODEL,
   o3: DEFAULT_MODEL,
 };
+
+const REMOVED_CHAT_MODEL_IDS = new Set([
+  "gpt-6-astra",
+  "gemini-3.7-flash",
+  "gemini-3.8-flash",
+]);
 
 function resolveSupportedModelId(modelId: string | undefined): string {
   if (!modelId) return DEFAULT_MODEL;
@@ -66,7 +79,7 @@ function buildDefaultModelSettings(modelId: string): ModelScopedParameters {
   const resolvedModelId = resolveSupportedModelId(modelId);
   const defaultReasoningEffort =
     isDeepSeekModel(resolvedModelId)
-      ? "xhigh"
+      ? "low"
       : resolvedModelId === "gemini-3.8-flash"
       ? "high"
       : usesNoReasoningByDefault(resolvedModelId)
@@ -112,23 +125,23 @@ function clampModelSettings(
     : "standard";
   const fixedReasoningEffort = getFixedReasoningEffort(resolvedModelId);
   const fixedVerbosity = getFixedVerbosity(resolvedModelId);
+  const isDeepSeek = isDeepSeekModel(resolvedModelId);
+  const codeInterpreterEnabled =
+    !isDeepSeek && modelSupportsCodeInterpreter(resolvedModelId)
+      ? settings.codeInterpreterEnabled
+      : false;
 
   return {
     ...settings,
     maxOutputTokens,
     temperature: Number(settings.temperature.toFixed(2)),
     topP: Number(settings.topP.toFixed(2)),
-    reasoningEffort,
+    reasoningEffort: isDeepSeek
+      ? "low"
+      : fixedReasoningEffort ?? reasoningEffort,
     reasoningMode,
-    ...(fixedReasoningEffort && { reasoningEffort: fixedReasoningEffort }),
-    ...(fixedVerbosity && { verbosity: fixedVerbosity }),
-    ...(isDeepSeekModel(resolvedModelId)
-      ? {
-          reasoningEffort: "xhigh" as const,
-          verbosity: "high" as const,
-          codeInterpreterEnabled: false,
-        }
-      : {}),
+    verbosity: isDeepSeek ? "high" : fixedVerbosity ?? settings.verbosity,
+    codeInterpreterEnabled,
   };
 }
 
@@ -232,9 +245,10 @@ function mergePersistedSettings(
       : {}),
   };
   for (const [oldId, newId] of [
-    ["gpt-5.6-sol", "gpt-6-sol"],
-    ["gpt-5.6-terra", "gpt-6-sol"],
+    ["gpt-6-sol", "gpt-6.1-sol"],
+    ["gpt-5.6-terra", "gpt-6.1-sol"],
     ["gpt-5.6-luna", "gpt-6-luna"],
+    ["deepseek-v4-pro", "deepseek-flash"],
   ] as const) {
     if (!modelSettingsById[newId] && modelSettingsById[oldId]) {
       modelSettingsById[newId] = clampModelSettings(newId, {
@@ -245,11 +259,14 @@ function mergePersistedSettings(
   }
   const persistedModel = typeof raw.model === "string" ? raw.model : current.parameters.model;
   const model = resolveSupportedModelId(persistedModel);
+  const fallsBackToLuna =
+    persistedModel !== model && REMOVED_CHAT_MODEL_IDS.has(persistedModel);
   const systemPrompt =
     typeof raw.systemPrompt === "string" ? raw.systemPrompt : current.parameters.systemPrompt;
   const scoped = clampModelSettings(model, {
     ...buildDefaultModelSettings(model),
-    ...sanitizeScopedSettings(modelSettingsById[model] ?? modelSettingsById[persistedModel]),
+    ...(!fallsBackToLuna &&
+      sanitizeScopedSettings(modelSettingsById[model] ?? modelSettingsById[persistedModel])),
   });
   modelSettingsById[model] = scoped;
   return {

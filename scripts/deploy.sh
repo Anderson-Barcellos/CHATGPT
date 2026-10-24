@@ -40,7 +40,7 @@ npm_bin="${GAUCHO_NPM_BIN:-npm}"
 service_name="${GAUCHO_RUNTIME_SERVICE:-chatgpt.service}"
 base_path="${GAUCHO_DEPLOY_BASE_PATH:-/chat}"
 local_health_url="${GAUCHO_HEALTH_LOCAL_URL:-http://127.0.0.1:3040/chat/api/health}"
-public_health_url="${GAUCHO_HEALTH_PUBLIC_URL:-https://ultrassom.ai/chat/api/health}"
+public_health_url="${GAUCHO_HEALTH_PUBLIC_URL:-https://sonaris.us/chat/api/health}"
 health_attempts="${GAUCHO_HEALTH_ATTEMPTS:-30}"
 health_interval="${GAUCHO_HEALTH_INTERVAL:-2}"
 deploy_root="${GAUCHO_DEPLOY_ROOT:-/root/.cache/gaucho-deploy}"
@@ -94,7 +94,7 @@ else
   bash "$build_directory/scripts/pre-deploy.sh" --skip-build
 
   step "Build com NEXT_PUBLIC_BASE_PATH=$base_path"
-  (cd "$build_directory" && NEXT_PUBLIC_BASE_PATH="$base_path" "$npm_bin" run build)
+  (cd "$build_directory" && NEXT_PUBLIC_BASE_PATH="$base_path" NEXT_PUBLIC_APP_URL="${GAUCHO_DEPLOY_APP_URL:-https://sonaris.us/chat}" "$npm_bin" run build)
   [[ -f "$build_directory/.next/BUILD_ID" ]] || runtime_safety_die "O build não gerou .next/BUILD_ID."
 fi
 

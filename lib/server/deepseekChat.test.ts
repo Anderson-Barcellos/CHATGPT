@@ -10,7 +10,7 @@ import {
 } from "./deepseekChat";
 
 describe("DeepSeek chat adapter", () => {
-  it("builds a text-only DeepSeek V4 Pro request with max reasoning", () => {
+  it("builds a text-only DeepSeek V4.1 Flash request with low reasoning", () => {
     const params = buildDeepSeekChatCompletionParams({
       input: [{ role: "user", content: "Bah, resume isso." }],
       instructions: "Responda em portugues.",
@@ -19,9 +19,9 @@ describe("DeepSeek chat adapter", () => {
     });
 
     expect(params).toMatchObject({
-      model: "deepseek-v4-pro",
+      model: "deepseek-flash",
       max_tokens: 2048,
-      reasoning_effort: "max",
+      reasoning_effort: "low",
       stream: true,
       parallel_tool_calls: false,
       tool_choice: "auto",
@@ -56,7 +56,7 @@ describe("DeepSeek chat adapter", () => {
         ],
         stream: true,
       })
-    ).toThrow("DeepSeek V4 Pro ainda esta habilitado apenas para texto");
+    ).toThrow("DeepSeek V4.1 Flash ainda esta habilitado apenas para texto");
   });
 
   it("maps DeepSeek streaming chunks to the internal assistant stream events", () => {
@@ -216,8 +216,14 @@ describe("DeepSeek chat adapter", () => {
     });
   });
 
-  it("maps a persisted GPT-5.6 web context override to GPT-6", () => {
+  it("maps persisted web context overrides to the current models", () => {
     expect(buildOpenAIWebContextParams("teste", { model: "gpt-5.6-luna" }).model)
       .toBe("gpt-6-luna");
+    expect(buildOpenAIWebContextParams("teste", { model: "gpt-6-sol" }).model)
+      .toBe("gpt-6.1-sol");
+    expect(buildOpenAIWebContextParams("teste", { model: "gpt-5.6-terra" }).model)
+      .toBe("gpt-6.1-sol");
+    expect(buildOpenAIWebContextParams("teste", { model: "gpt-5.6-sol" }).model)
+      .toBe("gpt-5.6-sol");
   });
 });

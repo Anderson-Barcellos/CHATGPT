@@ -124,7 +124,7 @@ export async function curateDiscoverArticles(topics: string[], previous: Discove
   const client = createOpenAIClient();
   if (!client) throw new Error("OPENAI_API_KEY indisponível para a curadoria.");
   const response = await client.responses.create({
-    model: "gpt-6-sol",
+    model: "gpt-6.1-sol",
     reasoning: { effort: "medium" },
     max_output_tokens: 24000,
     text: { format: DISCOVER_SCHEMA, verbosity: "high" },
@@ -184,7 +184,7 @@ export async function rewriteDiscoverArticles(
 
   for (const article of current) {
     const response = await client.responses.create({
-      model: "gpt-6-sol",
+      model: "gpt-6.1-sol",
       reasoning: { effort: "medium" },
       max_output_tokens: 6000,
       text: { format: DISCOVER_SCHEMA, verbosity: "high" },

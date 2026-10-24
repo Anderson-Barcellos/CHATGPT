@@ -1,6 +1,6 @@
 [Unit]
 Description=Celer - Cliente IA Multi-Modal
-Documentation=https://ultrassom.ai/chat
+Documentation=https://sonaris.us/chat
 After=network.target
 
 [Service]
@@ -10,7 +10,7 @@ WorkingDirectory=/root/CHATGPT
 Environment="NODE_ENV=production"
 Environment="PORT=3040"
 Environment="NEXT_PUBLIC_BASE_PATH=/chat"
-Environment="NEXT_PUBLIC_APP_URL=https://ultrassom.ai/chat"
+Environment="NEXT_PUBLIC_APP_URL=https://sonaris.us/chat"
 EnvironmentFile=/root/CHATGPT/.env.production
 ExecStart=/usr/bin/npm start
 Restart=always

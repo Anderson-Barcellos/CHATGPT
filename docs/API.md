@@ -1,7 +1,13 @@
 # API
 
-**Última atualização:** 2026-10-04
-**Base URL pública:** `https://ultrassom.ai/chat`
+## Anthropic no chat — 2026-10-15
+
+`POST /api/chat` aceita `claude-sonnet-5-5` e `claude-opus-5-5` em `responseMode="default"`, com streaming. O adaptador usa a Messages API e mantém o contrato SSE consumido pelo frontend: texto, atividade, citações e uso agregado. `reasoning.effort` aceita `low|medium|high`, default `medium`; `xhigh|max` é limitado a `high`. Controles OpenAI incompatíveis não são repassados. Imagens e texto são convertidos explicitamente; entrada incompatível é recusada.
+
+Busca e leitura web usam ferramentas Anthropic. `remember_memory` e `search_memory` usam o executor e a persistência existentes do Gaúcho, limitados a duas rodadas. O cancelamento encerra a chamada upstream; falhas parciais não produzem conclusão falsa. Credencial ausente resulta em indisponibilidade explícita. Studio/Pulse e contratos OpenAI permanecem independentes.
+
+**Última atualização:** 2026-10-15
+**Base URL pública:** `https://sonaris.us/chat`
 **Base path interno:** `NEXT_PUBLIC_BASE_PATH=/chat`
 
 Todas as rotas abaixo são implementadas como Route Handlers do Next em `app/api/*`. Produção exige `AUTH_ENABLED=true`, usuário, senha e segredo JWT configurados; `proxy.ts` protege rotas privadas com cookie JWT `auth-token`. Configuração inválida impede boot e nunca abre acesso; rotas auth retornam 503 se chamadas nesse estado. Fora de produção, desativação exige `AUTH_ENABLED=false` explícito.
@@ -10,9 +16,9 @@ Todas as rotas abaixo são implementadas como Route Handlers do Next em `app/api
 
 ### `POST /api/chat`
 
-Proxy server-side para chat com streaming. Modelos OpenAI usam a `Responses API`; `deepseek-v4-pro` usa o adapter DeepSeek e `gemini-3.8-flash` usa a Interactions API, ambos apenas no chat padrão streaming.
+Proxy server-side para chat com streaming. Modelos OpenAI usam a `Responses API`; `deepseek-flash` usa o adapter DeepSeek e `gemini-3.8-flash` usa a Interactions API, ambos apenas no chat padrão streaming.
 
-`grok-4.7` usa Responses API xAI com reasoning `medium` fixo. O identificador legado `gpt-5.4-mini` resolve para Grok nas novas chamadas. As ferramentas são traduzidas por provider: `web_search` e `code_execution` na xAI, memória local e ponte para geração de imagem OpenAI no chat padrão. O contrato SSE do app permanece o mesmo; falha do provider é explícita, sem fallback silencioso de modelo.
+Os identificadores legados `grok-4.7` e `gpt-5.4-mini` resolvem para `gpt-6-luna` (OpenAI); `gpt-6-sol` e `gpt-5.6-terra` para `gpt-6.1-sol`; `deepseek-v4-pro` para `deepseek-flash`. `gpt-5.6-sol` é modelo próprio, com modo `pro`.
 
 **Arquivo:** `app/api/chat/route.ts`
 
@@ -62,7 +68,7 @@ Ferramentas injetadas pelo backend:
 - `remember_memory` e `search_memory` apenas em `responseMode="default"`, com até duas rodadas de function-call/output para salvar memórias explícitas ou recuperar contexto histórico quando o usuário pedir.
 - `code_interpreter` apenas quando `codeInterpreterEnabled=true` e o modelo suporta.
 
-Quando `model="deepseek-v4-pro"`, a rota aceita somente `responseMode="default"` com `stream=true`, exige `DEEPSEEK_API_KEY` e usa `fresh_web_context` como tool local. Essa tool consulta a OpenAI com `web_search_preview` quando o DeepSeek pede contexto fresco, mas Documento, Deepsearch e Quiz não usam o provider DeepSeek.
+Quando `model="deepseek-flash"`, a rota aceita somente `responseMode="default"` com `stream=true`, exige `DEEPSEEK_API_KEY` e usa `fresh_web_context` como tool local. Essa tool consulta a OpenAI com `web_search_preview` quando o DeepSeek pede contexto fresco, mas Documento, Deepsearch e Quiz não usam o provider DeepSeek.
 
 Quando `model="gpt-6-astra"`, a rota força `reasoning.effort="medium"` e `verbosity="medium"`, inclusive quando o cliente tenta enviar outro valor ou omite os campos.
 
@@ -79,7 +85,7 @@ Em `responseMode="deepsearch_medium"` e `responseMode="deepsearch_high"`:
 
 - no shell atual, `hooks/useChat.ts` envia o mesmo fluxo de documento/canvas;
 - no shell atual, `hooks/useChat.ts` envia `gpt-6-luna` + reasoning `high` em `deepsearch_medium`;
-- no shell atual, `hooks/useChat.ts` envia `gpt-6-sol` + reasoning `high` em `deepsearch_high`.
+- no shell atual, `hooks/useChat.ts` envia `gpt-6.1-sol` + reasoning `high` em `deepsearch_high`.
 
 ### Streaming
 
@@ -123,7 +129,7 @@ melhor à suspensão agressiva de navegador mobile, o app também mantém metada
 de jobs pendentes em `data/chat-background-jobs.json` e chama `/reconcile` ao
 abrir, ao voltar para aba visível e ao carregar conversas com job pendente.
 
-No provider xAI, a rota cria um identificador local `xai-*`, persiste o vínculo/provider e inicia a chamada no processo servidor sem vincular sua duração ao navegador. Sync consulta o resultado local; cancel aborta o executor e impede aplicação tardia. Reconcile distingue job vivo de execução perdida por restart. Reinício não reenvia a chamada automaticamente: a mensagem termina com indicação de interrupção, permitindo tentativa explícita. Jobs legados sem provider continuam sendo OpenAI.
+Novos jobs são sempre OpenAI. Jobs `xai-*` criados antes de 2026-10-13 só são finalizados: cancel marca cancelado; sync e reconcile marcam um job ainda em andamento como interrompido, sem reenviar a chamada. Jobs legados sem provider continuam sendo OpenAI.
 
 ## Descobrir IA
 
@@ -132,6 +138,7 @@ Página autenticada `/discover`, sob o base path `/chat`. O feed fica em `data/d
 | Rota | Contrato |
 |---|---|
 | `GET /api/discover` | Auth do app; retorna `{ topics, suggestedTopics, articles, job, lastDailyDate, schedule, nextScheduledAt }`, sem cache. `schedule.enabled` indica a preferência automática; `nextScheduledAt` é previsão ISO ou `null` quando pausado. Cada artigo contém título, resumo, Markdown narrativo, data, tema, fontes HTTP(S), identificador e `image` opcional (ID da capa). |
+| `DELETE /api/discover` | Auth do app; recebe `{ ids: string[] }` (1–60 IDs, corpo até 16 KiB), retorna `{ deletedIds }` sem cache. Idempotente; 400 para seleção inválida, 413 para corpo grande, 409 durante curadoria ativa. Remove somente as notícias selecionadas e suas capas não compartilhadas após persistir; preferências preservadas. Uma curadoria futura pode encontrar a mesma fonte. |
 | `PUT /api/discover/settings` | Auth do app; recebe `{ enabled: boolean }` e retorna `{ schedule, nextScheduledAt }`. Entrada inválida retorna 400. Persiste sob o mesmo lock do claim, sem gerar conteúdo; campos do feed são preservados. |
 | `PUT /api/discover/topics` | Auth do app; recebe `{ topics: string[] }`. Até 12 assuntos de 2 a 60 caracteres; normaliza espaços e duplicatas. Retorna `{ topics }`; entrada inválida retorna 400. |
 | `POST /api/discover/refresh` | Auth do app; reivindica atualização manual e retorna `{ status: "started" | "running" }`. `started` usa HTTP 202; a UI consulta `GET` para acompanhar. |
@@ -146,11 +153,11 @@ Estados antigos sem preferência mantêm automação ativa. `lastDailyDate` é a
 
 ## Gaucho Studio
 
-O seletor inclui Grok 4.7 no lugar do mini, com reasoning `medium` no caminho xAI. Preferências antigas do mini resolvem para Grok. OpenAI mantém seus defaults de reasoning/verbosity; ambos preservam assistência somente leitura, pesquisa apenas no painel lateral e células sem tools.
+O seletor oferece Astra, 6.1 Sol, Luna e 5.6 Sol. Preferências antigas do mini e do Grok resolvem para Luna, e as de 6 Sol/Terra para 6.1 Sol. Todos preservam assistência somente leitura, pesquisa apenas no painel lateral e células sem tools.
 
 ### `POST /api/studio/assist`
 
-Assistente contextual do editor em `/studio`. A rota usa Responses API do provider selecionado, com streaming SSE e `store=false`. OpenAI preserva defaults de reasoning/verbosity e oferece `web_search_preview` com contexto `medium` e localização aproximada `BR`; Grok usa reasoning `medium`, sem verbosity, e `web_search`. Status de busca e citações acompanham o stream e ficam no histórico local. O modo de assistência por célula continua com `tools: []`. Nenhum dos dois recebe autorização para editar arquivos automaticamente, executar código, consultar memórias, usar terminal/filesystem ou acionar o fluxo agente.
+Assistente contextual do editor em `/studio`. A rota usa a Responses API da OpenAI, com streaming SSE, `store=false`, reasoning `medium` e `web_search_preview` com contexto `medium` e localização aproximada `BR`. Status de busca e citações acompanham o stream e ficam no histórico local. O modo de assistência por célula continua com `tools: []`. Nenhum dos modos recebe autorização para editar arquivos automaticamente, executar código, consultar memórias, usar terminal/filesystem ou acionar o fluxo agente.
 
 ```json
 {
@@ -180,7 +187,7 @@ Autocomplete FIM não streaming do Monaco, restrito a TypeScript, JavaScript e P
 }
 ```
 
-`prefix + suffix` aceita no máximo 32 mil caracteres e `filePath`, 320. Quando o arquivo inteiro cabe, o cliente o envia; acima disso, preserva até 24 mil caracteres antes e 8 mil depois do cursor. O body HTTP é limitado a 256 KiB. Os providers Mistral usam `codestral-latest` via `POST /v1/fim/completions` (resposta em formato chat, `choices[0].message.content`; `model_length` normaliza para `length`); o fallback DeepSeek usa `deepseek-v4-pro` via Completions clássico. Em todos: até 256 tokens, `temperature=0.1`, timeout de 8 segundos, sem retries automáticos do SDK, e sem histórico, reasoning ou tools.
+`prefix + suffix` aceita no máximo 32 mil caracteres e `filePath`, 320. Quando o arquivo inteiro cabe, o cliente o envia; acima disso, preserva até 24 mil caracteres antes e 8 mil depois do cursor. O body HTTP é limitado a 256 KiB. Os providers Mistral usam `codestral-latest` via `POST /v1/fim/completions` (resposta em formato chat, `choices[0].message.content`; `model_length` normaliza para `length`); o fallback DeepSeek usa `deepseek-flash` via Completions clássico. Em todos: até 256 tokens, `temperature=0.1`, timeout de 8 segundos, sem retries automáticos do SDK, e sem histórico, reasoning ou tools.
 
 ```json
 {
@@ -328,6 +335,11 @@ usa Orion/MP3 e aplica apenas `mode` e `speed`.
 | `POST` | `/api/realtime/grok-session` | Emite token efêmero autenticado e sem cache para a leitura Grok Realtime do Chat/Pulse |
 | `POST` | `/api/realtime/tts-call/log` | Recebe telemetria sanitizada do cliente Realtime para diagnóstico local |
 | `POST` | `/api/transcribe` | Transcreve áudio com `gpt-4o-transcribe`; streaming NDJSON ativo por padrão e desativável com `TRANSCRIPTION_STREAMING_ENABLED=false` |
+| `WebSocket` | `/api/transcribe/realtime` | Ditado incremental com `gpt-live-transcribe`; ponte separada, mesmo cookie `auth-token`, origem conferida contra Host preservado |
+
+O WebSocket recebe PCM16 mono a 24 kHz em frames binários (até 64 KiB) e comandos JSON `commit`/`stop`. Devolve `ready`, `transcript` com texto completo reconciliado, `done` com texto final ou `error` sanitizado. O prefixo público é `/chat`. Limites: duas conexões simultâneas, 15 minutos por sessão, 15 segundos para conexão upstream, 20 segundos para fechamento e 1 MiB de pressão de envio. Autenticação desabilitada/inválida fecha o acesso à ponte; expiração é reconferida durante a sessão. Modelo, URL upstream e chave são exclusivos do servidor.
+
+O cliente guarda a gravação em memória enquanto transmite; indisponibilidade do Realtime usa `POST /api/transcribe` ao parar. O resultado HTTP substitui a prévia inteira. Resposta NDJSON sem `done` é falha, não uma nota completa. Chat nunca envia ao parar; notas persistem uma única captura após o resultado completo.
 
 Notas do PDF:
 
@@ -372,7 +384,7 @@ Todas as rotas de Pulse são privadas quando `AUTH_ENABLED=true`, exceto o runne
 
 Os resultados do Pulse e as mensagens do chat reutilizam o mesmo mini-player. Ele abre no **Grok TTS · Orion** via `/api/tts/xai` (trechos MP3 e download completo) e permite selecionar manualmente Grok Realtime via `/api/realtime/grok-session`; nenhuma engine inicia apenas ao abrir o player.
 
-As execuções do Pulse usam `gpt-6-sol` + reasoning `medium` por padrão em rotinas novas e mantêm Astra/Luna/Grok 4.7 como opções; rotinas salvas preservam o modelo gravado. Rotinas antigas com mini resolvem para Grok; execuções históricas preservam o modelo gravado. O modelo e effort efetivos ficam registrados em cada execução. Grok força `medium` e não recebe verbosity; modelos OpenAI mantêm suas configurações. O prompt continua enxuto e a imagem continua OpenAI em chamada separada quando necessário. Overrides operacionais permanecem; identificadores incompatíveis com o provider devem falhar explicitamente.
+As execuções do Pulse usam `gpt-6.1-sol` + reasoning `medium` por padrão em rotinas novas e oferecem Astra, Luna e GPT-5.6 Sol. Rotinas salvas com 6 Sol/Terra rodam no 6.1 Sol e com mini/Grok no Luna; execuções históricas preservam o modelo gravado. O modelo e effort efetivos ficam registrados em cada execução. Astra fica em verbosity `medium`; os demais em `high`. A criação de rotina por texto usa Luna `low`. O prompt continua enxuto e a imagem continua OpenAI em chamada separada quando necessário. Overrides operacionais permanecem; identificadores incompatíveis com o provider devem falhar explicitamente.
 
 | Método | Rota | Função |
 |---|---|---|

@@ -281,3 +281,161 @@ Após implementação (GREEN), `npx vitest run app/globals.visual.test.ts compon
 ```
       Tests  35 passed (35)
 ```
+
+## 2026-10-13 — Modelos: DeepSeek V4.1 Flash, GPT-6.1 Sol, GPT-5.6 Sol de volta, sem Grok (Claude)
+
+Escopo: `deepseek-flash` substitui `deepseek-v4-pro` (alias); `gpt-6.1-sol` substitui `gpt-6-sol` (aliases `gpt-6-sol` e `gpt-5.6-terra`); `gpt-5.6-sol` volta como modelo próprio com Pro; Grok sai de chat, Pulse e Studio (`grok-4.7` e `gpt-5.4-mini` resolvem para `gpt-6-luna`); extrações internas (Pulse e rascunho de agenda) em Luna `low`; `xaiChat` apagado; `xaiBackground` só finaliza jobs legados. Chave xAI segue apenas na voz.
+
+Probes reais (chamadas pequenas): `gpt-6.1-sol` recusa `reasoning.effort=none` (400) e responde com `max`; `gpt-5.6-sol` responde `completed` em modo Pro; `deepseek-flash` responde e é o V4.1 Flash.
+
+Primeiras execuções (RED), por grupo:
+
+```
+catálogo (lib/models/modelConfig.test.ts)                 → 6 failed
+chatRequest (aliases)                                      → 6 failed | 13 passed
+settingsStore + persistência                               → 8 failed | 19 passed
+DeepSeek / deepsearch / curadoria / FIM do Studio          → 10 failed | 33 passed
+Pulse config/store (resolveLegacyPulseModel)               → 8 failed | 8 passed
+PulsePanelV2 "Pulse model selector"                        → 2 failed | 1 passed
+Studio models.test.ts + workspace.test.ts                  → 8 failed | 12 passed
+xaiBackground + rotas sync/reconcile                       → 2 failed | 14 passed
+extrações Pulse/calendar com Luna                          → 6 failed | 2 passed
+```
+
+Testes que já passaram no RED (a resolução de alias desviava o fluxo antes do ramo Grok, confirmando que esses ramos estavam mortos): store "devolve o esforço none do GPT-6.1 Sol ao default suportado"; `runnerStart.test.ts` (rotina salva com Grok roda no Luna; chave OpenAI ausente vira failed); `studioAssistant.test.ts` (mini/grok → `gpt-6-luna` com `web_search_preview`); `app/api/chat/route.test.ts` "modelos legados de Grok e mini" (7 passed).
+
+Após implementação (GREEN), por grupo:
+
+```
+catálogo + chatRequest            → 29 passed / 27 passed
+settingsStore + persistência      → verdes
+documentConfig/DeepSeek           → 43 passed
+PulsePanelV2                      → 3 passed
+runnerStart                       → 4 passed
+lib/studio + components/studio    → 165 passed
+xaiBackground + rotas             → 23 passed
+extrações                         → 21 passed
+```
+
+Suíte inteira no checkout (sem build): `npx tsc --noEmit` → exit 0; `npx vitest run` → 212 files, 1093 passed. Gates completos em cópia isolada registrados abaixo.
+
+Gates completos em cópia isolada `/root/.cache/chat-models-20261013` (sem `.env*`, `.git` e `data`):
+
+```
+npm test           → 212 files, 1093 passed
+npx tsc --noEmit   → exit 0
+npm run lint       → 0 errors, 1 warning pré-existente (CommandComposerContainerV2.test.tsx, não tocado)
+npm run build      → exit 0 (NEXT_PUBLIC_BASE_PATH=/chat)
+```
+
+## 2026-10-14 — Nome do DeepSeek V4.1 Flash nas mensagens residuais (Claude)
+
+Sobraram três textos "DeepSeek V4 Pro" depois da troca de 13/10: duas mensagens de erro de `app/api/chat/route.ts` (modo não padrão e streaming obrigatório) e o aviso de verbosity em `components/settings/SettingsDrawer.tsx`. Teste novo em `app/api/chat/route.test.ts` (describe "DeepSeek V4.1 Flash na rota", 3 casos, inclui o id antigo `deepseek-v4-pro`).
+
+Primeira execução (RED), `npx vitest run app/api/chat/route.test.ts`:
+
+```
+ FAIL  … > aceita o id antigo deepseek-v4-pro e cobra pelo nome novo
+ AssertionError: expected 'DeepSeek V4 Pro esta habilitado somen…' to contain 'DeepSeek V4.1 Flash'
+      Tests  3 failed | 7 passed (10)
+```
+
+Após a correção (GREEN): `Tests  10 passed (10)`.
+
+## 2026-10-15 — Claude no chat (Codex)
+
+Snapshot: /root/.cache/gaucho-claude-20261015/source; logs completos em ../evidence/gates.jsonl e arquivos individuais.
+
+- npm test -- --maxWorkers=2: exit 0, 213 arquivos, 1.126 testes, nenhum skip.
+- NEXT_PUBLIC_BASE_PATH=/chat npx --no-install next typegen e npx --no-install tsc --noEmit: exit 0.
+- npm run lint: exit 0, um warning preexistente de parâmetro não usado.
+- NEXT_PUBLIC_BASE_PATH=/chat npm run build: exit 0, 43/43 páginas; dois avisos preexistentes Edge/tracing Studio.
+- node ../evidence/browser-qa.cjs: exit 0, oito checks desktop/mobile, sem erros de página/console na rodada final. Chat e indexação/sugestões automáticas simulados; autenticação/persistência sintéticas reais. Capturas inspecionadas; conversa removida e servidor encerrado.
+- Anthropic real: Models API 200 ambos; texto/imagem Sonnet e Opus; busca/fetch com citações e continuidade de memória Sonnet. Fixtures removidas.
+- git diff --check: exit 0.
+
+Ocorrências intermediárias: prefixo incorreto no harness; guard TypeScript corrigido; timeout SoundCase resolvido em uma repetição com dois workers sem alterar teste/timeout; PNG inválido substituído; mocks/seletores de browser corrigidos. Registro completo em docs/plans/2026-10-15-claude-no-chat-report.md. Sem publicação/restart de produção.
+
+## Publicação autorizada — 2026-10-15
+
+Anders autorizou publicar e comitar. Fonte original conferida contra baseline, sem divergências. DECISÃO: preservar o WIP anterior na main; aplicar somente o patch desta entrega e importar os commits na branch codex/claude-chat-20261015, sem merge do histórico sintético. Commits de implementação 7e444d2 e documentação 40d44c6.
+
+Drop-in 50-anthropic instalado, daemon-reload e publicação via scripts/deploy.sh --from /root/.cache/gaucho-claude-20261015/source, exit 0. Build s8Q5n0uSF_K2_bQfWeKMa; backup /root/.cache/gaucho-deploy/20261015T110653Z/next-before. Preservar a origem da build. Serviço reiniciado e active; health local/público 200 healthy. Chamadas sintéticas autenticadas na rota pública com Sonnet e Opus: 200, texto e conclusão SSE em ambos, sem tools e sem persistir conversa. Chunk público dos modelos idêntico à build validada. Evidências: deploy.log, published-results.json e public-assets.json no diretório evidence da entrega.
+
+Nenhuma mudança em proxy/porta, nenhum reload Apache ou push. Chave carregada no processo e nunca emitida. APACHE.md atualizado. Gates de código anteriores permanecem válidos: publicação não alterou código; somente registros operacionais foram atualizados.
+
+## 2026-10-15 — Reasoning do DeepSeek V4.1 Flash em `low` (Claude)
+
+Pedido de Anders: reasoning do DeepSeek como `low`. Sondagem real (mesma pergunta, `thinking` habilitado): `low` → 65 tokens de raciocínio; `max` → 156. Trava do store (`xhigh` → `low`) e parâmetro enviado à API (`max` → `low`) trocados; tooltip do compositor, descrição do catálogo, ARCHITECTURE e MODELS alinhados.
+
+Primeira execução (RED), `npx vitest run stores/settingsStore.test.ts lib/server/deepseekChat.test.ts`:
+
+```
+ FAIL  settingsStore.test.ts > locks DeepSeek V4.1 Flash to low reasoning and high verbosity
+ AssertionError: expected 'xhigh' to be 'low'
+ FAIL  deepseekChat.test.ts > builds a text-only DeepSeek V4.1 Flash request with low reasoning
+      Tests  2 failed | 28 passed (30)
+```
+
+Gates com o adapter Anthropic de Anders presente (`@anthropic-ai/sdk` 0.134.0 instalado do lockfile; lint na cópia isolada `/root/.cache/chat-lint-20261015`, pois no checkout o eslint varre `.next*`):
+
+```
+npx vitest run     → 213 files, 1126 passed
+npx tsc --noEmit   → exit 0
+npm run lint       → 0 errors, 1 warning pré-existente (CommandComposerContainerV2.test.tsx)
+```
+
+Build ainda não rodado nesta rodada (sai no deploy, em cópia isolada).
+
+## 2026-10-21 — Mobile publicado em sonaris.us
+
+### Complemento: intervalo do gesto após feedback de Anders
+
+DECISÃO: feedback após 450 ms, menu aos 900 ms, contexto nativo de toque sem antecipação; dois timers cancelados em arrasto/fim/cancelamento/desmontagem. Arquivos: `hooks/useMessageLongPress.ts`, seu teste e `components/chat/MessageBubble.tsx`. Base da build anterior preservada, sem incorporar WIP DeepSeek.
+
+Em `/root/.cache/gaucho-press-20261021/source`: `npm run lint` exit 0 (warning anterior mantido); `npm test -- --maxWorkers=2` exit 0, 215 arquivos e 1.141 testes aprovados, sem skips/falhas; `NEXT_PUBLIC_BASE_PATH=/chat NEXT_PUBLIC_APP_URL=https://sonaris.us/chat npm run build` exit 0; `node node_modules/typescript/bin/tsc --noEmit` exit 0. Logs em `../evidence`.
+
+`node /root/.cache/gaucho-press-20261021/qa.mjs` exit 0: Chrome 390×844 e 1440×1000, página identificada e conteúdo presente, sem overlay/erros de página, captura do menu, toque inicial sem feedback, arrasto sem menu, toque sustentado com feedback, contextmenu aos 500 ms sem abertura, menu após 900 ms, editar/cancelar, touchcancel e clique direito desktop. Browser plugin indisponível; Playwright instalado. Eventos de toque sintéticos; Safari nativo não certificado. Capturas `menu-mobile.png` e `menu-desktop.png` no diretório de evidência. Suíte ampla do shell não repetida: alteração restrita ao gesto; cenários pertinentes executados após build final.
+
+`python3 ../publish.py` exit 0 usando `scripts/deploy.sh --from`: build `VpqUQkfWDgyJNn4Tx8i-w`, restart, health local/público 200, agendadores restaurados. `python3 ../verify-public.py` exit 0: ambos healthy, assets JS/CSS idênticos, API anônima 401, login protegido. Backup `/root/.cache/gaucho-deploy/20261021T172749Z/next-before`; preservar fonte. Sem geração paga ou dados pessoais no QA; sem commit/push.
+
+### Rodada inicial
+
+Fonte validada: `/root/.cache/gaucho-mobile-20261021/source`. Evidências completas: `/root/.cache/gaucho-mobile-20261021/evidence`. Build publicada: `6dxYdQfcARJRrT0-1qEkK`.
+
+| Gate | Resultado final |
+| --- | --- |
+| `NEXT_PUBLIC_BASE_PATH=/chat next typegen` | exit 0 |
+| `node node_modules/typescript/bin/tsc --noEmit` | exit 0; TypeScript também aprovado no build final |
+| `npm run lint` | exit 0, zero erros; um warning anterior em `CommandComposerContainerV2.test.tsx` |
+| ESLint focado após refinamentos/recuperação dos seis arquivos DeepSeek publicados | exit 0 |
+| `npm test -- --maxWorkers=2` sem prefixo no ambiente unitário | exit 0; 215 arquivos e 1.139 testes aprovados, zero falhas/skips |
+| `NEXT_PUBLIC_BASE_PATH=/chat NEXT_PUBLIC_APP_URL=https://sonaris.us/chat npm run build` | exit 0; avisos anteriores de tracing/Edge preservados |
+| `qa.mjs` temporário, Chrome/Playwright | exit 0; 320×740, 390×844, 844×390 e 1440×1000; editor, botões, zoom 200%, toque cancelado, movimento reduzido e geração concorrente |
+| `qa-sidebar.mjs` temporário | exit 0; 6 cenários de abertura/rolagem/áudio/foco/rascunho/paleta |
+| `scripts/qa-discover-controls.mjs` | exit 0; 7 verificações de controles/áudio/layout/preservação |
+| `scripts/deploy.sh --from /root/.cache/gaucho-mobile-20261021/source` | exit 0; restart e health local/público 200 |
+| `verify-public.py` temporário | exit 0; ambos healthy, JS/CSS públicos idênticos à build, API anônima 401 e redirecionamento para login |
+
+DECISÕES: preservar zoom manual e desktop; editor mobile ocupa o lugar do composer principal; preservar rascunho enquanto a geração impede reenviar; acompanhar pan nativo em vez de disputar scroll. Durante QA foi reproduzido e corrigido o auto-scroll que escondia editor antigo em paisagem. A auditoria paralela revelou WIP DeepSeek `low`: a candidata recuperou seis arquivos da build viva (`max`), mantendo intactos os arquivos pendentes do checkout. `runtime-preserved.json` registra os caminhos. Nenhuma alteração de provider foi publicada com esta rodada.
+
+Tentativas anteriores registradas: erro de tipo na assinatura do mock novo corrigido; 3 testes falharam inicialmente porque o runner exportou `/chat` para unitários que esperam `/api`, corrigido no ambiente sem alterar as asserções; primeiro smoke de sidebar mediu largura antes de terminar a redução, e a cópia temporária passou a aguardar a mesma condição; ajustes do harness mobile corrigiram chamada de `emulateMedia`, limpeza de menu entre cenários e encerramento de requests sintéticos no replay público. Logs dessas tentativas foram preservados. Suítes/builds foram repetidos após alterações relevantes e após reconciliar a base publicada.
+
+Browser plugin ausente; usado Google Chrome instalado. Sem suíte Playwright central configurada: executados os harnesses pertinentes ao shell e ao fluxo alterado. Teclado é simulado, sem certificação de teclado nativo do Safari/PWA. Nenhum provider pago ou dado pessoal foi usado nos cenários; produção validada por health, acesso anônimo e assets. Backup da versão anterior: `/root/.cache/gaucho-deploy/20261021T163104Z/next-before`. Manter a origem da build.
+
+Replay adicional após publicação (`QA_PUBLIC_REPLAY=true node qa.mjs`): exit 1, não contabilizado como aprovação. Documento/APIs sintéticos locais e assets públicos; a primeira tentativa encontrou request em encerramento de contexto, e a segunda atingiu timeout ao reabrir o item de edição depois dos gestos/movimento reduzido (elemento instável e depois removido). Não foi determinada a causa desse timeout adicional; o mesmo fluxo na candidata teve exit 0. Evidências: `public-browser.log` e `published/failure.png`. A validação pública confirmada permanece health, autenticação anônima e correspondência byte a byte de JS/CSS, sem afirmar sessão real autenticada ou teclado nativo Safari validado.
+
+## 2026-10-23 — Ditado Realtime (preparação isolada)
+
+Gates finais exit 0: `npm test` (221 arquivos/1.193 testes), `npx --no-install tsc --noEmit`, `npm run lint`, `npm run build` e Chrome/Playwright (oito cenários desktop/mobile). Um warning de lint anterior; três warnings de build nas categorias de instrumentação/tracing já observadas, com comparação detalhada no registro. Unit systemd, sintaxe Bash, launcher sintético/health e diff aprovados. Build `BDr0Qzt70HLiGVp34_yrF`. Matriz de comandos, resultados, tentativas e limitações em `docs/DITADO-REALTIME.md`; logs `/root/.cache/gaucho-ditado-realtime/`. Não publicado.
+
+
+### Publicação do ditado — 23/10/2026
+
+`apache2ctl configtest`, `scripts/deploy.sh --from /root/worktrees/gaucho-ditado-realtime`, `verify-deploy.mjs`, `public-browser.mjs` e `check-assets.mjs`: exit 0. Realtime real com texto antes de stop; fallback NDJSON done/200; WS anônimo 401/origem inválida 403; 23 assets + worklet iguais. Chrome desktop/mobile sem erros, dados interceptados/sintéticos. Evidências `/root/.cache/gaucho-ditado-realtime/`; relatório `docs/DITADO-REALTIME.md`.
+
+## 2026-10-23 — Codex: exclusão de notícias preparada
+
+npm test: 223 arquivos/1.213 testes, exit 0. npx --no-install tsc --noEmit, npm run lint e npm run build: exit 0. Build lC8e60dlN4-pot2IHPGo4. Chrome: qa-discover-delete.mjs (5 cenários), qa-discover-controls.mjs (7 checks), qa-discover-sidebar.mjs (6 cenários), todos exit 0. Lint final do harness: exit 0. Logs, tentativas anteriores e limites em docs/DESCOBRIR-EXCLUSAO.md e /root/.cache/gaucho-discover-delete/gates.json.
+
+23/10/2026 — Codex: exclusão Descobrir publicada por autorização de Anders. Deploy exit 0; health 200 local/público; auth DELETE 401/400; Chrome público 1440/390 com fixtures interceptadas, exit 0; 24 assets e worklet idênticos. Backup e limites em docs/DESCOBRIR-EXCLUSAO.md.

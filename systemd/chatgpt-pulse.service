@@ -1,6 +1,6 @@
 [Unit]
 Description=Gaucho Chat Pulse runner
-Documentation=https://ultrassom.ai/chat
+Documentation=https://sonaris.us/chat
 After=chatgpt.service
 Requires=chatgpt.service
 

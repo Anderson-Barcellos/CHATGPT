@@ -9,9 +9,9 @@ afterEach(() => {
   else process.env.CALENDAR_DRAFT_MODEL = originalModel;
 });
 
-describe("extração de agenda com Grok", () => {
-  it("resolve o override legado para Grok medium com saída estruturada", async () => {
-    process.env.CALENDAR_DRAFT_MODEL = "gpt-5.4-mini";
+describe("extração de agenda com GPT-6 Luna", () => {
+  it.each(["gpt-5.4-mini", "grok-4.7"])("resolve o override legado %s para Luna low com saída estruturada", async (legacy) => {
+    process.env.CALENDAR_DRAFT_MODEL = legacy;
     const create = vi.fn().mockResolvedValue({
       output_text: JSON.stringify({
         canDraft: false,
@@ -35,8 +35,8 @@ describe("extração de agenda com Grok", () => {
       missingFields: ["horário"],
     });
     expect(create).toHaveBeenCalledWith(expect.objectContaining({
-      model: "grok-4.7",
-      reasoning: { effort: "medium" },
+      model: "gpt-6-luna",
+      reasoning: { effort: "low" },
       text: { format: expect.objectContaining({ name: "calendar_draft_from_text" }) },
     }));
   });
@@ -50,5 +50,10 @@ describe("extração de agenda com Grok", () => {
       text: "Consulta amanhã às 10",
     }, client)).rejects.toMatchObject({ code: "calendar_draft_model_not_supported" });
     expect(create).not.toHaveBeenCalled();
+  });
+
+  it("acusa a falta da chave OpenAI sem tentar outro provider", async () => {
+    await expect(createCalendarDraftFromNaturalLanguage({ text: "Reunião amanhã às 10" }, null))
+      .rejects.toMatchObject({ code: "calendar_draft_openai_api_key_missing", status: 503 });
   });
 });

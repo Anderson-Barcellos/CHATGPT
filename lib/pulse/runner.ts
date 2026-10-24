@@ -6,7 +6,6 @@ import {
 } from "@/lib/pulse/config";
 import { buildPulseSystemPrompt } from "@/lib/pulse/context";
 import { createOpenAIClient } from "@/lib/server/chatRequest";
-import { createXAIClient, GROK_MODEL } from "@/lib/server/xaiChat";
 import {
   extractResponseOutput,
   responseToMessagePatch,
@@ -129,24 +128,19 @@ function buildPulseInput(task: PulseTask): OpenAI.Responses.ResponseInput {
   ];
 }
 
-function clientForProfile(profile: PulseExecutionProfile): OpenAI | null {
-  return profile.model === GROK_MODEL ? createXAIClient() : createOpenAIClient();
-}
+const OPENAI_KEY_MISSING = "OPENAI_API_KEY nao configurada no servidor.";
 
 async function executeTask(task: PulseTask): Promise<PulseRun> {
   const { run, profile } = await claimTask(task);
   try {
-    const client = clientForProfile(profile);
+    const client = createOpenAIClient();
     if (!client) {
-      const message = profile.model === GROK_MODEL
-        ? "XAI_API_KEY nao configurada no servidor."
-        : "OPENAI_API_KEY nao configurada no servidor.";
       const failed = await finishPulseRun(run.id, {
         status: "failed",
         title: task.title,
         taskTitle: task.title,
         content: "",
-        error: message,
+        error: OPENAI_KEY_MISSING,
         completedAt: new Date().toISOString(),
       });
       await advancePulseTask(task, run.id);
@@ -172,26 +166,22 @@ async function completeClaimedRun(
       input: buildPulseInput(task),
       max_output_tokens: getPulseMaxOutputTokens(),
       reasoning: { effort: profile.reasoningEffort },
-      ...(profile.model === GROK_MODEL ? {} : {
-        text: { verbosity: profile.model === "gpt-6-astra" ? "medium" : "high" },
-      }),
-      tools: profile.model === GROK_MODEL
-        ? ([{ type: "web_search" }] as never)
-        : [
-            {
-              type: "web_search_preview",
-              search_context_size: "medium",
-              user_location: { type: "approximate", country: "BR" },
-            },
-            {
-              type: "image_generation",
-              model: DEFAULT_IMAGE_MODEL,
-              quality: "high",
-              size: "auto",
-              background: "auto",
-              output_format: "png",
-            },
-          ],
+      text: { verbosity: profile.model === "gpt-6-astra" ? "medium" : "high" },
+      tools: [
+        {
+          type: "web_search_preview",
+          search_context_size: "medium",
+          user_location: { type: "approximate", country: "BR" },
+        },
+        {
+          type: "image_generation",
+          model: DEFAULT_IMAGE_MODEL,
+          quality: "high",
+          size: "auto",
+          background: "auto",
+          output_format: "png",
+        },
+      ],
     });
 
     const patch = responseToMessagePatch(response);
@@ -200,12 +190,7 @@ async function completeClaimedRun(
       output.content || (patch.streamStatus === "completed" ? patch.content || "" : "");
     const fallbackImage: { imageBase64?: string; imageMimeType?: string } =
       patch.streamStatus === "completed" && !output.imageBase64 && finalContent.trim()
-        ? await (async () => {
-            const imageClient = createOpenAIClient();
-            return imageClient
-              ? generatePulseOpeningImage({ openai: imageClient, task, content: finalContent, profile })
-              : {};
-          })().catch(
+        ? await generatePulseOpeningImage({ openai, task, content: finalContent, profile }).catch(
             (error) => {
               console.warn("[pulse] Falha ao gerar imagem fallback:", error);
               return {};
@@ -294,15 +279,15 @@ export async function runDuePulseTasks(now = new Date()) {
 export async function startPulseTaskNow(task: PulseTask): Promise<PulseRun> {
   await recoverOrphanedPulseRuns(activeRunIds);
   const { run, profile } = await claimTask(task);
-  const client = clientForProfile(profile);
+  const client = createOpenAIClient();
   if (!client) {
     activeRunIds.delete(run.id);
     await finishPulseRun(run.id, {
       status: "failed",
-      error: profile.model === GROK_MODEL ? "XAI_API_KEY nao configurada no servidor." : "OPENAI_API_KEY nao configurada no servidor.",
+      error: OPENAI_KEY_MISSING,
       completedAt: new Date().toISOString(),
     });
-    throw new Error(profile.model === GROK_MODEL ? "XAI_API_KEY nao configurada no servidor." : "OPENAI_API_KEY nao configurada no servidor.");
+    throw new Error(OPENAI_KEY_MISSING);
   }
   void completeClaimedRun(task, run, profile, client)
     .catch((error) => {

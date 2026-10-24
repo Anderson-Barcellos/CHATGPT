@@ -9,8 +9,8 @@ import { useEffect } from "react";
  * mesmo); só o visual viewport diminui e o navegador "empurra" a página pra
  * mostrar o campo focado. Este hook grava a altura visível numa variável CSS
  * (`--gc-visual-viewport-height`), marca `data-keyboard-open` no `<html>` e
- * devolve o scroll da janela pra 0, de modo que o shell encolha junto com o
- * teclado em vez de ser deslocado.
+ * acompanha o deslocamento visual, sem disputar o panning nativo do Safari.
+ * Zoom manual nunca é tratado como teclado e permanece livre.
  *
  * Com o teclado fechado o hook devolve a altura ao CSS (`100dvh`): no iOS 27
  * o WebKit volta a informar a altura curta depois do teclado, e travar esse
@@ -30,7 +30,10 @@ export const KEYBOARD_THRESHOLD_PX = 100;
 export interface VisualViewportSnapshot {
   height: number;
   offsetTop: number;
+  scrollY?: number;
   innerHeight: number;
+  scale?: number;
+  hasEditableFocus?: boolean;
   /** Web app aberta pelo ícone da tela inicial. */
   standalone?: boolean;
   /** Altura física da tela na orientação atual. */
@@ -52,7 +55,9 @@ export function physicalViewportHeight(
 }
 
 export function isKeyboardOpen(snapshot: VisualViewportSnapshot): boolean {
-  return snapshot.innerHeight - snapshot.height > KEYBOARD_THRESHOLD_PX;
+  return Math.abs((snapshot.scale ?? 1) - 1) < 0.05 &&
+    snapshot.hasEditableFocus !== false &&
+    snapshot.innerHeight - snapshot.height > KEYBOARD_THRESHOLD_PX;
 }
 
 export function applyVisualViewport(
@@ -70,7 +75,7 @@ export function applyVisualViewport(
 
   if (snapshot && isKeyboardOpen(snapshot)) {
     root.style.setProperty(VISUAL_VIEWPORT_HEIGHT_VAR, `${Math.round(snapshot.height)}px`);
-    root.style.setProperty(VISUAL_VIEWPORT_OFFSET_TOP_VAR, `${Math.round(snapshot.offsetTop)}px`);
+    root.style.setProperty(VISUAL_VIEWPORT_OFFSET_TOP_VAR, `${Math.round(snapshot.offsetTop + (snapshot.scrollY ?? 0))}px`);
     root.setAttribute(KEYBOARD_OPEN_ATTR, "true");
     return;
   }
@@ -94,13 +99,19 @@ export function useVisualViewport(enabled: boolean): void {
 
     const root = document.documentElement;
     let frame: number | null = null;
+    let keyboardWasOpen = false;
 
     const sync = () => {
       frame = null;
       const snapshot: VisualViewportSnapshot = {
         height: viewport.height,
         offsetTop: viewport.offsetTop,
+        scrollY: window.scrollY,
         innerHeight: window.innerHeight,
+        scale: viewport.scale,
+        hasEditableFocus: keyboardWasOpen || Boolean(document.activeElement?.matches(
+          "textarea, input:not([type='button']):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='submit']), [contenteditable='true']"
+        )),
         standalone: isStandaloneDisplay(),
         physicalHeight: physicalViewportHeight(
           window.screen.width,
@@ -112,10 +123,11 @@ export function useVisualViewport(enabled: boolean): void {
       };
       applyVisualViewport(root, snapshot);
       const keyboardOpen = isKeyboardOpen(snapshot);
-      // Com o teclado aberto o scroll da janela empurra o shell; fechado, é pan residual.
-      if (window.scrollY !== 0 || (keyboardOpen && snapshot.offsetTop !== 0)) {
+      // Só desfaz o pan residual ao fechar o teclado; nunca durante zoom ou digitação.
+      if (keyboardWasOpen && !keyboardOpen && Math.abs((snapshot.scale ?? 1) - 1) < 0.05 && window.scrollY !== 0) {
         window.scrollTo(0, 0);
       }
+      keyboardWasOpen = keyboardOpen;
     };
 
     const schedule = () => {
@@ -125,12 +137,16 @@ export function useVisualViewport(enabled: boolean): void {
 
     viewport.addEventListener("resize", schedule);
     viewport.addEventListener("scroll", schedule);
+    document.addEventListener("focusin", schedule);
+    document.addEventListener("focusout", schedule);
     sync();
 
     return () => {
       if (frame !== null) window.cancelAnimationFrame(frame);
       viewport.removeEventListener("resize", schedule);
       viewport.removeEventListener("scroll", schedule);
+      document.removeEventListener("focusin", schedule);
+      document.removeEventListener("focusout", schedule);
       applyVisualViewport(root, null);
     };
   }, [enabled]);

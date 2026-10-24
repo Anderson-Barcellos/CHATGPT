@@ -57,7 +57,7 @@ describe("Studio prefs persistence", () => {
 
     expect(restored.version).toBe(2);
     expect(restored.autocompleteEnabled).toBe(false);
-    expect(restored.selectedModelId).toBe("gpt-6-sol");
+    expect(restored.selectedModelId).toBe("gpt-6.1-sol");
     expect(restored.assistantMessages).toEqual([
       expect.objectContaining({ id: "legacy-question" }),
     ]);
@@ -119,7 +119,7 @@ describe("Studio prefs persistence", () => {
     expect(restored.selectedModelId).toBe("gpt-6-luna");
   });
 
-  it("resolve o mini persistido para Grok e preserva o histórico", () => {
+  it("resolve o mini persistido para Luna e preserva o histórico", () => {
     const message = {
       id: "history-kept",
       role: "user",
@@ -133,7 +133,7 @@ describe("Studio prefs persistence", () => {
       assistantMessages: [message],
     }));
 
-    expect(restored.selectedModelId).toBe("grok-4.7");
+    expect(restored.selectedModelId).toBe("gpt-6-luna");
     expect(restored.assistantMessages).toEqual([
       expect.objectContaining(message),
     ]);

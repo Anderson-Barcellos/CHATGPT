@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, ChevronDown, Newspaper, Plus, RefreshCw, Sparkles, Volume2, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, Newspaper, Plus, RefreshCw, Sparkles, Trash2, Volume2, X } from "lucide-react";
 import { ChatMarkdown } from "@/components/chat/ChatMarkdown";
 import { MiniAudioPlayer } from "@/components/chat/MiniAudioPlayer";
 import { ProductNav } from "@/components/navigation/ProductNav";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { apiUrl } from "@/lib/utils";
 import type { DiscoverState } from "@/lib/discover/types";
 import { MOBILE_MEDIA_QUERY } from "@/lib/layout/breakpoints";
@@ -62,6 +63,14 @@ export function DiscoverFeed({ embedded = false }: DiscoverFeedProps) {
   const [draft, setDraft] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [audioArticleId, setAudioArticleId] = useState<string | null>(null);
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [deleteTargets, setDeleteTargets] = useState<{ id: string; title: string }[]>([]);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [notice, setNotice] = useState("");
+  const deleteInFlight = useRef(false);
+  const selectionButton = useRef<HTMLButtonElement>(null);
   const articleRefs = useRef(new Map<string, HTMLElement>());
   const pendingMutations = useRef(0);
   const readVersion = useRef(0);
@@ -180,6 +189,42 @@ export function DiscoverFeed({ embedded = false }: DiscoverFeedProps) {
   };
 
   const busy = state?.job.status === "running";
+  const selectedArticles = state?.articles.filter((article) => selected.includes(article.id)) ?? [];
+  const requestDelete = (targets: { id: string; title: string }[]) => {
+    setDeleteError("");
+    setDeleteTargets(targets.map(({ id, title }) => ({ id, title })));
+  };
+  const deleteArticles = async () => {
+    if (deleteInFlight.current || !deleteTargets.length) return;
+    deleteInFlight.current = true;
+    setDeleting(true);
+    setDeleteError("");
+    beginMutation();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    try {
+      const result = await responseJson<{ deletedIds: string[] }>(await fetch(apiUrl("/api/discover"), {
+        method: "DELETE", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: deleteTargets.map((article) => article.id) }), signal: controller.signal,
+      }));
+      const removed = new Set(result.deletedIds);
+      setState((current) => current ? { ...current, articles: current.articles.filter((article) => !removed.has(article.id)) } : current);
+      setSelected((current) => current.filter((id) => !removed.has(id)));
+      setAudioArticleId((current) => current && removed.has(current) ? null : current);
+      setExpanded((current) => current && removed.has(current) ? null : current);
+      setNotice(removed.size === 1 ? "Notícia apagada." : `${removed.size} notícias apagadas.`);
+      setDeleteTargets([]);
+    } catch (cause) {
+      setDeleteError(cause instanceof DOMException && cause.name === "AbortError"
+        ? "A resposta demorou demais. Confere a seleção e tenta novamente."
+        : cause instanceof Error ? cause.message : "Não foi possível apagar as notícias.");
+    } finally {
+      clearTimeout(timeout);
+      finishMutation();
+      setDeleting(false);
+      deleteInFlight.current = false;
+    }
+  };
   const scheduleEnabled = state?.schedule?.enabled;
   const toggleArticle = (id: string, open: boolean) => {
     const next = open ? null : id;
@@ -249,7 +294,7 @@ export function DiscoverFeed({ embedded = false }: DiscoverFeedProps) {
               <h1 className={`mt-1 font-semibold tracking-tight ${embedded ? "text-2xl" : "text-3xl md:text-4xl"}`}>O que está acontecendo em IA</h1>
               <p className="mt-2 text-sm text-muted-foreground">Novidades com contexto, leitura leve e fontes para ir além.</p>
             </div>
-            <button type="button" onClick={() => void refresh()} disabled={busy || loading || refreshing}
+            <button type="button" onClick={() => void refresh()} disabled={busy || loading || refreshing || deleting}
               className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium hover:bg-accent disabled:opacity-50">
               <RefreshCw className={`size-4 ${busy || refreshing ? "animate-spin" : ""}`} />{busy || refreshing ? "Atualizando…" : "Buscar novidades"}
             </button>
@@ -271,6 +316,20 @@ export function DiscoverFeed({ embedded = false }: DiscoverFeedProps) {
             </Collapsible>
           ) : <div className="mb-5">{automaticSchedule}</div>}
           {error && <p role="alert" className="mb-4 rounded-xl border border-destructive/40 p-3 text-sm text-destructive">{error}</p>}
+          {notice && <p role="status" className="mb-4 text-sm text-muted-foreground">{notice}</p>}
+          <div className="mb-4 flex flex-wrap items-center gap-2" aria-label="Gerenciar notícias">
+            <button ref={selectionButton} type="button" aria-pressed={selecting} disabled={loading || deleting}
+              onClick={() => { setSelecting(!selecting); setSelected([]); }} className="min-h-11 rounded-lg border border-border px-3 text-sm hover:bg-accent disabled:opacity-50">
+              {selecting ? "Cancelar seleção" : "Selecionar notícias"}
+            </button>
+            {selecting && <>
+              <button type="button" disabled={deleting || !state?.articles.length} onClick={() => setSelected(selectedArticles.length === state?.articles.length ? [] : state?.articles.map((article) => article.id) ?? [])}
+                className="min-h-11 rounded-lg border border-border px-3 text-sm hover:bg-accent disabled:opacity-50">{selectedArticles.length > 0 && selectedArticles.length === state?.articles.length ? "Desmarcar todas" : "Selecionar todas"}</button>
+              <button type="button" disabled={busy || deleting || !selectedArticles.length} onClick={() => requestDelete(selectedArticles)}
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-destructive/40 px-3 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"><Trash2 className="size-4" />Apagar selecionadas ({selectedArticles.length})</button>
+            </>}
+            {busy && <p className="w-full text-xs text-muted-foreground">Aguarde a atualização terminar para apagar notícias.</p>}
+          </div>
           {state?.job.status === "failed" && <p role="status" className="mb-4 rounded-xl border border-amber-500/40 p-3 text-sm">A última atualização falhou: {state.job.error}. As matérias anteriores seguem disponíveis.</p>}
           {loading && !state && <p role="status" className="py-16 text-center text-muted-foreground">Carregando notícias…</p>}
           {!loading && state?.articles.length === 0 && <div className="rounded-2xl border border-dashed border-border p-10 text-center"><Sparkles className="mx-auto mb-3 size-7 text-primary" /><p className="font-medium">O feed ainda está vazio.</p><p className="mt-1 text-sm text-muted-foreground">Busca as primeiras novidades para começar.</p></div>}
@@ -287,6 +346,14 @@ export function DiscoverFeed({ embedded = false }: DiscoverFeedProps) {
                 )
                   : <div className={`flex items-center justify-center bg-primary/10 text-primary ${open ? "h-52" : "h-40"}`}><Sparkles className="size-10" /></div>}
                 <div className="p-5">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    {selecting && <label className="flex min-h-11 min-w-0 cursor-pointer items-center gap-2 text-sm">
+                      <input type="checkbox" className="size-4 accent-primary" aria-label={`Selecionar notícia: ${article.title}`} disabled={deleting}
+                        checked={selected.includes(article.id)} onChange={(event) => setSelected((current) => event.target.checked ? [...current, article.id] : current.filter((id) => id !== article.id))} />Selecionar
+                    </label>}
+                    <button type="button" aria-label={`Apagar notícia: ${article.title}`} disabled={busy || deleting} onClick={() => requestDelete([article])}
+                      className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"><Trash2 className="size-4" />Apagar</button>
+                  </div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-primary">{article.topic} · {formatDate(article.publishedAt)}</p>
                   <h2 className="mt-2 text-xl font-semibold leading-tight">{article.title}</h2>
                   <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{article.summary}</p>
@@ -319,6 +386,20 @@ export function DiscoverFeed({ embedded = false }: DiscoverFeedProps) {
           <div className="md:sticky md:top-24">{topicPreferences}</div>
         </aside>}
       </main>
+      <Dialog open={deleteTargets.length > 0} onOpenChange={(open) => { if (!open && !deleteInFlight.current) setDeleteTargets([]); }}>
+        <DialogContent data-discover-confirmation showCloseButton={false} onCloseAutoFocus={(event) => { event.preventDefault(); selectionButton.current?.focus(); }}>
+          <DialogHeader>
+            <DialogTitle>{deleteTargets.length === 1 ? "Apagar esta notícia?" : `Apagar ${deleteTargets.length} notícias?`}</DialogTitle>
+            <DialogDescription>As notícias serão removidas deste feed. Uma curadoria futura pode encontrar a mesma fonte novamente.</DialogDescription>
+          </DialogHeader>
+          <ul className="max-h-48 space-y-2 overflow-y-auto break-words text-sm">{deleteTargets.map((article) => <li key={article.id}>{article.title}</li>)}</ul>
+          {deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}
+          <DialogFooter>
+            <button type="button" disabled={deleting} onClick={() => setDeleteTargets([])} className="min-h-11 rounded-lg border border-border px-4 text-sm disabled:opacity-50">Cancelar</button>
+            <button type="button" disabled={deleting} onClick={() => void deleteArticles()} className="min-h-11 rounded-lg bg-destructive px-4 text-sm text-white disabled:opacity-50">{deleting ? "Apagando…" : "Confirmar exclusão"}</button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -965,7 +965,7 @@ body {
     --gc-mobile-settings-section-gap: 0.95rem;
   }
 
-  input, select {
+  input, select, textarea, [contenteditable="true"] {
     font-size: 16px !important;
   }
 
@@ -1464,6 +1464,42 @@ body {
 
   html[data-keyboard-open] .gc-composer-dock {
     padding-bottom: var(--gc-mobile-composer-footer-bottom);
+  }
+
+  html[data-keyboard-open] .gc-clinical-subheader {
+    display: none;
+  }
+
+  .gc-device-frame:has(.gc-message-editor) .gc-composer-dock {
+    display: none;
+  }
+
+  .gc-user-bubble:has(.gc-message-editor) {
+    width: 100%;
+  }
+
+  .gc-message-editor textarea {
+    max-height: clamp(48px, calc(var(--gc-visual-viewport-height, 100dvh) - 190px), 14rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .gc-message-card {
+    transition: transform 160ms ease-out, box-shadow 160ms ease-out;
+    -webkit-touch-callout: none;
+  }
+
+  .gc-message-card[data-pressing] {
+    transform: scale(1.012);
+    box-shadow: 0 0 0 2px var(--gc-border);
+  }
+
+  .gc-message-card :is(a, input, textarea, [contenteditable="true"]) {
+    -webkit-touch-callout: default;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gc-message-card[data-pressing] { transform: none; }
   }
 
   .gc-composer-dock {

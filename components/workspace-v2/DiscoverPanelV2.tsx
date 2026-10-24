@@ -57,6 +57,8 @@ export function DiscoverPanelV2() {
     const previous = siblings.map((element) => element.inert);
     siblings.forEach((element) => { element.inert = true; });
     const focusInside = (event: FocusEvent) => {
+      // A confirmação usa um portal fora do painel e gerencia o próprio foco.
+      if ((event.target as Element).closest?.('[data-discover-confirmation]')) return;
       if (!node.contains(event.target as Node)) back.current?.focus({ preventScroll: true });
     };
     document.addEventListener("focusin", focusInside);
@@ -96,6 +98,7 @@ export function DiscoverPanelV2() {
       aria-modal={modal || undefined}
       aria-labelledby="discover-panel-title"
       onKeyDown={(event) => {
+        if ((event.target as Element).closest('[data-discover-confirmation]')) return;
         // A leitura modal não aciona atalhos do workspace que está inerte atrás dela.
         if (modal) event.stopPropagation();
         if (event.key === "Escape") {

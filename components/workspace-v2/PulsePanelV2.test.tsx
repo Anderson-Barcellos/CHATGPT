@@ -38,3 +38,25 @@ describe("Pulse audio controls", () => {
     expect(markup).not.toContain("Ouvir");
   });
 });
+
+describe("Pulse model selector", () => {
+  it("oferece o 6.1 Sol como padrão, traz o 5.6 Sol de volta e não lista o Grok", () => {
+    expect(PulsePanelModule.PULSE_MODEL_OPTIONS.map((option) => option.value)).toEqual([
+      "gpt-6.1-sol",
+      "gpt-6-astra",
+      "gpt-6-luna",
+      "gpt-5.6-sol",
+    ]);
+    expect(PulsePanelModule.PULSE_MODEL_OPTIONS[0].label).toContain("padrão");
+  });
+
+  it("rotula os dois Sol separados e mantém o rótulo histórico dos runs com Grok", () => {
+    const { pulseModelLabel } = PulsePanelModule;
+
+    expect(pulseModelLabel("gpt-6.1-sol", "medium")).toBe("Sol 6.1 · Medium");
+    expect(pulseModelLabel("gpt-5.6-sol", "high")).toBe("Sol 5.6 · High");
+    expect(pulseModelLabel("gpt-6-sol", "medium")).toBe("Sol · Medium");
+    expect(pulseModelLabel("gpt-6-luna", "medium")).toBe("Luna · Medium");
+    expect(pulseModelLabel("grok-4.7", "medium")).toBe("Grok · Medium");
+  });
+});

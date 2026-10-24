@@ -19,7 +19,7 @@ beforeEach(() => {
 
 describe("settings store persistence (B6)", () => {
   it("keeps the chosen model and its parameters across a reload, but never memories", async () => {
-    useSettingsStore.getState().updateParameters({ model: "gpt-6-sol", reasoningEffort: "high" });
+    useSettingsStore.getState().updateParameters({ model: "gpt-6.1-sol", reasoningEffort: "high" });
     useSettingsStore.getState().setMemories([
       { id: "m1", content: "segredo", category: "general", isActive: true, priority: 1, createdAt: "0", updatedAt: "0" } as never,
     ]);
@@ -40,7 +40,7 @@ describe("settings store persistence (B6)", () => {
     await useSettingsStore.persist.rehydrate();
 
     const state = useSettingsStore.getState();
-    expect(state.parameters.model).toBe("gpt-6-sol");
+    expect(state.parameters.model).toBe("gpt-6.1-sol");
     expect(state.parameters.reasoningEffort).toBe("high");
     expect(state.memories).toEqual([]);
   });
@@ -104,7 +104,29 @@ describe("settings store persistence (B6)", () => {
     expect(useSettingsStore.getState().parameters.reasoningEffort).toBe("low");
   });
 
-  it("keeps saved Sol settings while migrating a legacy model id", async () => {
+  it("keeps saved Sol settings while migrating GPT-6 Sol to 6.1", async () => {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
+      state: {
+        model: "gpt-6-sol",
+        systemPrompt: "",
+        modelSettingsById: {
+          "gpt-6-sol": { maxOutputTokens: 4_096, reasoningEffort: "high", reasoningMode: "standard" },
+        },
+      },
+      version: 2,
+    }));
+
+    await useSettingsStore.persist.rehydrate();
+
+    expect(useSettingsStore.getState().parameters).toMatchObject({
+      model: "gpt-6.1-sol",
+      maxOutputTokens: 4_096,
+      reasoningEffort: "high",
+      reasoningMode: "standard",
+    });
+  });
+
+  it("devolve o GPT-5.6 Sol salvo como modelo próprio, com modo Pro", async () => {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
       state: {
         model: "gpt-5.6-sol",
@@ -119,10 +141,10 @@ describe("settings store persistence (B6)", () => {
     await useSettingsStore.persist.rehydrate();
 
     expect(useSettingsStore.getState().parameters).toMatchObject({
-      model: "gpt-6-sol",
+      model: "gpt-5.6-sol",
       maxOutputTokens: 4_096,
       reasoningEffort: "high",
-      reasoningMode: "standard",
+      reasoningMode: "pro",
     });
   });
 
@@ -132,24 +154,24 @@ describe("settings store persistence (B6)", () => {
         model: "gpt-5.6-luna",
         systemPrompt: "",
         modelSettingsById: {
-          "gpt-5.6-sol": { maxOutputTokens: 4_096, reasoningEffort: "high", reasoningMode: "pro" },
+          "gpt-6-sol": { maxOutputTokens: 4_096, reasoningEffort: "high", reasoningMode: "pro" },
         },
       },
       version: 1,
     }));
 
     await useSettingsStore.persist.rehydrate();
-    useSettingsStore.getState().updateParameters({ model: "gpt-6-sol" });
+    useSettingsStore.getState().updateParameters({ model: "gpt-6.1-sol" });
 
     expect(useSettingsStore.getState().parameters).toMatchObject({
-      model: "gpt-6-sol",
+      model: "gpt-6.1-sol",
       maxOutputTokens: 4_096,
       reasoningEffort: "high",
       reasoningMode: "standard",
     });
   });
 
-  it("hidrata a preferência mini legada como Grok sem tocar em dados de conversa", async () => {
+  it("hidrata a preferência mini legada como Luna sem tocar em dados de conversa", async () => {
     localStorage.setItem(
       SETTINGS_STORAGE_KEY,
       JSON.stringify({
@@ -170,8 +192,53 @@ describe("settings store persistence (B6)", () => {
     await useSettingsStore.persist.rehydrate();
 
     expect(useSettingsStore.getState().parameters).toMatchObject({
-      model: "grok-4.7",
+      model: "gpt-6-luna",
       reasoningEffort: "medium",
     });
   });
+
+  it("preserva a preferência já salva de Luna ao hidratar aliases legados fora da remoção do chat", async () => {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
+      state: {
+        model: "gpt-5.4-mini",
+        systemPrompt: "",
+        modelSettingsById: {
+          "gpt-6-luna": { reasoningEffort: "high" },
+          "gpt-5.4-mini": { reasoningEffort: "none" },
+        },
+      },
+      version: 2,
+    }));
+
+    await useSettingsStore.persist.rehydrate();
+
+    expect(useSettingsStore.getState().parameters).toMatchObject({
+      model: "gpt-6-luna",
+      reasoningEffort: "high",
+    });
+  });
+
+  it.each(["gpt-6-astra", "gemini-3.8-flash", "gemini-3.7-flash"])(
+    "hidrata a preferência de chat removida %s como Luna medium",
+    async (model) => {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
+        state: {
+          model,
+          systemPrompt: "",
+          modelSettingsById: {
+            "gpt-6-luna": { reasoningEffort: "high" },
+            [model]: { maxOutputTokens: 4_096, reasoningEffort: "high" },
+          },
+        },
+        version: 2,
+      }));
+
+      await useSettingsStore.persist.rehydrate();
+
+      expect(useSettingsStore.getState().parameters).toMatchObject({
+        model: "gpt-6-luna",
+        reasoningEffort: "medium",
+      });
+    }
+  );
 });

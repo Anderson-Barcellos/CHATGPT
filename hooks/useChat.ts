@@ -1040,15 +1040,16 @@ export function useChat() {
 
   const editAndResend = useCallback(
     async (messageId: string, newContent: string) => {
-      if (!newContent.trim() || isLoading) return;
+      if (!newContent.trim() || !activeConversationId || isLoading || useChatStore.getState().isStreaming) return false;
       const originalMessage = useChatStore
         .getState()
         .messages.find((message) => message.id === messageId);
       truncateFromMessage(messageId);
       await new Promise((r) => setTimeout(r, 0));
       await sendMessage(newContent, buildEditResendOptions(originalMessage));
+      return true;
     },
-    [isLoading, truncateFromMessage, sendMessage]
+    [activeConversationId, isLoading, truncateFromMessage, sendMessage]
   );
 
   const deleteMessage = useCallback(

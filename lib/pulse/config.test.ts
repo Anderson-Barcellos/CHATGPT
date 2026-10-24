@@ -19,17 +19,22 @@ afterEach(() => {
 });
 
 describe("Pulse execution profile", () => {
-  it("roda rotina sem modelo salvo em GPT-6 Sol com reasoning medium", () => {
+  it("roda rotina sem modelo salvo em GPT-6.1 Sol com reasoning medium", () => {
     expect(resolvePulseExecutionProfile({ model: undefined as never })).toEqual({
-      model: "gpt-6-sol",
+      model: "gpt-6.1-sol",
       reasoningEffort: "medium",
     });
   });
 
   it("preserva o modelo salvo na rotina", () => {
-    expect(resolvePulseExecutionProfile({ model: "grok-4.7" })).toEqual({
-      model: "grok-4.7",
+    expect(resolvePulseExecutionProfile({ model: "gpt-5.6-sol" })).toEqual({
+      model: "gpt-5.6-sol",
       reasoningEffort: "medium",
     });
+  });
+
+  it("roda rotinas salvas com Grok ou mini no GPT-6 Luna", () => {
+    expect(resolvePulseExecutionProfile({ model: "grok-4.7" })).toMatchObject({ model: "gpt-6-luna" });
+    expect(resolvePulseExecutionProfile({ model: "gpt-5.4-mini" })).toMatchObject({ model: "gpt-6-luna" });
   });
 });

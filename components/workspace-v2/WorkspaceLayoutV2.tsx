@@ -244,7 +244,7 @@ export function WorkspaceFrameV2({
     if (state.discoverPanelOpen && !previous.discoverPanelOpen) setSidebarOpen(false);
   }), [setSidebarOpen]);
   const handleFocusComposer = useCallback(() => {
-    const composerInput = document.querySelector<HTMLTextAreaElement>("textarea");
+    const composerInput = document.querySelector<HTMLTextAreaElement>(".gc-composer-dock textarea");
     const composerShell = composerInput?.closest("footer");
     composerShell?.scrollIntoView({ behavior: "smooth", block: "end" });
     composerInput?.focus();
@@ -628,6 +628,7 @@ export function CommandComposerV2({
             placeholder={placeholder}
             rows={1}
             disabled={disabled}
+            readOnly={isRecording}
             className="min-h-[var(--gc-mobile-textarea-min-height)] max-h-[var(--gc-mobile-textarea-max-height)] w-full resize-none bg-transparent px-[var(--gc-mobile-textarea-px)] pb-[var(--gc-mobile-textarea-pb)] pt-[var(--gc-mobile-textarea-pt)] text-[length:var(--gc-mobile-textarea-font-size)] leading-relaxed outline-none placeholder:text-muted-foreground/45 md:min-h-[42px] md:px-4 md:pb-2 md:pt-3 md:text-sm"
           />
 

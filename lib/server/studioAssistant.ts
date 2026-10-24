@@ -7,7 +7,6 @@ import {
 } from "@/lib/studio/models";
 import type { StudioAssistantRole, StudioFileLanguage } from "@/lib/studio/types";
 import { buildWebSearchTool } from "@/lib/server/webSearchTool";
-import { GROK_MODEL } from "@/lib/server/xaiChat";
 
 const MAX_PROMPT_LENGTH = 12_000;
 const MAX_FILE_CONTENT_LENGTH = 160_000;
@@ -172,8 +171,7 @@ function normalizeCell(
 }
 
 export function buildStudioResponseParams(
-  request: StudioAssistantRequest,
-  provider: "openai" | "xai" = "openai"
+  request: StudioAssistantRequest
 ): Omit<OpenAI.Responses.ResponseCreateParamsStreaming, "stream"> {
   const historyInput = request.history.map((message) => ({
     role: message.role,
@@ -219,7 +217,7 @@ ${request.prompt}`;
     OpenAI.Responses.ResponseCreateParamsStreaming,
     "stream"
   > = {
-    model: provider === "xai" ? GROK_MODEL : request.model,
+    model: request.model,
     instructions: request.cell
       ? STUDIO_CELL_INSTRUCTIONS
       : STUDIO_ASSISTANT_INSTRUCTIONS,
@@ -230,11 +228,7 @@ ${request.prompt}`;
     max_output_tokens: 8_000,
     store: false,
     reasoning: { effort: "medium" },
-    tools: request.cell
-      ? []
-      : provider === "xai"
-      ? ([{ type: "web_search" }] as never)
-      : [buildWebSearchTool()],
+    tools: request.cell ? [] : [buildWebSearchTool()],
   };
 
   return params;

@@ -49,6 +49,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "ultrassom.ai",
       },
+      {
+        protocol: "https",
+        hostname: "sonaris.us",
+      },
     ],
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60,

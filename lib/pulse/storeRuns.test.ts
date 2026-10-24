@@ -25,7 +25,7 @@ import { createPulseRun, recoverOrphanedPulseRuns } from "@/lib/pulse/store";
 const task = {
   id: "task-1",
   title: "Radar",
-  model: "grok-4.7",
+  model: "gpt-6-luna",
 } as PulseTask;
 
 function runs(): PulseRun[] {

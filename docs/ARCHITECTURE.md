@@ -1,26 +1,38 @@
 # Arquitetura
 
-**Última atualização:** 2026-10-10
+## Adaptador Anthropic do chat — 2026-10-15
+
+`lib/server/anthropicChat.ts` adapta Messages API ao protocolo de eventos do Gaúcho. O chat continua orquestrado por `hooks/useChat.ts`; instruções e contexto já montados entram no adaptador, junto com histórico textual e imagens. Continuações de tools preservam os blocos completos da resposta Anthropic, inclusive assinaturas; thinking de outros modelos não é reconstruído nem reutilizado. Memória usa os executores existentes, sem armazenamento paralelo. O catálogo compartilhado preserva Astra para Studio/Pulse e oculta Astra/Gemini apenas no seletor de chat. Documento com Claude resolve Luna `medium` antes de iniciar o fluxo background.
+
+**Última atualização:** 2026-10-15
 
 ## Visão Geral
 
-Gaucho Chat é um app Next.js com App Router que roda como BFF local para providers de IA. O fluxo principal usa a OpenAI `Responses API`; Grok 4.7, DeepSeek V4 Pro e Gemini 3.8 Flash usam adapters server-side. O cliente React conversa com rotas do próprio app, que cuidam de auth, rate limit, persistência e chamadas aos modelos de texto. A voz Realtime usa conexão direta com token efêmero emitido pelo servidor.
+Gaucho Chat é um app Next.js com App Router que roda como BFF local para providers de IA. O fluxo principal usa a OpenAI `Responses API`; DeepSeek V4.1 Flash e Gemini 3.8 Flash usam adapters server-side. O cliente React conversa com rotas do próprio app, que cuidam de auth, rate limit, persistência e chamadas aos modelos de texto. A voz Realtime usa conexão direta com token efêmero emitido pelo servidor.
 
 ```text
 Browser/PWA
   -> Next.js UI em /chat
   -> proxy.ts: auth, rate limit e headers
   -> app/api/*: BFF server-side
-  -> OpenAI/xAI/DeepSeek/Gemini APIs e autoridade de persistência selecionada no servidor
+  -> OpenAI/Anthropic/DeepSeek APIs (Gemini legado, xAI só para voz) e autoridade de persistência selecionada no servidor
 ```
 
 ## Entrada e Shell
 
+### Interação mobile — 2026-10-21
+
+O gesto de segurar aguarda 450 ms para feedback e 900 ms para abertura; o hook cancela ambos os timers ao arrastar/soltar/cancelar/desmontar. O evento `contextmenu` durante toque ou até 1.500 ms após seu início é suprimido para não antecipar/duplicar a abertura. Fora dessa janela, clique direito continua abrindo o menu; controles interativos e editor mantêm seus eventos nativos.
+
+`useVisualViewport` distingue teclado de zoom usando escala, foco editável e redução de altura; mantém a transição de fechamento e acompanha `offsetTop + scrollY`, sem zerar o pan durante a digitação. Com o teclado fechado devolve a altura ao CSS; zoom manual não redimensiona o shell como teclado. A navegação secundária recolhe durante a digitação mobile.
+
+`MessageBubble` mantém o editor e o texto quando o envio é recusado/indisponível; `ChatContainer` passa `editDisabled` e pausa o acompanhamento automático do fim da conversa enquanto existir `.gc-message-editor`. O editor revela sua região no scroll interno, limita altura conforme o espaço disponível e usa Enter para nova linha no celular. O composer principal fica oculto somente durante reedição mobile. `useMessageLongPress` mantém temporizador local por balão, tolera movimento de até 10 px, ignora controles interativos e cancela em fim/cancelamento do toque, rolagem ou desmontagem. O feedback visual preserva movimento reduzido e as ações continuam disponíveis pelo botão.
+
 ### Provider xAI e leitura experimental
 
-Grok 4.7 substitui os usos ativos do mini, usando Responses API própria, reasoning `medium` e adaptação das ferramentas. A fonte de verdade continua nos módulos atuais de cada produto; não há migração em massa dos dados privados. Busca usa a ferramenta xAI; memória continua local; geração de imagem continua OpenAI. O fluxo OpenAI permanece em Responses API.
+Desde 2026-10-13 o Grok não é mais modelo de texto: saiu do chat, do Pulse e do Studio, e os IDs `grok-4.7`/`gpt-5.4-mini` resolvem para GPT-6 Luna pela OpenAI, sem migração em massa dos dados privados. A xAI continua só na voz (TTS Orion e Realtime).
 
-Documento com Grok usa execução no processo servidor, independente da aba, e metadados persistidos com provider. A xAI não implementa `background=true`; jobs OpenAI mantêm retrieve/cancel originais. Reinício do executor Grok marca interrupção recuperável, sem repetição automática de chamada cobrada.
+Jobs background xAI criados antes da remoção continuam com metadados de provider persistidos. `lib/server/xaiBackground.ts` só os finaliza: cancel marca cancelado, e sync/reconcile marcam como interrompido, sem repetir a chamada cobrada. Jobs OpenAI mantêm retrieve/cancel originais.
 
 SoundCase mantém TTS/worker/arquivos existentes. A engine de leitura Grok usa token efêmero obtido em rota autenticada, WebSocket direto do browser e PCM por Web Audio, sempre sobre o snapshot imutável da versão. Fechar o painel não desmonta a sessão; parar ou sair encerra áudio/conexão. Preferências de engine/voz/velocidade Grok são separadas da direção e formato dos arquivos. A chave permanente nunca entra no browser.
 
@@ -43,7 +55,7 @@ No chat, rail e paleta abrem `DiscoverPanelV2` sobre a lateral esquerda, sem div
 
 `/discover` é uma página autenticada de leitura com contêiner vertical próprio, pois o shell global bloqueia a rolagem de `html`/`body`. `components/discover/DiscoverPage.tsx` mostra cards com capa, resumo e narrativa expandida; no desktop o card aberto ocupa o destaque superior e os demais seguem abaixo, enquanto no mobile a expansão permanece no lugar. Interesses são salvos por `PUT /api/discover/topics` e passam a influenciar a próxima curadoria. Descobrir IA e Studio convivem na navegação de produtos, rail e paleta; `/studio`, suas APIs e o workspace Python permanecem preservados.
 
-O estado próprio em `data/discover.json` guarda assuntos, até 60 matérias recentes e status do job. As capas PNG ficam em `data/discover-images/`, fora de `public/`, e exigem autenticação para leitura. `lib/discover/curator.ts` usa `gpt-6-sol` com reasoning `medium`, verbosity `high`, web search e JSON estruturado; exige narrativa de 6–9 parágrafos e ao menos 600 palavras, aceita apenas URLs presentes nas citações ou fontes consultadas, inclui links inline, rejeita datas fora da janela de 14 dias e gera uma capa conceitual por matéria quando possível. `lib/discover/store.ts` serializa claim e gravação com lock por arquivo para evitar duas rodadas simultâneas. A reescrita controlada gera o lote inteiro, preserva identidade/capas/fontes originais e grava backup 0600 em `data/discover-backups/` antes da troca. Atualização manual devolve 202 e é acompanhada por polling; o agendador diário usa endpoint Bearer separado. Falha de geração mantém o histórico anterior.
+O estado próprio em `data/discover.json` guarda assuntos, até 60 matérias recentes e status do job. As capas PNG ficam em `data/discover-images/`, fora de `public/`, e exigem autenticação para leitura. `lib/discover/curator.ts` usa `gpt-6.1-sol` com reasoning `medium`, verbosity `high`, web search e JSON estruturado; exige narrativa de 6–9 parágrafos e ao menos 600 palavras, aceita apenas URLs presentes nas citações ou fontes consultadas, inclui links inline, rejeita datas fora da janela de 14 dias e gera uma capa conceitual por matéria quando possível. `lib/discover/store.ts` serializa claim e gravação com lock por arquivo para evitar duas rodadas simultâneas. A reescrita controlada gera o lote inteiro, preserva identidade/capas/fontes originais e grava backup 0600 em `data/discover-backups/` antes da troca. Atualização manual devolve 202 e é acompanhada por polling; o agendador diário usa endpoint Bearer separado. Falha de geração mantém o histórico anterior.
 
 O feed oferece controle persistente `schedule.enabled`, com verificação de intervalo de dois dias antes do claim automático sob lock. A UI mostra previsão, não estado de systemd. O TTS reutiliza o mini-player em modo somente Orion e só gera mediante reprodução.
 
@@ -54,7 +66,7 @@ O Studio é uma mudança de página, não um modo interno da conversa. Chat e St
 - o Studio é Python-only desde 2026-08-12: o antigo modo Local (TS/JS transpilado no Monaco + Web Worker em `/api/studio/runner`) foi removido; a fonte de verdade dos arquivos é sempre o workspace no servidor;
 - o `localStorage` sob `gaucho-studio:workspace:v1` guarda apenas preferências e histórico do assistente (snapshot `version: 2` — autocomplete on/off, modelo selecionado, mensagens); snapshots v1 antigos migram preservando esses campos e descartando os arquivos TS locais;
 - `lib/studio/autocompleteProvider.ts` registra o inline completion provider nativo do Monaco em desktop, coordena debounce, cancelamento, deduplicação, descarte de respostas obsoletas e recuperação silenciosa; `/api/studio/autocomplete` limita e encaminha somente prefix/suffix ao endpoint FIM do provider ativo (Codestral via Mistral por padrão, DeepSeek como fallback legado — ver docs/API.md);
-- `/api/studio/assist` recebe somente arquivo ativo, pergunta e histórico curto e usa `store=false`. OpenAI preserva defaults de reasoning/verbosity; Grok fixa reasoning `medium` e omite verbosity. O painel lateral usa `web_search_preview` no OpenAI (`medium`, localização aproximada `BR`) ou `web_search` na xAI, com o redutor SSE comum para progresso/citações; a assistência por célula permanece com `tools: []`;
+- `/api/studio/assist` recebe somente arquivo ativo, pergunta e histórico curto e usa `store=false`. Todos os modelos (Astra, 6.1 Sol, Luna, 5.6 Sol) usam reasoning `medium`. O painel lateral usa `web_search_preview` (`medium`, localização aproximada `BR`), com o redutor SSE comum para progresso/citações; a assistência por célula permanece com `tools: []`;
 - a resposta do modelo permanece no painel lateral para cópia manual, sem edição automática, aplicação de patch ou modo agente; streams sem marcador terminal são preservados como interrompidos, não concluídos;
 - o autocomplete insere ghost text apenas após aceitação explícita pelo usuário e não concede ao chat contextual autorização para editar; o toggle persiste nas prefs locais e o recurso não faz chamadas em viewport móvel ou ponteiro coarse;
 - os painéis do shell (explorador, assistente e console) são redimensionáveis por splitters no layout largo de desktop (≥ 1121 px, ponteiro fino): `hooks/useStudioLayout.ts` aplica CSS variables no shell, restringe pelos limites de `lib/studio/layout.ts` (editor nunca abaixo de 460 px), persiste em `gaucho-studio:layout:v1` e reseta o eixo com duplo clique no divisor;
@@ -113,7 +125,7 @@ Três mecanismos garantem fluência no iPhone 17 Pro Max (440 × 956 pt, Dynamic
 1. O composer chama `useChat`.
 2. `useChat` monta payload com mensagens, anexos, persona, modelo e opções.
 3. `POST /api/chat` valida auth, body e modelo.
-4. A rota chama `openai.responses.create()` com streaming quando aplicável, ou os adapters dedicados para `deepseek-v4-pro` e `gemini-3.8-flash`.
+4. A rota chama `openai.responses.create()` com streaming quando aplicável, ou os adapters dedicados para `deepseek-flash` e `gemini-3.8-flash`.
 5. Eventos SSE passam pelo reducer em `lib/chat/streamMachine.ts`.
 6. A mensagem do assistente é atualizada incrementalmente e persistida durante o stream.
 
@@ -124,9 +136,9 @@ Detalhes importantes:
 - Respostas interrompidas são preservadas e voltam como `streamStatus="interrupted"`.
 - Anexos persistidos mantêm conteúdo real para reload/edit/resend.
 
-### DeepSeek V4 Pro
+### DeepSeek V4.1 Flash
 
-`deepseek-v4-pro` é um provider separado para chat padrão streaming. Ele passa por `lib/server/deepseekChat.ts`, exige `DEEPSEEK_API_KEY`, força reasoning máximo no payload DeepSeek, não suporta `code_interpreter` e rejeita modos `document`, `deepsearch_*` e `quiz`.
+`deepseek-flash` (V4.1 Flash; `deepseek-v4-pro` salvo resolve para ele) é um provider separado para chat padrão streaming, só com texto. Ele passa por `lib/server/deepseekChat.ts`, exige `DEEPSEEK_API_KEY`, força reasoning `low` no payload DeepSeek (o `thinking` segue habilitado), não suporta `code_interpreter` e rejeita modos `document`, `deepsearch_*` e `quiz`.
 
 O adapter expõe uma tool local `fresh_web_context`. Quando o DeepSeek chama essa tool, o servidor faz uma chamada OpenAI curta com `web_search_preview` usando `DEEPSEEK_WEB_CONTEXT_MODEL` ou `gpt-6-luna`, injeta o resultado como mensagem de tool e continua um segundo turno DeepSeek sem expor chaves ao browser.
 
@@ -134,7 +146,7 @@ O adapter expõe uma tool local `fresh_web_context`. Quando o DeepSeek chama ess
 
 `gemini-3.8-flash` é um provider separado para chat padrão streaming. `lib/server/geminiChat.ts` converte o histórico e imagens para turns da Interactions API, envia `store=false`, Google Search, URL Context e summaries de pensamento, e traduz o stream Gemini para o mesmo contrato SSE usado pelo reducer do chat.
 
-O adapter exige `GEMINI_API_KEY`, aceita thinking `low`, `medium` e `high`, não envia os parâmetros depreciados `temperature`, `top_p` ou `top_k` e rejeita Documento, Deepsearch e Quiz. Esses modos usam seus presets próprios: Grok para Documento e OpenAI para Deepsearch (Luna/Sol GPT-6) e Quiz.
+O adapter exige `GEMINI_API_KEY`, aceita thinking `low`, `medium` e `high`, não envia os parâmetros depreciados `temperature`, `top_p` ou `top_k` e rejeita Documento, Deepsearch e Quiz. Esses modos usam seus presets próprios: Luna para Documento e OpenAI para Deepsearch (Luna/6.1 Sol) e Quiz.
 
 ## Reasoning
 
@@ -246,7 +258,7 @@ A aba Rotinas substitui a superfície visível de Agenda. Ela cria rotinas recor
 - `POST /api/pulse/tasks/propose` usa Responses API com JSON schema para transformar linguagem natural em proposta de rotina.
 - `POST /api/pulse/tasks` persiste rotinas `daily`, `weekly` ou `monthly` em `data/pulse-tasks.json`.
 - `POST /api/pulse/run-due` é chamado pelo `chatgpt-pulse.timer` e executa tarefas vencidas.
-- Cada rotina Pulse escolhe Grok 4.7 (padrão), Sol ou Terra. Grok usa reasoning `medium` fixo e `web_search`; OpenAI mantém verbosity `high` e suas ferramentas. Imagens permanecem em chamada OpenAI. Modelo/effort efetivos ficam gravados no run; IDs mini antigos resolvem para Grok. O orçamento padrão é `PULSE_MAX_OUTPUT_TOKENS=25000`, com clamp do runner entre 8k e 32k.
+- Cada rotina Pulse escolhe GPT-6.1 Sol (padrão), Astra, Luna ou GPT-5.6 Sol, sempre pela OpenAI, com `web_search_preview` e geração de imagem. Modelo/effort efetivos ficam gravados no run; rotinas salvas com 6 Sol/Terra rodam no 6.1 Sol e com Grok/mini no Luna. O orçamento padrão é `PULSE_MAX_OUTPUT_TOKENS=25000`, com clamp do runner entre 8k e 32k.
 - O prompt de execução do Pulse usa um contexto enxuto proprio: instruções da rotina, preferencias uteis de `persona.json`, ate 5 memorias ativas compactadas e 3 trechos relevantes do histórico via `searchMemoryContext`. Ele evita injetar o prompt global completo do chat para reduzir latencia e tokens.
 - Se a resposta principal não trouxer `image_generation`, o runner tenta uma segunda chamada curta para gerar a imagem conceitual de abertura do card.
 - Resultados de Pulse e balões do chat reutilizam `MiniAudioPlayer`, que abre com `useAssistantTts` e `/api/tts/xai` (Orion, MP3) selecionados, mas não inicia áudio automaticamente.
@@ -265,7 +277,9 @@ A V1 de agenda Google segue no backend como legado operacional, mas sua antiga a
 - `PATCH /api/calendar/events/drafts/[id]` e `POST /api/calendar/events/drafts/[id]/discard` revisam ou descartam rascunhos locais pendentes sem tocar no Google.
 - `POST /api/calendar/events/confirm` é o único caminho que escreve no Google Calendar.
 
-Notas locais globais ficam em `/api/workspace-notes` e não substituem `workspace.notes` por conversa. A camada local serve para capturas manuais, trechos do chat, STT via `/api/transcribe` e vínculos opcionais com evento/conversa.
+Notas locais globais ficam em `/api/workspace-notes` e não substituem `workspace.notes` por conversa. A camada local serve para capturas manuais, trechos do chat, ditado ao vivo e vínculos opcionais com evento/conversa.
+
+`useSpeechToText` compartilha o microfone entre MediaRecorder (cópia em memória para fallback) e AudioWorklet (PCM16 mono, 24 kHz). `lib/transcription/realtimeClient.ts` entrega a prévia incremental e espera a cauda/finalização ao parar; `lib/server/realtimeTranscription.ts` autentica o WebSocket e reconcilia os itens OpenAI fora de ordem. A ponte roda separadamente do Next, sem chave no navegador. O hook mantém seu contrato, cancela ao ocultar/desmontar e ignora eventos de capturas antigas. Falha do Realtime recorre a `/api/transcribe`; falha dos dois caminhos conserva o parcial visível, sem salvar nota incompleta. O composer preserva o rascunho anterior e fica somente leitura durante o ditado, liberando edição ao parar. Notas mostram prévia e salvam uma única vez.
 
 ## Artifacts e Export
 
@@ -290,7 +304,7 @@ O TTS padrão do Chat/Pulse usa `/api/tts/xai` com voz Orion e MP3 24 kHz/128 kb
 
 ## Modelos
 
-O catálogo vive em `lib/models/modelConfig.ts`. O default do chat é Luna (`medium/standard`); o mini resolve para Grok 4.7 (`medium` fixo), preservando os registros históricos. Sol e Luna (GPT-6) aceitam effort até `max`, sem modo `pro`. Documento segue o chat (fallback Luna/`medium` para DeepSeek/Gemini); Deepsearch Medium usa Luna/`medium` e High Sol/`high`; Pulse nasce em Sol/`medium`; Studio e SoundCase usam Luna/`medium`; Quiz continua `gpt-5.4/high`. O contexto web auxiliar do DeepSeek mantém Luna/low. Capacidades, parâmetros e preços ficam documentados em `docs/MODELS.md`.
+O catálogo vive em `lib/models/modelConfig.ts`. O default do chat é Luna (`medium/standard`); o mini e o Grok resolvem para Luna, preservando os registros históricos. 6.1 Sol (sem `none`) e Luna aceitam effort até `max`, sem modo `pro`; o GPT-5.6 Sol voltou com modo `pro`. Documento segue o chat (fallback Luna/`medium` para DeepSeek/Gemini); Deepsearch Medium usa Luna/`medium` e High 6.1 Sol/`high`; Pulse nasce em 6.1 Sol/`medium`; extrações internas de agenda e rotina usam Luna/`low`; Studio e SoundCase usam Luna/`medium`; Quiz continua `gpt-5.4/high`. O contexto web auxiliar do DeepSeek mantém Luna/low. Capacidades, parâmetros e preços ficam documentados em `docs/MODELS.md`.
 
 Tools padrão:
 

@@ -12,7 +12,7 @@ describe("Deepsearch profiles", () => {
 
   it("uses GPT-6 Sol with high reasoning for High", () => {
     expect(resolveDeepsearchProfile("deepsearch_high")).toEqual({
-      model: "gpt-6-sol",
+      model: "gpt-6.1-sol",
       reasoningEffort: "high",
     });
   });

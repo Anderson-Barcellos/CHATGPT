@@ -10,7 +10,7 @@ import {
 import { updateBackgroundJobByResponseId } from "@/lib/server/chatBackgroundJobStore";
 import { getBackgroundJobByResponseId } from "@/lib/server/chatBackgroundJobStore";
 import { getConversation } from "@/app/api/conversations/data";
-import { isXAIBackgroundJobActive, recoverInterruptedXAIBackgroundJob } from "@/lib/server/xaiBackground";
+import { recoverInterruptedXAIBackgroundJob } from "@/lib/server/xaiBackground";
 
 type BackgroundSyncBody = {
   conversationId?: string;
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       });
     }
     if (job?.provider === "xai") {
-      if ((job.status === "queued" || job.status === "in_progress") && !isXAIBackgroundJobActive(responseId)) {
+      if (job.status === "queued" || job.status === "in_progress") {
         await recoverInterruptedXAIBackgroundJob(job);
       }
       const conversation = await getConversation(conversationId);

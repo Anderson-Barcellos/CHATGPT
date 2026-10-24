@@ -2,9 +2,9 @@ import { MODELS } from "@/lib/models/modelConfig";
 
 export const STUDIO_MODEL_IDS = [
   "gpt-6-astra",
-  "gpt-6-sol",
+  "gpt-6.1-sol",
   "gpt-6-luna",
-  "grok-4.7",
+  "gpt-5.6-sol",
 ] as const;
 
 export type StudioModelId = (typeof STUDIO_MODEL_IDS)[number];
@@ -19,9 +19,8 @@ export function isStudioModelId(value: unknown): value is StudioModelId {
 }
 
 export function resolveStudioModelId(value: unknown): StudioModelId {
-  if (value === "gpt-5.4-mini") return "grok-4.7";
-  if (value === "gpt-5.6-sol" || value === "gpt-5.6-terra") return "gpt-6-sol";
-  if (value === "gpt-5.6-luna") return "gpt-6-luna";
+  if (value === "gpt-6-sol" || value === "gpt-5.6-terra") return "gpt-6.1-sol";
+  if (value === "gpt-5.6-luna" || value === "gpt-5.4-mini" || value === "grok-4.7") return "gpt-6-luna";
   return isStudioModelId(value) ? value : DEFAULT_STUDIO_MODEL_ID;
 }
 

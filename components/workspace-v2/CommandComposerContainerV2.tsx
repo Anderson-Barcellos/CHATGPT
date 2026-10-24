@@ -44,6 +44,7 @@ import {
   modelSupportsReasoningMode,
 } from "@/lib/models/modelConfig";
 import { resolveDeepsearchProfile } from "@/lib/chat/deepsearchConfig";
+import { resolveDocumentFallbackProfile } from "@/lib/chat/documentConfig";
 import { canSubmitComposerMessage } from "@/lib/chat/composerSubmit";
 import { composeSpeechTranscriptPreview } from "@/lib/chat/speechComposer";
 import {
@@ -103,6 +104,7 @@ export function CommandComposerContainerV2({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const speechInputBaseRef = useRef("");
+  const speechActionRef = useRef(false);
   const handleTranscriptPreview = useCallback((preview: string) => {
     setInput(
       composeSpeechTranscriptPreview(speechInputBaseRef.current, preview)
@@ -131,6 +133,11 @@ export function CommandComposerContainerV2({
   const isDeepsearchMode =
     responseMode === "deepsearch_medium" || responseMode === "deepsearch_high";
   const currentModel = MODELS[parameters.model];
+  const documentFallback =
+    responseMode === "document"
+      ? resolveDocumentFallbackProfile(parameters.model)
+      : null;
+  const usesDocumentFallback = documentFallback !== null;
   const isDeepSeekSelected = isDeepSeekModel(parameters.model);
   const fixedReasoningEffort = getFixedReasoningEffort(parameters.model);
   const supportedReasoningEfforts = useMemo(
@@ -144,10 +151,21 @@ export function CommandComposerContainerV2({
   const deepsearchModelId = resolveDeepsearchProfile(
     responseMode === "deepsearch_high" ? "deepsearch_high" : "deepsearch_medium"
   ).model;
-  const displayModel = isDeepsearchMode ? MODELS[deepsearchModelId] : currentModel;
+  const effectiveModelId = isDeepsearchMode
+    ? deepsearchModelId
+    : documentFallback?.model ?? parameters.model;
+  const displayModel = MODELS[effectiveModelId] ?? currentModel;
   const deepsearchModelLabel = MODELS[deepsearchModelId]?.name ?? deepsearchModelId;
+  const documentFallbackLabel = documentFallback
+    ? `${displayModel?.name ?? documentFallback.model} com Raciocínio médio`
+    : null;
+  const effectiveReasoningEffort =
+    documentFallback?.reasoningEffort ?? parameters.reasoningEffort;
+  const effectiveSupportedReasoningEfforts = documentFallback
+    ? [documentFallback.reasoningEffort]
+    : supportedReasoningEfforts;
   const currentReasoning = REASONING_OPTIONS.find(
-    (option) => option.value === parameters.reasoningEffort
+    (option) => option.value === effectiveReasoningEffort
   );
   const isRecording = speechStatus === "recording";
   const isTranscribing = speechStatus === "transcribing";
@@ -199,10 +217,11 @@ export function CommandComposerContainerV2({
   );
 
   const handleSubmit = useCallback(async () => {
+    if (isRecording || isTranscribing) return;
     if (!canSubmitComposerMessage({ hasContent, isProcessing })) return;
     const sent = await submitMessage(input);
     if (sent) setInput("");
-  }, [hasContent, input, isProcessing, submitMessage]);
+  }, [hasContent, input, isProcessing, submitMessage, isRecording, isTranscribing]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -215,24 +234,30 @@ export function CommandComposerContainerV2({
   );
 
   const handleMicrophoneClick = useCallback(async () => {
-    if (!isRecording) {
-      speechInputBaseRef.current = input;
-    }
-    const transcript = await toggleRecording();
-    if (!transcript) return;
+    if (speechActionRef.current) return;
+    speechActionRef.current = true;
+    try {
+      if (!isRecording) {
+        speechInputBaseRef.current = input;
+      }
+      const transcript = await toggleRecording();
+      if (!transcript) return;
 
-    setInput(() => {
-      const current = speechInputBaseRef.current;
-      const trimmed = current.trim();
-      if (!trimmed) return transcript;
-      return `${current}${current.endsWith("\n") ? "" : "\n"}${transcript}`;
-    });
-    requestAnimationFrame(() => {
-      if (!textareaRef.current) return;
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 180)}px`;
-      textareaRef.current.focus();
-    });
+      setInput(() => {
+        const current = speechInputBaseRef.current;
+        const trimmed = current.trim();
+        if (!trimmed) return transcript;
+        return `${current}${current.endsWith("\n") ? "" : "\n"}${transcript}`;
+      });
+      requestAnimationFrame(() => {
+        if (!textareaRef.current) return;
+        textareaRef.current.style.height = "auto";
+        textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 180)}px`;
+        textareaRef.current.focus();
+      });
+    } finally {
+      speechActionRef.current = false;
+    }
   }, [input, isRecording, toggleRecording]);
 
   const openAttachmentPicker = useCallback((mode: "file" | "image") => {
@@ -361,7 +386,11 @@ export function CommandComposerContainerV2({
             disabled={isLoading || isTranscribing || isDeepsearchMode}
             aria-label="Selecionar modelo"
             data-composer-segment="model"
-            title={isDeepsearchMode ? `Deepsearch usa modelo fixo (${deepsearchModelLabel}).` : undefined}
+            title={isDeepsearchMode
+              ? `Deepsearch usa modelo fixo (${deepsearchModelLabel}).`
+              : documentFallbackLabel
+                ? `Documento usa ${documentFallbackLabel}.`
+                : undefined}
             className="h-[var(--gc-mobile-composer-control-height)] max-md:max-w-none gap-[0.1875rem] rounded-lg border border-[color:var(--gc-composer-control-border)] bg-[var(--gc-composer-control-bg)] px-[0.375rem] text-[length:var(--gc-mobile-control-font-size)] font-medium text-[var(--gc-composer-control-fg)] has-[>svg]:px-[0.375rem] hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:h-8 md:max-w-[10rem] md:gap-1 md:rounded-lg md:px-2.5 md:text-nano md:has-[>svg]:px-2.5"
           >
             <span className="truncate">{displayModel?.name || parameters.model}</span>
@@ -395,9 +424,11 @@ export function CommandComposerContainerV2({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
-      {isDeepsearchMode && (
+      {(isDeepsearchMode || documentFallbackLabel) && (
         <TooltipContent>
-          Deepsearch usa modelo fixo ({deepsearchModelLabel}).
+          {isDeepsearchMode
+            ? `Deepsearch usa modelo fixo (${deepsearchModelLabel}).`
+            : `Documento usa ${documentFallbackLabel}.`}
         </TooltipContent>
       )}
     </Tooltip>
@@ -413,8 +444,8 @@ export function CommandComposerContainerV2({
       xhigh: 0.9,
       max: 1.0,
     };
-    return map[parameters.reasoningEffort] ?? 0.6;
-  }, [parameters.reasoningEffort]);
+    return map[effectiveReasoningEffort] ?? 0.6;
+  }, [effectiveReasoningEffort]);
 
   const reasoningControl = (
     <DropdownMenu>
@@ -424,7 +455,7 @@ export function CommandComposerContainerV2({
             <Button
               variant="ghost"
               size="sm"
-              disabled={isLoading || isTranscribing || isDeepSeekSelected}
+              disabled={isLoading || isTranscribing || isDeepSeekSelected || usesDocumentFallback}
               aria-label="Ajustar nível de raciocínio"
               className="size-[var(--gc-mobile-composer-control-height)] rounded-lg border border-[color:var(--gc-composer-control-border)] bg-[var(--gc-composer-control-bg)] p-0 text-[length:var(--gc-mobile-control-font-size)] text-[var(--gc-composer-control-fg)] hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:h-8 md:w-8 md:rounded-lg md:text-nano"
             >
@@ -433,8 +464,10 @@ export function CommandComposerContainerV2({
           </DropdownMenuTrigger>
         </TooltipTrigger>
         <TooltipContent>
-          {isDeepSeekSelected
-            ? "DeepSeek usa raciocinio maximo fixo"
+          {usesDocumentFallback
+            ? `Documento usa ${documentFallbackLabel}.`
+            : isDeepSeekSelected
+            ? "DeepSeek usa raciocinio baixo fixo"
             : fixedReasoningEffort
             ? `Raciocinio fixo: ${currentReasoning?.label || "Medio"}`
             : `Raciocínio: ${currentReasoning?.label || "Medio"}`}
@@ -444,15 +477,15 @@ export function CommandComposerContainerV2({
         <DropdownMenuLabel>Raciocinio</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {REASONING_OPTIONS.filter((option) =>
-          supportedReasoningEfforts.includes(option.value)
+          effectiveSupportedReasoningEfforts.includes(option.value)
         ).map((option) => (
           <DropdownMenuItem
             key={option.value}
             onClick={() => updateParameters({ reasoningEffort: option.value })}
-            disabled={isDeepSeekSelected || !!fixedReasoningEffort}
+            disabled={isDeepSeekSelected || usesDocumentFallback || !!fixedReasoningEffort}
             className={cn(
               "flex flex-col items-start gap-0.5",
-              parameters.reasoningEffort === option.value && "bg-primary/10 text-foreground"
+              effectiveReasoningEffort === option.value && "bg-primary/10 text-foreground"
             )}
           >
             <span className="text-[0.6875rem] font-medium md:text-xs">{option.label}</span>

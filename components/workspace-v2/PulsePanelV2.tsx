@@ -89,15 +89,28 @@ function formatDateTime(value?: string): string {
   });
 }
 
-function pulseModelLabel(model?: string, reasoningEffort = "medium"): string {
-  const modelLabel =
-    model === "gpt-6-astra"
-      ? "Astra"
-      : model === "gpt-6-sol" || model === "gpt-5.6-sol" || model === "gpt-5.6-terra"
-      ? "Sol"
-      : model === "gpt-6-luna" || model === "gpt-5.6-luna"
-        ? "Luna"
-        : "Grok";
+export const PULSE_MODEL_OPTIONS: ReadonlyArray<{ value: PulseModel; label: string }> = [
+  { value: "gpt-6.1-sol", label: "GPT-6.1 Sol — padrão" },
+  { value: "gpt-6-astra", label: "GPT-6 Astra" },
+  { value: "gpt-6-luna", label: "GPT-6 Luna" },
+  { value: "gpt-5.6-sol", label: "GPT-5.6 Sol" },
+];
+
+// Runs antigos guardam o modelo da época (6 Sol, Terra, Grok); o rótulo preserva esse histórico.
+const PULSE_MODEL_LABELS: Record<string, string> = {
+  "gpt-6-astra": "Astra",
+  "gpt-6.1-sol": "Sol 6.1",
+  "gpt-5.6-sol": "Sol 5.6",
+  "gpt-6-sol": "Sol",
+  "gpt-5.6-terra": "Sol",
+  "gpt-6-luna": "Luna",
+  "gpt-5.6-luna": "Luna",
+  "gpt-5.4-mini": "Mini",
+  "grok-4.7": "Grok",
+};
+
+export function pulseModelLabel(model?: string, reasoningEffort = "medium"): string {
+  const modelLabel = PULSE_MODEL_LABELS[model ?? ""] ?? "Sol 6.1";
   const effortLabel = reasoningEffort.charAt(0).toUpperCase() + reasoningEffort.slice(1);
   return `${modelLabel} · ${effortLabel}`;
 }
@@ -887,10 +900,9 @@ export function PulsePanelV2() {
                   }
                   className="h-8 w-full rounded-md border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-2 text-xs text-foreground"
                 >
-                  <option value="gpt-6-sol">GPT-6 Sol — padrão</option>
-                  <option value="gpt-6-astra">GPT-6 Astra</option>
-                  <option value="gpt-6-luna">GPT-6 Luna</option>
-                  <option value="grok-4.7">Grok 4.7</option>
+                  {PULSE_MODEL_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </select>
                 <span className="block text-[10px] text-muted-foreground/75">
                   Todos usam reasoning medium e verbosity high; a escolha fica salva nesta rotina.

@@ -6,14 +6,32 @@ export type PulseRecurrenceType = "daily" | "weekly" | "monthly";
 export type PulseTaskStatus = "active" | "paused";
 export type PulseRunStatus = "queued" | "running" | "completed" | "failed";
 export const PULSE_MODELS = [
-  "grok-4.7",
   "gpt-6-astra",
-  "gpt-6-sol",
+  "gpt-6.1-sol",
   "gpt-6-luna",
+  "gpt-5.6-sol",
 ] as const;
 /** Identificador legado aceito ao ler rotinas já persistidas; nunca é oferecido. */
-export type PulseModel = (typeof PULSE_MODELS)[number] | "gpt-5.4-mini" | "gpt-5.6-sol" | "gpt-5.6-terra" | "gpt-5.6-luna";
-export const DEFAULT_PULSE_MODEL: PulseModel = "gpt-6-sol";
+export type PulseModel =
+  | (typeof PULSE_MODELS)[number]
+  | "grok-4.7" | "gpt-5.4-mini" | "gpt-6-sol" | "gpt-5.6-terra" | "gpt-5.6-luna";
+export const DEFAULT_PULSE_MODEL: PulseModel = "gpt-6.1-sol";
+
+const LEGACY_PULSE_MODELS: Record<string, (typeof PULSE_MODELS)[number]> = {
+  "grok-4.7": "gpt-6-luna",
+  "gpt-5.4-mini": "gpt-6-luna",
+  "gpt-6-sol": "gpt-6.1-sol",
+  "gpt-5.6-terra": "gpt-6.1-sol",
+  "gpt-5.6-luna": "gpt-6-luna",
+};
+
+/**
+ * Compatibilidade de dados já persistidos: a leitura executa o ID antigo no
+ * modelo atual sem migrar nem regravar os JSONs privados do Anders.
+ */
+export function resolveLegacyPulseModel(value: string): string {
+  return LEGACY_PULSE_MODELS[value] ?? value;
+}
 export type PulseExecutionReasoningEffort = "low" | "medium" | "high";
 
 export interface PulseSchedule {

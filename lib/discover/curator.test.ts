@@ -31,7 +31,7 @@ describe("integração da curadoria", () => {
     expect(articles[0].content).toContain("[Fonte: Fonte de teste](https://example.org/ia/modelo)");
     expect(create).toHaveBeenCalledTimes(2);
     expect(create.mock.calls[0][0]).toMatchObject({
-      model: "gpt-6-sol",
+      model: "gpt-6.1-sol",
       reasoning: { effort: "medium" },
       text: { verbosity: "high" },
       tools: [expect.objectContaining({ type: "web_search_preview" })],
@@ -65,7 +65,7 @@ describe("integração da curadoria", () => {
     });
     expect(create).toHaveBeenCalledTimes(1);
     expect(create.mock.calls[0][0]).toMatchObject({
-      model: "gpt-6-sol",
+      model: "gpt-6.1-sol",
       reasoning: { effort: "medium" },
       text: { verbosity: "high" },
     });
