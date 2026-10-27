@@ -67,7 +67,8 @@ describe("WorkspaceFrameV2", () => {
     expect(markup).not.toContain("Produtos Gaucho");
     expect(markup).not.toContain("/soundcase");
     expect(markup).not.toContain(">Som<");
-    expect(markup).toContain("repeat(3,minmax(0,0.58fr))");
+    expect(markup).toContain("repeat(4,minmax(0,1fr))");
+    expect(markup).toContain("Descobrir");
   });
 });
 

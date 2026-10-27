@@ -23,6 +23,7 @@ import { useNotes } from "@/hooks/useNotes";
 import { StickyNote } from "lucide-react";
 import { useUIStore } from "@/stores/uiStore";
 import { useMessageLongPress } from "@/hooks/useMessageLongPress";
+import { MODELS } from "@/lib/models/modelConfig";
 
 interface MessageBubbleProps {
   message: Message;
@@ -34,6 +35,24 @@ interface MessageBubbleProps {
 
 const APP_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 const USER_AVATAR_SRC = `${APP_BASE_PATH}/images/anders-avatar.png`;
+
+type AssistantProvider = "openai" | "anthropic" | "deepseek" | "google";
+
+const ASSISTANT_PROVIDER_BADGES: Record<AssistantProvider, { label: string; letter: string }> = {
+  openai: { label: "OpenAI", letter: "O" },
+  anthropic: { label: "Anthropic · Claude", letter: "A" },
+  deepseek: { label: "DeepSeek", letter: "D" },
+  google: { label: "Google · Gemini", letter: "G" },
+};
+
+export function getAssistantProvider(modelId?: string): AssistantProvider {
+  const family = modelId ? MODELS[modelId]?.family : undefined;
+  if (family === "anthropic") return "anthropic";
+  if (family === "deepseek") return "deepseek";
+  if (family === "gemini") return "google";
+  // Compatibilidade: mensagens históricas ainda não persistem modelId.
+  return "openai";
+}
 
 export function getWebSearchIndicatorStatus(
   message: Pick<Message, "isSearching" | "didSearch">
@@ -59,6 +78,8 @@ export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDe
   // No celular a animação `layout` por balão custa GPU durante a rolagem e o streaming.
   const isMobile = useIsMobile();
   const isUser = message.role === "user";
+  const assistantProvider = getAssistantProvider(message.modelId);
+  const assistantProviderBadge = ASSISTANT_PROVIDER_BADGES[assistantProvider];
   const webSearchStatus = getWebSearchIndicatorStatus(message);
   const { appendToNotes } = useNotes();
   const openContextPanel = useUIStore((state) => state.openContextPanel);
@@ -183,9 +204,15 @@ export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDe
               />
             </div>
           ) : (
-            <div className="gc-message-avatar gc-message-avatar-inside gc-refined-accent-surface float-right ml-2 flex size-[1.6rem] items-center justify-center rounded-[0.8rem] border shadow-[0_9px_26px_rgba(15,118,110,0.12)] md:size-8 md:rounded-xl">
-              <OpenAIIcon className="size-[0.6875rem] text-primary md:size-3.5" />
-              <span className="sr-only">Gaucho Chat</span>
+            <div className="gc-message-avatar gc-message-avatar-inside gc-refined-accent-surface float-right ml-2 flex size-7 items-center justify-center rounded-[0.8rem] border shadow-[0_9px_26px_rgba(15,118,110,0.12)] md:size-[2.125rem] md:rounded-xl" title={assistantProviderBadge.label}>
+              {assistantProvider === "openai" ? (
+                <OpenAIIcon className="size-4 text-primary md:size-[1.125rem]" />
+              ) : (
+                <span aria-hidden="true" className="flex size-[1.125rem] items-center justify-center rounded-full bg-[var(--gc-surface-control)] text-[0.7rem] font-semibold leading-none text-foreground md:size-[1.25rem] md:text-xs">
+                  {assistantProviderBadge.letter}
+                </span>
+              )}
+              <span className="sr-only">Provider: {assistantProviderBadge.label}</span>
             </div>
           )}
 

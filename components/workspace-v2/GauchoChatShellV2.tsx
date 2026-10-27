@@ -34,6 +34,10 @@ import { useChatStore } from "@/stores/chatStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useUIStore } from "@/stores/uiStore";
 import { toast } from "sonner";
+import {
+  CONTEXT_SIDEBAR_BREAKPOINT,
+  MOBILE_MEDIA_QUERY,
+} from "@/lib/layout/breakpoints";
 
 export function GauchoChatShellV2() {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -60,6 +64,11 @@ export function GauchoChatShellV2() {
   const contextPanelOpen = useUIStore((state) => state.contextPanelOpen);
   const setContextPanelOpen = useUIStore((state) => state.setContextPanelOpen);
   const closeContextPanel = useUIStore((state) => state.closeContextPanel);
+  const closeMobileContextPanel = useCallback(() => {
+    // Trocar/criar conversa fecha a gaveta, preservando a lateral desktop aberta.
+    if (window.matchMedia(`(min-width: ${CONTEXT_SIDEBAR_BREAKPOINT}px)`).matches && !window.matchMedia(MOBILE_MEDIA_QUERY).matches) return;
+    closeContextPanel();
+  }, [closeContextPanel]);
   const textSelection = useTextSelection();
   const {
     messages: chatMessages,
@@ -126,12 +135,12 @@ export function GauchoChatShellV2() {
       const id = await createConversation("Nova conversa");
       setActiveConversationId(id);
       setMobileSidebarOpen(false);
-      closeContextPanel();
+      closeMobileContextPanel();
     } catch (creationError) {
       console.error("[GauchoChatShellV2] Falha ao criar conversa:", creationError);
       toast.error("Nao consegui abrir uma nova conversa agora.");
     }
-  }, [closeContextPanel, createConversation, isStreaming, setActiveConversationId]);
+  }, [closeMobileContextPanel, createConversation, isStreaming, setActiveConversationId]);
 
   const handleSelectConversation = useCallback(
     (id: string) => {
@@ -145,9 +154,9 @@ export function GauchoChatShellV2() {
       }
       setActiveConversationId(id);
       setMobileSidebarOpen(false);
-      closeContextPanel();
+      closeMobileContextPanel();
     },
-    [activeConversationId, closeContextPanel, isStreaming, setActiveConversationId]
+    [activeConversationId, closeMobileContextPanel, isStreaming, setActiveConversationId]
   );
 
   return (

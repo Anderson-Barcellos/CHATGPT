@@ -17,17 +17,16 @@ function linkOrder(markup: string, hrefs: string[]): number[] {
 }
 
 describe("ConversationRailV2 product links", () => {
-  it("offers SoundCase, Descobrir IA e Studio no rodapé", () => {
+  it("preserva SoundCase e Studio no rodapé; Descobrir fica no painel operacional", () => {
     const markup = renderToStaticMarkup(<ConversationRailV2 onOpenSettings={() => undefined} />);
 
     expect(markup).toContain("Abrir SoundCase");
-    expect(markup).toContain("Descobrir IA");
+    expect(markup).not.toContain('href="/discover"');
     expect(markup).toContain("Abrir Studio");
     expect(markup.match(/href="\/soundcase"/g)).toHaveLength(1);
-    const [soundcase, discover, studio] = linkOrder(markup, ["/soundcase", "/discover", "/studio"]);
+    const [soundcase, studio] = linkOrder(markup, ["/soundcase", "/studio"]);
     expect(soundcase).toBeGreaterThan(-1);
-    expect(soundcase).toBeLessThan(discover);
-    expect(discover).toBeLessThan(studio);
+    expect(soundcase).toBeLessThan(studio);
   });
 
   it("keeps the same order in the compact rail", () => {
@@ -38,9 +37,9 @@ describe("ConversationRailV2 product links", () => {
     expect(markup).toContain('title="Abrir SoundCase"');
     expect(markup.match(/href="\/soundcase"/g)).toHaveLength(1);
     expect(markup).toContain('title="Abrir Gaucho Studio"');
-    const [soundcase, discover, studio] = linkOrder(markup, ["/soundcase", "/discover", "/studio"]);
+    expect(markup).not.toContain('href="/discover"');
+    const [soundcase, studio] = linkOrder(markup, ["/soundcase", "/studio"]);
     expect(soundcase).toBeGreaterThan(-1);
-    expect(soundcase).toBeLessThan(discover);
-    expect(discover).toBeLessThan(studio);
+    expect(soundcase).toBeLessThan(studio);
   });
 });

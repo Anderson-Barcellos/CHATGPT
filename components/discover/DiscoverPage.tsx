@@ -287,15 +287,15 @@ export function DiscoverFeed({ embedded = false }: DiscoverFeedProps) {
           <ProductNav active="discover" compact className="ml-auto max-[430px]:w-full max-[430px]:justify-center" />
         </div>
       </header>}
-      <main className={embedded ? "mx-auto w-full max-w-3xl px-4 py-5 sm:px-5" : "mx-auto grid max-w-6xl gap-8 px-4 py-8 md:grid-cols-[minmax(0,1fr)_17rem] md:px-6"}>
+      <main className={embedded ? "w-full p-[var(--gc-mobile-panel-content-pad)]" : "mx-auto grid max-w-6xl gap-8 px-4 py-8 md:grid-cols-[minmax(0,1fr)_17rem] md:px-6"}>
         <section className="min-w-0">
           <div className={`${embedded ? "mb-5" : "mb-7"} flex flex-wrap items-end justify-between gap-4`}>
-            <div><p className="text-xs font-semibold uppercase tracking-widest text-primary">Curadoria para Anders</p>
-              <h1 className={`mt-1 font-semibold tracking-tight ${embedded ? "text-2xl" : "text-3xl md:text-4xl"}`}>O que está acontecendo em IA</h1>
-              <p className="mt-2 text-sm text-muted-foreground">Novidades com contexto, leitura leve e fontes para ir além.</p>
+            <div>{!embedded && <p className="text-xs font-semibold uppercase tracking-widest text-primary">Curadoria para Anders</p>}
+              <h1 className={`font-semibold tracking-tight ${embedded ? "text-xs" : "mt-1 text-3xl md:text-4xl"}`}>{embedded ? "Novidades em IA" : "O que está acontecendo em IA"}</h1>
+              {!embedded && <p className="mt-2 text-sm text-muted-foreground">Novidades com contexto, leitura leve e fontes para ir além.</p>}
             </div>
             <button type="button" onClick={() => void refresh()} disabled={busy || loading || refreshing || deleting}
-              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium hover:bg-accent disabled:opacity-50">
+              className={`inline-flex min-h-10 items-center gap-2 rounded-xl border border-border font-medium hover:bg-accent disabled:opacity-50 ${embedded ? "px-2 text-nano" : "px-4 text-sm"}`}>
               <RefreshCw className={`size-4 ${busy || refreshing ? "animate-spin" : ""}`} />{busy || refreshing ? "Atualizando…" : "Buscar novidades"}
             </button>
           </div>
@@ -333,37 +333,49 @@ export function DiscoverFeed({ embedded = false }: DiscoverFeedProps) {
           {state?.job.status === "failed" && <p role="status" className="mb-4 rounded-xl border border-amber-500/40 p-3 text-sm">A última atualização falhou: {state.job.error}. As matérias anteriores seguem disponíveis.</p>}
           {loading && !state && <p role="status" className="py-16 text-center text-muted-foreground">Carregando notícias…</p>}
           {!loading && state?.articles.length === 0 && <div className="rounded-2xl border border-dashed border-border p-10 text-center"><Sparkles className="mx-auto mb-3 size-7 text-primary" /><p className="font-medium">O feed ainda está vazio.</p><p className="mt-1 text-sm text-muted-foreground">Busca as primeiras novidades para começar.</p></div>}
-          <div className={`grid gap-5 ${embedded ? "" : "md:grid-cols-2"}`}>
+          <div className={`grid ${embedded ? "gap-[var(--gc-mobile-panel-content-gap)]" : "gap-5 md:grid-cols-2"}`}>
             {state?.articles.map((article) => {
               const open = expanded === article.id;
               return <article key={article.id} ref={(node) => { if (node) articleRefs.current.set(article.id, node); else articleRefs.current.delete(article.id); }}
                 data-discover-article={article.id}
-                className={`min-w-0 scroll-mt-20 overflow-hidden rounded-2xl border border-border bg-card shadow-sm ${open && !embedded ? "md:order-first md:col-span-2" : ""}`}>
+                className={`min-w-0 scroll-mt-20 overflow-hidden rounded-2xl border shadow-sm ${embedded ? "gc-clinical-card border-[color:var(--gc-border)]" : "border-border bg-card"} ${open && !embedded ? "md:order-first md:col-span-2" : ""}`}>
                 {article.image ? (
                   // A capa privada requer cookie e vem da rota autenticada do app.
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={apiUrl(`/api/discover/images/${article.image}`)} alt="" loading="lazy" decoding="async" className={`w-full object-cover ${open ? "h-52 md:h-72" : "h-40"}`} />
+                  <img src={apiUrl(`/api/discover/images/${article.image}`)} alt="" loading="lazy" decoding="async" className={`w-full object-cover ${embedded ? (open ? "h-28 md:h-40" : "h-20 md:h-24") : (open ? "h-52 md:h-72" : "h-40")}`} />
                 )
-                  : <div className={`flex items-center justify-center bg-primary/10 text-primary ${open ? "h-52" : "h-40"}`}><Sparkles className="size-10" /></div>}
-                <div className="p-5">
+                  : <div className={`flex items-center justify-center bg-primary/10 text-primary ${embedded ? (open ? "h-28 md:h-40" : "h-20 md:h-24") : (open ? "h-52" : "h-40")}`}><Sparkles className={embedded ? "size-6" : "size-10"} /></div>}
+                {embedded && <div className="border-y border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-3 py-1.5"><p className="truncate text-[10px] font-medium uppercase text-muted-foreground/75">IA · {article.topic}</p></div>}
+                <div className={embedded ? "min-w-0 p-3" : "p-5"}>
+                  {embedded && <div className="mb-2 flex items-start justify-between gap-2">
+                    <button type="button" aria-expanded={open} aria-controls={`discover-${article.id}`} onClick={() => toggleArticle(article.id, open)} className="flex min-h-11 min-w-0 flex-1 items-start gap-2 rounded-md text-left focus-visible:outline-2 focus-visible:outline-primary">
+                      <span className="min-w-0 flex-1"><span role="heading" aria-level={2} className="line-clamp-2 text-xs font-semibold text-foreground">{article.title}</span><span className="mt-1 block text-nano text-muted-foreground">{formatDate(article.publishedAt)}</span></span>
+                      <ChevronDown className={`mt-1 size-3.5 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+                    </button>
+                    <button type="button" aria-label={`Apagar notícia: ${article.title}`} disabled={busy || deleting} onClick={() => requestDelete([article])} className="flex size-11 shrink-0 items-center justify-center rounded-md text-rose-700 hover:bg-destructive/10 disabled:opacity-50 dark:text-rose-300"><Trash2 className="size-3.5" /></button>
+                  </div>}
+                  {(!embedded || selecting) && <div>
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     {selecting && <label className="flex min-h-11 min-w-0 cursor-pointer items-center gap-2 text-sm">
                       <input type="checkbox" className="size-4 accent-primary" aria-label={`Selecionar notícia: ${article.title}`} disabled={deleting}
                         checked={selected.includes(article.id)} onChange={(event) => setSelected((current) => event.target.checked ? [...current, article.id] : current.filter((id) => id !== article.id))} />Selecionar
                     </label>}
-                    <button type="button" aria-label={`Apagar notícia: ${article.title}`} disabled={busy || deleting} onClick={() => requestDelete([article])}
-                      className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"><Trash2 className="size-4" />Apagar</button>
+                    {!embedded && <button type="button" aria-label={`Apagar notícia: ${article.title}`} disabled={busy || deleting} onClick={() => requestDelete([article])}
+                      className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"><Trash2 className="size-4" />Apagar</button>}
                   </div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-primary">{article.topic} · {formatDate(article.publishedAt)}</p>
-                  <h2 className="mt-2 text-xl font-semibold leading-tight">{article.title}</h2>
-                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{article.summary}</p>
+                  </div>}
+                  {!embedded && <><p className="text-xs font-semibold uppercase tracking-wide text-primary">{article.topic} · {formatDate(article.publishedAt)}</p>
+                  <h2 className="mt-2 text-xl font-semibold leading-tight">{article.title}</h2></>}
+                  {(!embedded || !open) && <p className={embedded ? "line-clamp-3 text-nano leading-relaxed text-muted-foreground/85" : "mt-3 text-sm leading-relaxed text-muted-foreground"}>{article.summary}</p>}
+                  {(!embedded || open) && <>
                   <button type="button" onClick={() => setAudioArticleId(article.id)} className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium hover:bg-accent">
                     <Volume2 className="size-4" /> Ouvir matéria
                   </button>
-                  <button type="button" aria-expanded={open} aria-controls={`discover-${article.id}`} onClick={() => toggleArticle(article.id, open)}
+                  {!embedded && <button type="button" aria-expanded={open} aria-controls={`discover-${article.id}`} onClick={() => toggleArticle(article.id, open)}
                     className="ml-3 mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg font-medium text-primary hover:underline">
                     {open ? "Recolher" : "Ler a matéria"}<ChevronDown className={`size-4 transition-transform ${open ? "rotate-180" : ""}`} />
-                  </button>
+                  </button>}
+                  </>}
                   {audioArticleId === article.id && (
                     <MiniAudioPlayer
                       content={`${article.title}\n\n${article.content}`}
@@ -373,7 +385,7 @@ export function DiscoverFeed({ embedded = false }: DiscoverFeedProps) {
                     />
                   )}
                   {open && <div id={`discover-${article.id}`} className="mt-4 border-t border-border pt-5">
-                    <ChatMarkdown content={article.content} className="leading-relaxed" />
+                    <ChatMarkdown content={article.content} className={embedded ? "text-micro leading-relaxed md:text-xs" : "leading-relaxed"} />
                     <h3 className="mt-6 text-sm font-semibold">Fontes</h3>
                     <ul className="mt-2 space-y-2">{article.sources.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer" className="break-all text-sm text-primary underline">{source.title || source.url}</a></li>)}</ul>
                   </div>}

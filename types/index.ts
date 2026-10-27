@@ -103,6 +103,8 @@ export interface Message {
   role: MessageRole;
   content: string;
   timestamp: Date;
+  /** Modelo que gerou esta resposta; ausente em mensagens históricas anteriores ao registro de provider. */
+  modelId?: string;
   streamStatus?: MessageStreamStatus;
   responseMode?: ResponseMode;
   preferredDisplayMode?: MessageArtifactDisplayMode;
@@ -177,7 +179,7 @@ export interface SerializedConversation
   updatedAt: string;
 }
 
-export type ActivePanelTab = "activity" | "notes" | "pulse";
+export type ActivePanelTab = "activity" | "discover" | "notes" | "pulse";
 
 export interface CanvasOverlayState {
   x: number;

@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { PanelRightClose } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -13,6 +14,10 @@ import { useChatStore } from "@/stores/chatStore";
 import { useUIStore } from "@/stores/uiStore";
 import type { ActivePanelTab } from "@/types";
 
+const DiscoverFeed = dynamic(() => import("@/components/discover/DiscoverPage").then((module) => module.DiscoverFeed), {
+  loading: () => <p role="status" className="p-4">Carregando notícias…</p>,
+});
+
 export function ContextPanelV2() {
   const activePanelTab = useUIStore((state) => state.activePanelTab);
   const setActivePanelTab = useUIStore((state) => state.setActivePanelTab);
@@ -21,7 +26,7 @@ export function ContextPanelV2() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="gc-clinical-section-header flex items-center justify-between border-b border-[color:var(--gc-border-soft)] px-[var(--gc-mobile-context-header-x)] py-[var(--gc-mobile-context-header-y)] xl:hidden">
+      <div className="gc-clinical-section-header flex items-center justify-between border-b border-[color:var(--gc-border-soft)] px-[var(--gc-mobile-context-header-x)] py-[var(--gc-mobile-context-header-y)] min-[1281px]:hidden">
         <div className="min-w-0">
           <h2 className="truncate text-[length:var(--gc-mobile-panel-title-font-size)] font-semibold md:text-sm">Painel operacional</h2>
           <p className="text-nano uppercase tracking-label text-muted-foreground">
@@ -57,6 +62,9 @@ export function ContextPanelV2() {
             <TabsTrigger value="activity" className="h-[var(--gc-mobile-control-height)] rounded-lg text-[length:var(--gc-mobile-tab-font-size)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground md:h-8 md:text-xs">
               Pulse
             </TabsTrigger>
+            <TabsTrigger value="discover" aria-label="Descobrir IA" className="min-w-0 h-[var(--gc-mobile-control-height)] rounded-lg px-2 text-[length:var(--gc-mobile-tab-font-size)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground md:h-8 md:text-xs">
+              Descobrir
+            </TabsTrigger>
             <TabsTrigger value="notes" className="h-[var(--gc-mobile-control-height)] rounded-lg text-[length:var(--gc-mobile-tab-font-size)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground md:h-8 md:text-xs">
               Notas
             </TabsTrigger>
@@ -72,6 +80,10 @@ export function ContextPanelV2() {
               <PulseActivityPanelV2 />
             </div>
           </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="discover" className="mt-0 min-h-0 flex-1 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
+          <DiscoverFeed embedded />
         </TabsContent>
 
         <TabsContent value="notes" className="mt-0 min-h-0 flex-1 overflow-hidden">

@@ -9,6 +9,7 @@ import {
   useCallback,
   useEffect,
   useState,
+  useSyncExternalStore,
 } from "react";
 import {
   Archive,
@@ -21,6 +22,7 @@ import {
   ImageIcon,
   Menu,
   Mic,
+  Newspaper,
   Plus,
   PanelRightClose,
   PanelRightOpen,
@@ -64,9 +66,9 @@ import { GPTLogo } from "@/components/ui/gpt-logo";
 import { useCommandPaletteContext } from "@/components/command/CommandPaletteProvider";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useVisualViewport } from "@/hooks/useVisualViewport";
+import { CONTEXT_SIDEBAR_BREAKPOINT } from "@/lib/layout/breakpoints";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/uiStore";
-import { DiscoverPanelV2 } from "@/components/workspace-v2/DiscoverPanelV2";
 import type { FileAttachment, ResponseMode } from "@/types";
 
 const RESPONSE_MODE_LABELS: Record<ResponseMode, string> = {
@@ -76,6 +78,15 @@ const RESPONSE_MODE_LABELS: Record<ResponseMode, string> = {
   deepsearch_high: "Deepsearch High",
   quiz: "Quiz",
 };
+
+const DESKTOP_CONTEXT_QUERY = `(min-width: ${CONTEXT_SIDEBAR_BREAKPOINT}px)`;
+function subscribeDesktopContext(callback: () => void) {
+  const query = window.matchMedia(DESKTOP_CONTEXT_QUERY);
+  query.addEventListener("change", callback);
+  return () => query.removeEventListener("change", callback);
+}
+const getDesktopContextSnapshot = () => window.matchMedia(DESKTOP_CONTEXT_QUERY).matches;
+const getDesktopContextServerSnapshot = () => false;
 
 interface WorkspaceFrameV2Props {
   sidebar: ReactNode;
@@ -229,19 +240,21 @@ export function WorkspaceFrameV2({
 }: WorkspaceFrameV2Props) {
   const { setOpen: openCommandPalette } = useCommandPaletteContext();
   const openContextPanel = useUIStore((state) => state.openContextPanel);
-  const discoverOpen = useUIStore((state) => state.discoverPanelOpen);
   const isMobile = useIsMobile();
+  const desktopContext = useSyncExternalStore(subscribeDesktopContext, getDesktopContextSnapshot, getDesktopContextServerSnapshot) && !isMobile;
   useVisualViewport(isMobile);
   const [internalSidebarOpen, setInternalSidebarOpen] = useState(false);
   const sidebarOpen = mobileSidebarOpen ?? internalSidebarOpen;
   const setSidebarOpen = onMobileSidebarOpenChange ?? setInternalSidebarOpen;
   const [internalContextOpen, setInternalContextOpen] = useState(false);
-  const [contextCollapsed, setContextCollapsed] = useState(true);
   const [contextExpanded, setContextExpanded] = useState(false);
   const contextOpen = mobileContextOpen ?? internalContextOpen;
+  const contextCollapsed = !contextOpen;
   const setContextOpen = onMobileContextOpenChange ?? setInternalContextOpen;
   useEffect(() => useUIStore.subscribe((state, previous) => {
-    if (state.discoverPanelOpen && !previous.discoverPanelOpen) setSidebarOpen(false);
+    if (state.contextPanelOpen && !previous.contextPanelOpen) {
+      setSidebarOpen(false);
+    }
   }), [setSidebarOpen]);
   const handleFocusComposer = useCallback(() => {
     const composerInput = document.querySelector<HTMLTextAreaElement>(".gc-composer-dock textarea");
@@ -265,20 +278,19 @@ export function WorkspaceFrameV2({
       />
       <div className="relative z-10 flex h-full flex-col p-[var(--gc-shell-gutter)]">
         <div className="gc-clinical-shell gc-safe-x relative flex min-h-0 flex-1 overflow-hidden border border-[color:var(--gc-border-soft)] backdrop-blur-xl md:rounded-[1.65rem]">
-          {discoverOpen && <DiscoverPanelV2 />}
-          <aside
+          {!isMobile && <aside
             data-workspace-region="sidebar"
-            className={cn("gc-clinical-rail hidden min-h-0 w-[var(--gc-shell-rail-width)] shrink-0 overflow-hidden border-r border-[color:var(--gc-border)] lg:block", discoverOpen && "invisible")}
+            className="gc-clinical-rail hidden min-h-0 w-[var(--gc-shell-rail-width)] shrink-0 overflow-hidden border-r border-[color:var(--gc-border)] lg:block"
           >
             <FadeIn duration={0.24} className="h-full">
               {sidebar}
             </FadeIn>
-          </aside>
+          </aside>}
 
-          {tabletSidebar && (
+          {tabletSidebar && !isMobile && (
             <aside
               data-workspace-region="tablet-rail"
-              className={cn("gc-clinical-rail hidden min-h-0 w-12 shrink-0 overflow-hidden border-r border-[color:var(--gc-border)] md:block lg:hidden", discoverOpen && "invisible")}
+              className="gc-clinical-rail hidden min-h-0 w-12 shrink-0 overflow-hidden border-r border-[color:var(--gc-border)] md:block lg:hidden"
             >
               <FadeIn duration={0.24} className="h-full">
                 {tabletSidebar}
@@ -286,7 +298,7 @@ export function WorkspaceFrameV2({
             </aside>
           )}
 
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <div className="gc-chat-column flex min-h-0 min-w-0 flex-1 flex-col">
             <header className="gc-clinical-header shrink-0 border-b border-[color:var(--gc-border-soft)] gc-safe-top md:border-[color:var(--gc-border)] md:pt-0">
               <div className="relative flex h-[var(--gc-mobile-header-height)] items-center justify-center px-[var(--gc-mobile-header-x)] md:h-[3.15rem] md:justify-between md:px-4">
                 <IconButton
@@ -314,7 +326,7 @@ export function WorkspaceFrameV2({
                   >
                     <Menu className="size-4" />
                   </IconButton>
-                  <div className="flex size-9 items-center justify-center rounded-xl border border-primary/20 bg-primary/12 shadow-[0_8px_22px_rgba(15,118,110,0.12)]">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/12 shadow-[0_8px_22px_rgba(15,118,110,0.12)]">
                     <GPTLogo size={22} />
                   </div>
                   <div className="min-w-0 leading-tight">
@@ -335,7 +347,7 @@ export function WorkspaceFrameV2({
                   type="button"
                   aria-label="Buscar conversas, notas e rotinas"
                   onClick={() => openCommandPalette(true)}
-                  className="gc-clinical-input-surface mx-3 hidden h-8 min-w-[13rem] max-w-[24rem] flex-1 items-center gap-2 rounded-xl border border-[color:var(--gc-border-soft)] px-3 text-left text-[11px] text-muted-foreground transition-colors hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:flex"
+                  className="gc-header-search gc-clinical-input-surface mx-3 hidden h-8 min-w-[13rem] max-w-[24rem] flex-1 items-center gap-2 rounded-xl border border-[color:var(--gc-border-soft)] px-3 text-left text-[11px] text-muted-foreground transition-colors hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:flex"
                 >
                   <Search className="size-3.5 shrink-0" />
                   <span className="truncate">Buscar conversas, notas, rotinas...</span>
@@ -344,12 +356,12 @@ export function WorkspaceFrameV2({
                   </span>
                 </button>
 
-                <div className="absolute right-[0.6875rem] top-1/2 flex -translate-y-1/2 items-center gap-0.5 md:static md:translate-y-0 md:gap-1.5">
+                <div className="absolute right-[0.6875rem] top-1/2 flex shrink-0 -translate-y-1/2 items-center gap-0.5 md:static md:translate-y-0 md:gap-1.5">
                   <span className="hidden md:inline-flex">{exportControl ?? null}</span>
                   <IconButton
                     label="Buscar comandos"
                     onClick={() => openCommandPalette(true)}
-                    className="hidden md:inline-flex xl:hidden"
+                    className="gc-header-search-trigger hidden md:inline-flex min-[1281px]:hidden"
                   >
                     <Search className="size-4" />
                   </IconButton>
@@ -366,7 +378,7 @@ export function WorkspaceFrameV2({
                   <IconButton
                     label="Painel contextual"
                     onClick={() => setContextOpen(!contextOpen)}
-                    className="relative hidden md:inline-flex xl:hidden"
+                    className="relative hidden md:inline-flex min-[1281px]:hidden"
                   >
                     <PanelRightOpen className="size-4" />
                     {!!artifactCount && artifactCount > 0 && (
@@ -379,14 +391,15 @@ export function WorkspaceFrameV2({
               </div>
 
               <div className="gc-clinical-subheader border-t border-[color:var(--gc-border-soft)] px-[0.575rem] pb-[0.575rem] pt-[0.115rem] md:flex md:min-h-[2.15rem] md:items-center md:justify-between md:px-4 md:py-1">
-                <div className="grid h-[var(--gc-mobile-primary-nav-height)] grid-cols-[minmax(0,1.55fr)_repeat(3,minmax(0,0.58fr))] items-center gap-[0.23rem] rounded-[1.15rem] border border-[color:var(--gc-border-soft)] bg-background/84 p-[0.23rem] shadow-[0_9px_22px_rgba(15,23,42,0.07)] md:hidden">
+                <div data-mobile-primary-nav className="grid h-[var(--gc-mobile-primary-nav-height)] min-h-[3.375rem] grid-cols-[minmax(0,1.3fr)_repeat(4,minmax(0,1fr))] items-center gap-[0.23rem] rounded-[1.15rem] border border-[color:var(--gc-border-soft)] bg-background/84 p-[0.23rem] shadow-[0_9px_22px_rgba(15,23,42,0.07)] md:hidden">
                   <button
                     type="button"
                     onClick={onNewConversation}
-                    className="flex h-full items-center justify-center gap-[0.23rem] rounded-[0.875rem] bg-primary px-[0.46rem] text-[0.6875rem] font-semibold text-primary-foreground shadow-[0_9px_20px_rgba(15,118,110,0.18)]"
+                    aria-label="Nova conversa"
+                    className="flex h-full min-w-0 flex-col items-center justify-center gap-0.25 rounded-[0.875rem] bg-primary px-1 text-[length:var(--gc-mobile-tab-font-size)] font-semibold text-primary-foreground shadow-[0_9px_20px_rgba(15,118,110,0.18)]"
                   >
                     <Plus className="size-[1.035rem]" />
-                    <span className="truncate">Nova conversa</span>
+                    <span className="text-center leading-tight">Nova<span className="gc-new-conversation-suffix"> conversa</span></span>
                   </button>
                   <button
                     type="button"
@@ -396,6 +409,14 @@ export function WorkspaceFrameV2({
                     <span className="absolute top-[0.345rem] size-[0.345rem] rounded-full bg-primary" />
                     <Activity className="size-[1.035rem]" />
                     Pulse
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openContextPanel("discover")}
+                    className="flex h-full min-w-0 flex-col items-center justify-center gap-0.25 rounded-xl text-[length:var(--gc-mobile-tab-font-size)] font-medium text-muted-foreground"
+                  >
+                    <Newspaper className="size-[1.035rem]" />
+                    Descobrir
                   </button>
                   <button
                     type="button"
@@ -444,11 +465,11 @@ export function WorkspaceFrameV2({
             ) : null}
           </div>
 
-            <aside
+            {!isMobile && <aside
               data-workspace-region="context"
               data-collapsed={contextCollapsed}
               className={cn(
-                "gc-clinical-panel hidden min-h-0 shrink-0 overflow-hidden border-l border-[color:var(--gc-border)] transition-[width] duration-200 xl:block",
+                "gc-clinical-panel hidden min-h-0 shrink-0 overflow-hidden border-l border-[color:var(--gc-border)] transition-[width] duration-200 min-[1281px]:block",
                 contextCollapsed
                   ? "w-[2.85rem]"
                 : contextExpanded
@@ -458,7 +479,7 @@ export function WorkspaceFrameV2({
             >
             {contextCollapsed ? (
               <div className="flex h-full flex-col items-center gap-3 py-3">
-                <IconButton label="Abrir painel" onClick={() => setContextCollapsed(false)}>
+                <IconButton label="Abrir painel" onClick={() => setContextOpen(true)}>
                   <PanelRightOpen className="size-4" />
                 </IconButton>
                 <div className="h-px w-6 bg-[var(--gc-border-soft)]" />
@@ -486,25 +507,24 @@ export function WorkspaceFrameV2({
                         <Maximize2 className="size-4" />
                       )}
                     </IconButton>
-                    <IconButton label="Recolher painel" onClick={() => setContextCollapsed(true)}>
+                    <IconButton label="Recolher painel" onClick={() => setContextOpen(false)}>
                       <PanelRightClose className="size-4" />
                     </IconButton>
                   </div>
                 </div>
                 <div className="min-h-0 flex-1">
                   <SlideIn from="right" distance={12} duration={0.24} className="h-full">
-                    {contextPanel}
+                    {desktopContext && contextPanel}
                   </SlideIn>
                 </div>
               </div>
             )}
-          </aside>
+          </aside>}
         </div>
       </div>
 
-      <Sheet open={sidebarOpen && !discoverOpen} onOpenChange={setSidebarOpen}>
+      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent
-          onCloseAutoFocus={(event) => { if (discoverOpen) event.preventDefault(); }}
           side="left"
           showCloseButton={false}
           className="gc-chat-ui gc-clinical-rail w-[92vw] max-w-[20rem] gap-0 border-[color:var(--gc-border)] p-0 gc-safe-top gc-safe-left"
@@ -517,19 +537,22 @@ export function WorkspaceFrameV2({
         </SheetContent>
       </Sheet>
 
-      <Sheet open={contextOpen} onOpenChange={setContextOpen}>
-        <SheetContent
-          side="right"
-          showCloseButton={false}
-          className="gc-chat-ui gc-clinical-panel w-full max-w-none gap-0 border-0 p-0 gc-safe-top gc-safe-right sm:w-[96vw] sm:border sm:border-[color:var(--gc-border)] sm:max-w-[34rem]"
-        >
-          <SheetHeader className="sr-only">
-            <SheetTitle>Painel contextual</SheetTitle>
-            <SheetDescription>Preview, fontes e raciocínio da conversa.</SheetDescription>
-          </SheetHeader>
-          {mobileContextPanel}
-        </SheetContent>
-      </Sheet>
+      {!desktopContext && (
+        <Sheet open={contextOpen} onOpenChange={setContextOpen}>
+          <SheetContent
+            side="right"
+            showCloseButton={false}
+            overlayClassName="gc-context-drawer-overlay min-[1281px]:hidden"
+            className={cn("gc-context-drawer gc-chat-ui gc-clinical-panel w-full max-w-none gap-0 border-0 p-0 gc-safe-top gc-safe-right min-[1281px]:hidden", isMobile ? "sm:max-w-none" : "sm:w-[96vw] sm:border sm:border-[color:var(--gc-border)] sm:max-w-[500px]")}
+          >
+            <SheetHeader className="sr-only">
+              <SheetTitle>Painel contextual</SheetTitle>
+              <SheetDescription>Preview, fontes e raciocínio da conversa.</SheetDescription>
+            </SheetHeader>
+            {mobileContextPanel}
+          </SheetContent>
+        </Sheet>
+      )}
     </div>
   );
 }

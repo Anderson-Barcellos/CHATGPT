@@ -694,6 +694,7 @@ export function useChat() {
         role: "assistant",
         content: "",
         timestamp: new Date(),
+        modelId: requestModel,
         streamStatus: "streaming",
         responseMode,
         ...(preferredDisplayMode && { preferredDisplayMode }),

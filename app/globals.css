@@ -1117,15 +1117,41 @@ body {
 
   --gc-shell-gutter: 0.35rem;
   --gc-shell-rail-width: 14.5rem;
-  --gc-shell-context-width: 18rem;
-  --gc-shell-context-expanded-width: 26rem;
+  --gc-shell-context-width: 500px;
+  --gc-shell-context-expanded-width: 640px;
 }
 
-/* Laterais do shell crescem juntas no 2xl; Descobrir herda a largura da direita. */
-@media (min-width: 96rem) {
-  :root {
-    --gc-shell-context-width: 24rem;
-    --gc-shell-context-expanded-width: 34rem;
+/* O cabeçalho responde ao espaço do chat, não à largura total do monitor. */
+.gc-chat-column {
+  container: gc-chat / inline-size;
+}
+
+@container gc-chat (width < 375px) {
+  .gc-new-conversation-suffix {
+    display: none;
+  }
+}
+
+@container gc-chat (width < 800px) {
+  .gc-welcome-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+  }
+
+  .gc-welcome-desktop {
+    padding: 1.25rem;
+  }
+}
+
+@media (min-width: 768px) and (not ((max-height: 500px) and (pointer: coarse))) {
+  @container gc-chat (width < 640px) {
+    .gc-header-search {
+      display: none;
+    }
+
+    .gc-header-search-trigger {
+      display: inline-flex;
+    }
   }
 }
 
@@ -1768,40 +1794,4 @@ body {
     min-width: var(--gc-mobile-touch-target);
     min-height: var(--gc-mobile-touch-target);
   }
-}
-
-/* Descobrir usa uma única árvore; ampliar muda só sua geometria. */
-.gc-atmosphere-shell .gc-discover-panel {
-  position: absolute;
-  inset: 0 auto 0 0;
-  z-index: 45;
-  display: flex;
-  flex-direction: column;
-  width: var(--gc-shell-context-width);
-  min-height: 0;
-  overflow: hidden;
-  border-right: 1px solid var(--gc-border);
-  background-color: var(--background);
-  box-shadow: 12px 0 36px rgb(0 0 0 / 16%);
-  animation: gc-discover-enter 180ms ease-out;
-}
-
-@keyframes gc-discover-enter {
-  from { opacity: 0; transform: translateX(-16px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-.gc-discover-panel[data-discover-fullscreen="true"] {
-  inset: 0;
-  width: 100%;
-  max-width: none;
-  height: 100%;
-  border: 0;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.gc-discover-panel :focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
 }

@@ -51,9 +51,7 @@ function article(id: string): HTMLElement {
 }
 
 async function clickRead(id: string): Promise<void> {
-  const button = Array.from(article(id).querySelectorAll("button")).find((candidate) =>
-    /Ler a matéria|Recolher/.test(candidate.textContent ?? "")
-  )!;
+  const button = article(id).querySelector<HTMLButtonElement>('button[aria-expanded]')!;
   await act(async () => { button.click(); });
   await act(async () => { animationFrames.splice(0).forEach((callback) => callback(0)); });
 }
@@ -88,6 +86,26 @@ afterEach(async () => {
 });
 
 describe("Descobrir IA", () => {
+  it("expande pelo título no painel, limita resumo e não expande ao selecionar ou apagar", async () => {
+    await renderPage(<DiscoverFeed embedded />);
+    const first = article("primeira");
+    const toggle = first.querySelector<HTMLButtonElement>('button[aria-expanded]')!;
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(first.querySelector(".line-clamp-3")?.textContent).toBe(ARTICLES[0].summary);
+    expect(first.textContent).not.toContain("Ouvir matéria");
+    await act(async () => toggle.click());
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(first.textContent).toContain("Conteúdo 1");
+    expect(first.textContent).toContain("Ouvir matéria");
+    await clickRead("segunda");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    await act(async () => Array.from(container.querySelectorAll("button")).find(b => b.textContent === "Selecionar notícias")!.click());
+    await act(async () => first.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    await act(async () => first.querySelector<HTMLButtonElement>('[aria-label="Apagar notícia: Matéria 1"]')!.click());
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain("Matéria 1");
+  });
   it("confirma exclusão individual e desmonta a matéria/player somente após sucesso", async () => {
     await renderPage();
     const listen = Array.from(article("primeira").querySelectorAll("button")).find(b => b.textContent?.includes("Ouvir matéria"))!;
@@ -354,7 +372,7 @@ describe("Descobrir IA", () => {
     expect(scrollRoot.className).not.toContain("h-dvh");
     expect(container.querySelector("header")).toBeNull();
     expect(container.querySelector("nav")).toBeNull();
-    expect(container.querySelector("main")?.className).toContain("max-w-3xl");
+    expect(container.querySelector("main")?.className).toContain("w-full");
     expect(container.querySelector("main")?.className).not.toContain("md:grid-cols");
 
     const preferences = Array.from(container.querySelectorAll("button")).find((candidate) =>

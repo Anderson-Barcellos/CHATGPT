@@ -117,16 +117,25 @@ describe("Gaucho Chat visual contract", () => {
     expect(rootMobile).not.toContain("--gc-shell-gutter");
   });
 
-  it("gives Descobrir the same token-driven width as the right context panel", () => {
+  it("mantém larguras do painel operacional por tokens e remove a sobreposição antiga", () => {
     const layout = readFileSync(new URL("../components/workspace-v2/WorkspaceLayoutV2.tsx", import.meta.url), "utf8");
-    const discoverBlock = css.match(/\.gc-atmosphere-shell \.gc-discover-panel\s*\{([^}]*)\}/)?.[1] ?? "";
     const shellTokenBlocks = css.match(/:root\s*\{[^}]*--gc-shell-rail-width:[^}]*\}/g) ?? [];
 
-    expect(discoverBlock).toContain("width: var(--gc-shell-context-width);");
-    expect(discoverBlock).not.toMatch(/360px|max-width/);
-    expect(css).toMatch(/@media \(min-width: 96rem\)\s*\{\s*:root\s*\{[^}]*--gc-shell-context-width:\s*24rem;[^}]*--gc-shell-context-expanded-width:\s*34rem;/);
+    expect(css).not.toContain(".gc-discover-panel");
+    expect(layout).toContain("w-[var(--gc-shell-context-width)]");
+    expect(layout).toContain("w-[var(--gc-shell-context-expanded-width)]");
+    expect(css).toContain("--gc-shell-context-width: 500px;");
+    expect(css).toContain("--gc-shell-context-expanded-width: 640px;");
+    expect(css).not.toContain("@media (min-width: 96rem)");
     expect(shellTokenBlocks).toHaveLength(1);
     expect(layout).not.toContain("2xl:w-[");
+    expect(layout).toContain("min-[1281px]:block");
+    expect(layout).not.toContain("xl:block");
+    expect(layout).toContain("{!desktopContext && (");
+    expect(layout).toContain("<Sheet open={contextOpen} onOpenChange={setContextOpen}>");
+    expect(layout).not.toContain("<Sheet open={contextOpen && !desktopContext}");
+    expect(layout).toContain('overlayClassName="gc-context-drawer-overlay min-[1281px]:hidden"');
+    expect(layout).toContain("gc-context-drawer gc-chat-ui");
     expect(css).not.toMatch(/\[data-workspace-region="context"\]\[data-collapsed="true"\]\s*\{[^}]*width/);
   });
 

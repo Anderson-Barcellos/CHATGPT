@@ -1,5 +1,9 @@
 export const MOBILE_BREAKPOINT = 768;
 
+// A lateral fixa entra somente depois de 1280 px. Em 1280 px inclusive, o
+// painel continua como gaveta para não comprimir o chat e seus controles.
+export const CONTEXT_SIDEBAR_BREAKPOINT = 1281;
+
 // Altura máxima (px) em que um aparelho de toque em paisagem ainda é tratado
 // como celular (iPhone 17 Pro Max em paisagem tem 440 pt de altura).
 export const SHORT_LANDSCAPE_MAX_HEIGHT = 500;
@@ -13,4 +17,4 @@ export const MOBILE_MEDIA_QUERY = `(max-width: ${MOBILE_BREAKPOINT - 1}px), ((ma
 // md: 768  — mobile/tablet threshold; useIsMobile() uses MOBILE_MEDIA_QUERY
 //            (max-width: 767px OR short coarse landscape ≤ 500px tall)
 // lg: 1024 — sidebar becomes visible
-// xl: 1280 — context panel becomes visible
+// 1281 — context panel becomes a fixed sidebar; through 1280 it stays a drawer

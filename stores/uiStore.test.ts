@@ -33,17 +33,14 @@ describe("uiStore context panel", () => {
   });
 });
 
-describe("Descobrir independente do Pulse", () => {
-  it("abre, amplia e fecha sem alterar o painel operacional", () => {
-    useUIStore.setState({ discoverPanelOpen: false, discoverExpanded: false, activePanelTab: "notes", contextPanelOpen: true });
-    useUIStore.getState().openDiscoverPanel();
-    useUIStore.getState().setDiscoverExpanded(true);
-    expect(useUIStore.getState().discoverPanelOpen).toBe(true);
-    expect(useUIStore.getState().discoverExpanded).toBe(true);
-    useUIStore.getState().closeDiscoverPanel();
-    expect(useUIStore.getState().discoverPanelOpen).toBe(false);
-    expect(useUIStore.getState().discoverExpanded).toBe(false);
-    expect(useUIStore.getState().activePanelTab).toBe("notes");
+describe("Descobrir no painel operacional", () => {
+  it("seleciona notícias ao abrir o painel e preserva a aba ao fechar", () => {
+    useUIStore.setState({ activePanelTab: "notes", contextPanelOpen: false });
+    useUIStore.getState().openContextPanel("discover");
+    expect(useUIStore.getState().activePanelTab).toBe("discover");
     expect(useUIStore.getState().contextPanelOpen).toBe(true);
+    useUIStore.getState().closeContextPanel();
+    expect(useUIStore.getState().contextPanelOpen).toBe(false);
+    expect(useUIStore.getState().activePanelTab).toBe("discover");
   });
 });

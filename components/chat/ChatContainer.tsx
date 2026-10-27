@@ -174,8 +174,8 @@ function WelcomeScreen({
 
         </div>
 
-        <div className="gc-refined-panel hidden rounded-[var(--gc-mobile-welcome-panel-radius)] border px-[var(--gc-mobile-welcome-panel-x)] py-[var(--gc-mobile-welcome-panel-y)] md:block md:rounded-[2rem] md:px-7 md:py-7">
-          <div className="grid gap-[var(--gc-mobile-welcome-grid-gap)] lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.1fr)] lg:gap-9">
+        <div className="gc-welcome-desktop gc-refined-panel hidden rounded-[var(--gc-mobile-welcome-panel-radius)] border px-[var(--gc-mobile-welcome-panel-x)] py-[var(--gc-mobile-welcome-panel-y)] md:block md:rounded-[2rem] md:px-7 md:py-7">
+          <div className="gc-welcome-grid grid gap-[var(--gc-mobile-welcome-grid-gap)] lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.1fr)] lg:gap-9">
             <div className="flex flex-col justify-between">
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/10 px-2.5 py-0.5 text-nano font-semibold uppercase tracking-label text-primary md:px-3 md:py-1 md:text-micro md:tracking-eyebrow">

@@ -14,11 +14,6 @@ interface UIState extends ArtifactState {
   activePanelTab: ActivePanelTab;
   contextPanelOpen: boolean;
   soundCasePanelOpen: boolean;
-  discoverPanelOpen: boolean;
-  discoverExpanded: boolean;
-  openDiscoverPanel: () => void;
-  closeDiscoverPanel: () => void;
-  setDiscoverExpanded: (expanded: boolean) => void;
   activeSelection: ActiveSelection | null;
   setActiveMode: (mode: AppMode) => void;
   setImageSize: (size: string) => void;
@@ -45,11 +40,6 @@ export const useUIStore = create<UIState>((set) => ({
   activePanelTab: "activity",
   contextPanelOpen: false,
   soundCasePanelOpen: false,
-  discoverPanelOpen: false,
-  discoverExpanded: false,
-  openDiscoverPanel: () => set({ discoverPanelOpen: true }),
-  closeDiscoverPanel: () => set({ discoverPanelOpen: false, discoverExpanded: false }),
-  setDiscoverExpanded: (discoverExpanded) => set({ discoverExpanded }),
   activeSelection: null,
   setActiveMode: (mode) => set({ activeMode: mode }),
   setImageSize: (size) => set({ imageSize: size }),

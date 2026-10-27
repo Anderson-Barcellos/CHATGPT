@@ -439,3 +439,15 @@ Gates finais exit 0: `npm test` (221 arquivos/1.193 testes), `npx --no-install t
 npm test: 223 arquivos/1.213 testes, exit 0. npx --no-install tsc --noEmit, npm run lint e npm run build: exit 0. Build lC8e60dlN4-pot2IHPGo4. Chrome: qa-discover-delete.mjs (5 cenários), qa-discover-controls.mjs (7 checks), qa-discover-sidebar.mjs (6 cenários), todos exit 0. Lint final do harness: exit 0. Logs, tentativas anteriores e limites em docs/DESCOBRIR-EXCLUSAO.md e /root/.cache/gaucho-discover-delete/gates.json.
 
 23/10/2026 — Codex: exclusão Descobrir publicada por autorização de Anders. Deploy exit 0; health 200 local/público; auth DELETE 401/400; Chrome público 1440/390 com fixtures interceptadas, exit 0; 24 assets e worklet idênticos. Backup e limites em docs/DESCOBRIR-EXCLUSAO.md.
+
+## 2026-10-27 — Consolidação Git (Descobrir no painel, largura do painel, avatares, DeepSeek low)
+
+| Comando | Resultado |
+|---|---|
+| `npm test` | exit 0; 223 arquivos, 1.213 testes |
+| `npx tsc --noEmit` | exit 0 |
+| `npx eslint --ignore-pattern '.next-before-*/**'` | exit 0; 1 warning preexistente (`_content` em `CommandComposerContainerV2.test.tsx`) |
+| `npm ci` + `NEXT_PUBLIC_BASE_PATH=/chat npm run build` (cópia isolada) | exit 0; 43/43 páginas; build `HhhX-d4wUktJ5p6Si2U9G`; 2 avisos conhecidos de Edge em `instrumentation.ts` |
+| `git push --dry-run` com `GITHUB_TOKEN` | exit 0; com `GH_TOKEN`, 403 |
+
+Primeira execução de `npm run lint` interrompida após ~9 min: lintava o backup `.next-before-sc2-20260906T170822Z` dentro do repo. Sem suíte Playwright central configurada.

@@ -1763,3 +1763,181 @@ Comandos e resultados reais, todos no ambiente isolado, sem credenciais de provi
 Os três avisos de build são de instrumentação Edge e tracing Studio, nas mesmas fontes da release anterior. Captura mobile da confirmação de exclusão inspecionada. Harnesses encerraram suas instâncias e removeram seus dados sintéticos. `gates.json` e `browser-gates.json` registram códigos e durações; `preservation-check.json` registra a build publicada original, `lC8e60dlN4-pot2IHPGo4`. Nenhuma compilação no checkout vivo, restart, alteração de Apache ou escrita de dados pessoais.
 
 Ensaio de envio: Git HTTPS sem helper exit 128 (sessão sem credencial carregada). Carregada a credencial já existente, sem ler ou imprimir seu valor, e usada somente neste comando com `credential.helper=!gh auth git-credential`; conta confirmada como `Anderson-Barcellos`. Novo ensaio exit 128/HTTP 403, recusado pelo GitHub. SSH em BatchMode exit 255, `Permission denied (publickey)`. Não há autenticação alternativa no GitHub CLI configurada neste host. Nenhuma configuração global ou credencial alterada. Logs `push-dry-run.log`, `push-dry-run-authenticated.log` e `github-ssh-check.log`. Pedido de liberação da escrita apresentado a Anders; sincronização remota permanece bloqueada, enquanto o conjunto local fica validado para commit.
+
+## 2026-10-24 — Descobrir IA no painel operacional, pronta para revisão
+
+Anders aprovou implementar o plano `docs/plans/2026-10-24-descobrir-no-painel-operacional.md` após escolher **somente a nova aba**. Trabalho solo na worktree `/root/worktrees/gaucho-discover-context`, branch `codex/discover-context-panel`, base `992b68d`, preservando `/root/CHATGPT` (produção). Build candidata: `iiPplOHavquW_4ChQHFYC`. Não houve commit, push, deploy, restart ou escrita de dados privados.
+
+Resultado: abas Pulse · Descobrir · Notas · Rotinas no painel operacional; feed carregado sob demanda, cartões compactos com capa/assunto/título/data/resumo e leitura no lugar. A paleta abre a aba no painel adequado à tela. O atalho saiu dos rails normal/compacto; `DiscoverPanelV2`, estado exclusivo e CSS da antiga sobreposição foram removidos, com seus consumidores migrados. Página `/discover`, APIs, curadoria, autenticação, fontes, TTS, preferências e exclusões preservados. Arquitetura, AGENTS e BACKLOG atualizados na candidata.
+
+DECISÃO: compartilhar a seleção `ActivePanelTab` com `discover`, sem migração de persistência. Ampliar/reduzir usa a mesma árvore do painel; trocar aba ou fechar desmonta feed/player e encerra áudio. O painel inline só monta seu conteúdo no desktop, evitando uma segunda instância oculta nas telas menores. A paleta revela o painel inline no desktop; Sheet permanece para as telas menores. Mobile, inclusive paisagem curta com toque, usa toda a largura, sem herdar o limite `sm:max-w-sm` do primitivo.
+
+DECISÃO: o cenário 1100×440 com toque revelou que o rail `lg:block` ainda ocupava a largura enquanto os tokens já eram mobile, impedindo o acesso pelo Pulse. A montagem dos rails desktop/tablet agora respeita `useIsMobile`; o painel contextual inline também não monta nessa condição. Mudança necessária para o acesso real à nova aba em paisagem. O cenário final passou com painel em tela cheia, rolagem, áudio, paleta e rascunho preservado.
+
+Referência visual: foto Pulse fornecida por Anders. Cartões incorporados reutilizam densidade, capa horizontal, faixa de metadados, bordas e resumo curto; assunto/data de notícia substituem metadados de execução. Capturas desktop dark/light, mobile 390 dark/320 light e paisagem inspecionadas. A página independente mantém seu visual anterior.
+
+Evidências em `/root/.cache/gaucho-discover-context/evidence`:
+
+| Comando | Resultado final | Evidência |
+| --- | --- | --- |
+| `npm ci --no-audit --no-fund` | exit 0; 866 pacotes, lockfile preservado | `npm-ci.log` |
+| `NEXT_PUBLIC_BASE_PATH=/chat npx --no-install next typegen` | exit 0 | `typegen.log` |
+| `npm test` após a última mudança de código | exit 0; 223 arquivos, 1.213 testes, zero falhas/skips | `test-final-2.log` |
+| `npx --no-install tsc --noEmit` | exit 0 | `types-final-2.log`, `final-gates.json` |
+| `npm run lint` | exit 0; zero erros, um warning `_content` no teste do composer (já registrado na consolidação acima) | `lint-final.log`, `final-gates.json` |
+| `NEXT_PUBLIC_BASE_PATH=/chat NEXT_PUBLIC_APP_URL=https://sonaris.us/chat npm run build` | exit 0; 43/43 páginas, 56,38 s | `build-final-2.log`, `final-gates.json` |
+| `node scripts/qa-discover-panel.mjs` | exit 0; seis cenários: 1440×1000, 1280×900, 820×1180, 390×844, 320×740, 1100×440 com toque | `browser-panel-final.log`, `panel-final/results.json`, capturas em `panel-final/` |
+| `node scripts/qa-discover-delete.mjs` | exit 0; cinco cenários, página independente/painel, individual/lote, cancelar, erro/retry, persistência e DELETE anônimo 401 | `browser-delete.log`, `delete/results.json` |
+| `node scripts/qa-discover-controls.mjs` | exit 0; sete verificações: seis combinações largura/tema e preservação integral das matérias sintéticas | `browser-controls.log`, `controls/` |
+| `node --check scripts/qa-discover-panel.mjs`, `node --check scripts/qa-discover-delete.mjs`, `git diff --check` | exit 0 | conferência final |
+
+O painel passou identidade/URL/título, conteúdo visível, ausência de overlay do framework e erros de console inesperados, uma única instância do feed, expansão/redução sem refetch ou áudio extra, posição do parágrafo de leitura dentro de 3 px após ampliar/reduzir, rolagem sem overflow horizontal, troca de abas encerrando o player, preservação da mesma instância e do texto do composer, abertura pela paleta e ausência do link antigo. Exclusões testaram confirmação, cancelamento e retry sem perder seleção. Preferências testaram pausa persistida/runner bloqueado, busca manual, retomada e TTS somente ao tocar. `qa-discover-sidebar.mjs` ficou como compatibilidade para o novo harness.
+
+Histórico de ajustes de validação: os primeiros testes focados falharam em dois seletores ligados ao layout anterior; a primeira suíte completa apontou três expectativas antigas (link no rail e CSS da sobreposição), atualizadas para o contrato aprovado. Rodadas finais passaram. A primeira build (`build.log`, exit 1) recusou o symlink de `node_modules` apontando para fora da raiz Turbopack; foi substituído por instalação local pelo lockfile, sem mudar dependências do projeto. A primeira rodada de navegador (`browser-panel.log`, exit 1) identificou o problema de paisagem descrito acima; corrigido e validado em toda a matriz final. Build final mantém dois avisos Turbopack nas fontes não alteradas de instrumentação Edge e tracing Studio, já citados nas rodadas anteriores.
+
+QA com Chrome/Playwright porque Browser plugin não está disponível. URLs locais `http://127.0.0.1:3148/chat` (painel), `:3149/chat` (exclusão) e `:3147/chat` (preferências); autenticação sintética explícita, `GAUCHO_ISOLATED_RUNTIME=true`, dados exclusivos com cleanup e TTS/provedores simulados. As três portas foram conferidas livres antes e após a rodada; processos QA encerrados. Nenhum smoke pago nem dados reais. Os três harnesses Discover aplicáveis foram executados completos; smokes reais de provedores e Studio, fora do fluxo alterado, não foram executados. Safari/iPhone físico permanece sem validação.
+
+Revisão própria concluída: consumidores antigos removidos sem referências residuais em código, exports/imports conferidos, APIs e persistência preservadas. Checkout de produção segue limpo em `main`, com build `lC8e60dlN4-pot2IHPGo4`; candidata não publicada. DECISÃO: DeepSeek low da base versionada permanece na candidata e a versão viva mantém max; eventual publicação deve reconciliar esse desvio já documentado antes de promover a build. Entrega pronta para revisão; Anders decide fechamento e publicação separadamente.
+
+## 2026-10-24 — Publicação autorizada do Descobrir no painel operacional
+
+Anders pediu “Podemos dar o deploy meu guri?”. Autorização aplicada à entrega atual, com restart necessário de `chatgpt.service`. Fonte final `/root/.cache/gaucho-discover-context-deploy/source`, build `b4ktfW70_c06rmYJTV40E` (preservar diretório). Publicada em `https://sonaris.us/chat`; backup da build anterior `lC8e60dlN4-pot2IHPGo4` em `/root/.cache/gaucho-deploy/20261024T161910Z/next-before`. Backup das fontes afetadas em `/root/.cache/gaucho-discover-context-deploy/before-source`; manifesto em `evidence/publish.json` e patch em `source-change.patch`. Fontes da entrega promovidas à main preservando a base, sem commit ou push desta entrega.
+
+DECISÃO: evitar publicar o DeepSeek low junto da interface. A comparação do checkout com a fonte da build viva confirmou somente os seis arquivos DeepSeek já documentados, além de documentação. A candidata foi copiada da worktree aprovada, sem `.env*`, dados, Git ou builds anteriores; dependências locais pelo mesmo lockfile, reaproveitadas por hardlink. Os seis arquivos de comportamento/teste DeepSeek foram copiados da origem publicada anterior (`/root/worktrees/gaucho-discover-delete`), preservando max. O código versionado low não foi alterado na main nem na worktree da entrega. Reexecutados os gates e os três harnesses Discover completos nessa combinação exata.
+
+Evidências desta rodada em `/root/.cache/gaucho-discover-context-deploy/evidence`:
+
+| Comando/verificação | Resultado | Registro |
+| --- | --- | --- |
+| `NEXT_PUBLIC_BASE_PATH=/chat npx --no-install next typegen` | exit 0 | `typegen.log` |
+| `npm test` | exit 0; 223 arquivos, 1.213 testes, zero falhas/skips | `tests-final.log`, `gates-final.json` |
+| `npx --no-install tsc --noEmit` | exit 0 | `types.log`, `gates-final.json` |
+| `npm run lint` | exit 0; zero erros, um warning conhecido no teste do composer | `lint.log`, `gates-final.json` |
+| `NEXT_PUBLIC_BASE_PATH=/chat NEXT_PUBLIC_APP_URL=https://sonaris.us/chat npm run build` | exit 0; 43/43 páginas; 52,34 s | `build.log`, `gates-final.json` |
+| `node scripts/qa-discover-panel.mjs` | exit 0; seis cenários responsivos completos | `browser-panel.log`, `panel/results.json` |
+| `node scripts/qa-discover-delete.mjs` | exit 0; cinco cenários completos de exclusão | `browser-delete.log`, `delete/results.json` |
+| `node scripts/qa-discover-controls.mjs` | exit 0; sete verificações de preferências/TTS/preservação | `browser-controls.log`, `controls/` |
+| `python3 /root/.cache/gaucho-discover-context-deploy/publish.py` → `bash scripts/deploy.sh --from /root/.cache/gaucho-discover-context-deploy/source` | exit 0; backup, troca, restart e saúde local/pública aprovados | `deploy.log`, `publish.json` |
+| `node /root/.cache/gaucho-discover-context-deploy/verify-public.mjs` | exit 0; documento e assets públicos reais, 1440×1000 e 390×844, APIs redirecionadas para runtime sintético | `public-browser.log`, `public/results.json`, capturas `public/` |
+| Conferência dos assets públicos e PCM | 27 arquivos JS/CSS/fontes + `pcm-recorder.js` idênticos à candidata | `public/assets.json`, `post-deploy.json` |
+| Saúde local/pública após QA | HTTP 200, status healthy; build viva correta | `post-deploy.json` |
+| Acesso anônimo | `/chat` 307; `/chat/api/discover` 401 | conferência final |
+| `git apply --check`, `bash -n scripts/deploy.sh`, `git diff --check` | exit 0 | preparação e conferência final |
+
+Uma primeira execução da suíte recebeu por engano `NEXT_PUBLIC_BASE_PATH=/chat` junto do ambiente de build e falhou em três testes que esperam URLs sem prefixo. A invocação foi corrigida, sem editar ou enfraquecer testes; suíte completa final passou no ambiente padrão de teste, e build/runtime usaram `/chat`. Log inicial `tests.log`; repetição segura `tests-final.log`. Build mantém os avisos já registrados de instrumentação Edge/tracing Studio.
+
+Agendadores Pulse, Discover, SoundCase timer/path pausados somente na troca e restaurados ao estado ativo anterior, exit 0. Workers conferidos inativos antes do restart. Somente `chatgpt.service` reiniciado; ponte `chatgpt-transcription.service` permaneceu ativa com o mesmo PID (`bridge-before.pid` e `post-deploy.json`). Nenhuma alteração de portas, proxy, cookies, credenciais, dados privados ou reload Apache. `APACHE.md` atualizado somente como registro operacional, com backup em `evidence/APACHE-before.md`; preservada a entrada concorrente RecallMap.
+
+Probe público: autenticação real validada com sessão temporária gerada em memória a partir da configuração do processo, sem imprimir ou persistir credencial/token. Documento e assets vieram do serviço público; todas as APIs de conteúdo/ações foram interceptadas e atendidas pelo runtime isolado, com dados e TTS sintéticos. Não leu conversas/notícias reais nem criou/excluiu dados pessoais. Confirmados aba nova, ausência do atalho antigo, cartões, expansão/redução, ponto de leitura, áudio sob demanda, encerramento ao trocar aba, paleta e rascunho preservado; sem erros de console inesperados ou overflow. Captura mobile pública inspecionada. Instâncias QA encerradas e dados próprios removidos. Safari/iPhone físico e provedores reais continuam fora desta validação.
+
+GitHub: Anders informou que atualizou o token. Carregado `.bashrc` no processo do comando, conta confirmada como `Anderson-Barcellos`; remoto ainda em `b8cc7b9`, com exatamente dois commits pendentes já autorizados (`c59ea2d`, `992b68d`). Nova tentativa de enviá-los: exit 128, HTTP 403, `Permission ... denied`. API REST do repositório informa `push: true` para a conta, mas não comprovou autorização efetiva do token para Git. Sem token alternativo configurado no gh; nenhuma configuração global ou credencial alterada. Log `github-push.log`, sem segredos. Esta falha permanece restrita à sincronização GitHub e não afetou a publicação. A entrega nova permanece sem commit.
+
+Estado: publicada e pronta para revisão; Anders decide o fechamento. A candidata inicial com low permanece preservada na worktree de implementação; o runtime publicado usa max. Não executar novo build no checkout vivo para “sincronizar” essa diferença sem decidir o escopo da próxima publicação.
+
+## 2026-10-24 — Largura estável do painel direito e atalho mobile, validação
+
+Plano `docs/plans/2026-10-24-largura-painel-direito.md` aprovado explicitamente por Anders. Escolha confirmada: 500 px normais/640 px ampliados no desktop desde 1280 px, sem crescimento em 1536 px nem em monitores 3440/6880. Atalho Descobrir na faixa mobile feito por último. Anders autorizou também o deploy após validação para conferência. Execução solo em `/root/worktrees/gaucho-panel-width`, branch `codex/panel-width`, base `992b68d` mais o WIP publicado preservado. Nenhuma autorização de commit/push nesta rodada.
+
+DECISÃO: preservar o WIP da main e a diferença DeepSeek low (código versionado)/max (runtime). Worktree recebeu o estado da entrega anterior sem dados privados, envs ou build vivo; seis arquivos DeepSeek vieram da fonte publicada e permanecem max. Snapshot anterior aos ajustes em `/root/.cache/gaucho-panel-width/before`. Promoção futura deve usar somente o delta contra esse snapshot, sem reenviar alterações anteriores ou publicar low.
+
+Implementado: tokens 500/640 px, remoção do crescimento em 96rem, gaveta tablet até 500 px/96vw e mobile/paisagem em tela cheia. Coluna central como container: busca por ícone abaixo de 640 px disponíveis no desktop e boas-vindas empilhadas abaixo de 800 px, evitando a sobreposição observada na primeira inspeção de 1280/640. Composer mantém quebra dos controles. Faixa mobile com Nova conversa · Pulse · Descobrir · Notas · Rotinas, ícones alinhados, altura mínima 54 px e alvos medidos de pelo menos 44×44 px. Abaixo de 375 px, texto visível Nova, com nome acessível integral Nova conversa.
+
+DECISÃO: usar a intenção única de abertura existente para lateral/gaveta; o estado duplicado de recolhimento fazia o painel desaparecer na troca de breakpoint. `GauchoChatShellV2` preserva o comportamento anterior ao criar/trocar conversa: fechar gaveta nas telas menores, manter a lateral desktop. Essa integração foi coberta por criação de conversa exclusivamente sintética no harness, com cleanup integral.
+
+Evidências em `/root/.cache/gaucho-panel-width/evidence`:
+
+| Comando | Resultado final | Registro |
+| --- | --- | --- |
+| `NEXT_PUBLIC_BASE_PATH=/chat npx --no-install next typegen` | exit 0 | `typegen.log` |
+| Vitest focado (visual, frame e painel) | exit 0; 3 arquivos/25 testes | `focused.log` |
+| `npm test` | exit 0; 223 arquivos/1.213 testes, zero falhas/skips | `tests-final.log`, `gates-final.json` |
+| `npx --no-install tsc --noEmit` | exit 0 | `types-final.log` |
+| `npm run lint` | exit 0; zero erros, um warning conhecido `_content` no teste do composer | `lint-final.log` |
+| `NEXT_PUBLIC_BASE_PATH=/chat NEXT_PUBLIC_APP_URL=https://sonaris.us/chat npm run build` | exit 0; 43/43 páginas, 55,57 s; build `fdfE39mrwBScCEFiMLnzA` | `build-final.log` |
+| `node scripts/qa-discover-panel.mjs` | exit 0; 12 cenários completos | `browser-panel.log`, `panel/results.json` |
+| `node scripts/qa-discover-delete.mjs` | exit 0; 5 cenários completos | `browser-delete.log`, `delete/results.json` |
+| `node scripts/qa-discover-controls.mjs` | exit 0; 7 verificações | `browser-controls.log`, `controls/` |
+| `node --check scripts/qa-discover-panel.mjs`, `git diff --check` | exit 0 | conferência final |
+
+Matriz do painel: 1279, 1280, 1288, 1289, 1440, 1536, 3440, 6880, 820, 390, 320 e 1100×440 com toque. Medidas reais via bounding boxes: tablet 500 px, desktop 500/640 px e mobile largura integral. Transição 1280→1279→1280 mantém painel aberto e aba Rotinas. Ampliar/reduzir mantém feed/player e ponto de leitura dentro de 3 px, sem refetch/áudio extra; fechar/trocar aba encerra player, rascunho e instância do composer preservados. Busca compacta e controles sem cortes no chat estreito; boas-vindas sem sobreposição. Criar conversa sintética por Ctrl+Shift+N mantém lateral aberta. Atalho mobile abre diretamente Descobrir. Exclusões, confirmação, cancelamento, retry, preferências e TTS sob demanda preservados.
+
+Primeira rodada de gates passou; as inspeções focadas 1280/320 passaram, e a captura de 1280/640 revelou a necessidade de empilhar boas-vindas. Ajuste integrado e todos os gates repetidos no conjunto final. Build mantém os avisos conhecidos de instrumentação Edge/tracing Studio. Capturas de 1280 ampliado, navegação 320/390 e painel 6880 inspecionadas. Browser plugin indisponível: Chrome/Playwright, runtime isolado, auth/dados/áudio sintéticos, nenhuma chamada paga. Safari/iPhone físico não testados.
+
+Revisão própria: consumidores do estado de abertura conferidos; APIs, persistência, providers, autenticação, conteúdo dos cartões e navegação fora do objetivo preservados. Build de produção ainda `b4ktfW70_c06rmYJTV40E` nesta validação; pronta para promoção autorizada com backup, restart do chat e conferência pública. Não houve build no checkout vivo nem escrita de dados privados.
+
+## 2026-10-24 — Largura do painel e Descobrir mobile publicados
+
+Executada a publicação autorizada por Anders após os gates acima. Build `fdfE39mrwBScCEFiMLnzA`, origem `/root/worktrees/gaucho-panel-width` (preservar), substitui `b4ktfW70_c06rmYJTV40E`. Backup recuperável em `/root/.cache/gaucho-deploy/20261024T164558Z/next-before`; fontes/WIP anteriores à promoção em `/root/.cache/gaucho-panel-width/promote-before`. `delivery.patch` contém somente o delta desta correção contra o snapshot `before`, sem incluir novamente a entrega anterior nem alterar os seis arquivos DeepSeek low da main. A candidata mantém os seis arquivos max da fonte publicada. Não houve commit/push.
+
+`python3 /root/.cache/gaucho-panel-width/publish.py` → `bash /root/CHATGPT/scripts/deploy.sh --from /root/worktrees/gaucho-panel-width`: exit 0. O script conferiu os gates, a build viva, o WorkingDirectory real e os bytes de cada arquivo afetado para preservar WIP; `git apply --check` passou. Agendadores Pulse, Discover e SoundCase timer/path pausados somente na troca, workers conferidos inativos, fonte promovida, .next trocada com backup e somente chatgpt.service reiniciado. Agendadores restaurados, exit 0. Ponte `chatgpt-transcription.service` permaneceu ativa com o mesmo PID.
+
+Validação após publicação, toda com exit 0:
+
+- Saúde `http://127.0.0.1:3040/chat/api/health` e `https://sonaris.us/chat/api/health`: HTTP 200, status healthy, build viva correta; `post-deploy.json`.
+- `node /root/.cache/gaucho-panel-width/verify-public.mjs`: seis cenários públicos completos, 1280/1289/3440/6880/390/320 px; `public-browser.log`, `public/results.json` e capturas em `public/`.
+- Larguras desktop reais 500/640 px sem crescimento adicional, busca compacta, boas-vindas empilhadas e composer acomodado. Transição 1280→1279→1280 mantém abertura/aba; criação de conversa sintética preserva lateral aberta. Mobile tem cinco ações com alvos de pelo menos 44 px e acesso direto a Descobrir em tela cheia. Sem cortes, overflow ou erros inesperados de console.
+- Leitura, ponto do parágrafo, player, rascunho e paleta conferidos; 27 assets públicos JS/CSS/fontes idênticos à candidata (`public/assets.json`) e `pcm-recorder.js` idêntico ao disco (`post-deploy.json`).
+- `/chat/api/discover` sem sessão: 401. Sessão de QA público temporária gerada somente em memória a partir da configuração do processo, sem imprimir/persistir segredo ou token. Documento e assets vieram do serviço público; todas as APIs foram interceptadas e atendidas por runtime isolado autenticado, com dados/áudio sintéticos. Nenhuma conversa, notícia ou preferência real lida/escrita como fixture; nenhuma geração paga.
+
+Capturas públicas de navegação mobile e capturas locais do desktop ampliado/6880 inspecionadas. Instâncias QA encerradas e dados próprios removidos. Browser plugin indisponível; Chrome/Playwright. Safari/iPhone físico continua sem validação. Artefatos e scripts em `/root/.cache/gaucho-panel-width/evidence` e diretório pai; scripts gerados ficaram fora do repositório.
+
+AGENTS, BACKLOG, arquitetura e infraestrutura conciliados com a publicação. `/etc/apache2/APACHE.md` recebeu apenas registro operacional, preservando os registros anteriores; backup em `evidence/APACHE-before.md`. Sem alteração de porta, proxy, cookies, credenciais, units ou reload Apache. Após a build final, somente documentação foi alterada; `git diff --check` valida o formato. Entrega publicada e pronta para revisão; Anders confere o monitor e decide o fechamento.
+
+## 2026-10-24 — Correção do corte intermediário do painel direito
+
+Após conferir a primeira publicação, Anders esclareceu que o comportamento de gaveta observado aproximadamente entre 768 e 1200 px deveria continuar por toda a faixa de 1200 a 1280 px, evitando apertar os componentes do chat. DECISÃO: 1280 px inclusive permanece como gaveta sobreposta de até 500 px; a lateral fixa de 500/640 px começa em 1281 px. A autorização anterior de deploy para conferência permanece válida; commit e push continuam fora do escopo.
+
+Implementação isolada em `/root/worktrees/gaucho-panel-width`: `CONTEXT_SIDEBAR_BREAKPOINT=1281` centraliza a fronteira usada pela montagem e pelo fechamento ao criar/trocar conversa. As classes responsivas do cabeçalho, da lateral e do cabeçalho interno do painel usam explicitamente `min-[1281px]`, removendo a dependência do `xl` para este contrato. O harness passou a cobrir 1199, 1200, 1279, 1280 e 1281 px, inclusive a transição 1281→1280→1281 com aba, leitura, player e rascunho preservados.
+
+Validação antes da publicação:
+
+- `npm test -- app/globals.visual.test.ts components/workspace-v2/WorkspaceLayoutV2.test.tsx components/workspace-v2/ContextPanelV2.test.tsx`: 3 arquivos/25 testes, exit 0.
+- `NEXT_PUBLIC_BASE_PATH=/chat npx --no-install next typegen`: exit 0.
+- `npm test`: 223 arquivos/1.213 testes, exit 0.
+- `npx --no-install tsc --noEmit`: exit 0.
+- `npm run lint`: exit 0, zero erros e um warning anterior de `_content` em `CommandComposerContainerV2.test.tsx`.
+- `NEXT_PUBLIC_BASE_PATH=/chat NEXT_PUBLIC_APP_URL=https://sonaris.us/chat npm run build`: exit 0, 43/43 páginas, build `UlYEJzWzrGGpdZWHD-AZ-`; avisos conhecidos de instrumentação Edge/tracing Studio.
+- `node scripts/qa-discover-panel.mjs`: 15/15 cenários, exit 0; gaveta em 1199/1200/1279/1280, lateral 500/640 px desde 1281, sem cortes, overflow ou erros de console.
+- `node scripts/qa-discover-delete.mjs`: 5/5 cenários, exit 0.
+- `node scripts/qa-discover-sidebar.mjs`: 15/15 cenários integrados, exit 0.
+- `git diff --check`: exit 0.
+
+Browser plugin indisponível; Chrome/Playwright com runtime, autenticação, dados e áudio sintéticos, sem provider pago ou dados privados. Capturas de 1200, 1280 e 1281 px inspecionadas: as duas primeiras sobrepõem a gaveta sem reduzir o chat; 1281 monta a lateral fixa. Evidências em `/root/.cache/gaucho-panel-width/evidence/panel-breakpoint-final`, `delete-breakpoint-final` e `controls-breakpoint-final`. Instâncias encerradas e dados próprios removidos. Safari/iPhone físico não testados.
+
+Publicação executada com a autorização anterior de Anders para conferência. `bash scripts/deploy.sh --from /root/worktrees/gaucho-panel-width`: exit 0; build `UlYEJzWzrGGpdZWHD-AZ-` substituiu `fdfE39mrwBScCEFiMLnzA`, com backup recuperável em `/root/.cache/gaucho-deploy/20261024T170347Z/next-before`. Fontes promovidas somente nos consumidores do breakpoint, harness e documentos canônicos; WIP anterior e os seis arquivos DeepSeek low do checkout permaneceram byte a byte iguais ao HEAD, enquanto a candidata preservou o runtime max. Sem commit/push.
+
+Os quatro agendadores foram pausados durante a troca e retomados ativos. Apenas `chatgpt.service` reiniciou; `chatgpt-transcription.service` preservou o PID 18228. Saúde local/pública HTTP 200 healthy; `/chat/api/discover` anônimo 401. `node /root/.cache/gaucho-panel-width/verify-public.mjs`: 6/6 cenários públicos em 1200/1280/1281/3440/390/320 px, exit 0; gaveta em 1200/1280, lateral 500/640 em 1281/3440, mobile em tela cheia, sem cortes, overflow ou erros de console. O ensaio também preservou aba, ponto de leitura, player e rascunho na transição 1281→1280→1281. Os 27 assets públicos e `pcm-recorder.js` coincidem com a candidata. QA público roteou APIs para runtime isolado com fixtures sintéticas e sessão temporária somente em memória; nenhum dado privado foi usado como fixture.
+
+Sem mudança de porta, Apache, proxy, cookies, credenciais ou dados privados; não houve reload Apache. Instância QA encerrada, porta 3148 livre e dados sintéticos removidos. Evidências em `/root/.cache/gaucho-panel-width/evidence/public-breakpoint`, `breakpoint-gates.json` e `breakpoint-post-deploy.json`. Entrega publicada e pronta para nova conferência de Anders.
+
+## 2026-10-24 — Eliminação da sobreposição residual ao ampliar a janela
+
+Na conferência da build anterior, Anders observou que, ao crescer de 1280 para 1281 px com o painel aberto, a gaveta parecia abrir novamente sobre a lateral. A reprodução mostrou que o portal Radix permanecia por 300 ms na animação de saída enquanto a lateral fixa já estava montada. DECISÃO: abaixo do breakpoint o Sheet continua normal; ao entrar em 1281 px, a gaveta e o overlay recebem ocultação imediata pela media query e o Sheet é removido da árvore no ciclo seguinte. O estado global de abertura, aba ativa, leitura, player e rascunho não mudam.
+
+Arquivos de comportamento: `components/workspace-v2/WorkspaceLayoutV2.tsx` desmonta o Sheet fora da faixa intermediária e identifica conteúdo/overlay; `components/ui/sheet.tsx` aceita `overlayClassName` opcional sem alterar os demais consumidores; `scripts/qa-discover-panel.mjs` verifica que gaveta e overlay já estão invisíveis no mesmo quadro de 1280→1281 e que o portal desmonta depois. Plano e teste visual receberam o contrato correspondente.
+
+Após a última mudança de código: teste focado 2 arquivos/24 testes, typegen, `npx tsc --noEmit`, 223 arquivos/1.213 testes, lint sem erros, build 43/43 e `git diff --check`, todos exit 0. Build final `3J21jZ5MCLYeOKGSR5bqL`; avisos conhecidos de instrumentação Edge/tracing Studio. Chrome/Playwright isolado: matriz principal 15/15, exclusões 5/5 e matriz integrada 15/15. O teste inicial, deliberadamente mais estrito, falhou com `1 !== 0` ao exigir desmontagem DOM no mesmo quadro; a asserção foi corrigida para o contrato visual real — invisibilidade imediata e desmontagem subsequente — e então passou.
+
+Publicação autorizada pela continuidade da entrega: `bash scripts/deploy.sh --from /root/worktrees/gaucho-panel-width`, exit 0. Build anterior `UlYEJzWzrGGpdZWHD-AZ-`; backup `/root/.cache/gaucho-deploy/20261024T172502Z/next-before`. Somente `chatgpt.service` reiniciado. Quatro agendadores retomados ativos e ponte de ditado preservou PID 18228. Saúde local/pública HTTP 200.
+
+QA público com APIs, autenticação, dados e áudio sintéticos: 6/6 em 1200/1280/1281/3440/390/320 px, incluindo a invisibilidade imediata do resíduo e a desmontagem do portal em 1281. Aba Rotinas, matéria, ponto de leitura, player, rascunho, paleta e criação de conversa preservados; 27 assets e PCM idênticos à candidata, zero erro de console/overflow. Instância encerrada e fixtures removidas. Browser plugin indisponível; Safari/iPhone físico não testados. Sem Apache/reload, porta, proxy, cookies, credenciais, dados privados, commit ou push.
+
+## 2026-10-27 — Avatares de provider nos balões
+
+Anders pediu aumentar discretamente o avatar do assistente e diferenciá-lo conforme o provider que gerou a resposta. `Message` agora persiste o `modelId` efetivo após os fallbacks de quiz/documento/pesquisa; `MessageBubble` mapeia OpenAI, Anthropic/Claude, DeepSeek e Google/Gemini. O avatar cresceu de 26/32 px para 28/34 px. OpenAI mantém o ícone existente; os demais usam iniciais tipográficas neutras, sem copiar logo ou cores de marca. Mensagens antigas sem `modelId` mantêm o visual anterior.
+
+DECISÃO: OpenAI permite seu logo em contexto diretamente relacionado, seguindo o guia; Anthropic exige usos previamente aprovados e os termos DeepSeek restringem marcas/logos sem autorização. Não presumir uma política comum entre providers; usar identificadores tipográficos até haver autorização clara para os outros logos. Fontes consultadas: [OpenAI Design Guidelines](https://openai.com/brand/), [Anthropic Trademark Guidelines](https://www.anthropic.com/legal), [DeepSeek Terms of Use](https://cdn.deepseek.com/policies/en-US/deepseek-terms-of-use.html) e [Google Brand Resource Center](https://about.google/intl/ALL/brand-resource-center/).
+
+Validação de build na worktree `/root/worktrees/assistant-provider-avatars` (branch `codex/assistant-provider-avatars`, base `992b68d`): `NEXT_PUBLIC_BASE_PATH=/chat npm run build` exit 0 (TypeScript concluído, 43/43 páginas); avisos de instrumentação Edge e tracing do Studio. O lint focado e `git diff --check` também passaram exit 0 na worktree e no checkout principal. Duas tentativas preliminares de build descartadas por limitações do isolamento de dependências (symlink externo e resolução Monaco/webpack); a execução final foi pelo comando padrão com árvore de dependências hardlinkada. Sem testes da suíte ou inspeção em browser. Código aplicado ao checkout principal sem build/restart; não publicado. WIP anterior permanece preservado; sem commit/push.
+
+### Publicação dos avatares — 2026-10-27
+
+Anders autorizou o deploy. A origem `/root/worktrees/gaucho-panel-width` preserva o DeepSeek `max` da produção; a main local mantém separadamente o WIP `low`, que não foi incluído. `NEXT_PUBLIC_BASE_PATH=/chat npx --no-install next typegen`, `npx --no-install tsc --noEmit` e lint completo passaram; lint registrou um warning preexistente em `CommandComposerContainerV2.test.tsx`. A primeira execução da suíte herdou `/chat` e causou três falhas de expectativa de URL em testes existentes; repetição sem a variável passou: 223 arquivos, 1.213 testes, zero falhas. `NEXT_PUBLIC_BASE_PATH=/chat NEXT_PUBLIC_APP_URL=https://sonaris.us/chat npm run build`: exit 0, TypeScript concluído, 43/43 páginas; avisos conhecidos de `instrumentation.ts`/Edge e tracing de Studio. `git diff --check`: exit 0.
+
+`bash scripts/deploy.sh --from /root/worktrees/gaucho-panel-width`: exit 0; build `NA3hXvWqxXMoGrvOjAOKz` substituiu `3J21jZ5MCLYeOKGSR5bqL`, backup em `/root/.cache/gaucho-deploy/20261027T171232Z/next-before`. Somente `chatgpt.service` reiniciado; unidade ativa, health local e público HTTP 200. Timers Pulse/SoundCase/Discover, path SoundCase e serviço de transcrição ativos. Chrome público, com sessão temporária em memória e APIs/conversa interceptadas por fixtures sintéticas, verificou OpenAI, Anthropic/Claude, DeepSeek e Google/Gemini em 1440×960 (34 px) e 390×844 (28 px), zero erros de console; capturas `avatars-1440.png` e `avatars-390.png` e log em `/root/.cache/gaucho-panel-width/evidence/provider-avatar-20261027`. Sem dados pessoais como fixture, chamadas pagas, alteração Apache/porta/proxy/cookies/credenciais, commit ou push.
+
+## 2026-10-27 — Consolidação Git e sincronização com o GitHub
+
+Anders pediu limpar e sincronizar o git. Diagnóstico do 403 de 24/10: há dois tokens no ambiente; o `gh` usa o `GH_TOKEN` (permissão `metadata=read`), enquanto o `GITHUB_TOKEN` do `.bashrc` tem escrita. Push feito com `env -u GH_TOKEN` e `credential.helper=!gh auth git-credential` só na chamada; nenhuma config global ou token alterado. O main pendente correspondia à integração de `gaucho-panel-width`, `gaucho-discover-context` e `assistant-provider-avatars`, exceto os seis arquivos DeepSeek: DECISÃO de Anders, versionar `low`. A produção segue em `max` até o próximo deploy da main.
+
+Gates no checkout: `npm test` 223 arquivos/1.213 testes, `npx tsc --noEmit` e `npx eslint --ignore-pattern '.next-before-*/**'` exit 0 (1 warning preexistente em `CommandComposerContainerV2.test.tsx`). O `npm run lint` sem filtro passou de 9 min porque lintava `.next-before-sc2-20260906T170822Z` (968 MB, ignorado pelo git, mas não pelo eslint); a pasta foi para a faxina. Build isolada com `npm ci` + `NEXT_PUBLIC_BASE_PATH=/chat npm run build`: exit 0, 43/43 páginas, build `HhhX-d4wUktJ5p6Si2U9G`, dois avisos conhecidos de `instrumentation.ts`/Edge. Sem suíte Playwright central no repo; a interface já tinha sido validada nas entregas de 24 e 27/10. Remoção de worktrees, cópias e backups de deploy autorizada por Anders; o classificador do auto mode recusou o `rm -rf`, então a faxina foi entregue em script para ele executar.

@@ -53,7 +53,6 @@ export function CommandPalette() {
   const { open, setOpen } = useCommandPaletteContext();
   const { parameters, updateParameters } = useSettingsStore();
   const openContextPanel = useUIStore((state) => state.openContextPanel);
-  const openDiscoverPanel = useUIStore((state) => state.openDiscoverPanel);
   const startNewConversation = useStartNewConversation();
 
   const chatModels = getChatModels();
@@ -119,7 +118,7 @@ export function CommandPalette() {
               </Command.Item>
               <Command.Item
                 value="descobrir ia notícias feed"
-                onSelect={() => run(openDiscoverPanel)}
+                onSelect={() => run(() => openContextPanel("discover"))}
                 className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm aria-selected:bg-accent"
               >
                 <Newspaper className="size-4 shrink-0 text-muted-foreground" />
