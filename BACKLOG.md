@@ -36,6 +36,8 @@ Nova conferência em 2026-10-24 após Anders informar atualização do token: Ba
 
 Fechamento em 2026-10-27: o 403 vinha do `GH_TOKEN` só leitura que o `gh` prioriza; o `GITHUB_TOKEN` do `.bashrc` tem escrita (`env -u GH_TOKEN` + helper `gh auth git-credential` por chamada, sem alterar config global). Anders escolheu versionar o DeepSeek `low` do checkout; a build viva `NA3hXvWqxXMoGrvOjAOKz` ainda roda `max` até o próximo deploy a partir da main. Commit único com Descobrir no painel, largura do painel direito e avatares por provider, enviado junto de `c59ea2d` e `992b68d` em fast-forward. Gates: 223 arquivos/1.213 testes, tipos, lint (1 warning preexistente) e build isolada `HhhX-d4wUktJ5p6Si2U9G`. Faxina autorizada (worktrees, cópias de candidata, backups de deploy e `.next-before-sc2-*`) preparada em script e executada por Anders; os caminhos “(preservar)” citados acima e no `APACHE.md` passam a ser históricos, e o git main é a fonte de verdade.
 
+Publicação em 2026-10-27 à noite: logos SVG de Claude/DeepSeek nos avatares e DeepSeek `low`, build `v33VHEZLnntZ8uAp4lyOi`. A fonte `/root/.cache/gaucho-git-sync-20261027/source` sustenta a `.next` viva e fica fora da faxina; produção e git voltam a coincidir.
+
 #### Ditado ao vivo no chat e nas notas (`publicada`, 2026-10-23)
 
 Anders autorizou implementar o transplante do STT para o Gaúcho. Candidata isolada em `/root/worktrees/gaucho-ditado-realtime`; `useSpeechToText` transmite pelo worklet e ponte autenticada, preserva gravação em memória para fallback HTTP e cancela callbacks antigos. Chat mantém o rascunho e não envia ao parar; notas exibem prévia e salvam uma única captura. Falha ao salvar conserva texto copiável. Sem seletor de modelo nem mudança no TTS.

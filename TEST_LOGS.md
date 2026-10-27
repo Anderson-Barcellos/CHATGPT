@@ -451,3 +451,15 @@ npm test: 223 arquivos/1.213 testes, exit 0. npx --no-install tsc --noEmit, npm 
 | `git push --dry-run` com `GITHUB_TOKEN` | exit 0; com `GH_TOKEN`, 403 |
 
 Primeira execução de `npm run lint` interrompida após ~9 min: lintava o backup `.next-before-sc2-20260906T170822Z` dentro do repo. Sem suíte Playwright central configurada.
+
+## 2026-10-27 — Logos SVG Claude/DeepSeek nos avatares
+
+| Comando | Resultado |
+|---|---|
+| `npx vitest --run components/chat/MessageBubble.avatar.test.tsx` (RED) | 3 failed, 2 passed: Sonnet/Opus/DeepSeek sem `svg[aria-label]` |
+| idem (GREEN) | 5 passed |
+| `npm test` | exit 0; 224 arquivos, 1.218 testes |
+| `npx tsc --noEmit` | exit 0 |
+| `npx eslint --ignore-pattern '.next-before-*/**'` | exit 0; 1 warning preexistente |
+| `NEXT_PUBLIC_BASE_PATH=/chat npm run build` (cópia isolada) | exit 0; build `v33VHEZLnntZ8uAp4lyOi`; 3 avisos conhecidos |
+| Prévia estática Chrome 28/34 px, escuro/claro | logos legíveis |

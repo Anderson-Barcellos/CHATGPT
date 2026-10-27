@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState, useCallback, useRef, useEffect } from "react";
+import { memo, useState, useCallback, useRef, useEffect, type ComponentType } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { MessageContent } from "./MessageContent";
 import { ReasoningPanel } from "./ReasoningPanel";
@@ -17,7 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { OpenAIIcon } from "@/components/ui/icons";
+import { ClaudeIcon, DeepSeekIcon, OpenAIIcon } from "@/components/ui/icons";
 import { QuickActionsBar } from "@/components/chat/QuickActionsBar";
 import { useNotes } from "@/hooks/useNotes";
 import { StickyNote } from "lucide-react";
@@ -38,10 +38,13 @@ const USER_AVATAR_SRC = `${APP_BASE_PATH}/images/anders-avatar.png`;
 
 type AssistantProvider = "openai" | "anthropic" | "deepseek" | "google";
 
-const ASSISTANT_PROVIDER_BADGES: Record<AssistantProvider, { label: string; letter: string }> = {
-  openai: { label: "OpenAI", letter: "O" },
-  anthropic: { label: "Anthropic · Claude", letter: "A" },
-  deepseek: { label: "DeepSeek", letter: "D" },
+const ASSISTANT_PROVIDER_BADGES: Record<
+  AssistantProvider,
+  { label: string; letter: string; Icon?: ComponentType<{ className?: string }> }
+> = {
+  openai: { label: "OpenAI", letter: "O", Icon: OpenAIIcon },
+  anthropic: { label: "Anthropic · Claude", letter: "A", Icon: ClaudeIcon },
+  deepseek: { label: "DeepSeek", letter: "D", Icon: DeepSeekIcon },
   google: { label: "Google · Gemini", letter: "G" },
 };
 
@@ -205,8 +208,8 @@ export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDe
             </div>
           ) : (
             <div className="gc-message-avatar gc-message-avatar-inside gc-refined-accent-surface float-right ml-2 flex size-7 items-center justify-center rounded-[0.8rem] border shadow-[0_9px_26px_rgba(15,118,110,0.12)] md:size-[2.125rem] md:rounded-xl" title={assistantProviderBadge.label}>
-              {assistantProvider === "openai" ? (
-                <OpenAIIcon className="size-4 text-primary md:size-[1.125rem]" />
+              {assistantProviderBadge.Icon ? (
+                <assistantProviderBadge.Icon className="size-4 text-primary md:size-[1.125rem]" />
               ) : (
                 <span aria-hidden="true" className="flex size-[1.125rem] items-center justify-center rounded-full bg-[var(--gc-surface-control)] text-[0.7rem] font-semibold leading-none text-foreground md:size-[1.25rem] md:text-xs">
                   {assistantProviderBadge.letter}
