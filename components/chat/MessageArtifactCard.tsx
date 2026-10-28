@@ -58,20 +58,20 @@ export function MessageArtifactCard({
               {isQuizArtifact ? "Quiz" : "Documento"}
             </Badge>
             {isDocumentModeArtifact && (
-              <Badge variant="outline" className="border-primary/20 bg-primary/10 text-nano uppercase tracking-wide text-primary">
+              <Badge variant="outline" className="border-primary/20 bg-primary/10 uppercase tracking-wide text-primary">
                 Modo documento
               </Badge>
             )}
             {artifact.kind === "document" ? (
-              <Badge variant="outline" className="border-[color:var(--gc-border-soft)] bg-background/50 text-nano uppercase tracking-wide text-muted-foreground">
+              <Badge variant="outline" className="border-[color:var(--gc-border-soft)] bg-background/50 uppercase tracking-wide text-muted-foreground">
                 {artifact.type === "html" ? "HTML" : "Markdown"}
               </Badge>
             ) : (
-              <Badge variant="outline" className="border-[color:var(--gc-border-soft)] bg-background/50 text-nano uppercase tracking-wide text-muted-foreground">
+              <Badge variant="outline" className="border-[color:var(--gc-border-soft)] bg-background/50 uppercase tracking-wide text-muted-foreground">
                 {artifact.quiz.session.status === "submitted" ? "Corrigido" : "Em andamento"}
               </Badge>
             )}
-            <Badge variant="outline" className="border-[color:var(--gc-border-soft)] bg-background/50 text-nano text-muted-foreground">
+            <Badge variant="outline" className="border-[color:var(--gc-border-soft)] bg-background/50 text-muted-foreground">
               {isQuizArtifact ? `${lineCount} questoes` : `${lineCount} linhas`}
             </Badge>
           </div>

@@ -59,7 +59,10 @@
   --text-micro: var(--gc-text-micro);
   --text-caption: var(--gc-text-caption);
   --text-body-sm: var(--gc-text-body-sm);
+  --text-body: var(--gc-text-body);
   --text-h3: var(--gc-text-h3);
+  --text-h2: var(--gc-text-h2);
+  --text-h1: var(--gc-text-h1);
 
   /* ── Tracking utilities ──────────────────────── */
   --tracking-label: var(--gc-tracking-label);
@@ -386,13 +389,18 @@ body {
 }
 
 /* Chat-only type and motion contract. Portals opt in with the same class. */
+/* Régua fluida: cada degrau vai do mínimo em 768px ao máximo em 1920px de
+   viewport, por min + (max − min) · (100vw − 768px) / 1152px. text-xs e
+   text-sm do Tailwind seguem a mesma régua; o mobile fixa os seus abaixo. */
 .gc-chat-ui {
-  --gc-text-nano: 0.6875rem;
-  --gc-text-micro: 0.75rem;
-  --gc-text-caption: 0.8125rem;
-  --gc-text-body-sm: 0.875rem;
-  --gc-text-body: 0.9375rem;
-  --gc-text-h3: 1rem;
+  --gc-text-nano: clamp(0.71875rem, 0.6771rem + 0.0868vw, 0.78125rem);
+  --gc-text-micro: clamp(0.75rem, 0.6875rem + 0.1302vw, 0.84375rem);
+  --gc-text-caption: clamp(0.8125rem, 0.75rem + 0.1302vw, 0.90625rem);
+  --gc-text-body-sm: clamp(0.875rem, 0.8125rem + 0.1302vw, 0.96875rem);
+  --gc-text-body: clamp(0.9375rem, 0.8542rem + 0.1736vw, 1.0625rem);
+  --gc-text-h3: clamp(1rem, 0.8958rem + 0.217vw, 1.15625rem);
+  --text-xs: var(--gc-text-micro);
+  --text-sm: var(--gc-text-body-sm);
   --gc-tracking-label: 0.1em;
   --gc-tracking-eyebrow: 0.14em;
   font-family: "Lexend", var(--font-geist-sans);
@@ -976,6 +984,8 @@ body {
     --gc-text-body-sm: 0.875rem;
     --gc-text-body: 0.875rem;
     --gc-text-h3: 0.9375rem;
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
   }
 }
 

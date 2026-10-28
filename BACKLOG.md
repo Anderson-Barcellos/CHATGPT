@@ -2,6 +2,12 @@
 
 ## Estado operacional
 
+#### Régua tipográfica fluida e painel operacional legível (`publicada, pronta para revisão`, 2026-10-28)
+
+Pedido de Anders: fontes do painel operacional pequenas demais frente ao resto no desktop. `.gc-chat-ui` virou régua `clamp()` de 768→1920 px (nano 11,5→12,5 · micro 12→13,5 · caption 13→14,5 · body-sm 14→15,5 · body 15→17 · h3 16→18,5); `text-xs`/`text-sm` ligados à régua; `@theme` ganhou `text-body`/`h2`/`h1` (o `md:text-body` do balão era no-op); mobile fixo. Painel: conteúdo em caption, metadado em micro, seções em body-sm, rótulos em nano. `cn()` estendido: o tailwind-merge lia os tokens como cor e os apagava. DECISÃO: fora do painel, tokens que já eram apagados foram removidos para o render ficar idêntico. Títulos do markdown em `em`. Detalhe em `docs/ARCHITECTURE.md` (Régua tipográfica fluida) e `TEST_LOGS.md`.
+
+Gates no checkout: 1.233 testes, tsc e lint exit 0; build isolado `jisCdWPw4ebvobz44r3xU` em `/root/.cache/gaucho-typography/source`; QA Playwright em 5 larguras, capturas em `/root/.cache/gaucho-typography/qa/shots`. Publicada por autorização de Anders: build `jisCdWPw4ebvobz44r3xU` (antes `v33VHEZLnntZ8uAp4lyOi`), origem `/root/.cache/gaucho-typography/source` (preservar), backup `/root/.cache/gaucho-deploy/20261028T133750Z/next-before`; health local/público 200 e CSS público idêntico. Sem commit/push; Safari/iPhone físico não testados. Observação fora de escopo: pílula de status da execução Pulse mostra o valor cru `completed`.
+
 #### Largura estável do painel direito e atalho mobile (`pronta para revisão`, 2026-10-24)
 
 Plano `docs/plans/2026-10-24-largura-painel-direito.md` aprovado por Anders; publicação autorizada depois da implementação para conferência. Worktree solo `/root/worktrees/gaucho-panel-width`, branch `codex/panel-width`, com WIP da entrega publicada preservado como base. Após a primeira conferência pública, Anders corrigiu o corte: a gaveta de até 500 px continua até 1280 px inclusive, para não comprimir o chat; a lateral fixa de 500/640 px entra em 1281 px, sem aumento em 1536 px. Mobile/paisagem permanecem em tela cheia. Faixa mobile Nova conversa · Pulse · Descobrir · Notas · Rotinas.

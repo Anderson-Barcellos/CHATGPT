@@ -91,7 +91,7 @@ export function ArtifactPreviewSheet({ artifact, onClose }: ArtifactPreviewSheet
                   {artifact.title}
                 </SheetTitle>
                 <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                  <SheetDescription className="text-micro text-muted-foreground">
+                  <SheetDescription className="text-muted-foreground">
                     {artifact.kind === "quiz" ? "Quiz interativo" : "Pré-visualização A4"}
                   </SheetDescription>
                   <Badge

@@ -134,7 +134,7 @@ export function PulseAudioControls({ run }: { run: PulseRun }) {
         onClick={() => setAudioPlayerOpen(true)}
         title="Abrir player de áudio"
         aria-label="Abrir player de áudio"
-        className="h-7 rounded-md px-2 text-micro md:text-nano"
+        className="h-7 rounded-md px-2"
       >
         <Volume2 className="size-3" />
         Áudio
@@ -205,7 +205,7 @@ function PulseRunCard({
 
       {shouldShowRoutineTitle && (
         <div className="border-y border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-3 py-1.5">
-          <p className="truncate text-[10px] font-medium uppercase text-muted-foreground/75">
+          <p className="truncate text-nano font-medium uppercase text-muted-foreground/75">
             Rotina · {routineTitle}
           </p>
         </div>
@@ -214,10 +214,10 @@ function PulseRunCard({
       <div className="min-w-0 p-3">
         <div className="mb-2 flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h3 className="line-clamp-2 text-xs font-semibold text-foreground">
+            <h3 className="line-clamp-2 text-caption font-semibold text-foreground">
               {displayTitle}
             </h3>
-            <p className="mt-1 text-nano text-muted-foreground">
+            <p className="mt-1 text-micro text-muted-foreground">
               {run.status === "completed"
                 ? `Concluido ${formatDateTime(run.completedAt)}`
                 : run.status === "running"
@@ -227,14 +227,14 @@ function PulseRunCard({
                     : "Na fila"}
             </p>
             {run.modelUsed && (
-              <p className="mt-1 text-nano font-medium text-primary/80">
+              <p className="mt-1 text-micro font-medium text-primary/80">
                 {pulseModelLabel(run.modelUsed, run.reasoningEffort)}
               </p>
             )}
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <span
-              className={`rounded-full px-2 py-1 text-nano ${
+              className={`rounded-full px-2 py-1 text-micro ${
                 run.status === "completed"
                   ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
                   : run.status === "failed"
@@ -266,20 +266,20 @@ function PulseRunCard({
         </div>
 
         {run.status === "running" && (
-          <p className="flex items-center gap-2 text-micro text-muted-foreground">
+          <p className="flex items-center gap-2 text-caption text-muted-foreground">
             <LoaderCircle className="size-3.5 animate-spin" />
             O Gaucho esta pesquisando, escrevendo e gerando a abertura visual.
           </p>
         )}
 
         {!isExpanded && run.error && (
-          <p className="mb-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-micro text-rose-700 dark:text-rose-300">
+          <p className="mb-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-caption text-rose-700 dark:text-rose-300">
             {run.error}
           </p>
         )}
 
         {!isExpanded && run.content && (
-          <p className="line-clamp-3 text-nano leading-relaxed text-muted-foreground/85">
+          <p className="line-clamp-3 text-caption leading-relaxed text-muted-foreground/85">
             {run.content}
           </p>
         )}
@@ -287,7 +287,7 @@ function PulseRunCard({
         {isExpanded && (
           <div className="mt-3 border-t border-[color:var(--gc-border-soft)] pt-3">
             {run.error && (
-            <p className="mb-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-micro text-rose-700 dark:text-rose-300">
+            <p className="mb-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-caption text-rose-700 dark:text-rose-300">
               {run.error}
             </p>
             )}
@@ -295,7 +295,7 @@ function PulseRunCard({
             {run.content && (
               <ChatMarkdown
                 content={run.content}
-                className="text-micro leading-relaxed md:text-xs"
+                className="text-caption leading-relaxed md:text-caption"
               />
             )}
 
@@ -308,7 +308,7 @@ function PulseRunCard({
                     target="_blank"
                     rel="noreferrer"
                     onClick={(event) => event.stopPropagation()}
-                    className="rounded-full border border-[color:var(--gc-border-soft)] px-2 py-1 text-nano text-primary hover:bg-primary/10"
+                    className="rounded-full border border-[color:var(--gc-border-soft)] px-2 py-1 text-micro text-primary hover:bg-primary/10"
                   >
                     {citation.title || "Fonte"}
                   </a>
@@ -394,12 +394,12 @@ export function PulseActivityPanelV2() {
   return (
     <section className="space-y-2">
       <div className="flex items-center justify-between">
-        <h3 className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+        <h3 className="flex items-center gap-1.5 text-xs md:text-body-sm font-semibold text-foreground">
           <Newspaper className="size-3.5 text-primary" />
           Ultimas geracoes Pulse
         </h3>
         <div className="flex items-center gap-2">
-          <span className="text-nano text-muted-foreground">{runs.length}</span>
+          <span className="text-micro text-muted-foreground">{runs.length}</span>
           <Button
             type="button"
             size="icon-xs"
@@ -415,7 +415,7 @@ export function PulseActivityPanelV2() {
       </div>
 
       {loadError && (
-        <p className="flex gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-micro text-rose-700 dark:text-rose-300">
+        <p className="flex gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-caption text-rose-700 dark:text-rose-300">
           <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
           {loadError}
         </p>
@@ -432,7 +432,7 @@ export function PulseActivityPanelV2() {
           />
         ))
       ) : (
-        <p className="rounded-xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-3 py-4 text-micro text-muted-foreground">
+        <p className="rounded-xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-3 py-4 text-caption text-muted-foreground">
           As execucoes automaticas vao aparecer aqui.
         </p>
       )}
@@ -479,21 +479,21 @@ function PulseTaskCard({
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-lg">{task.emoji}</span>
-            <h3 className="truncate text-xs font-semibold text-foreground">
+            <h3 className="truncate text-caption font-semibold text-foreground">
               {task.title}
             </h3>
           </div>
-          <p className="mt-1 flex items-center gap-1 text-nano text-muted-foreground">
+          <p className="mt-1 flex items-center gap-1 text-micro text-muted-foreground">
             <CalendarClock className="size-3" />
             {describeSchedule(task.schedule)} · proxima {formatDateTime(task.nextRunAt)}
           </p>
-          <p className="mt-1 text-nano font-medium text-primary/80">
+          <p className="mt-1 text-micro font-medium text-primary/80">
             {pulseModelLabel(task.model)}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <span
-            className={`rounded-full px-2 py-1 text-nano ${
+            className={`rounded-full px-2 py-1 text-micro ${
               task.status === "active"
                 ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
                 : "bg-amber-500/10 text-amber-700 dark:text-amber-300"
@@ -524,7 +524,7 @@ function PulseTaskCard({
 
       {isExpanded && (
         <div className="mt-3 border-t border-[color:var(--gc-border-soft)] pt-3">
-          <p className="text-nano leading-relaxed text-muted-foreground/85">
+          <p className="text-caption leading-relaxed text-muted-foreground/85">
             {task.prompt}
           </p>
 
@@ -537,7 +537,7 @@ function PulseTaskCard({
                 stopCardToggle(event);
                 onToggleStatus(task);
               }}
-              className="h-7 rounded-md px-2 text-nano"
+              className="h-7 rounded-md px-2"
             >
               {task.status === "active" ? (
                 <Pause className="size-3" />
@@ -554,7 +554,7 @@ function PulseTaskCard({
                 onRun(task.id);
               }}
               disabled={isRunning}
-              className="h-7 rounded-md px-2 text-nano"
+              className="h-7 rounded-md px-2"
             >
               {isRunning ? (
                 <LoaderCircle className="size-3 animate-spin" />
@@ -764,11 +764,11 @@ export function PulsePanelV2() {
         <section className="gc-clinical-card rounded-2xl border border-[color:var(--gc-border)] p-3 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
           <div className="mb-3 flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h3 className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+              <h3 className="flex items-center gap-1.5 text-xs md:text-body-sm font-semibold text-foreground">
                 <Sparkles className="size-3.5 text-primary" />
                 Nova rotina Pulse
               </h3>
-              <p className="mt-1 text-nano text-muted-foreground">
+              <p className="mt-1 text-caption text-muted-foreground">
                 Descreve uma tarefa recorrente; o Gaucho extrai a agenda.
               </p>
             </div>
@@ -798,7 +798,7 @@ export function PulsePanelV2() {
                 size="xs"
                 variant="ghost"
                 onClick={() => setPrompt(NEUROPSYCH_PRESET)}
-                className="h-7 rounded-md px-2 text-nano"
+                className="h-7 rounded-md px-2"
               >
                 <Plus className="size-3" />
                 Preset neuropsiquiatria
@@ -808,7 +808,7 @@ export function PulsePanelV2() {
                 size="xs"
                 onClick={() => void handlePropose()}
                 disabled={isProposing}
-                className="h-7 rounded-md px-2 text-nano"
+                className="h-7 rounded-md px-2"
               >
                 {isProposing ? (
                   <LoaderCircle className="size-3 animate-spin" />
@@ -823,7 +823,7 @@ export function PulsePanelV2() {
           {proposal && form && (
             <div className="mt-3 space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-2.5">
               {!proposal.canCreate && proposal.missingFields.length > 0 && (
-                <p className="flex gap-2 text-nano text-amber-700 dark:text-amber-300">
+                <p className="flex gap-2 text-caption text-amber-700 dark:text-amber-300">
                   <AlertTriangle className="mt-0.5 size-3 shrink-0" />
                   Completa: {proposal.missingFields.join(", ")}.
                 </p>
@@ -851,7 +851,7 @@ export function PulsePanelV2() {
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <label className="block space-y-1 text-nano text-muted-foreground">
+                <label className="block space-y-1 text-micro text-muted-foreground">
                   <span>Frequencia</span>
                   <select
                     value={form.recurrenceType}
@@ -872,7 +872,7 @@ export function PulsePanelV2() {
                     <option value="monthly">Mensal</option>
                   </select>
                 </label>
-                <label className="block space-y-1 text-nano text-muted-foreground">
+                <label className="block space-y-1 text-micro text-muted-foreground">
                   <span>Horario</span>
                   <Input
                     type="time"
@@ -887,7 +887,7 @@ export function PulsePanelV2() {
                 </label>
               </div>
 
-              <label className="block space-y-1 text-nano text-muted-foreground">
+              <label className="block space-y-1 text-micro text-muted-foreground">
                 <span>Modelo da rotina</span>
                 <select
                   value={form.model}
@@ -904,13 +904,13 @@ export function PulsePanelV2() {
                     <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
                 </select>
-                <span className="block text-[10px] text-muted-foreground/75">
+                <span className="block text-micro text-muted-foreground/75">
                   Todos usam reasoning medium e verbosity high; a escolha fica salva nesta rotina.
                 </span>
               </label>
 
               {form.recurrenceType === "weekly" && (
-                <label className="block space-y-1 text-nano text-muted-foreground">
+                <label className="block space-y-1 text-micro text-muted-foreground">
                   <span>Dia da semana</span>
                   <select
                     value={form.weekday}
@@ -931,7 +931,7 @@ export function PulsePanelV2() {
               )}
 
               {form.recurrenceType === "monthly" && (
-                <label className="block space-y-1 text-nano text-muted-foreground">
+                <label className="block space-y-1 text-micro text-muted-foreground">
                   <span>Dia do mes</span>
                   <Input
                     type="number"
@@ -966,7 +966,7 @@ export function PulsePanelV2() {
                   size="xs"
                   onClick={() => void handleCreate()}
                   disabled={isCreating}
-                  className="h-7 rounded-md px-2 text-nano"
+                  className="h-7 rounded-md px-2"
                 >
                   {isCreating ? (
                     <LoaderCircle className="size-3 animate-spin" />
@@ -981,7 +981,7 @@ export function PulsePanelV2() {
         </section>
 
         {loadError && (
-          <p className="flex gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-micro text-rose-700 dark:text-rose-300">
+          <p className="flex gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-caption text-rose-700 dark:text-rose-300">
             <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
             {loadError}
           </p>
@@ -989,8 +989,8 @@ export function PulsePanelV2() {
 
         <section className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold text-foreground">Rotinas</h3>
-            <span className="text-nano text-muted-foreground">{tasks.length}</span>
+            <h3 className="text-xs md:text-body-sm font-semibold text-foreground">Rotinas</h3>
+            <span className="text-micro text-muted-foreground">{tasks.length}</span>
           </div>
           {tasks.length > 0 ? (
             tasks.map((task) => (
@@ -1006,7 +1006,7 @@ export function PulsePanelV2() {
               />
             ))
           ) : (
-            <p className="rounded-xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-3 py-4 text-micro text-muted-foreground">
+            <p className="rounded-xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-3 py-4 text-caption text-muted-foreground">
               Nenhuma rotina Pulse ainda.
             </p>
           )}

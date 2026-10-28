@@ -463,3 +463,29 @@ Primeira execução de `npm run lint` interrompida após ~9 min: lintava o backu
 | `npx eslint --ignore-pattern '.next-before-*/**'` | exit 0; 1 warning preexistente |
 | `NEXT_PUBLIC_BASE_PATH=/chat npm run build` (cópia isolada) | exit 0; build `v33VHEZLnntZ8uAp4lyOi`; 3 avisos conhecidos |
 | Prévia estática Chrome 28/34 px, escuro/claro | logos legíveis |
+
+## 2026-10-28 — Régua tipográfica fluida do shell e painel operacional
+
+| Comando | Resultado |
+|---|---|
+| `npx vitest --run app/globals.visual.test.ts` (RED) | 11 failed, 17 passed: tokens sem `clamp()`, `text-xs`/`text-sm` soltos, `text-body`/`h2`/`h1` fora do `@theme`, mobile sem `--text-xs`, título do painel em `text-xs`, `text-[10px]` no Pulse |
+| idem após a régua no CSS | 2 failed (título e `text-[10px]`), 26 passed |
+| `npx vitest --run lib/utils.test.ts` (RED) | 2 failed: `cn("text-nano text-muted-foreground")` → `text-muted-foreground`; `cn("text-xs","text-caption")` mantinha os dois |
+| idem (GREEN, `extendTailwindMerge`) | 2 passed |
+| `npx vitest --run app/globals.visual.test.ts lib/utils.test.ts` após passe no painel | 30 passed |
+| `npm test` (1ª) | 1 failed, 1.230 passed: `PulsePanelV2.test.tsx` fixava `text-micro` no botão Áudio (relacionado; contrato novo é `text-xs` do Button) |
+| `npm test` (final) | exit 0; 225 arquivos, 1.231 testes |
+| `npx tsc --noEmit` | exit 0 |
+| `npx eslint --ignore-pattern '.next-before-*/**'` | exit 0; 1 warning preexistente (`_content` em `CommandComposerContainerV2.test.tsx`) |
+| `npm ci` + `NEXT_PUBLIC_BASE_PATH=/chat npm run build` (cópia `/root/.cache/gaucho-typography/source`) | exit 0; build `w44WjVMOOcMcO0_rZRwgd`; CSS compilado com `md\:text-body` |
+| QA Playwright (cópia isolada, porta 3148, dados sintéticos; script `/root/.cache/gaucho-typography/qa/qa-typography.mjs`) | 1024/1280/1440/1920/390: régua conforme; 0 erro de console, 0 rede externa, sem transbordo; 3 quebras de hierarquia (`###` < corpo a partir de ~1344 px, corpo Pulse expandido > título do cartão, seções > título do painel no mobile) |
+| `npx vitest --run components/chat/chatMarkdownRenderer.test.tsx` (RED títulos em `em`) | 1 failed, 2 passed |
+| idem (GREEN) | 3 passed |
+| `globals.visual.test.ts` hierarquia do painel (RED → GREEN) | 1 failed, 28 passed → 70 passed (com workspace-v2 e discover) |
+| `npm test` (final) | exit 0; 225 arquivos, 1.233 testes |
+| `npx tsc --noEmit` / `npx eslint --ignore-pattern '.next-before-*/**'` | exit 0 / exit 0, 1 warning preexistente |
+| Build isolado final | exit 0; build `jisCdWPw4ebvobz44r3xU` |
+| QA Playwright repetida na build final | exit 0; `###` 17,7/18,5/19,4 px contra corpo 15,4/16,2/17 (1024/1440/1920); corpo expandido = título do cartão; mobile 390 igual ao anterior (corpo 14, `###` 16, seções e título do painel 12); 0 erro, cleanup ok |
+| `bash scripts/deploy.sh --from /root/.cache/gaucho-typography/source` | exit 0; `jisCdWPw4ebvobz44r3xU` publicada; health local/público 200; CSS público sha256 = local; `/chat` anônimo 307 |
+| `npm test` antes do commit (1ª) | 1 failed, 1.232 passed: timeout de 5 s em `lib/server/soundcase/jobs.test.ts` ("resumes only invalid completed chunks"), arquivo não tocado, load average 5,6 — instabilidade, não regressão |
+| `npx vitest --run lib/server/soundcase/jobs.test.ts` / `npm test` (repetição) | 20 passed / exit 0, 225 arquivos, 1.233 testes; tsc, eslint e `git diff --check` exit 0 |

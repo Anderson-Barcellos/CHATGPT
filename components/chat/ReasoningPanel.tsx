@@ -122,7 +122,7 @@ export function ReasoningPanel({ message }: ReasoningPanelProps) {
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/[0.06] px-2.5 py-1 text-micro text-foreground/70 transition-colors hover:bg-primary/[0.1] hover:text-foreground md:text-micro"
+            "inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/[0.06] px-2.5 py-1 text-foreground/70 transition-colors hover:bg-primary/[0.1] hover:text-foreground md:text-micro"
           )}
         >
           {isThinking ? (

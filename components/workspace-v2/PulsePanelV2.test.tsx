@@ -32,7 +32,9 @@ describe("Pulse audio controls", () => {
     const markup = renderToStaticMarkup(<PulseAudioControls run={run} />);
 
     expect(markup.match(/title="Abrir player de áudio"/g)).toHaveLength(1);
-    expect(markup).toContain("text-micro");
+    // Botão h-7 herda o text-xs do Button, ligado à régua fluida do shell.
+    expect(markup).toContain("text-xs");
+    expect(markup).not.toMatch(/text-(?:nano|micro)\b/);
     expect(markup).not.toContain("-15s");
     expect(markup).not.toContain("+15s");
     expect(markup).not.toContain("Ouvir");

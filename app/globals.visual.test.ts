@@ -139,6 +139,94 @@ describe("Gaucho Chat visual contract", () => {
     expect(css).not.toMatch(/\[data-workspace-region="context"\]\[data-collapsed="true"\]\s*\{[^}]*width/);
   });
 
+  describe("régua tipográfica fluida do shell", () => {
+    const remPx = 16;
+    const chatUiBlock =
+      css.match(/\/\* Chat-only type and motion contract[^*]*\*\/\s*(?:\/\*[\s\S]*?\*\/\s*)*\.gc-chat-ui\s*\{([^}]*)\}/)?.[1] ?? "";
+    const mobileChatUiBlock =
+      css.match(/@media \(max-width: 767px\), \(\(max-height: 500px\) and \(pointer: coarse\)\) \{[\s\S]*?\.gc-chat-ui\s*\{([^}]*)\}/)?.[1] ?? "";
+    const themeBlock = css.match(/@theme inline\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
+
+    // Alvos em px: [token, mínimo em 768px, máximo em 1920px].
+    const ladder: Array<[string, number, number]> = [
+      ["nano", 11.5, 12.5],
+      ["micro", 12, 13.5],
+      ["caption", 13, 14.5],
+      ["body-sm", 14, 15.5],
+      ["body", 15, 17],
+      ["h3", 16, 18.5],
+    ];
+
+    it.each(ladder)("interpola --gc-text-%s de %spx (768) a %spx (1920) com clamp()", (token, minPx, maxPx) => {
+      const value = chatUiBlock.match(new RegExp(`--gc-text-${token}:\\s*([^;]+);`))?.[1] ?? "";
+      const parts = value.match(
+        /^clamp\(\s*([\d.]+)rem,\s*([\d.]+)rem \+ ([\d.]+)vw,\s*([\d.]+)rem\s*\)$/
+      );
+
+      expect(parts, `--gc-text-${token}: ${value}`).not.toBeNull();
+      const [, min, base, slope, max] = parts!.map(Number);
+      const at = (viewport: number) => base * remPx + (slope * viewport) / 100;
+
+      expect(min * remPx).toBeCloseTo(minPx, 2);
+      expect(max * remPx).toBeCloseTo(maxPx, 2);
+      expect(Math.abs(at(768) - minPx)).toBeLessThan(0.05);
+      expect(Math.abs(at(1920) - maxPx)).toBeLessThan(0.05);
+    });
+
+    it("liga text-xs e text-sm do Tailwind à mesma régua dentro do shell", () => {
+      expect(chatUiBlock).toMatch(/--text-xs:\s*var\(--gc-text-micro\);/);
+      expect(chatUiBlock).toMatch(/--text-sm:\s*var\(--gc-text-body-sm\);/);
+    });
+
+    it("registra os degraus body, h2 e h1 como utilitários (md:text-body do balão)", () => {
+      expect(themeBlock).toMatch(/--text-body:\s*var\(--gc-text-body\);/);
+      expect(themeBlock).toMatch(/--text-h2:\s*var\(--gc-text-h2\);/);
+      expect(themeBlock).toMatch(/--text-h1:\s*var\(--gc-text-h1\);/);
+    });
+
+    it("preserva a densidade fixa do mobile, inclusive text-xs e text-sm", () => {
+      expect(mobileChatUiBlock).not.toContain("clamp(");
+      expect(mobileChatUiBlock).toMatch(/--gc-text-nano:\s*0\.6875rem;/);
+      expect(mobileChatUiBlock).toMatch(/--gc-text-body-sm:\s*0\.875rem;/);
+      expect(mobileChatUiBlock).toMatch(/--text-xs:\s*0\.75rem;/);
+      expect(mobileChatUiBlock).toMatch(/--text-sm:\s*0\.875rem;/);
+    });
+  });
+
+  it("dá ao título do painel operacional o mesmo degrau do cabeçalho do painel", () => {
+    const layout = readFileSync(new URL("../components/workspace-v2/WorkspaceLayoutV2.tsx", import.meta.url), "utf8");
+
+    expect(layout).toContain('<p className="text-body-sm font-semibold text-foreground">Painel operacional</p>');
+  });
+
+  it("mantém a hierarquia do painel: corpo expandido no degrau do título e seções sem passar o título no mobile", () => {
+    const read = (file: string) => readFileSync(new URL(file, import.meta.url), "utf8");
+    const pulse = read("../components/workspace-v2/PulsePanelV2.tsx");
+    const captures = read("../components/workspace-v2/WorkspaceCapturesPanelV2.tsx");
+    const discover = read("../components/discover/DiscoverPage.tsx");
+    const sectionTitles = [...pulse.matchAll(/<h3 className="([^"]*)"/g), ...captures.matchAll(/<h3 className="([^"]*)"/g)]
+      .map((match) => match[1])
+      .filter((classes) => !classes.includes("line-clamp") && !classes.includes("truncate"));
+
+    expect(pulse).toContain('className="text-caption leading-relaxed md:text-caption"');
+    expect(discover).toContain('"text-caption leading-relaxed md:text-caption"');
+    expect(sectionTitles).toHaveLength(4);
+    for (const classes of sectionTitles) expect(classes).toMatch(/\btext-xs md:text-body-sm\b/);
+  });
+
+  it("não usa tamanhos em px soltos no conteúdo do painel operacional", () => {
+    const panelFiles = [
+      "../components/workspace-v2/PulsePanelV2.tsx",
+      "../components/workspace-v2/WorkspaceCapturesPanelV2.tsx",
+      "../components/workspace-v2/ContextPanelV2.tsx",
+    ];
+
+    for (const file of panelFiles) {
+      const source = readFileSync(new URL(file, import.meta.url), "utf8");
+      expect(source, file).not.toMatch(/text-\[\d+px\]/);
+    }
+  });
+
   it("lets the mobile panel density win over the desktop Atmosphere panel spacing", () => {
     const panelTokens = /--gc-mobile-(?:context-header-[xy]|panel-content-(?:pad|gap)):/;
     const rootBlocks = css.match(/^:root\s*\{[^}]*\}/gm) ?? [];

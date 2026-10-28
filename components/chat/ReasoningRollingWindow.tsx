@@ -27,7 +27,7 @@ export function ReasoningRollingWindow({
         <div className={styles.content}>
           <ChatMarkdown
             content={content}
-            className="text-micro leading-5 text-foreground/70 md:text-caption md:leading-6"
+            className="leading-5 text-foreground/70 md:text-caption md:leading-6"
             isNormalized={isNormalized}
           />
         </div>

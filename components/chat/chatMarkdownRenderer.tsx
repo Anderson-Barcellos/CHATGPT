@@ -48,35 +48,36 @@ export function createChatMarkdownComponents({
     );
   };
 
+  // Títulos em em: proporcionais ao corpo da régua fluida (18/16/14/12 px com corpo de 14).
   return {
     code: renderCode,
     h1: ({ children }) => (
-      <h1 className="mt-5 mb-3 text-lg font-bold tracking-tight text-foreground">
+      <h1 className="mt-5 mb-3 text-[1.2857em] font-bold tracking-tight text-foreground">
         {children}
       </h1>
     ),
     h2: ({ children }) => (
-      <h2 className="mt-5 mb-2 text-lg font-semibold tracking-tight text-foreground">
+      <h2 className="mt-5 mb-2 text-[1.2857em] font-semibold tracking-tight text-foreground">
         {children}
       </h2>
     ),
     h3: ({ children }) => (
-      <h3 className="mt-4 mb-2 text-base font-semibold text-foreground/95">
+      <h3 className="mt-4 mb-2 text-[1.1429em] font-semibold text-foreground/95">
         {children}
       </h3>
     ),
     h4: ({ children }) => (
-      <h4 className="mt-3 mb-1.5 text-sm font-semibold text-foreground/90">
+      <h4 className="mt-3 mb-1.5 text-[1em] font-semibold text-foreground/90">
         {children}
       </h4>
     ),
     h5: ({ children }) => (
-      <h5 className="mt-3 mb-1 text-sm font-medium text-foreground/85">
+      <h5 className="mt-3 mb-1 text-[1em] font-medium text-foreground/85">
         {children}
       </h5>
     ),
     h6: ({ children }) => (
-      <h6 className="mt-2 mb-1 text-xs font-medium uppercase tracking-wider text-foreground/75">
+      <h6 className="mt-2 mb-1 text-[0.8571em] font-medium uppercase tracking-wider text-foreground/75">
         {children}
       </h6>
     ),

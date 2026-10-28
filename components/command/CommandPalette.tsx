@@ -85,7 +85,7 @@ export function CommandPalette() {
         aria-describedby={undefined}
       >
         <DialogTitle className="sr-only">Paleta de comandos</DialogTitle>
-        <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-nano [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-label [&_[cmdk-group-heading]]:text-muted-foreground">
+        <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-label [&_[cmdk-group-heading]]:text-muted-foreground">
           <div className="flex items-center border-b border-[color:var(--gc-border-soft)] px-3">
             <Command.Input
               placeholder="Buscar comando..."

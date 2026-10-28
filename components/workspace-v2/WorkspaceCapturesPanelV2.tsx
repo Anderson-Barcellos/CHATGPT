@@ -254,8 +254,8 @@ export function WorkspaceCapturesPanelV2({
     <section className="gc-clinical-card rounded-2xl border border-[color:var(--gc-border)] p-3 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="text-xs font-semibold text-foreground">Capturas locais</h3>
-          <p className="mt-1 text-nano text-muted-foreground">
+          <h3 className="text-xs md:text-body-sm font-semibold text-foreground">Capturas locais</h3>
+          <p className="mt-1 text-caption text-muted-foreground">
             Voz transcrita para notas globais.
           </p>
         </div>
@@ -275,14 +275,14 @@ export function WorkspaceCapturesPanelV2({
       <div className="mb-3 rounded-xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] p-2.5">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-micro font-medium text-foreground/90">
+            <p className="text-caption font-medium text-foreground/90">
               {isRecording
                 ? `Gravando ${formatDuration(recordingDurationMs)}`
                 : isTranscribing || isSaving
                   ? "Processando captura"
                   : "Gravar captura"}
             </p>
-            <p className="text-nano text-muted-foreground">
+            <p className="text-micro text-muted-foreground">
               {isSupported
                 ? "Fala curta, para salvar como nota local."
                 : "Microfone indisponivel neste navegador."}
@@ -316,10 +316,10 @@ export function WorkspaceCapturesPanelV2({
         )}
         {transcriptPreview && (isRecording || isTranscribing || speechStatus === "error") && (
           <div className="mt-2 border-t border-[color:var(--gc-border-soft)] pt-2">
-            <p className="text-nano text-muted-foreground">
+            <p className="text-micro text-muted-foreground">
               {speechStatus === "error" ? "Texto parcial preservado — captura não salva" : "Prévia da captura"}
             </p>
-            <p role="status" aria-live="polite" className="mt-1 max-h-40 overflow-y-auto whitespace-pre-wrap break-words text-xs text-foreground">
+            <p role="status" aria-live="polite" className="mt-1 max-h-40 overflow-y-auto whitespace-pre-wrap break-words text-caption text-foreground">
               {transcriptPreview}
             </p>
           </div>
@@ -327,14 +327,14 @@ export function WorkspaceCapturesPanelV2({
       </div>
 
       {(speechError || loadError) && (
-        <p className="mb-3 flex gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-micro text-rose-700 dark:text-rose-300">
+        <p className="mb-3 flex gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-caption text-rose-700 dark:text-rose-300">
           <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
           {speechError || loadError}
         </p>
       )}
 
       {failedTranscript && (
-        <div className="mb-3 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-xs">
+        <div className="mb-3 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-caption">
           <p className="font-medium">Não consegui salvar a nota. Teu texto está preservado aqui.</p>
           <p className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap break-words">{failedTranscript}</p>
           <Button type="button" size="sm" variant="ghost" className="mt-2" onClick={() => {
@@ -361,11 +361,11 @@ export function WorkspaceCapturesPanelV2({
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="truncate text-micro font-medium text-foreground/90">
+                    <p className="truncate text-caption font-medium text-foreground/90">
                       {note.title}
                     </p>
                     <p
-                      className={`gc-workspace-note-body mt-1 whitespace-pre-wrap break-words text-nano ${
+                      className={`gc-workspace-note-body mt-1 whitespace-pre-wrap break-words text-caption ${
                         isNoteExpanded ? "" : "line-clamp-2"
                       }`}
                     >
@@ -405,7 +405,7 @@ export function WorkspaceCapturesPanelV2({
                     </Button>
                   </div>
                 </div>
-                <div className="mt-2 flex flex-wrap items-center gap-1.5 text-nano text-muted-foreground">
+                <div className="mt-2 flex flex-wrap items-center gap-1.5 text-micro text-muted-foreground">
                   <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">
                     {noteSourceLabel(note)}
                   </span>
@@ -420,7 +420,7 @@ export function WorkspaceCapturesPanelV2({
                         size="xs"
                         variant="ghost"
                         onClick={() => toggleNoteExpansion(note.id)}
-                        className="h-7 rounded-md px-2 text-nano text-muted-foreground"
+                        className="h-7 rounded-md px-2 text-muted-foreground"
                       >
                         {isNoteExpanded ? (
                           <ChevronUp className="size-3" />
@@ -437,7 +437,7 @@ export function WorkspaceCapturesPanelV2({
                         variant="outline"
                         onClick={() => void handleDraftNote(note)}
                         disabled={draftingNoteId === note.id}
-                        className="h-7 rounded-md px-2 text-nano"
+                        className="h-7 rounded-md px-2"
                       >
                         {draftingNoteId === note.id ? (
                           <LoaderCircle className="size-3 animate-spin" />
@@ -459,7 +459,7 @@ export function WorkspaceCapturesPanelV2({
               size="sm"
               variant="ghost"
               onClick={() => setIsExpanded((current) => !current)}
-              className="h-7 w-full rounded-md text-nano text-muted-foreground"
+              className="h-7 w-full rounded-md text-muted-foreground"
             >
               {isExpanded ? (
                 <>
@@ -476,7 +476,7 @@ export function WorkspaceCapturesPanelV2({
           )}
         </div>
       ) : (
-        <p className="rounded-xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-3 py-4 text-micro text-muted-foreground">
+        <p className="rounded-xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-3 py-4 text-caption text-muted-foreground">
           Nenhuma captura local ainda.
         </p>
       )}

@@ -114,7 +114,7 @@ function SaveStatusBadge({
 }) {
   if (status === "saving") {
     return (
-      <Badge variant="outline" className="gap-1 border-primary/20 bg-primary/5 text-nano text-primary">
+      <Badge variant="outline" className="gap-1 border-primary/20 bg-primary/5 text-primary">
         <LoaderCircle className="h-3 w-3 animate-spin" />
         Salvando
       </Badge>
@@ -123,7 +123,7 @@ function SaveStatusBadge({
 
   if (status === "saved") {
     return (
-      <Badge variant="outline" className="gap-1 border-emerald-500/25 bg-emerald-500/8 text-nano text-emerald-600 dark:text-emerald-400">
+      <Badge variant="outline" className="gap-1 border-emerald-500/25 bg-emerald-500/8 text-emerald-600 dark:text-emerald-400">
         <CheckCircle2 className="h-3 w-3" />
         Salvo
       </Badge>
@@ -132,7 +132,7 @@ function SaveStatusBadge({
 
   if (status === "error") {
     return (
-      <Badge variant="outline" className="gap-1 border-destructive/25 bg-destructive/8 text-nano text-destructive">
+      <Badge variant="outline" className="gap-1 border-destructive/25 bg-destructive/8 text-destructive">
         <AlertCircle className="h-3 w-3" />
         Erro
       </Badge>
@@ -140,7 +140,7 @@ function SaveStatusBadge({
   }
 
   return (
-    <Badge variant="outline" className="border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] text-nano text-muted-foreground/80">
+    <Badge variant="outline" className="border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] text-muted-foreground/80">
       {idleLabel}
     </Badge>
   );

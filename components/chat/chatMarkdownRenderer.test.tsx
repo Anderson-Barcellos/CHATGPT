@@ -39,3 +39,25 @@ describe("chat markdown Mermaid routing", () => {
     expect(markup).toContain("Pedido");
   });
 });
+
+describe("títulos do markdown acompanham a régua do corpo", () => {
+  it("usa tamanhos relativos ao corpo (em), iguais aos de hoje com corpo de 14 px", () => {
+    const markup = renderToStaticMarkup(
+      <ReactMarkdown
+        remarkPlugins={chatMarkdownRemarkPlugins}
+        components={createChatMarkdownComponents({ renderMermaid: false })}
+      >
+        {"# H1\n\n## H2\n\n### H3\n\n#### H4\n\n##### H5\n\n###### H6"}
+      </ReactMarkdown>
+    );
+    const sizeOf = (tag: string) => markup.match(new RegExp(`<${tag} class="[^"]*(text-\\S+em\\])`))?.[1];
+
+    expect(sizeOf("h1")).toBe("text-[1.2857em]");
+    expect(sizeOf("h2")).toBe("text-[1.2857em]");
+    expect(sizeOf("h3")).toBe("text-[1.1429em]");
+    expect(sizeOf("h4")).toBe("text-[1em]");
+    expect(sizeOf("h5")).toBe("text-[1em]");
+    expect(sizeOf("h6")).toBe("text-[0.8571em]");
+    expect(markup).not.toMatch(/<h[1-6] class="[^"]*text-(?:xs|sm|base|lg)\b/);
+  });
+});

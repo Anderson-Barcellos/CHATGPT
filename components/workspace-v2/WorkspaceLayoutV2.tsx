@@ -491,7 +491,7 @@ export function WorkspaceFrameV2({
                 <div className="flex h-full flex-col">
                   <div className="gc-clinical-section-header flex h-[3.1rem] items-center justify-between border-b border-[color:var(--gc-border)] px-3">
                     <div>
-                      <p className="text-xs font-semibold text-foreground">Painel operacional</p>
+                      <p className="text-body-sm font-semibold text-foreground">Painel operacional</p>
                       <p className="text-nano uppercase tracking-label text-muted-foreground">
                         Canvas · artefato · atividade
                       </p>
