@@ -48,6 +48,32 @@ describe("WorkspaceFrameV2", () => {
     expect(markup).toContain("gc-safe-x");
   });
 
+  it("abre o painel flutuante sobre o chat, sem gaveta modal, abaixo do corte de encaixe", () => {
+    const markup = renderToStaticMarkup(
+      <WorkspaceFrameV2
+        sidebar={<div>Conversas recentes</div>}
+        chat={<div>Transcricao da conversa</div>}
+        composer={<div>Mensagem para o GPT...</div>}
+        contextPanel={<div>Preview do documento</div>}
+        mobileSidebar={<div>Menu mobile</div>}
+        mobileContextPanel={<div>Painel mobile</div>}
+        mobileContextOpen
+        onMobileContextOpenChange={() => undefined}
+        onNewConversation={() => undefined}
+        onOpenSettings={() => undefined}
+        activeConversationTitle="Workspace Console"
+        currentModelName="gpt-5.3-chat-latest"
+      />
+    );
+
+    expect(markup).toContain('data-context-mode="floating"');
+    expect(markup).toContain("gc-context-floating");
+    expect(markup).toContain("Preview do documento");
+    expect(markup).toContain("Transcricao da conversa");
+    expect(markup).not.toContain('role="dialog"');
+    expect(markup).not.toContain('aria-modal="true"');
+  });
+
   it("keeps the top bar free of product links: SoundCase lives only in the rail", () => {
     const markup = renderToStaticMarkup(
       <WorkspaceFrameV2

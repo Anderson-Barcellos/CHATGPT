@@ -13,6 +13,7 @@ const data = path.join(repo, 'data');
 try { await access(data); throw new Error('QA exige data inexistente'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
 const out = process.env.DISCOVER_QA_OUTPUT || '/root/.cache/gaucho-discover-context/evidence/browser';
 const port = process.env.DISCOVER_QA_PORT || '3148';
+const DOCK = 1773; // espelha CONTEXT_SIDEBAR_BREAKPOINT
 const base = `http://127.0.0.1:${port}/chat`;
 const env = { PATH: '/usr/bin:/bin', NODE_ENV: 'production', NEXT_PUBLIC_BASE_PATH: '/chat',
   AUTH_ENABLED: 'true', AUTH_USERNAME: 'synthetic-user', AUTH_PASSWORD: 'synthetic-password',
@@ -41,7 +42,7 @@ try {
   server.stdout.on('data', b => log += b); server.stderr.on('data', b => log += b);
   await until(() => fetch(`${base}/login`).then(r => r.ok).catch(() => false), 'boot');
   browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox'], headless: true, env });
-  for (const [width, height, touch, theme] of [[1199, 1000, false, 'light'], [1200, 1000, false, 'dark'], [1279, 1000, false, 'light'], [1280, 900, false, 'dark'], [1281, 900, false, 'light'], [1288, 1000, false, 'dark'], [1289, 1000, false, 'light'], [1440, 1000, false, 'dark'], [1536, 1000, false, 'light'], [3440, 1000, false, 'dark'], [6880, 1000, false, 'light'], [820, 1180, true, 'light'], [390, 844, true, 'dark'], [320, 740, true, 'light'], [1100, 440, true, 'dark']]) {
+  for (const [width, height, touch, theme] of [[1199, 1000, false, 'light'], [1280, 900, false, 'dark'], [1440, 1000, false, 'dark'], [1536, 1000, false, 'light'], [1772, 1000, false, 'dark'], [1773, 900, false, 'light'], [1920, 1000, false, 'dark'], [3440, 1000, false, 'dark'], [6880, 1000, false, 'light'], [820, 1180, true, 'light'], [390, 844, true, 'dark'], [320, 740, true, 'light'], [1100, 440, true, 'dark']]) {
     if (process.env.DISCOVER_QA_WIDTH && width !== Number(process.env.DISCOVER_QA_WIDTH)) continue;
     const context = await browser.newContext({ viewport: { width, height }, hasTouch: touch, colorScheme: theme, reducedMotion: 'reduce' });
     await context.addInitScript(t => { sessionStorage.setItem('gpt-splash-shown', '1'); localStorage.setItem('theme', t); }, theme);
@@ -64,9 +65,13 @@ try {
     const composer = page.locator('.gc-composer-dock textarea'); await composer.fill('Rascunho preservado');
     await composer.evaluate(node => window.__qaComposer = node);
     assert.equal(await page.locator('a[href="/chat/discover"]').count(), 0);
-    const desktop = width >= 1281 && !(touch && height <= 500);
     const mobile = width <= 767 || (touch && height <= 500);
-    if (desktop) await page.getByRole('button', { name: 'Abrir painel', exact: true }).click();
+    // Encaixe a partir de CONTEXT_SIDEBAR_BREAKPOINT (lib/layout/breakpoints.ts); abaixo, flutua sem diálogo.
+    const docked = !mobile && width >= DOCK;
+    const desktop = !mobile;
+    const normalWidth = Math.min(Math.max(500, width * 0.4), 600);
+    const expandedWidth = Math.min(Math.max(640, width * 0.5), 760);
+    if (docked) await page.getByRole('button', { name: 'Abrir painel', exact: true }).click();
     else if (mobile) {
       const nav = page.locator('[data-mobile-primary-nav]');
       assert.deepEqual(await nav.locator('button').allTextContents().then(labels => labels.map(s => s.trim())), ['Nova conversa', 'Pulse', 'Descobrir', 'Notas', 'Rotinas']);
@@ -87,7 +92,11 @@ try {
     if (mobile) {
       const bounds = await panel.boundingBox(); assert.ok(Math.abs(bounds.width - width) <= 1); assert.ok(bounds.height >= height - 1);
     }
-    else await until(async () => Math.abs((await panel.boundingBox()).width - 500) < 1, 'largura normal de 500 px');
+    else await until(async () => Math.abs((await panel.boundingBox()).width - normalWidth) < 1, 'largura normal fluida');
+    if (desktop) {
+      assert.equal(await panel.getAttribute('data-context-mode'), docked ? 'docked' : 'floating');
+      assert.equal(await page.locator('[role="dialog"], .gc-context-drawer-overlay').count(), 0, 'desktop sem gaveta modal');
+    }
     const tabs = panel.getByRole('tablist');
     assert.equal(await tabs.evaluate(node => node.scrollWidth > node.clientWidth + 1), false);
     assert.equal(await feed.locator('.line-clamp-3').count(), 3); assert.equal(spoken.length, 0);
@@ -131,7 +140,7 @@ try {
         window.__qaAnchor = { node: anchor, offset: anchor.getBoundingClientRect().top - top };
       });
       await panel.getByRole('button', { name: 'Expandir canvas', exact: true }).click();
-      await until(async () => Math.abs((await panel.boundingBox()).width - 640) < 1, 'ampliação de 640 px');
+      await until(async () => Math.abs((await panel.boundingBox()).width - expandedWidth) < 1, 'ampliação fluida');
       await checkChatControls();
       assert.ok(await feed.evaluate(node => node === window.__qaFeed && node.scrollTop > 0));
       await until(() => feed.evaluate(node => Math.abs(window.__qaAnchor.node.getBoundingClientRect().top - node.getBoundingClientRect().top - window.__qaAnchor.offset) < 3), 'ponto de leitura após ampliar');
@@ -153,20 +162,16 @@ try {
     await panel.getByRole('tab', { name: 'Notas', exact: true }).click();
     await panel.getByRole('tab', { name: 'Rotinas', exact: true }).click();
     await panel.getByRole('heading', { name: 'Nova rotina Pulse', exact: true }).waitFor();
-    if (width === 1281) {
-      // Uma abertura deve sobreviver às transições lateral/gaveta/lateral.
-      await page.setViewportSize({ width: 1280, height });
-      const drawer = page.getByRole('dialog', { name: 'Painel contextual', exact: true });
-      await drawer.getByRole('tab', { name: 'Rotinas', exact: true }).waitFor();
-      assert.equal(await drawer.getByRole('tab', { name: 'Rotinas', exact: true }).getAttribute('aria-selected'), 'true');
-      await until(async () => Math.abs((await drawer.boundingBox()).width - 500) < 1, 'gaveta ao redimensionar');
-      await page.setViewportSize({ width: 1281, height });
-      const residualDrawer = page.locator('.gc-context-drawer');
-      const residualOverlay = page.locator('.gc-context-drawer-overlay');
-      if (await residualDrawer.count()) assert.equal(await residualDrawer.isVisible(), false, 'gaveta residual fica invisível no mesmo quadro da transição');
-      if (await residualOverlay.count()) assert.equal(await residualOverlay.isVisible(), false, 'overlay residual fica invisível no mesmo quadro da transição');
-      await until(async () => Math.abs((await panel.boundingBox()).width - 500) < 1, 'lateral aberta ao redimensionar');
-      await until(async () => await residualDrawer.count() === 0 && await residualOverlay.count() === 0, 'portal da gaveta desmontado após a transição');
+    if (width === 1773) {
+      // Uma abertura sobrevive a encaixado → flutuante → encaixado, sem gaveta nem véu.
+      await page.setViewportSize({ width: 1772, height });
+      await until(async () => await panel.getAttribute('data-context-mode') === 'floating', 'flutuante ao reduzir');
+      assert.equal(await panel.getByRole('tab', { name: 'Rotinas', exact: true }).getAttribute('aria-selected'), 'true');
+      assert.equal(await page.locator('[role="dialog"], .gc-context-drawer-overlay').count(), 0);
+      await composer.fill('Rascunho preservado');
+      await page.setViewportSize({ width: 1773, height });
+      await until(async () => await panel.getAttribute('data-context-mode') === 'docked', 'encaixado ao ampliar');
+      await until(async () => Math.abs((await panel.boundingBox()).width - 600) < 1, 'lateral aberta ao redimensionar');
       assert.equal(await panel.getByRole('tab', { name: 'Rotinas', exact: true }).getAttribute('aria-selected'), 'true');
     }
     if (desktop) await panel.getByRole('button', { name: 'Recolher painel', exact: true }).click();
@@ -178,15 +183,15 @@ try {
     await panel.getByRole('heading', { name: articles[0].title, exact: true }).waitFor();
     assert.equal(await page.locator('[data-discover-scroll-root]').count(), 1);
     assert.equal(await page.locator('nextjs-portal').count(), 0);
-    if (width === 1281) {
+    if (width === 1773) {
       // Criar conversa mantém a lateral aberta, como antes da unificação do estado.
       await page.keyboard.press('Control+Shift+n');
       await page.getByRole('heading', { name: 'Nova conversa', exact: true }).waitFor();
-      await until(async () => Math.abs((await panel.boundingBox()).width - 500) < 1, 'lateral preservada ao criar conversa');
+      await until(async () => Math.abs((await panel.boundingBox()).width - normalWidth) < 1, 'lateral preservada ao criar conversa');
       assert.equal(await panel.getByRole('tab', { name: 'Descobrir IA', exact: true }).getAttribute('aria-selected'), 'true');
     }
     assert.deepEqual(errors, []); assert.deepEqual(external, []);
-    results.push({ width, height, theme, mobile, desktop, normalWidth: mobile ? width : 500, expandedWidth: desktop ? 640 : null, navigation: true, cards: true, audio: true, resize: desktop, breakpointResize: width === 1281, draft: true, console: true });
+    results.push({ width, height, theme, mobile, desktop, mode: mobile ? 'mobile' : docked ? 'docked' : 'floating', normalWidth: mobile ? width : normalWidth, expandedWidth: desktop ? expandedWidth : null, navigation: true, cards: true, audio: true, resize: desktop, breakpointResize: width === 1773, draft: true, console: true });
     await context.close();
   }
   await writeFile(`${out}/results.json`, JSON.stringify(results, null, 2)); console.log(JSON.stringify(results));

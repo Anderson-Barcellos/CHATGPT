@@ -2,6 +2,12 @@
 
 ## Estado operacional
 
+#### Painel operacional flutuante no desktop (`publicada, pronta para revisão`, 2026-10-28)
+
+Pedido de Anders: a lógica estava invertida (gaveta modal até 1280 px, lateral espremendo o chat depois). Plano em `docs/plans/2026-10-28-painel-flutuante.md`. Agora, até 1772 px, o painel flutua sem véu, com o chat livre e fechamento por Esc. O encaixe vem a partir de 1773 px, corte derivado da largura máxima dos balões, que não diminuem. As larguras são fluidas (500→600 px, ampliado 640→760 px) e o mobile não mudou. Os gatilhos do cabeçalho foram corrigidos: o "Painel contextual" duplicado no encaixe e o ícone de busca duplicado desde 1281 px.
+
+Gates: 1.236 testes, tsc, lint e `git diff --check` exit 0. Build isolado `MiO36uNvfauRgmXSemoNZ` em `/root/.cache/gaucho-typography/source`. Harness `qa-discover-panel.mjs` adaptado, com 13 cenários exit 0. QA dedicada com a varredura do corte 1773–1900 e capturas em `/root/.cache/gaucho-typography/qa/floating/`. Ficam três observações de desenho: ampliado e encaixado, o painel reduz os balões até ~1933 px; em 1024 px o flutuante cobre o centro do composer, que ainda aceita clique na borda e Esc; no encaixado, Esc não fecha. Publicada por autorização de Anders: build `MiO36uNvfauRgmXSemoNZ`, backup `/root/.cache/gaucho-deploy/20261028T142739Z/next-before`, health 200 e CSS público idêntico; commit e push para `origin/main` na mesma autorização.
+
 #### Régua tipográfica fluida e painel operacional legível (`publicada, pronta para revisão`, 2026-10-28)
 
 Pedido de Anders: fontes do painel operacional pequenas demais frente ao resto no desktop. `.gc-chat-ui` virou régua `clamp()` de 768→1920 px (nano 11,5→12,5 · micro 12→13,5 · caption 13→14,5 · body-sm 14→15,5 · body 15→17 · h3 16→18,5); `text-xs`/`text-sm` ligados à régua; `@theme` ganhou `text-body`/`h2`/`h1` (o `md:text-body` do balão era no-op); mobile fixo. Painel: conteúdo em caption, metadado em micro, seções em body-sm, rótulos em nano. `cn()` estendido: o tailwind-merge lia os tokens como cor e os apagava. DECISÃO: fora do painel, tokens que já eram apagados foram removidos para o render ficar idêntico. Títulos do markdown em `em`. Detalhe em `docs/ARCHITECTURE.md` (Régua tipográfica fluida) e `TEST_LOGS.md`.

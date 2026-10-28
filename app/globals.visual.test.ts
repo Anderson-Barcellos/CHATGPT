@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { CONTEXT_SIDEBAR_BREAKPOINT } from "@/lib/layout/breakpoints";
 
 const css = readFileSync(new URL("./globals.css", import.meta.url), "utf8");
 
@@ -117,25 +118,37 @@ describe("Gaucho Chat visual contract", () => {
     expect(rootMobile).not.toContain("--gc-shell-gutter");
   });
 
-  it("mantém larguras do painel operacional por tokens e remove a sobreposição antiga", () => {
+  it("encaixa o painel só a partir do corte derivado e flutua sem gaveta modal abaixo dele", () => {
     const layout = readFileSync(new URL("../components/workspace-v2/WorkspaceLayoutV2.tsx", import.meta.url), "utf8");
+    const panel = readFileSync(new URL("../components/workspace-v2/ContextPanelV2.tsx", import.meta.url), "utf8");
+    const breakpoints = readFileSync(new URL("../lib/layout/breakpoints.ts", import.meta.url), "utf8");
     const shellTokenBlocks = css.match(/:root\s*\{[^}]*--gc-shell-rail-width:[^}]*\}/g) ?? [];
+    const floating = css.match(/\.gc-context-floating\s*\{([^}]*)\}/)?.[1] ?? "";
 
     expect(css).not.toContain(".gc-discover-panel");
+    expect(shellTokenBlocks).toHaveLength(1);
+    expect(css).toContain("--gc-shell-context-width: clamp(500px, 40vw, 600px);");
+    expect(css).toContain("--gc-shell-context-expanded-width: clamp(640px, 50vw, 760px);");
     expect(layout).toContain("w-[var(--gc-shell-context-width)]");
     expect(layout).toContain("w-[var(--gc-shell-context-expanded-width)]");
-    expect(css).toContain("--gc-shell-context-width: 500px;");
-    expect(css).toContain("--gc-shell-context-expanded-width: 640px;");
-    expect(css).not.toContain("@media (min-width: 96rem)");
-    expect(shellTokenBlocks).toHaveLength(1);
-    expect(layout).not.toContain("2xl:w-[");
-    expect(layout).toContain("min-[1281px]:block");
+    expect(breakpoints).toContain("CONTEXT_SIDEBAR_BREAKPOINT =");
+    expect(layout).toContain("min-[1773px]:block");
+    expect(layout).not.toContain("min-[1281px]:block");
+    // Faixa empilhada (max-[X] é "< X"): md:inline-flex solto vencia min-[…]:hidden pela ordem do CSS.
+    expect(layout).toContain(`className="relative hidden md:max-[${CONTEXT_SIDEBAR_BREAKPOINT}px]:inline-flex"`);
+    expect(layout).not.toMatch(/md:inline-flex min-\[\d+px\]:hidden/);
     expect(layout).not.toContain("xl:block");
-    expect(layout).toContain("{!desktopContext && (");
+    expect(layout).not.toContain("2xl:w-[");
+    expect(layout).toContain('data-context-mode={desktopContext ? "docked" : "floating"}');
+    expect(layout).toContain("{isMobile && (");
+    expect(layout).not.toContain("{!desktopContext && (");
     expect(layout).toContain("<Sheet open={contextOpen} onOpenChange={setContextOpen}>");
-    expect(layout).not.toContain("<Sheet open={contextOpen && !desktopContext}");
-    expect(layout).toContain('overlayClassName="gc-context-drawer-overlay min-[1281px]:hidden"');
     expect(layout).toContain("gc-context-drawer gc-chat-ui");
+    expect(panel).not.toContain("min-[1281px]:hidden");
+    expect(floating).toContain("position: absolute;");
+    expect(css).toContain(`@media (max-width: ${CONTEXT_SIDEBAR_BREAKPOINT - 1}px)`);
+    expect(layout).toContain(`min-[${CONTEXT_SIDEBAR_BREAKPOINT}px]:block`);
+    expect(floating).toMatch(/width: min\(var\(--gc-shell-context-width\), calc\(100% - 3rem\)\);/);
     expect(css).not.toMatch(/\[data-workspace-region="context"\]\[data-collapsed="true"\]\s*\{[^}]*width/);
   });
 

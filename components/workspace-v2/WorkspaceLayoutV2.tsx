@@ -251,6 +251,17 @@ export function WorkspaceFrameV2({
   const contextOpen = mobileContextOpen ?? internalContextOpen;
   const contextCollapsed = !contextOpen;
   const setContextOpen = onMobileContextOpenChange ?? setInternalContextOpen;
+  // Flutuante não é modal: Esc fecha, salvo quando outro diálogo está por cima.
+  useEffect(() => {
+    if (isMobile || desktopContext || !contextOpen) return;
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      if (document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]')) return;
+      setContextOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [isMobile, desktopContext, contextOpen, setContextOpen]);
   useEffect(() => useUIStore.subscribe((state, previous) => {
     if (state.contextPanelOpen && !previous.contextPanelOpen) {
       setSidebarOpen(false);
@@ -361,7 +372,7 @@ export function WorkspaceFrameV2({
                   <IconButton
                     label="Buscar comandos"
                     onClick={() => openCommandPalette(true)}
-                    className="gc-header-search-trigger hidden md:inline-flex min-[1281px]:hidden"
+                    className="gc-header-search-trigger hidden md:max-[1281px]:inline-flex"
                   >
                     <Search className="size-4" />
                   </IconButton>
@@ -378,7 +389,7 @@ export function WorkspaceFrameV2({
                   <IconButton
                     label="Painel contextual"
                     onClick={() => setContextOpen(!contextOpen)}
-                    className="relative hidden md:inline-flex min-[1281px]:hidden"
+                    className="relative hidden md:max-[1773px]:inline-flex"
                   >
                     <PanelRightOpen className="size-4" />
                     {!!artifactCount && artifactCount > 0 && (
@@ -468,13 +479,19 @@ export function WorkspaceFrameV2({
             {!isMobile && <aside
               data-workspace-region="context"
               data-collapsed={contextCollapsed}
+              data-expanded={contextExpanded}
+              data-context-mode={desktopContext ? "docked" : "floating"}
               className={cn(
-                "gc-clinical-panel hidden min-h-0 shrink-0 overflow-hidden border-l border-[color:var(--gc-border)] transition-[width] duration-200 min-[1281px]:block",
+                // Encaixa só a partir de CONTEXT_SIDEBAR_BREAKPOINT; abaixo, aberto, flutua sobre o chat.
+                "gc-clinical-panel min-h-0 overflow-hidden min-[1773px]:block min-[1773px]:shrink-0 min-[1773px]:border-l min-[1773px]:border-[color:var(--gc-border)] min-[1773px]:transition-[width] min-[1773px]:duration-200",
                 contextCollapsed
-                  ? "w-[2.85rem]"
-                : contextExpanded
-                  ? "w-[var(--gc-shell-context-expanded-width)]"
-                  : "w-[var(--gc-shell-context-width)]"
+                  ? "hidden w-[2.85rem]"
+                  : cn(
+                      "gc-context-floating",
+                      contextExpanded
+                        ? "w-[var(--gc-shell-context-expanded-width)]"
+                        : "w-[var(--gc-shell-context-width)]"
+                    )
               )}
             >
             {contextCollapsed ? (
@@ -514,7 +531,7 @@ export function WorkspaceFrameV2({
                 </div>
                 <div className="min-h-0 flex-1">
                   <SlideIn from="right" distance={12} duration={0.24} className="h-full">
-                    {desktopContext && contextPanel}
+                    {contextPanel}
                   </SlideIn>
                 </div>
               </div>
@@ -537,13 +554,13 @@ export function WorkspaceFrameV2({
         </SheetContent>
       </Sheet>
 
-      {!desktopContext && (
+      {isMobile && (
         <Sheet open={contextOpen} onOpenChange={setContextOpen}>
           <SheetContent
             side="right"
             showCloseButton={false}
-            overlayClassName="gc-context-drawer-overlay min-[1281px]:hidden"
-            className={cn("gc-context-drawer gc-chat-ui gc-clinical-panel w-full max-w-none gap-0 border-0 p-0 gc-safe-top gc-safe-right min-[1281px]:hidden", isMobile ? "sm:max-w-none" : "sm:w-[96vw] sm:border sm:border-[color:var(--gc-border)] sm:max-w-[500px]")}
+            overlayClassName="gc-context-drawer-overlay"
+            className="gc-context-drawer gc-chat-ui gc-clinical-panel w-full max-w-none gap-0 border-0 p-0 gc-safe-top gc-safe-right sm:max-w-none"
           >
             <SheetHeader className="sr-only">
               <SheetTitle>Painel contextual</SheetTitle>

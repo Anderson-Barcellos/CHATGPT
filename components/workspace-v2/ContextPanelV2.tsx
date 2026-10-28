@@ -26,7 +26,7 @@ export function ContextPanelV2() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="gc-clinical-section-header flex items-center justify-between border-b border-[color:var(--gc-border-soft)] px-[var(--gc-mobile-context-header-x)] py-[var(--gc-mobile-context-header-y)] min-[1281px]:hidden">
+      <div className="gc-clinical-section-header flex items-center justify-between border-b border-[color:var(--gc-border-soft)] px-[var(--gc-mobile-context-header-x)] py-[var(--gc-mobile-context-header-y)] md:hidden">
         <div className="min-w-0">
           <h2 className="truncate text-[length:var(--gc-mobile-panel-title-font-size)] font-semibold md:text-sm">Painel operacional</h2>
           <p className="text-nano uppercase tracking-label text-muted-foreground">

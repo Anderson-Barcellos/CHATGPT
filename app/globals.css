@@ -639,6 +639,33 @@ body {
   position: relative;
 }
 
+/* Abaixo do encaixe (CONTEXT_SIDEBAR_BREAKPOINT − 1, lib/layout/breakpoints.ts)
+   o painel aberto flutua sobre a borda direita do chat, sem véu nem foco preso. */
+@media (max-width: 1772px) {
+  .gc-clinical-panel.gc-context-floating {
+    position: absolute;
+    inset-block: 0;
+    right: 0;
+    z-index: 30;
+    width: min(var(--gc-shell-context-width), calc(100% - 3rem));
+    border-left: 1px solid var(--gc-border);
+    border-radius: 1.25rem 0 0 1.25rem;
+    box-shadow:
+      -28px 0 64px -30px rgb(8 22 36 / 42%),
+      inset 1px 0 0 var(--gc-glass-highlight);
+    animation: gc-context-float-in var(--gc-duration-normal) cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .gc-clinical-panel.gc-context-floating[data-expanded="true"] {
+    width: min(var(--gc-shell-context-expanded-width), calc(100% - 3rem));
+  }
+}
+
+@keyframes gc-context-float-in {
+  from { opacity: 0; transform: translateX(1.25rem); }
+  to { opacity: 1; transform: none; }
+}
+
 .gc-clinical-rail::before,
 .gc-clinical-panel::before {
   content: "";
@@ -1127,8 +1154,8 @@ body {
 
   --gc-shell-gutter: 0.35rem;
   --gc-shell-rail-width: 14.5rem;
-  --gc-shell-context-width: 500px;
-  --gc-shell-context-expanded-width: 640px;
+  --gc-shell-context-width: clamp(500px, 40vw, 600px);
+  --gc-shell-context-expanded-width: clamp(640px, 50vw, 760px);
 }
 
 /* O cabeçalho responde ao espaço do chat, não à largura total do monitor. */

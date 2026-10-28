@@ -489,3 +489,19 @@ Primeira execução de `npm run lint` interrompida após ~9 min: lintava o backu
 | `bash scripts/deploy.sh --from /root/.cache/gaucho-typography/source` | exit 0; `jisCdWPw4ebvobz44r3xU` publicada; health local/público 200; CSS público sha256 = local; `/chat` anônimo 307 |
 | `npm test` antes do commit (1ª) | 1 failed, 1.232 passed: timeout de 5 s em `lib/server/soundcase/jobs.test.ts` ("resumes only invalid completed chunks"), arquivo não tocado, load average 5,6 — instabilidade, não regressão |
 | `npx vitest --run lib/server/soundcase/jobs.test.ts` / `npm test` (repetição) | 20 passed / exit 0, 225 arquivos, 1.233 testes; tsc, eslint e `git diff --check` exit 0 |
+
+## 2026-10-28 — Painel operacional flutuante no desktop
+
+| Comando | Resultado |
+|---|---|
+| `npx vitest --run lib/layout/breakpoints.test.ts app/globals.visual.test.ts components/workspace-v2/WorkspaceLayoutV2.test.tsx` (RED) | 3 failed, 35 passed: constantes ausentes, tokens 500/640 fixos, sem `data-context-mode="floating"` |
+| idem + `components/workspace-v2` (GREEN) | 56 passed |
+| `npx tsc --noEmit` (1ª) | exit 2: `KeyboardEvent` do React no listener do `window`; corrigido para `globalThis.KeyboardEvent` |
+| Build isolado (1ª) | falhou pelo mesmo erro de tipo; após a correção, exit 0 |
+| QA Playwright dedicada (`/root/.cache/gaucho-typography/qa/qa-floating.mjs`) | 1024–1772 flutuante sem overlay/dialog, chat digitável e rolável, Esc fecha; 1773/1920 encaixado; balões 672/736 iguais aberto/fechado; varredura 1773–1900 sempre no máximo; mobile Sheet inalterado; 0 erro/0 rede externa. Bug: botão "Painel contextual" visível no encaixe (`md:inline-flex` vencia `min-[1773px]:hidden`) |
+| Correção com faixa empilhada (1ª tentativa `max-[1772px]`) | CSS compilado `not all and (min-width:1772px)`: escondia em 1772; trocado para `max-[1773px]`/`max-[1281px]` |
+| `npx vitest --run app/globals.visual.test.ts components/workspace-v2 lib/layout` | 62 passed |
+| `scripts/qa-discover-panel.mjs` adaptado (cópia isolada, build `MiO36uNvfauRgmXSemoNZ`) | exit 0; 13 cenários: flutuante 820–1772, encaixado 1773–6880, mobile 320/390/1100×440, transição 1773↔1772 com aba e rascunho |
+| `npm test` final | exit 0; 226 arquivos, 1.236 testes |
+| `npx tsc --noEmit` / `npx eslint --ignore-pattern '.next-before-*/**'` / `git diff --check` | exit 0 / exit 0, 1 warning preexistente / exit 0 |
+| `bash scripts/deploy.sh --from /root/.cache/gaucho-typography/source` | exit 0; `MiO36uNvfauRgmXSemoNZ` publicada; health local/público 200; CSS público sha256 = local; `/chat` anônimo 307 |
