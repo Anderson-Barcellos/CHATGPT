@@ -2,6 +2,16 @@
 
 ## Estado operacional
 
+#### Atualização dos modelos OpenAI de mídia (`publicada`, 2026-11-02)
+
+Pedido de Anders: conferir os modelos atuais de áudio, transcrição e imagem e atualizar os slugs compatíveis. Trabalho solo em `/root/worktrees/gaucho-media-models-20261102`, base `ffb90c0`; publicação, commit e push autorizados depois da validação (“Bora fazer as três então”). Mudança: `gpt-transcribe` nos dois caminhos HTTP de transcrição e `gpt-image-2.5-sunburst` nas tools de imagem do chat, Pulse, Descobrir e capas SoundCase. Contratos externos, modelos de texto, preferências, arquivos gerados anteriormente e runtime privado preservados.
+
+DECISÃO: usar Sunburst, opção atual de maior capacidade, com as qualidades existentes; Flare é alternativa de velocidade e não foi introduzido como novo seletor. `gpt-live-transcribe` e `gpt-realtime-2.1-mini` já são atuais e permanecem. O TTS OpenAI por arquivo continua em `gpt-4o-mini-tts`: a substituição documentada exige mudar de API e a semântica de geração/remux de arquivo, além do pedido de atualizar slugs. Migração separada necessária antes de 06/01/2027; nenhuma troca inválida no endpoint `/v1/audio/speech`. Evidências e comandos no diário append-only desta rodada.
+
+Gates aprovados na candidata: 228 arquivos/1.242 testes, tipos, lint (zero erros/um warning) e build `gz-rfWQLxKyrhbFFQ7nHU` (43/43 páginas). Smoke HTTP com autenticação real da instância sintética, SDK OpenAI real e provedor local simulado: 3 cenários aprovados, zero chamadas externas; dados sintéticos removidos e processos encerrados. Logs em `/root/.cache/gaucho-media-models-20261102/evidence`. Anders confirmou durante a rodada que o áudio principal usa Grok e a migração do TTS OpenAI pode ficar para depois. Disponibilidade na conta e qualidade dos modelos não testadas.
+
+Publicada com `bash scripts/deploy.sh --from /root/worktrees/gaucho-media-models-20261102` (preservar a origem); backup `/root/.cache/gaucho-deploy/20261102T040324Z/next-before`. Somente `chatgpt.service` reiniciado; local/público 200 healthy, chat/transcrição anônimos 401, 14 assets públicos e cinco entradas compiladas idênticos à candidata. Agendadores ativos; ponte de ditado com o mesmo PID. Sem chamadas pagas, mudança de áudio Grok, credenciais, dados ou Apache. Registro de commit/push nos logs Git desta entrega.
+
 #### Painel operacional flutuante no desktop (`publicada, pronta para revisão`, 2026-10-28)
 
 Pedido de Anders: a lógica estava invertida (gaveta modal até 1280 px, lateral espremendo o chat depois). Plano em `docs/plans/2026-10-28-painel-flutuante.md`. Agora, até 1772 px, o painel flutua sem véu, com o chat livre e fechamento por Esc. O encaixe vem a partir de 1773 px, corte derivado da largura máxima dos balões, que não diminuem. As larguras são fluidas (500→600 px, ampliado 640→760 px) e o mobile não mudou. Os gatilhos do cabeçalho foram corrigidos: o "Painel contextual" duplicado no encaixe e o ícone de busca duplicado desde 1281 px.

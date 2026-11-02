@@ -63,7 +63,7 @@ Os identificadores legados `grok-4.7` e `gpt-5.4-mini` resolvem para `gpt-6-luna
 
 Ferramentas injetadas pelo backend:
 
-- `image_generation` com `gpt-image-2`, `partial_images: 2`, `output_format: png`, apenas em `responseMode="default"`.
+- `image_generation` com `gpt-image-2.5-sunburst`, `partial_images: 2`, `output_format: png`, apenas em `responseMode="default"`.
 - `web_search_preview` com localização aproximada `BR` e contexto `medium`, em modos não-quiz.
 - `remember_memory` e `search_memory` apenas em `responseMode="default"`, com até duas rodadas de function-call/output para salvar memórias explícitas ou recuperar contexto histórico quando o usuário pedir.
 - `code_interpreter` apenas quando `codeInterpreterEnabled=true` e o modelo suporta.
@@ -334,7 +334,7 @@ usa Orion/MP3 e aplica apenas `mode` e `speed`.
 | `POST` | `/api/realtime/tts-call` | Cria sessão SDP/WebRTC experimental com `gpt-realtime-2.1-mini` |
 | `POST` | `/api/realtime/grok-session` | Emite token efêmero autenticado e sem cache para a leitura Grok Realtime do Chat/Pulse |
 | `POST` | `/api/realtime/tts-call/log` | Recebe telemetria sanitizada do cliente Realtime para diagnóstico local |
-| `POST` | `/api/transcribe` | Transcreve áudio com `gpt-4o-transcribe`; streaming NDJSON ativo por padrão e desativável com `TRANSCRIPTION_STREAMING_ENABLED=false` |
+| `POST` | `/api/transcribe` | Transcreve áudio com `gpt-transcribe`; streaming NDJSON ativo por padrão e desativável com `TRANSCRIPTION_STREAMING_ENABLED=false` |
 | `WebSocket` | `/api/transcribe/realtime` | Ditado incremental com `gpt-live-transcribe`; ponte separada, mesmo cookie `auth-token`, origem conferida contra Host preservado |
 
 O WebSocket recebe PCM16 mono a 24 kHz em frames binários (até 64 KiB) e comandos JSON `commit`/`stop`. Devolve `ready`, `transcript` com texto completo reconciliado, `done` com texto final ou `error` sanitizado. O prefixo público é `/chat`. Limites: duas conexões simultâneas, 15 minutos por sessão, 15 segundos para conexão upstream, 20 segundos para fechamento e 1 MiB de pressão de envio. Autenticação desabilitada/inválida fecha o acesso à ponte; expiração é reconferida durante a sessão. Modelo, URL upstream e chave são exclusivos do servidor.
@@ -349,7 +349,7 @@ Notas do PDF:
 
 ## SoundCase
 
-`/soundcase` reutiliza o mesmo cookie JWT do Chat. O texto e os assets ficam privados no servidor; o browser recebe apenas projeções autenticadas e URLs protegidas. A leitura ao vivo usa OpenAI Realtime ou Grok Realtime, independentemente do TTS do arquivo final. O pipeline durável usa Luna para direção, OpenAI `gpt-4o-mini-tts` ou xAI `/v1/tts` para áudio, e `gpt-image-2` para capa. `ttsProvider` e `grokVoice` ficam no snapshot de cada versão; versões legadas sem provedor usam OpenAI.
+`/soundcase` reutiliza o mesmo cookie JWT do Chat. O texto e os assets ficam privados no servidor; o browser recebe apenas projeções autenticadas e URLs protegidas. A leitura ao vivo usa OpenAI Realtime ou Grok Realtime, independentemente do TTS do arquivo final. O pipeline durável usa Luna para direção, OpenAI `gpt-4o-mini-tts` ou xAI `/v1/tts` para áudio, e `gpt-image-2.5-sunburst` para capa. `ttsProvider` e `grokVoice` ficam no snapshot de cada versão; versões legadas sem provedor usam OpenAI.
 
 | Método | Rota | Função |
 |---|---|---|

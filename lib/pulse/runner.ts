@@ -19,7 +19,7 @@ import {
 } from "@/lib/pulse/store";
 import { derivePulseRunTitle } from "@/lib/pulse/runTitle";
 
-const DEFAULT_IMAGE_MODEL = "gpt-image-2";
+const DEFAULT_IMAGE_MODEL = "gpt-image-2.5-sunburst";
 const DEFAULT_IMAGE_REQUEST_MODEL = "gpt-6-luna";
 const DEFAULT_PULSE_MAX_OUTPUT_TOKENS = 25_000;
 const MIN_PULSE_MAX_OUTPUT_TOKENS = 8_000;

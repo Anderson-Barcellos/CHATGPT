@@ -42,7 +42,7 @@ export const ALLOWED_CHAT_MODELS = new Set(
 );
 
 export const DEFAULT_CHAT_MODEL = "gpt-6-luna";
-const DEFAULT_IMAGE_GENERATION_MODEL = "gpt-image-2";
+const DEFAULT_IMAGE_GENERATION_MODEL = "gpt-image-2.5-sunburst";
 export const MEMORY_TOOL_NAMES = {
   remember: "remember_memory",
   search: "search_memory",

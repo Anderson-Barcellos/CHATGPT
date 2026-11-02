@@ -37,6 +37,11 @@ describe("integração da curadoria", () => {
       tools: [expect.objectContaining({ type: "web_search_preview" })],
     });
     expect(create.mock.calls[0][0].instructions).toContain("6 a 9 parágrafos");
+    expect(create.mock.calls[1][0]).toMatchObject({
+      tools: [expect.objectContaining({
+        type: "image_generation", model: "gpt-image-2.5-sunburst", quality: "low", output_format: "png",
+      })],
+    });
   });
 
   it("reescreve sem gerar capa e preserva a identidade da matéria", async () => {

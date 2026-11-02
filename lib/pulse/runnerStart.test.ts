@@ -169,7 +169,7 @@ describe("Pulse manual start", () => {
       text: { verbosity: "high" },
       tools: [
         expect.objectContaining({ type: "web_search_preview" }),
-        expect.objectContaining({ type: "image_generation", model: "gpt-image-2" }),
+        expect.objectContaining({ type: "image_generation", model: "gpt-image-2.5-sunburst" }),
       ],
     }));
     expect(result.runs[0]).toMatchObject({

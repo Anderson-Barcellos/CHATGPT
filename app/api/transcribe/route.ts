@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       const upstream = await openai.audio.transcriptions.create(
         {
           file,
-          model: "gpt-4o-transcribe",
+          model: "gpt-transcribe",
           stream: true,
         },
         { signal: request.signal }
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     const transcription = await openai.audio.transcriptions.create({
       file,
-      model: "gpt-4o-transcribe",
+      model: "gpt-transcribe",
     });
 
     return Response.json({ text: transcription.text });

@@ -49,7 +49,7 @@ export async function generateSoundCaseCover(input: {
         model: "gpt-6-luna",
         input: input.prompt,
         store: false,
-        tools: [{ type: "image_generation", model: "gpt-image-2", quality: "high", size: "auto", background: "auto", output_format: "png" }],
+        tools: [{ type: "image_generation", model: "gpt-image-2.5-sunburst", quality: "high", size: "auto", background: "auto", output_format: "png" }],
         tool_choice: { type: "image_generation" },
       }, { signal: input.signal }));
     } catch {
