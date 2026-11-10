@@ -505,3 +505,105 @@ Primeira execução de `npm run lint` interrompida após ~9 min: lintava o backu
 | `npm test` final | exit 0; 226 arquivos, 1.236 testes |
 | `npx tsc --noEmit` / `npx eslint --ignore-pattern '.next-before-*/**'` / `git diff --check` | exit 0 / exit 0, 1 warning preexistente / exit 0 |
 | `bash scripts/deploy.sh --from /root/.cache/gaucho-typography/source` | exit 0; `MiO36uNvfauRgmXSemoNZ` publicada; health local/público 200; CSS público sha256 = local; `/chat` anônimo 307 |
+
+## 2026-11-09 — Container queries no painel operacional, Bloco 1 (Claude)
+
+Worktree `/root/worktrees/gaucho-container-queries`, branch `claude/container-queries-painel`, base `a572615`. Plano em `docs/plans/2026-11-09-container-queries-painel.md`.
+
+| Comando | Resultado |
+|---|---|
+| Prova de sintaxe: `compile()` do Tailwind 4.1.18 com `@custom-variant panel-cozy (@container gc-panel (width >= 30rem))` | gera `@container gc-panel (width >= 30rem)`; empilha com `md:` |
+| `npx vitest --run app/globals.visual.test.ts components/workspace-v2/ContextPanelV2.test.tsx components/discover/DiscoverPage.test.tsx` (RED) | 6 failed, 46 passed: container `gc-panel` ausente, variants `panel-cozy`/`panel-wide` ausentes, capas do Pulse e do Descobrir ainda em `md:h-*`, raiz do painel sem `gc-panel-container` |
+| idem (GREEN) | 3 arquivos, 52 passed |
+| `npm test` | exit 0; 228 arquivos, 1.248 testes |
+| `npx tsc --noEmit` / `npm run lint` / `git diff --check` | exit 0 / exit 0, 1 warning preexistente (`CommandComposerContainerV2.test.tsx:120`) / exit 0 |
+| Build isolado (`NEXT_PUBLIC_BASE_PATH=/chat`) | exit 0; build `Rux55GdXQXh24d1ZYOKaY`; CSS compilado com `.gc-panel-container{container:gc-panel/inline-size}` e `.panel-cozy\:h-24/32/40/52` sob `@container gc-panel (min-width:30rem)` |
+| `scripts/qa-discover-panel.mjs` (com asserção da capa e cenário 956×440) | exit 0; 14 cenários; capa 96 px em painel ≥ 480 px (desktop 500–600, igual a antes) e 80 px no celular em pé (320/390, igual a antes); celular deitado 1100×440 e 956×440 passa de 80 para 96 px |
+| `scripts/qa-discover-controls.mjs` | exit 0 |
+| `scripts/qa-discover-delete.mjs` (1ª) | exit 1, PRE_EXISTING_FAILURE: esperava "Abrir painel" em 1440 px, corte antigo de 1280; desde `ffb90c0` o painel flutua até 1772 px. Harness corrigido para o corte de 1773 |
+| `scripts/qa-discover-delete.mjs` (2ª) | exit 0; 5 cenários (página 1440/390/320, painel 1440/390) |
+
+Não rodados neste bloco: `qa-grok-soundcase`, `qa-grok-catalog`, `qa-runtime-ownership`, `qa-security-runtime` (superfícies não tocadas; ficam para o gate final da entrega). Evidências em `/root/.cache/gaucho-container-queries/qa/`.
+
+## 2026-11-09 — Container queries no painel operacional, Bloco 2 (Claude)
+
+Duas colunas de cartões no painel ampliado (`panel-wide`), Pulse e Descobrir embutido; cartão aberto ocupa as duas.
+
+| Comando | Resultado |
+|---|---|
+| `npx vitest --run app/globals.visual.test.ts components/discover/DiscoverPage.test.tsx` (RED) | 3 failed, 50 passed: grade do Pulse sem `panel-wide:grid-cols-2`, grade do Descobrir embutido idem, cartão aberto sem `panel-wide:col-span-2` |
+| idem + `PulsePanelV2.test.tsx` (GREEN) | 3 arquivos, 56 passed |
+| Build isolado (1ª) + `scripts/qa-discover-panel.mjs` (1ª) | build `owLM3TdEM-EYOZkNFO_mo` exit 0; harness exit 1 em 1199 px: "Descobrir ampliado em duas colunas". Erro meu de 1 px: painel ampliado de 640 px tem miolo de 639 px (borda do aside) e o corte de 40rem não disparava |
+| Correção: `panel-wide` em 38.75rem (620 px); teste de contrato passa a derivar a folga da borda | com o corte antigo o teste novo falha (`expected 640 to be less than or equal to 638`); com o novo, 80 passed em `globals.visual` + `discover` + `workspace-v2` |
+| Build isolado (2ª) + harness (2ª) | build `k2hhFH2cO5IwW4sct-9nc` exit 0; harness exit 1 em 1100×440: "Pulse em 2 coluna(s)". Captura mostrava as duas colunas corretas; cenário isolado passou com medidas estáveis desde o instante zero. Corrida do harness (duas medições seguidas com o layout assentando), não defeito do app |
+| Harness com espera de estabilização (`until`) nas checagens de coluna (3ª) | exit 0; 14 cenários: 1 coluna em painel 320–600 px, 2 colunas em 956 e 1100 px (sheet deitado) e em todo ampliado desktop; aberto ocupa as duas; volta a 1 coluna ao reduzir |
+| `npm test` | exit 0; 228 arquivos, 1.251 testes |
+| `npx tsc --noEmit` / `npm run lint` / `git diff --check` | exit 0 / exit 0, 1 warning preexistente / exit 0 |
+| `scripts/qa-discover-controls.mjs` / `scripts/qa-discover-delete.mjs` | exit 0 / exit 0 |
+
+Não rodados neste bloco: `qa-grok-soundcase`, `qa-grok-catalog`, `qa-runtime-ownership`, `qa-security-runtime` (ficam para o gate final). Evidências em `/root/.cache/gaucho-container-queries/qa/bloco2/`.
+
+## 2026-11-09 — Coluna do chat pelo próprio espaço, Bloco 3 (Claude)
+
+Limpeza das classes de largura mortas, `chat-wide` nas boas-vindas e remoção do override cru por container.
+
+| Comando | Resultado |
+|---|---|
+| `scripts/qa-chat-column.mjs` novo, linha de base no build `k2hhFH2cO5IwW4sct-9nc` (1ª) | exit 1 no 3º cenário: a conversa nova criada para medir as boas-vindas ficava persistida e o cenário seguinte abria nela. Vazamento de estado do harness; passa a regravar os dados sintéticos a cada cenário |
+| idem (2ª), linha de base | exit 0; 11 cenários (390 a 1920 px). Thread 928 px, balões 672/736 px e composer 896 px iguais em 1489 e 1490 px: as classes `min-[1490px]` eram código morto. Boas-vindas: 1 coluna com vão de 13,6 px em 900 e 1023 px, apesar de coluna de 839 e 962 px |
+| `npx vitest --run app/globals.visual.test.ts` (RED) | 2 failed, 35 passed: variant `chat-wide` ausente; classes de largura mortas presentes |
+| `npx vitest --run app/globals.visual.test.ts components/chat components/workspace-v2` (GREEN) | 19 arquivos, 106 passed |
+| Tokens órfãos `--gc-mobile-welcome-panel-{x,y,radius}` e `--gc-mobile-welcome-grid-gap` removidos (8 linhas) com contrato | sem outro consumidor em código, testes, scripts ou docs |
+| `npm test` | exit 0; 228 arquivos, 1.254 testes |
+| `npx tsc --noEmit` / `npm run lint` / `git diff --check` | exit 0 / exit 0, 1 warning preexistente / exit 0 |
+| Build isolado | exit 0; build `FRDGd_PNqrykr4LUFLvJ0` |
+| `scripts/qa-chat-column.mjs` no build novo, comparado à linha de base | exit 0; thread, balões e composer idênticos em 11 de 11 cenários; boas-vindas idênticas em 8 de 10 e mudam só em 900 e 1023 px (1 coluna/13,6 px → 2 colunas/36 px) |
+| `scripts/qa-discover-panel.mjs` no build novo | exit 0; 14 cenários |
+
+Não rodados neste bloco: `qa-discover-controls`, `qa-discover-delete` (Descobrir não tocado), `qa-grok-soundcase`, `qa-grok-catalog`, `qa-runtime-ownership`, `qa-security-runtime` (ficam para o gate final). Evidências em `/root/.cache/gaucho-container-queries/qa/bloco3-antes/`, `bloco3-depois/` e `bloco3-painel/`.
+
+## 2026-11-09 — Polimentos de leitura, Bloco 4 (Claude)
+
+`text-wrap: balance` em títulos sem corte de linhas, `text-wrap: pretty` em texto parado (painel e Descobrir) e marca `data-streaming` no markdown em streaming.
+
+| Comando | Resultado |
+|---|---|
+| Prova no Chrome 156 (página avulsa): `balance` em título com `line-clamp-2` | sem efeito algum, com 2 ou 3+ linhas; títulos de cartão ficam fora da regra |
+| Prova no Chrome 156: `balance` em título sem corte, 340 px | linhas 306/338/277/75 px viram 306/249/237/203 px; `pretty` só age quando a última linha fica com palavra sozinha |
+| `npx vitest --run app/globals.visual.test.ts components/chat/StreamingMarkdown.test.tsx` (RED) | 3 failed, 39 passed: regra de `balance` ausente, regra de `pretty` ausente, `data-streaming` ausente. O contrato dos pares `100vh`/`100dvh` nasce verde: os pares já existiam (o plano contou a linha de fallback como pendência) |
+| `npx vitest --run app/globals.visual.test.ts components/chat` (GREEN) | 12 arquivos, 84 passed |
+| `npm test` | exit 0; 229 arquivos, 1.258 testes |
+| `npx tsc --noEmit` / `npm run lint` / `git diff --check` | exit 0 / exit 0, 1 warning preexistente / exit 0 |
+| Build isolado | exit 0; build `AI1H1D_FOemEZxZr6ZbWA` |
+| `scripts/qa-chat-column.mjs` (com checagem de `textWrapStyle`) | exit 0; 11 cenários; título do balão e das boas-vindas `balance`, parágrafo do balão `auto`; larguras e boas-vindas idênticas ao Bloco 3 |
+| `scripts/qa-discover-panel.mjs` (idem) | exit 0; 14 cenários; parágrafos da matéria `pretty`, título da geração Pulse `balance` |
+| `scripts/qa-discover-controls.mjs` / `scripts/qa-discover-delete.mjs` | exit 0 / exit 0 |
+| `scripts/qa-security-runtime.mjs` | exit 0; 9 verificações, incluindo login e shell em 1440 e 390 px |
+
+Não executados: `qa-grok-catalog` e `qa-grok-soundcase` (de 21/09). Pela leitura, estão obsoletos: não autenticam, e desde 22/09 o runtime de produção recusa boot sem auth; o de catálogo ainda espera "Grok 4.7" no seletor de texto, removido em 13/10. `qa-runtime-ownership` não é harness de navegador (smoke de processos e units) e cobre código não tocado. Evidências em `/root/.cache/gaucho-container-queries/qa/bloco4-*/` e `final-security/`.
+
+## 2026-11-09 — Thread longa com `content-visibility`, Bloco 5 (Claude)
+
+Medição, não implementação: nenhum arquivo do app mudou e nenhum teste foi criado. Script `medir-thread-longa.mjs` (fora do repositório, guardado com as evidências) sobe o build isolado `AI1H1D_FOemEZxZr6ZbWA` na porta 3148 com dados sintéticos e compara o app atual contra o mesmo app com `.gc-message-row{content-visibility:auto;contain-intrinsic-size:auto 220px}` injetado no navegador.
+
+| Execução | Resultado |
+|---|---|
+| Fumaça, 60 mensagens, 1 repetição, desktop e celular 4x | exit 0; fim da thread visível nas duas variantes; rolar ao topo 39 → 359 quadros (desktop) e 47 → 543 (celular); capturas em repouso equivalentes |
+| Rodada 60 e 300 mensagens, 3 repetições | interrompida aos 17 de 24 casos por decisão conjunta com Anders; só os tempos de carga ficaram registrados (`progresso.txt`), faixas sobrepostas entre as variantes |
+
+Decisão: não entra. Suítes do projeto não foram reexecutadas neste bloco porque o código é o mesmo do gate final do Bloco 4. Limpeza conferida: processo e servidor encerrados, porta 3148 livre, `data/` sintética removida. Evidências em `/root/.cache/gaucho-container-queries/qa/bloco5-medicao/`.
+
+## 2026-11-09 — Publicação dos blocos 1 a 4 (Claude)
+
+Autorizada por Anders. A build publicada é a mesma do gate final do Bloco 4; nenhum arquivo de código era mais novo que `.next/BUILD_ID` no momento do deploy.
+
+| Verificação | Resultado |
+|---|---|
+| `bash scripts/deploy.sh --from /root/worktrees/gaucho-container-queries` | exit 0; `gz-rfWQLxKyrhbFFQ7nHU` → `AI1H1D_FOemEZxZr6ZbWA`; health local 200 e público 200 |
+| `/chat/api/health` local e público | `healthy` nos dois |
+| `/chat/login` público; `POST /chat/api/chat` e `GET /chat/api/conversations` anônimos | 200; 401; 401 |
+| CSS público × candidata (SHA-256) | idêntico; contém `gc-panel`, `panel-cozy` e `text-wrap:balance` |
+| Units: serviço, ponte de ditado, timers Pulse/SoundCase/Discover, path SoundCase | todas `active`; ponte de ditado sem restart |
+| Processos antigos após o restart | encerrados; só o servidor novo escuta em 3040 (aviso `left-over process` preexistente) |
+
+Evidências em `/root/.cache/gaucho-container-queries/evidence` (`deploy.log`). Não validado nesta rodada: Safari/iPhone físico, que depende de Anders.
