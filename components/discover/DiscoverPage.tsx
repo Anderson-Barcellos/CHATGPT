@@ -229,7 +229,24 @@ export function DiscoverFeed({ embedded = false }: DiscoverFeedProps) {
   const toggleArticle = (id: string, open: boolean) => {
     const next = open ? null : id;
     setExpanded(next);
-    if (!next || embedded || window.matchMedia(MOBILE_MEDIA_QUERY).matches) return;
+    if (!next) return;
+    if (embedded) {
+      window.requestAnimationFrame(() => {
+        const article = articleRefs.current.get(id);
+        const title = article?.querySelector<HTMLElement>('button[aria-expanded="true"]');
+        const feed = article?.closest<HTMLElement>('[data-discover-scroll-root]');
+        if (!article || !title || !feed) return;
+        const titleBox = title.getBoundingClientRect();
+        const feedBox = feed.getBoundingClientRect();
+        // A grade pode mover o cartão da direita para outra linha. Reposiciona
+        // apenas o feed e só quando o título recém-aberto saiu da área de leitura.
+        if (titleBox.top < feedBox.top || titleBox.bottom > feedBox.bottom) {
+          feed.scrollTop += article.getBoundingClientRect().top - feedBox.top;
+        }
+      });
+      return;
+    }
+    if (window.matchMedia(MOBILE_MEDIA_QUERY).matches) return;
     window.requestAnimationFrame(() => {
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       articleRefs.current.get(id)?.scrollIntoView({

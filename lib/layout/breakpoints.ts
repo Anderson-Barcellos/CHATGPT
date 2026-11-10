@@ -12,6 +12,9 @@ export const THREAD_PADDING_PX = 40; // .gc-chat-thread md:px-5
 export const SHELL_CHROME_PX = 16; // 2 × --gc-shell-gutter + bordas do shell, trilha e painel
 export const CONTEXT_SIDEBAR_BREAKPOINT =
   SHELL_RAIL_WIDTH_PX + CONTEXT_PANEL_DOCKED_WIDTH_PX + MESSAGE_FRAME_FULL_WIDTH_PX + THREAD_PADDING_PX + SHELL_CHROME_PX;
+export const CONTEXT_PANEL_EXPANDED_WIDTH_PX = 760; // teto de --gc-shell-context-expanded-width
+export const CONTEXT_EXPANDED_SIDEBAR_BREAKPOINT =
+  CONTEXT_SIDEBAR_BREAKPOINT + CONTEXT_PANEL_EXPANDED_WIDTH_PX - CONTEXT_PANEL_DOCKED_WIDTH_PX;
 
 // Altura máxima (px) em que um aparelho de toque em paisagem ainda é tratado
 // como celular (iPhone 17 Pro Max em paisagem tem 440 pt de altura).

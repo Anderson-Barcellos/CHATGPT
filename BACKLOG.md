@@ -2,6 +2,20 @@
 
 ## Estado operacional
 
+#### Correções da revisão de layout (`publicada`, 2026-11-10)
+
+Versionamento autorizado por Anders em 10/11 após a publicação: commit das correções na `main`. A branch `claude/container-queries-painel` já está integralmente incorporada; não há merge pendente. O envio inclui também os dois commits anteriores `e0717fb` e `62361b6`; confirmação específica desse conjunto pendente antes do push. As menções abaixo a ausência de autorização descrevem o momento da publicação.
+
+Anders autorizou implementar e publicar os três achados da revisão. Fonte isolada: `/root/.cache/gaucho-layout-review-20261110/source`, baseada em `62361b6`; evidências em `../evidence`. Produção preservada durante os gates.
+
+DECISÃO ELABORADA: a edição mobile deve usar a largura disponível; o seletor recebe o escopo Atmosphere para vencer o `fit-content` posterior sem `!important`. Evidência anterior: textarea 309,59 px em paisagem 956×440, contra 855,66 px com o seletor corrigido. O conflito antecede a rodada de container queries.
+
+DECISÃO ELABORADA: manter a grade densa do Descobrir, mas acompanhar o cartão recém-aberto quando seu título sai da área visível, rolando somente o feed embutido. Evita que o cartão da direita desapareça abaixo da tela sem alterar a página independente nem a ordem dos dados.
+
+DECISÃO ELABORADA: o encaixe considera a largura escolhida do painel: normal desde 1773 px, ampliado desde 1933 px (diferença dos tetos 760−600). O mesmo aside permanece montado; a classe de flutuação acompanha o estado calculado em JS, eliminando o bloqueio CSS fixo em 1772. Preservar leitura/player e balões ao ampliar, reduzir e redimensionar. TTS, dados privados, APIs e modelos fora do escopo. Build, suíte, tipos/lint e QA de publicação registrados ao concluir; sem commit/push autorizado.
+
+Publicado às 19:01 BRT: build `O9dclP3abTxpSM7cm-uNL`, origem isolada acima (**preservar**), backup `/root/.cache/gaucho-deploy/20261110T220108Z/next-before`. 229 arquivos/1.259 testes, tsc, lint e build exit 0; cinco harnesses de navegador aprovados, incluindo 14 cenários do chat e 14 do painel. Chrome público com sessão efêmera e APIs sintéticas aprovou 956×440, 1773×900 e 1933×1000. Saúde local/pública 200, chat/conversas anônimos 401, agendadores ativos, ponte de ditado com PID 2775207 preservado. Somente chatgpt.service reiniciado; sem commit/push. Detalhes e ressalvas no diário desta data; validação em iPhone/Safari físico continua não realizada.
+
 #### Painel e coluna do chat respondendo ao próprio espaço (`publicada; aguarda conferência no iPhone`, 2026-11-09)
 
 Pedido de Anders: polimentos e modernização do layout, com a suspeita de que os componentes reativos ainda dependem do tamanho do dispositivo. Leitura confirmou com medida: 340 variants `md:` contra 3 regras `@container`; ~260 são densidade toque × mouse e ficam; o problema real é o miolo do painel operacional, que decide capa e arranjo pelo monitor. Plano aprovado em `docs/plans/2026-11-09-container-queries-painel.md`, cinco blocos com conferência de Anders entre eles; Studio e SoundCase congelados. Worktree `/root/worktrees/gaucho-container-queries` (preservar), branch `claude/container-queries-painel`, base `a572615`.

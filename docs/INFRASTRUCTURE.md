@@ -1,10 +1,12 @@
 # Infraestrutura
 
-**Última atualização:** 2026-11-09 (painel e coluna do chat por container queries publicados)
+**Última atualização:** 2026-11-10 (correções de edição, expansão e encaixe publicadas)
 **Produção:** `https://sonaris.us/chat` — host `srv1927271`
 **Porta local:** `3040`
 
 ## Topologia
+
+Publicação atual em 10/11, 19:01 BRT, autorizada por Anders: editor mobile largo, cartão aberto do Descobrir acompanhado no feed e encaixe ampliado desde 1933 px (normal 1773). Build `O9dclP3abTxpSM7cm-uNL`, origem `/root/.cache/gaucho-layout-review-20261110/source` (**NÃO apagar**), backup `/root/.cache/gaucho-deploy/20261110T220108Z/next-before`; substitui `AI1H1D_FOemEZxZr6ZbWA`. Somente `chatgpt.service` reiniciado; agendadores pausados durante a troca e retomados. Local/público 200, anônimo 401; Chrome público validou os três ajustes com dados sintéticos e nenhuma chamada paga. Ponte de ditado preservada (PID 2775207). Porta, proxy, cookies, credenciais, dados e TTS preservados; sem reload Apache. Publicações abaixo são histórico.
 
 Publicação atual em 09/11 (22:15 BRT), autorizada por Anders: painel operacional e coluna do chat passam a responder ao próprio espaço por container queries (`gc-panel`, `gc-chat`), cartões do Pulse e do Descobrir embutido em duas colunas no painel ampliado e polimentos de leitura (`text-wrap`). Só frontend: sem mudança de API, modelos, portas, proxy, cookies, credenciais, dados privados ou Apache. Build `AI1H1D_FOemEZxZr6ZbWA` substituiu `gz-rfWQLxKyrhbFFQ7nHU`; origem `/root/worktrees/gaucho-container-queries` (**NÃO apagar**, a `.next` viva referencia esse caminho), código `e0717fb`. `scripts/deploy.sh --from`, exit 0; backup `/root/.cache/gaucho-deploy/20261110T011540Z/next-before`. Somente `chatgpt.service` reiniciado, com os três workers inativos no instante da troca: local/público 200 healthy, login 200, chat e conversas anônimos 401, CSS público idêntico ao da candidata (SHA-256) e já com as regras novas. Timers, path SoundCase e ponte de ditado ativos; a ponte não reiniciou. O aviso `Found left-over process` do systemd no restart é preexistente (também em 05/11) e os processos antigos encerraram. Evidências em `/root/.cache/gaucho-container-queries/evidence`.
 

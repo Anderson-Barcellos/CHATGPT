@@ -66,7 +66,7 @@ import { GPTLogo } from "@/components/ui/gpt-logo";
 import { useCommandPaletteContext } from "@/components/command/CommandPaletteProvider";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useVisualViewport } from "@/hooks/useVisualViewport";
-import { CONTEXT_SIDEBAR_BREAKPOINT } from "@/lib/layout/breakpoints";
+import { CONTEXT_SIDEBAR_BREAKPOINT, CONTEXT_EXPANDED_SIDEBAR_BREAKPOINT } from "@/lib/layout/breakpoints";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/uiStore";
 import type { FileAttachment, ResponseMode } from "@/types";
@@ -80,13 +80,15 @@ const RESPONSE_MODE_LABELS: Record<ResponseMode, string> = {
 };
 
 const DESKTOP_CONTEXT_QUERY = `(min-width: ${CONTEXT_SIDEBAR_BREAKPOINT}px)`;
+const EXPANDED_CONTEXT_QUERY = `(min-width: ${CONTEXT_EXPANDED_SIDEBAR_BREAKPOINT}px)`;
 function subscribeDesktopContext(callback: () => void) {
-  const query = window.matchMedia(DESKTOP_CONTEXT_QUERY);
-  query.addEventListener("change", callback);
-  return () => query.removeEventListener("change", callback);
+  const queries = [DESKTOP_CONTEXT_QUERY, EXPANDED_CONTEXT_QUERY].map(query => window.matchMedia(query));
+  queries.forEach(query => query.addEventListener("change", callback));
+  return () => queries.forEach(query => query.removeEventListener("change", callback));
 }
-const getDesktopContextSnapshot = () => window.matchMedia(DESKTOP_CONTEXT_QUERY).matches;
-const getDesktopContextServerSnapshot = () => false;
+const getDesktopContextSnapshot = () => window.matchMedia(EXPANDED_CONTEXT_QUERY).matches
+  ? 2 : window.matchMedia(DESKTOP_CONTEXT_QUERY).matches ? 1 : 0;
+const getDesktopContextServerSnapshot = () => 0;
 
 interface WorkspaceFrameV2Props {
   sidebar: ReactNode;
@@ -241,13 +243,14 @@ export function WorkspaceFrameV2({
   const { setOpen: openCommandPalette } = useCommandPaletteContext();
   const openContextPanel = useUIStore((state) => state.openContextPanel);
   const isMobile = useIsMobile();
-  const desktopContext = useSyncExternalStore(subscribeDesktopContext, getDesktopContextSnapshot, getDesktopContextServerSnapshot) && !isMobile;
+  const contextDockSpace = useSyncExternalStore(subscribeDesktopContext, getDesktopContextSnapshot, getDesktopContextServerSnapshot);
   useVisualViewport(isMobile);
   const [internalSidebarOpen, setInternalSidebarOpen] = useState(false);
   const sidebarOpen = mobileSidebarOpen ?? internalSidebarOpen;
   const setSidebarOpen = onMobileSidebarOpenChange ?? setInternalSidebarOpen;
   const [internalContextOpen, setInternalContextOpen] = useState(false);
   const [contextExpanded, setContextExpanded] = useState(false);
+  const desktopContext = contextDockSpace >= (contextExpanded ? 2 : 1) && !isMobile;
   const contextOpen = mobileContextOpen ?? internalContextOpen;
   const contextCollapsed = !contextOpen;
   const setContextOpen = onMobileContextOpenChange ?? setInternalContextOpen;
@@ -482,12 +485,12 @@ export function WorkspaceFrameV2({
               data-expanded={contextExpanded}
               data-context-mode={desktopContext ? "docked" : "floating"}
               className={cn(
-                // Encaixa só a partir de CONTEXT_SIDEBAR_BREAKPOINT; abaixo, aberto, flutua sobre o chat.
+                // O trilho recolhido aparece desde 1773px; aberto, o encaixe considera também a ampliação.
                 "gc-clinical-panel min-h-0 overflow-hidden min-[1773px]:block min-[1773px]:shrink-0 min-[1773px]:border-l min-[1773px]:border-[color:var(--gc-border)] min-[1773px]:transition-[width] min-[1773px]:duration-200",
                 contextCollapsed
                   ? "hidden w-[2.85rem]"
                   : cn(
-                      "gc-context-floating",
+                      !desktopContext && "gc-context-floating",
                       contextExpanded
                         ? "w-[var(--gc-shell-context-expanded-width)]"
                         : "w-[var(--gc-shell-context-width)]"

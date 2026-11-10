@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   CONTEXT_PANEL_DOCKED_WIDTH_PX,
+  CONTEXT_EXPANDED_SIDEBAR_BREAKPOINT,
+  CONTEXT_PANEL_EXPANDED_WIDTH_PX,
   CONTEXT_SIDEBAR_BREAKPOINT,
   MESSAGE_FRAME_FULL_WIDTH_PX,
   SHELL_CHROME_PX,
@@ -9,6 +11,11 @@ import {
 } from "@/lib/layout/breakpoints";
 
 describe("encaixe do painel operacional", () => {
+  it("reserva o painel ampliado antes de encaixar sem comprimir o chat", () => {
+    expect(CONTEXT_PANEL_EXPANDED_WIDTH_PX).toBe(760);
+    expect(CONTEXT_EXPANDED_SIDEBAR_BREAKPOINT).toBe(1933);
+    expect(CONTEXT_EXPANDED_SIDEBAR_BREAKPOINT - CONTEXT_PANEL_EXPANDED_WIDTH_PX).toBe(CONTEXT_SIDEBAR_BREAKPOINT - CONTEXT_PANEL_DOCKED_WIDTH_PX);
+  });
   it("só encaixa quando o quadro de mensagens mantém a largura máxima ao lado do painel", () => {
     expect(SHELL_RAIL_WIDTH_PX).toBe(232);
     expect(CONTEXT_PANEL_DOCKED_WIDTH_PX).toBe(600);

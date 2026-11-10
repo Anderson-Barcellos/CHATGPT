@@ -119,6 +119,25 @@ try {
     const columns = panelWidth >= 622 ? 2 : 1;
     await until(() => (columns === 2 ? sideBySide : stacked)(card(1), card(2)), `Descobrir em ${columns} coluna(s) com painel de ${panelWidth}px`);
     const first = feed.locator('[data-discover-article="synthetic-1"]');
+    if (columns === 2) {
+      await card(2).locator('button[aria-expanded]').click();
+      await page.waitForTimeout(400);
+      assert.ok(await card(2).locator('button[aria-expanded]').evaluate(title => {
+        const rect = title.getBoundingClientRect();
+        const feed = title.closest('[data-discover-scroll-root]').getBoundingClientRect();
+        return rect.top >= feed.top - 1 && rect.bottom <= feed.bottom + 1;
+      }), 'título do cartão direito aberto continua visível');
+      console.log('REVIEW_RIGHT_CARD', JSON.stringify(await feed.evaluate(node => {
+        const root = node.getBoundingClientRect();
+        const article = node.querySelector('[data-discover-article="synthetic-2"]');
+        const rect = article.getBoundingClientRect();
+        const title = article.querySelector('button[aria-expanded]').getBoundingClientRect();
+        return { viewport: innerWidth, feedTop: root.top, feedBottom: root.bottom, cardTop: rect.top, titleTop: title.top, titleBottom: title.bottom, scrollTop: node.scrollTop };
+      })));
+      await page.screenshot({ path: `${out}/review-right-card-${width}.png` });
+      await card(2).locator('button[aria-expanded]').click();
+      await feed.evaluate(node => node.scrollTop = 0);
+    }
     await first.locator('button[aria-expanded]').click();
     await first.getByText('Fontes', { exact: true }).waitFor();
     assert.ok(await first.locator('p').evaluateAll(nodes => nodes.length > 3 && nodes.every(node => getComputedStyle(node).textWrapStyle === 'pretty')), 'parágrafos da matéria sem palavra órfã');

@@ -659,9 +659,8 @@ body {
   position: relative;
 }
 
-/* Abaixo do encaixe (CONTEXT_SIDEBAR_BREAKPOINT − 1, lib/layout/breakpoints.ts)
-   o painel aberto flutua sobre a borda direita do chat, sem véu nem foco preso. */
-@media (max-width: 1772px) {
+/* O shell escolhe o encaixe conforme a largura normal ou ampliada do painel.
+   A classe só existe enquanto ele flutua, sem véu nem foco preso. */
   .gc-clinical-panel.gc-context-floating {
     position: absolute;
     inset-block: 0;
@@ -679,8 +678,6 @@ body {
   .gc-clinical-panel.gc-context-floating[data-expanded="true"] {
     width: min(var(--gc-shell-context-expanded-width), calc(100% - 3rem));
   }
-}
-
 @keyframes gc-context-float-in {
   from { opacity: 0; transform: translateX(1.25rem); }
   to { opacity: 1; transform: none; }
@@ -1548,7 +1545,7 @@ body {
     display: none;
   }
 
-  .gc-user-bubble:has(.gc-message-editor) {
+  .gc-atmosphere-shell .gc-user-bubble:has(.gc-message-editor) {
     width: 100%;
   }
 

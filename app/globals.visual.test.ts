@@ -146,7 +146,7 @@ describe("Gaucho Chat visual contract", () => {
     expect(layout).toContain("gc-context-drawer gc-chat-ui");
     expect(panel).not.toContain("min-[1281px]:hidden");
     expect(floating).toContain("position: absolute;");
-    expect(css).toContain(`@media (max-width: ${CONTEXT_SIDEBAR_BREAKPOINT - 1}px)`);
+    expect(layout).toContain('!desktopContext && "gc-context-floating"');
     expect(layout).toContain(`min-[${CONTEXT_SIDEBAR_BREAKPOINT}px]:block`);
     expect(floating).toMatch(/width: min\(var\(--gc-shell-context-width\), calc\(100% - 3rem\)\);/);
     expect(css).not.toMatch(/\[data-workspace-region="context"\]\[data-collapsed="true"\]\s*\{[^}]*width/);

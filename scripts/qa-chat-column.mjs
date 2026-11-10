@@ -20,15 +20,15 @@ const env = { PATH: '/usr/bin:/bin', NODE_ENV: 'production', NEXT_PUBLIC_BASE_PA
   AUTH_ENABLED: 'true', AUTH_USERNAME: 'synthetic-user', AUTH_PASSWORD: 'synthetic-password',
   JWT_SECRET: 'synthetic-chat-column-secret-not-production', GAUCHO_ISOLATED_RUNTIME: 'true', RATE_LIMIT_ENABLED: 'false' };
 const now = '2026-11-09T12:00:00Z';
-const longUser = 'Pergunta sintética longa para o balão do usuário atingir a largura máxima do quadro de mensagens. '.repeat(6);
+const longUser = 'Ajusta esse texto pra mim.';
 const longAssistant = '## Título sintético comprido para conferir a quebra de linha equilibrada no balão\n\n' + Array.from({ length: 3 }, (_, i) => `Resposta sintética ${i + 1}. ${'Parágrafo comprido para o balão do assistente atingir a largura máxima. '.repeat(8)}`).join('\n\n');
 const conversations = [{ id: 'qa-conversation', title: 'Conversa sintética', lifecycle: 'active', createdAt: now, updatedAt: now, messages: [
   { id: 'm-user-1', role: 'user', content: longUser, timestamp: now },
   { id: 'm-assistant-1', role: 'assistant', modelId: 'gpt-6-luna', content: longAssistant, timestamp: now },
 ] }];
 // [largura, altura, toque]: celular, tablet em pé, e a faixa desktop em torno dos cortes 1024, 1490 e 1773.
-const scenarios = [[390, 844, true], [820, 1180, true], [900, 1000, false], [1023, 1000, false], [1024, 1000, false], [1100, 1000, false],
-  [1280, 900, false], [1489, 1000, false], [1490, 1000, false], [1773, 1000, false], [1920, 1000, false]];
+const scenarios = [[390, 844, true], [956, 440, true], [820, 1180, true], [900, 1000, false], [1023, 1000, false], [1024, 1000, false], [1100, 1000, false],
+  [1280, 900, false], [1489, 1000, false], [1490, 1000, false], [1773, 1000, false], [1920, 1000, false], [1932, 1000, false], [1933, 1000, false]];
 let server, browser, page, ownsData = false, log = '';
 const results = [];
 async function until(fn, label) {
@@ -76,6 +76,37 @@ try {
     await page.goto(base, { waitUntil: 'networkidle' });
     await page.locator('.gc-assistant-bubble').first().waitFor();
     const thread = await page.evaluate(measureThread);
+    await page.locator('[data-message-id="m-user-1"]').getByRole('button', { name: 'Acoes da mensagem' }).click();
+    await page.getByRole('menuitem', { name: /Editar/ }).click();
+    await page.getByRole('textbox', { name: 'Editar mensagem', exact: true }).waitFor();
+    console.log('REVIEW_EDITOR', JSON.stringify(await page.evaluate(() => {
+      const rect = s => { const n = document.querySelector(s); const r = n.getBoundingClientRect(); return { width: r.width, height: r.height, scrollWidth: n.scrollWidth, clientWidth: n.clientWidth }; };
+      return { viewport: innerWidth, frame: rect('.gc-message-frame'), bubble: rect('.gc-user-bubble'), editor: rect('.gc-message-editor'), textarea: rect('.gc-message-editor textarea') };
+    })));
+    await page.screenshot({ path: `${out}/edit-${width}.png` });
+    if (width <= 767 || (touch && height <= 500)) {
+      assert.ok(await page.evaluate(() => Math.abs(document.querySelector('.gc-user-bubble').getBoundingClientRect().width - document.querySelector('.gc-message-frame').getBoundingClientRect().width) < 1), 'edição mobile ocupa a largura disponível');
+    }
+    await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
+    if (width >= 1773) {
+      const panel = page.locator('[data-workspace-region="context"]');
+      await page.getByRole('button', { name: 'Abrir painel', exact: true }).click();
+      await until(async () => Math.abs((await panel.boundingBox()).width - 600) < 1, 'painel normal assentado');
+      await page.getByRole('button', { name: 'Expandir canvas', exact: true }).click();
+      await until(async () => Math.abs((await panel.boundingBox()).width - 760) < 1 && await panel.getAttribute('data-context-mode') === (width >= 1933 ? 'docked' : 'floating'), 'encaixe ampliado assentado');
+      await until(async () => {
+        const measured = await page.evaluate(measureThread);
+        return Math.abs(measured.user.width - thread.user.width) < 1 && Math.abs(measured.assistant.width - thread.assistant.width) < 1;
+      }, 'ampliação preserva largura dos balões');
+      console.log('REVIEW_DOCK_EXPANDED', JSON.stringify(await page.evaluate(measureThread)));
+      if (width === 1933) {
+        await page.setViewportSize({ width: 1932, height });
+        await until(async () => await panel.getAttribute('data-context-mode') === 'floating', 'ampliado flutua ao reduzir');
+        await page.setViewportSize({ width: 1933, height });
+        await until(async () => await panel.getAttribute('data-context-mode') === 'docked', 'ampliado encaixa ao aumentar');
+      }
+      await page.getByRole('button', { name: 'Recolher painel', exact: true }).click();
+    }
     // Leitura: título do markdown equilibrado; parágrafo do balão sem pretty (o texto do chat chega aos poucos).
     const wrap = selector => page.locator(selector).first().evaluate(node => getComputedStyle(node).textWrapStyle);
     assert.equal(await wrap('.gc-assistant-bubble h2'), 'balance', 'título do balão equilibrado');
