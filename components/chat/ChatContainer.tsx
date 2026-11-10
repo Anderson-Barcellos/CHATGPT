@@ -174,8 +174,8 @@ function WelcomeScreen({
 
         </div>
 
-        <div className="gc-welcome-desktop gc-refined-panel hidden rounded-[var(--gc-mobile-welcome-panel-radius)] border px-[var(--gc-mobile-welcome-panel-x)] py-[var(--gc-mobile-welcome-panel-y)] md:block md:rounded-[2rem] md:px-7 md:py-7">
-          <div className="gc-welcome-grid grid gap-[var(--gc-mobile-welcome-grid-gap)] lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.1fr)] lg:gap-9">
+        <div className="gc-welcome-desktop gc-refined-panel hidden rounded-[2rem] border p-5 md:block chat-wide:p-7">
+          <div className="gc-welcome-grid grid grid-cols-1 gap-6 chat-wide:grid-cols-[minmax(0,0.95fr)_minmax(0,1.1fr)] chat-wide:gap-9">
             <div className="flex flex-col justify-between">
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/10 px-2.5 py-0.5 text-nano font-semibold uppercase tracking-label text-primary md:px-3 md:py-1 md:text-micro md:tracking-eyebrow">
@@ -549,7 +549,7 @@ export function ChatContainer({
       <ScrollArea ref={scrollAreaRef} className="h-full">
         <div
           ref={contentRef}
-          className="gc-chat-thread mx-auto flex w-full max-w-3xl flex-col gap-[var(--gc-mobile-chat-content-gap)] px-[var(--gc-mobile-chat-content-x)] py-[var(--gc-mobile-chat-content-y)] md:gap-5 md:px-5 md:py-7 lg:max-w-[50rem] min-[1490px]:max-w-[60rem]"
+          className="gc-chat-thread mx-auto flex w-full flex-col gap-[var(--gc-mobile-chat-content-gap)] px-[var(--gc-mobile-chat-content-x)] py-[var(--gc-mobile-chat-content-y)] md:gap-5 md:px-5 md:py-7"
         >
           {messages.length === 0 ? (
             <WelcomeScreen

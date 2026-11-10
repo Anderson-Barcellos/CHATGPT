@@ -188,8 +188,8 @@ export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDe
           className={cn(
             "gc-message-card relative w-full min-w-0 gap-0 overflow-hidden break-words border px-3 py-2.5 text-left text-body-sm leading-relaxed md:px-5 md:py-4 md:text-body",
             isUser
-              ? "gc-user-bubble rounded-2xl rounded-br-md md:max-w-[76%] min-[1490px]:max-w-[78%]"
-              : "gc-assistant-bubble rounded-[1.6rem] rounded-bl-md text-foreground/90 md:max-w-[48rem] min-[1490px]:max-w-[54rem]"
+              ? "gc-user-bubble rounded-2xl rounded-br-md"
+              : "gc-assistant-bubble rounded-[1.6rem] rounded-bl-md text-foreground/90"
           )}
           onTouchStart={longPress.onTouchStart}
           onTouchEnd={longPress.onTouchEnd}

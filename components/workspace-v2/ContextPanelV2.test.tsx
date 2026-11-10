@@ -37,3 +37,8 @@ it("carrega notícias somente ao selecionar a aba e desmonta ao voltar ao Pulse"
   expect(lifecycle.unmount).toHaveBeenCalledOnce();
   expect(container.textContent).toContain("Gerações Pulse");
 });
+
+it("marca a raiz como container para o conteúdo responder à largura do painel", async () => {
+  await act(async () => root.render(<ContextPanelV2 />));
+  expect(container.firstElementChild?.classList.contains("gc-panel-container")).toBe(true);
+});

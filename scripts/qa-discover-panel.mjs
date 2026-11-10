@@ -28,6 +28,13 @@ audio.write('RIFF'); audio.writeUInt32LE(audio.length - 8, 4); audio.write('WAVE
 audio.writeUInt32LE(16, 16); audio.writeUInt16LE(1, 20); audio.writeUInt16LE(1, 22);
 audio.writeUInt32LE(24000, 24); audio.writeUInt32LE(48000, 28); audio.writeUInt16LE(2, 32);
 audio.writeUInt16LE(16, 34); audio.write('data', 36); audio.writeUInt32LE(audio.length - 44, 40);
+const runs = [1, 2, 3].map(n => ({ id: `synthetic-run-${n}`, taskId: 'synthetic-task', status: 'completed', title: `Rotina sintética ${n}`,
+  content: `# Geração sintética ${n}\n\n${'Texto sintético de uma geração Pulse para conferir o cartão no painel. '.repeat(6)}`,
+  citations: [], createdAt: `2026-10-2${n}T12:00:00Z`, updatedAt: `2026-10-2${n}T12:00:00Z` }));
+// Cartões lado a lado (mesmo topo) ou empilhados; painel ampliado = panel-wide (620 px de miolo).
+// As checagens esperam o layout assentar: duas medições seguidas em plena acomodação dão falso negativo.
+const sideBySide = async (a, b) => { const [x, y] = [await a.boundingBox(), await b.boundingBox()]; return Math.abs(x.y - y.y) < 2 && y.x >= x.x + x.width - 1; };
+const stacked = async (a, b) => { const [x, y] = [await a.boundingBox(), await b.boundingBox()]; return y.y >= x.y + x.height - 1; };
 let server, browser, page, ownsData = false, log = '';
 const results = [];
 async function until(fn, label) {
@@ -37,12 +44,13 @@ async function until(fn, label) {
 try {
   await mkdir(out, { recursive: true }); await mkdir(data); ownsData = true;
   await writeFile(path.join(data, 'discover.json'), JSON.stringify({ topics: ['Ciência'], articles, job: { status: 'idle' }, schedule: { enabled: false } }));
+  await writeFile(path.join(data, 'pulse-runs.json'), JSON.stringify(runs));
   await writeFile(path.join(data, 'conversations.json'), JSON.stringify([{ id: 'qa-conversation', title: 'Conversa sintética', messages: [], createdAt: '2026-10-24T12:00:00Z', updatedAt: '2026-10-24T12:00:00Z' }]));
   server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '--hostname', '127.0.0.1', '--port', port], { cwd: repo, env });
   server.stdout.on('data', b => log += b); server.stderr.on('data', b => log += b);
   await until(() => fetch(`${base}/login`).then(r => r.ok).catch(() => false), 'boot');
   browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox'], headless: true, env });
-  for (const [width, height, touch, theme] of [[1199, 1000, false, 'light'], [1280, 900, false, 'dark'], [1440, 1000, false, 'dark'], [1536, 1000, false, 'light'], [1772, 1000, false, 'dark'], [1773, 900, false, 'light'], [1920, 1000, false, 'dark'], [3440, 1000, false, 'dark'], [6880, 1000, false, 'light'], [820, 1180, true, 'light'], [390, 844, true, 'dark'], [320, 740, true, 'light'], [1100, 440, true, 'dark']]) {
+  for (const [width, height, touch, theme] of [[1199, 1000, false, 'light'], [1280, 900, false, 'dark'], [1440, 1000, false, 'dark'], [1536, 1000, false, 'light'], [1772, 1000, false, 'dark'], [1773, 900, false, 'light'], [1920, 1000, false, 'dark'], [3440, 1000, false, 'dark'], [6880, 1000, false, 'light'], [820, 1180, true, 'light'], [390, 844, true, 'dark'], [320, 740, true, 'light'], [1100, 440, true, 'dark'], [956, 440, true, 'dark']]) {
     if (process.env.DISCOVER_QA_WIDTH && width !== Number(process.env.DISCOVER_QA_WIDTH)) continue;
     const context = await browser.newContext({ viewport: { width, height }, hasTouch: touch, colorScheme: theme, reducedMotion: 'reduce' });
     await context.addInitScript(t => { sessionStorage.setItem('gpt-splash-shown', '1'); localStorage.setItem('theme', t); }, theme);
@@ -101,9 +109,19 @@ try {
     assert.equal(await tabs.evaluate(node => node.scrollWidth > node.clientWidth + 1), false);
     assert.equal(await feed.locator('.line-clamp-3').count(), 3); assert.equal(spoken.length, 0);
     await page.screenshot({ path: `${out}/feed-${width}-${theme}.png` });
+    // A capa responde à largura do painel (panel-cozy, 30rem), não ao monitor:
+    // 96 px a partir de 480 px de painel, 80 px abaixo. Antes do container, o
+    // sheet largo do celular deitado ficava na tira de 80 px.
+    const panelWidth = (await panel.boundingBox()).width;
+    const cover = Math.round(await feed.locator('[data-discover-article="synthetic-2"] img').evaluate(node => node.getBoundingClientRect().height));
+    assert.equal(cover, panelWidth >= 480 ? 96 : 80, `capa de ${cover}px em painel de ${panelWidth}px`);
+    const card = n => feed.locator(`[data-discover-article="synthetic-${n}"]`);
+    const columns = panelWidth >= 622 ? 2 : 1;
+    await until(() => (columns === 2 ? sideBySide : stacked)(card(1), card(2)), `Descobrir em ${columns} coluna(s) com painel de ${panelWidth}px`);
     const first = feed.locator('[data-discover-article="synthetic-1"]');
     await first.locator('button[aria-expanded]').click();
     await first.getByText('Fontes', { exact: true }).waitFor();
+    assert.ok(await first.locator('p').evaluateAll(nodes => nodes.length > 3 && nodes.every(node => getComputedStyle(node).textWrapStyle === 'pretty')), 'parágrafos da matéria sem palavra órfã');
     await first.getByRole('button', { name: 'Ouvir matéria', exact: true }).click();
     assert.equal(spoken.length, 0);
     await first.getByRole('button', { name: 'Tocar', exact: true }).click();
@@ -145,10 +163,13 @@ try {
       assert.ok(await feed.evaluate(node => node === window.__qaFeed && node.scrollTop > 0));
       await until(() => feed.evaluate(node => Math.abs(window.__qaAnchor.node.getBoundingClientRect().top - node.getBoundingClientRect().top - window.__qaAnchor.offset) < 3), 'ponto de leitura após ampliar');
       assert.equal(await first.locator('button[aria-expanded]').getAttribute('aria-expanded'), 'true');
+      await until(() => sideBySide(card(2), card(3)), 'Descobrir ampliado em duas colunas');
+      await until(async () => (await card(1).boundingBox()).width > (await card(2).boundingBox()).width * 1.9, 'aberto ocupa as duas colunas');
       await page.screenshot({ path: `${out}/expanded-${width}-${theme}.png` });
       if (width >= 3440) await panel.screenshot({ path: `${out}/panel-expanded-${width}-${theme}.png` });
       await panel.getByRole('button', { name: 'Reduzir canvas', exact: true }).click();
       await until(async () => Math.abs((await panel.boundingBox()).width - originalWidth) < 1, 'redução');
+      await until(() => stacked(card(2), card(3)), 'Descobrir volta a uma coluna ao reduzir');
       await until(() => feed.evaluate(node => Math.abs(window.__qaAnchor.node.getBoundingClientRect().top - node.getBoundingClientRect().top - window.__qaAnchor.offset) < 3), 'ponto de leitura após reduzir');
       assert.equal(reads, readsBefore); assert.equal(spoken.length, audioBefore);
     }
@@ -158,6 +179,23 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await panel.getByRole('tab', { name: 'Pulse', exact: true }).click();
     assert.equal(await panel.locator('[data-audio-engine]').count(), 0);
+    const run = n => panel.locator('article[role="button"]').nth(n);
+    await run(2).waitFor();
+    await until(() => (columns === 2 ? sideBySide : stacked)(run(0), run(1)), `Pulse em ${columns} coluna(s) com painel de ${panelWidth}px`);
+    if (desktop) {
+      await panel.getByRole('button', { name: 'Expandir canvas', exact: true }).click();
+      await until(async () => Math.abs((await panel.boundingBox()).width - expandedWidth) < 1, 'ampliação no Pulse');
+      await until(() => sideBySide(run(0), run(1)), 'Pulse ampliado em duas colunas');
+      await run(1).click();
+      await until(async () => (await run(1).boundingBox()).width > (await run(0).boundingBox()).width * 1.9, 'geração aberta ocupa as duas colunas');
+      assert.equal(await run(1).locator('h1').first().evaluate(node => getComputedStyle(node).textWrapStyle), 'balance', 'título da geração equilibrado');
+      await page.screenshot({ path: `${out}/pulse-expanded-${width}-${theme}.png` });
+      await run(1).click();
+      await until(() => sideBySide(run(0), run(1)), 'Pulse volta a duas colunas ao fechar a geração');
+      await panel.getByRole('button', { name: 'Reduzir canvas', exact: true }).click();
+      await until(async () => Math.abs((await panel.boundingBox()).width - normalWidth) < 1, 'redução no Pulse');
+      await until(() => stacked(run(0), run(1)), 'Pulse volta a uma coluna ao reduzir');
+    } else await page.screenshot({ path: `${out}/pulse-${width}-${theme}.png` });
     assert.equal(await panel.locator('[data-discover-scroll-root]').count(), 0);
     await panel.getByRole('tab', { name: 'Notas', exact: true }).click();
     await panel.getByRole('tab', { name: 'Rotinas', exact: true }).click();
@@ -191,7 +229,7 @@ try {
       assert.equal(await panel.getByRole('tab', { name: 'Descobrir IA', exact: true }).getAttribute('aria-selected'), 'true');
     }
     assert.deepEqual(errors, []); assert.deepEqual(external, []);
-    results.push({ width, height, theme, mobile, desktop, mode: mobile ? 'mobile' : docked ? 'docked' : 'floating', normalWidth: mobile ? width : normalWidth, expandedWidth: desktop ? expandedWidth : null, navigation: true, cards: true, audio: true, resize: desktop, breakpointResize: width === 1773, draft: true, console: true });
+    results.push({ width, height, theme, mobile, desktop, panelWidth, cover, columns, mode: mobile ? 'mobile' : docked ? 'docked' : 'floating', normalWidth: mobile ? width : normalWidth, expandedWidth: desktop ? expandedWidth : null, navigation: true, cards: true, audio: true, resize: desktop, breakpointResize: width === 1773, draft: true, console: true });
     await context.close();
   }
   await writeFile(`${out}/results.json`, JSON.stringify(results, null, 2)); console.log(JSON.stringify(results));

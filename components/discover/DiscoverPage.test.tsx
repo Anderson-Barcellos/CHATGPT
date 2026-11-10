@@ -86,6 +86,29 @@ afterEach(async () => {
 });
 
 describe("Descobrir IA", () => {
+  it("no painel ampliado, os cartões vão para duas colunas e o aberto ocupa as duas sem saltar de lugar", async () => {
+    await renderPage(<DiscoverFeed embedded />);
+    const grade = article("primeira").parentElement!;
+    expect(grade.className).toContain("panel-wide:grid-cols-2");
+    expect(article("segunda").className).not.toContain("col-span-2");
+
+    await act(async () => article("segunda").querySelector<HTMLButtonElement>('button[aria-expanded]')!.click());
+    expect(article("segunda").className).toContain("panel-wide:col-span-2");
+    expect(article("segunda").className).not.toContain("order-first");
+    expect(article("primeira").className).not.toContain("col-span-2");
+  });
+
+  it("no painel, a capa responde à largura do painel; na página, segue a regra própria", async () => {
+    await renderPage(<DiscoverFeed embedded />);
+    const embutida = article("primeira").firstElementChild!;
+    expect(embutida.className).toContain("h-20 panel-cozy:h-24");
+    expect(embutida.className).not.toContain("md:h-");
+
+    await renderPage(<DiscoverFeed key="pagina" />);
+    expect(article("primeira").firstElementChild!.className).toContain("h-40");
+    expect(article("primeira").firstElementChild!.className).not.toContain("panel-cozy:");
+  });
+
   it("expande pelo título no painel, limita resumo e não expande ao selecionar ou apagar", async () => {
     await renderPage(<DiscoverFeed embedded />);
     const first = article("primeira");

@@ -63,6 +63,7 @@ export function StreamingMarkdown({
     <div
       className={cn("max-w-full text-left text-body-sm md:text-body", className)}
       aria-live="polite"
+      data-streaming={streamStatus === "streaming" || isSettling ? "" : undefined}
     >
       <ReactMarkdown
         skipHtml

@@ -333,18 +333,18 @@ export function DiscoverFeed({ embedded = false }: DiscoverFeedProps) {
           {state?.job.status === "failed" && <p role="status" className="mb-4 rounded-xl border border-amber-500/40 p-3 text-sm">A última atualização falhou: {state.job.error}. As matérias anteriores seguem disponíveis.</p>}
           {loading && !state && <p role="status" className="py-16 text-center text-muted-foreground">Carregando notícias…</p>}
           {!loading && state?.articles.length === 0 && <div className="rounded-2xl border border-dashed border-border p-10 text-center"><Sparkles className="mx-auto mb-3 size-7 text-primary" /><p className="font-medium">O feed ainda está vazio.</p><p className="mt-1 text-sm text-muted-foreground">Busca as primeiras novidades para começar.</p></div>}
-          <div className={`grid ${embedded ? "gap-[var(--gc-mobile-panel-content-gap)]" : "gap-5 md:grid-cols-2"}`}>
+          <div className={`grid ${embedded ? "gap-[var(--gc-mobile-panel-content-gap)] panel-wide:grid-cols-2 panel-wide:grid-flow-row-dense" : "gap-5 md:grid-cols-2"}`}>
             {state?.articles.map((article) => {
               const open = expanded === article.id;
               return <article key={article.id} ref={(node) => { if (node) articleRefs.current.set(article.id, node); else articleRefs.current.delete(article.id); }}
                 data-discover-article={article.id}
-                className={`min-w-0 scroll-mt-20 overflow-hidden rounded-2xl border shadow-sm ${embedded ? "gc-clinical-card border-[color:var(--gc-border)]" : "border-border bg-card"} ${open && !embedded ? "md:order-first md:col-span-2" : ""}`}>
+                className={`min-w-0 scroll-mt-20 overflow-hidden rounded-2xl border shadow-sm ${embedded ? "gc-clinical-card border-[color:var(--gc-border)]" : "border-border bg-card"} ${open && !embedded ? "md:order-first md:col-span-2" : ""} ${open && embedded ? "panel-wide:col-span-2" : ""}`}>
                 {article.image ? (
                   // A capa privada requer cookie e vem da rota autenticada do app.
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={apiUrl(`/api/discover/images/${article.image}`)} alt="" loading="lazy" decoding="async" className={`w-full object-cover ${embedded ? (open ? "h-28 md:h-40" : "h-20 md:h-24") : (open ? "h-52 md:h-72" : "h-40")}`} />
+                  <img src={apiUrl(`/api/discover/images/${article.image}`)} alt="" loading="lazy" decoding="async" className={`w-full object-cover ${embedded ? (open ? "h-28 panel-cozy:h-40" : "h-20 panel-cozy:h-24") : (open ? "h-52 md:h-72" : "h-40")}`} />
                 )
-                  : <div className={`flex items-center justify-center bg-primary/10 text-primary ${embedded ? (open ? "h-28 md:h-40" : "h-20 md:h-24") : (open ? "h-52" : "h-40")}`}><Sparkles className={embedded ? "size-6" : "size-10"} /></div>}
+                  : <div className={`flex items-center justify-center bg-primary/10 text-primary ${embedded ? (open ? "h-28 panel-cozy:h-40" : "h-20 panel-cozy:h-24") : (open ? "h-52" : "h-40")}`}><Sparkles className={embedded ? "size-6" : "size-10"} /></div>}
                 {embedded && <div className="border-y border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-3 py-1.5"><p className="truncate text-nano font-medium uppercase text-muted-foreground/75">IA · {article.topic}</p></div>}
                 <div className={embedded ? "min-w-0 p-3" : "p-5"}>
                   {embedded && <div className="mb-2 flex items-start justify-between gap-2">

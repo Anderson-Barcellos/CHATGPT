@@ -11,6 +11,16 @@
    ela continua recebendo o layout mobile. Espelha MOBILE_MEDIA_QUERY em
    lib/layout/breakpoints.ts e os blocos @media crus abaixo. */
 @custom-variant md (@media (min-width: 768px) and (not ((max-height: 500px) and (pointer: coarse))));
+/* Cortes do painel operacional pela largura do próprio painel (container
+   gc-panel), não do monitor: 30rem fica abaixo do painel desktop normal
+   (500–600px) e acima do celular em pé; 38.75rem (620px) é o meio do caminho
+   entre o teto do painel normal (600px) e o piso do ampliado (640px), com
+   folga para a borda do aside, que tira 1px do miolo. */
+@custom-variant panel-cozy (@container gc-panel (width >= 30rem));
+@custom-variant panel-wide (@container gc-panel (width >= 38.75rem));
+/* A coluna do chat (container gc-chat) tem espaço para arranjos lado a lado
+   a partir de 50rem, com ou sem trilha e painel ao lado. */
+@custom-variant chat-wide (@container gc-chat (width >= 50rem));
 
 @theme inline {
   --color-background: var(--background);
@@ -189,10 +199,6 @@ body {
   --gc-mobile-chat-content-y: 0.85rem;
   --gc-mobile-welcome-outer-x: 0.425rem;
   --gc-mobile-welcome-outer-y: 0.65rem;
-  --gc-mobile-welcome-panel-radius: 1.25rem;
-  --gc-mobile-welcome-panel-x: 0.6875rem;
-  --gc-mobile-welcome-panel-y: 0.75rem;
-  --gc-mobile-welcome-grid-gap: 0.85rem;
   --gc-mobile-welcome-title-size: 1.72rem;
   --gc-mobile-welcome-suggestion-min-height: 6.55rem;
   --gc-mobile-welcome-suggestion-gap: 0.4375rem;
@@ -409,6 +415,20 @@ body {
 
 .gc-chat-ui :is(button, input, select, textarea, [role="tab"], [role="menuitem"]) {
   font-family: inherit;
+}
+
+/* Título sem palavra órfã na última linha. Ficam de fora o título cortado em
+   N linhas (line-clamp: o Chrome ignora o equilíbrio ali) e o texto que ainda
+   está chegando, para as linhas não se rearranjarem a cada token. */
+.gc-chat-ui :is(h1, h2, h3):not([class*="line-clamp"], [data-streaming] *) {
+  text-wrap: balance;
+}
+
+/* Parágrafo sem palavra sozinha no fim, só em texto parado. O balão do chat
+   fica de fora de propósito: lá o texto chega aos poucos. */
+.gc-panel-container :is(p, li),
+[data-discover-scroll-root] :is(p, li) {
+  text-wrap: pretty;
 }
 
 .gc-chat-ui [data-slot="tabs-content"][data-state="active"] {
@@ -981,10 +1001,6 @@ body {
     --gc-mobile-chat-content-y: 0.6875rem;
     --gc-mobile-welcome-outer-x: 0.345rem;
     --gc-mobile-welcome-outer-y: 0.505rem;
-    --gc-mobile-welcome-panel-radius: 0.965rem;
-    --gc-mobile-welcome-panel-x: 0.515rem;
-    --gc-mobile-welcome-panel-y: 0.575rem;
-    --gc-mobile-welcome-grid-gap: 0.6875rem;
     --gc-mobile-welcome-title-size: 1.1rem;
     --gc-mobile-welcome-subtitle-size: 0.68rem;
     --gc-mobile-welcome-action-font-size: 0.56rem;
@@ -1163,20 +1179,15 @@ body {
   container: gc-chat / inline-size;
 }
 
+/* O miolo do painel operacional responde à largura do painel, seja no aside
+   do desktop (500–760px), seja no sheet do mobile (largura da tela). */
+.gc-panel-container {
+  container: gc-panel / inline-size;
+}
+
 @container gc-chat (width < 375px) {
   .gc-new-conversation-suffix {
     display: none;
-  }
-}
-
-@container gc-chat (width < 800px) {
-  .gc-welcome-grid {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1.5rem;
-  }
-
-  .gc-welcome-desktop {
-    padding: 1.25rem;
   }
 }
 

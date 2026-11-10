@@ -632,7 +632,7 @@ export function CommandComposerV2({
 
   return (
     <footer className="gc-composer-dock shrink-0 border-t border-[color:var(--gc-border-soft)] bg-background/80 px-[var(--gc-mobile-composer-footer-x)] pb-[var(--gc-mobile-composer-footer-bottom)] pt-[var(--gc-mobile-composer-footer-top)] backdrop-blur-xl md:border-t-0 md:bg-transparent md:px-5 md:pb-4 md:pt-0">
-      <div className="gc-composer-width mx-auto max-w-[48rem] min-[1490px]:max-w-[58rem]">
+      <div className="gc-composer-width mx-auto">
         {statusMessage && (
           <div className="mb-2 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
             {statusMessage}

@@ -250,4 +250,112 @@ describe("Gaucho Chat visual contract", () => {
     expect(css.indexOf(rootBlocks.find((block) => panelTokens.test(block)) ?? "@@")).toBeLessThan(mobileRoot);
     expect(css).toContain("  --gc-mobile-panel-content-pad: 0.55rem;");
   });
+
+  describe("painel operacional como container", () => {
+    const pulse = readFileSync(new URL("../components/workspace-v2/PulsePanelV2.tsx", import.meta.url), "utf8");
+    const discover = readFileSync(new URL("../components/discover/DiscoverPage.tsx", import.meta.url), "utf8");
+    const panel = readFileSync(new URL("../components/workspace-v2/ContextPanelV2.tsx", import.meta.url), "utf8");
+
+    it("declara o container gc-panel na raiz do painel, que serve ao aside e ao sheet", () => {
+      expect(css).toMatch(/\.gc-panel-container\s*\{\s*container:\s*gc-panel\s*\/\s*inline-size;\s*\}/);
+      expect(panel).toContain('className="gc-panel-container flex h-full flex-col"');
+    });
+
+    it("nomeia os cortes do painel num lugar só, com folga para a borda do aside", () => {
+      const cut = (name: string) => Number(css.match(new RegExp(`@custom-variant ${name} \\(@container gc-panel \\(width >= ([\\d.]+)rem\\)\\);`))?.[1]) * 16;
+      const [normalMin, normalMax, expandedMin] = [500, 600, 640]; // clamp() de --gc-shell-context-width e do ampliado
+      const border = 2;
+
+      expect(css).toContain("--gc-shell-context-width: clamp(500px, 40vw, 600px);");
+      expect(css).toContain("--gc-shell-context-expanded-width: clamp(640px, 50vw, 760px);");
+      // Confortável: todo painel desktop entra, celular em pé (até 440px) não.
+      expect(cut("panel-cozy")).toBeGreaterThan(440);
+      expect(cut("panel-cozy")).toBeLessThanOrEqual(normalMin - border);
+      // Ampliado: nenhum painel normal entra, todo ampliado entra, mesmo descontada a borda.
+      expect(cut("panel-wide")).toBeGreaterThan(normalMax);
+      expect(cut("panel-wide")).toBeLessThanOrEqual(expandedMin - border);
+    });
+
+    it("decide a altura das capas do Pulse pela largura do painel, não pelo monitor", () => {
+      expect(pulse).toContain('isExpanded ? "h-40 panel-cozy:h-52" : "h-24 panel-cozy:h-32"');
+      expect(pulse).toContain('isExpanded ? "h-28 panel-cozy:h-40" : "h-20 panel-cozy:h-24"');
+      expect(pulse).not.toMatch(/\bmd:h-(?:24|32|40|52)\b/);
+    });
+
+    it("decide a altura das capas do Descobrir embutido pela largura do painel e preserva a página", () => {
+      expect(discover.match(/open \? "h-28 panel-cozy:h-40" : "h-20 panel-cozy:h-24"/g)).toHaveLength(2);
+      expect(discover).not.toMatch(/\bmd:h-(?:24|40)\b/);
+      // A página /discover independente segue com a regra de viewport dela.
+      expect(discover).toContain('open ? "h-52 md:h-72" : "h-40"');
+    });
+
+    it("abre os cartões do Pulse em duas colunas no painel ampliado, com o aberto ocupando as duas", () => {
+      expect(pulse).toContain('className="grid grid-cols-1 gap-2 panel-wide:grid-cols-2 panel-wide:grid-flow-row-dense"');
+      expect(pulse).toContain('isExpanded && "panel-wide:col-span-2"');
+    });
+
+    it("abre os cartões do Descobrir embutido em duas colunas no painel ampliado, sem reordenar como a página", () => {
+      expect(discover).toContain('"gap-[var(--gc-mobile-panel-content-gap)] panel-wide:grid-cols-2 panel-wide:grid-flow-row-dense"');
+      expect(discover).toContain('open && embedded ? "panel-wide:col-span-2" : ""');
+      // A página /discover independente mantém a regra de viewport e o salto do aberto para o topo.
+      expect(discover).toContain('"gap-5 md:grid-cols-2"');
+      expect(discover).toContain('open && !embedded ? "md:order-first md:col-span-2" : ""');
+    });
+  });
+
+  describe("coluna do chat pelo próprio espaço", () => {
+    const chat = readFileSync(new URL("../components/chat/ChatContainer.tsx", import.meta.url), "utf8");
+    const bubble = readFileSync(new URL("../components/chat/MessageBubble.tsx", import.meta.url), "utf8");
+    const layout = readFileSync(new URL("../components/workspace-v2/WorkspaceLayoutV2.tsx", import.meta.url), "utf8");
+
+    it("abre as boas-vindas em duas colunas pela largura da coluna do chat, sem remendo por viewport", () => {
+      expect(css).toContain("@custom-variant chat-wide (@container gc-chat (width >= 50rem));");
+      expect(chat).toContain("grid-cols-1 gap-6 chat-wide:grid-cols-[minmax(0,0.95fr)_minmax(0,1.1fr)] chat-wide:gap-9");
+      expect(chat).toContain("rounded-[2rem] border p-5 md:block chat-wide:p-7");
+      expect(chat).not.toMatch(/\blg:(?:grid-cols|gap)-/);
+      // A regra crua desfazia por container o que o lg: fazia por viewport.
+      expect(css).not.toMatch(/@container gc-chat \(width < 800px\)/);
+    });
+
+    it("deixa a largura de thread, balões e composer com um dono só: o tema", () => {
+      expect(css).toMatch(/\.gc-atmosphere-shell \.gc-chat-thread\s*\{[^}]*max-width:\s*58rem;/);
+      expect(css).toMatch(/\.gc-atmosphere-shell \.gc-user-bubble\s*\{[^}]*max-width:\s*min\(76%, 42rem\) !important;/);
+      expect(css).toMatch(/\.gc-atmosphere-shell \.gc-assistant-bubble\s*\{[^}]*max-width:\s*min\(88%, 46rem\) !important;/);
+      expect(css).toMatch(/\.gc-atmosphere-shell \.gc-composer-width\s*\{[^}]*max-width:\s*56rem;/);
+      // Classes de largura vencidas pelo tema eram código morto com corte de viewport.
+      expect(bubble).not.toMatch(/max-w-\[(?:76%|78%|48rem|54rem)\]/);
+      expect(chat).not.toMatch(/gc-chat-thread[^"]*max-w-/);
+      expect(layout).toContain('className="gc-composer-width mx-auto"');
+      for (const source of [chat, bubble, layout]) expect(source).not.toContain("min-[1490px]:");
+    });
+
+    it("não deixa órfãos os tokens que só serviam ao cartão de boas-vindas desktop", () => {
+      expect(css).not.toMatch(/--gc-mobile-welcome-(?:panel-(?:x|y|radius)|grid-gap)\b/);
+      expect(chat).not.toMatch(/--gc-mobile-welcome-(?:panel-(?:x|y|radius)|grid-gap)\b/);
+    });
+  });
+
+  describe("polimentos de leitura", () => {
+    it("equilibra títulos sem corte de linhas e deixa de fora o texto em streaming", () => {
+      const rule = css.match(/\.gc-chat-ui :is\(h1, h2, h3\):not\(([^{]*)\)\s*\{\s*text-wrap:\s*balance;\s*\}/)?.[1] ?? "";
+
+      // line-clamp: o Chrome ignora o equilíbrio em título cortado em N linhas.
+      expect(rule).toContain('[class*="line-clamp"]');
+      expect(rule).toContain("[data-streaming] *");
+    });
+
+    it("evita palavra órfã só em texto parado: painel operacional e Descobrir, nunca no balão do chat", () => {
+      const selector = css.match(/([^{}]*)\{\s*text-wrap:\s*pretty;\s*\}/)?.[1] ?? "";
+
+      expect(css.match(/text-wrap:\s*pretty/g)).toHaveLength(1);
+      expect(selector).toContain(".gc-panel-container :is(p, li)");
+      expect(selector).toContain("[data-discover-scroll-root] :is(p, li)");
+      expect(selector).not.toMatch(/gc-message|gc-chat-thread|gc-assistant-bubble|gc-chat-ui/);
+    });
+
+    it("mantém os pares de altura com fallback: vh para navegador antigo, dvh para a barra móvel", () => {
+      expect(css).toMatch(/body\s*\{[^}]*min-height:\s*100vh;[^}]*min-height:\s*100dvh;/);
+      expect(css).toMatch(/\.gc-device-frame\s*\{\s*height:\s*100vh;\s*height:\s*100dvh;\s*\}/);
+    });
+  });
 });

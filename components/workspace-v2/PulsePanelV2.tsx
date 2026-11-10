@@ -45,6 +45,7 @@ import type {
 import { DEFAULT_PULSE_MODEL } from "@/lib/pulse/types";
 import { describeSchedule, weekdayOptions } from "@/lib/pulse/schedule";
 import { derivePulseRunTitle } from "@/lib/pulse/runTitle";
+import { cn } from "@/lib/utils";
 
 const NEUROPSYCH_PRESET =
   "Semanalmente, encontre um artigo recente, importante e de alto impacto em neuropsiquiatria. Gere uma imagem inicial conceitual relacionada ao tema do artigo, como abertura visual. Em seguida, escreva uma revisão em português, em prosa técnico-narrativa, explicando o contexto, a pergunta científica, o desenho do estudo, os achados centrais, a relevância clínica/conceitual, as limitações e por que esse artigo merece atenção. Priorize artigos de periódicos fortes, acesso aberto quando possível, e inclua referências/citações das fontes usadas.";
@@ -182,7 +183,10 @@ function PulseRunCard({
           onToggleExpanded(run.id);
         }
       }}
-      className="gc-clinical-card cursor-pointer overflow-hidden rounded-2xl border border-[color:var(--gc-border)] shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
+      className={cn(
+        "gc-clinical-card min-w-0 cursor-pointer overflow-hidden rounded-2xl border border-[color:var(--gc-border)] shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35",
+        isExpanded && "panel-wide:col-span-2"
+      )}
     >
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -190,13 +194,13 @@ function PulseRunCard({
           src={src}
           alt=""
           className={`w-full object-cover transition-[height] ${
-            isExpanded ? "h-40 md:h-52" : "h-24 md:h-32"
+            isExpanded ? "h-40 panel-cozy:h-52" : "h-24 panel-cozy:h-32"
           }`}
         />
       ) : (
         <div
           className={`flex items-center justify-center bg-primary/10 text-primary transition-[height] ${
-            isExpanded ? "h-28 md:h-40" : "h-20 md:h-24"
+            isExpanded ? "h-28 panel-cozy:h-40" : "h-20 panel-cozy:h-24"
           }`}
         >
           <Sparkles className={isExpanded ? "size-8" : "size-6"} />
@@ -422,15 +426,17 @@ export function PulseActivityPanelV2() {
       )}
 
       {runs.length > 0 ? (
-        runs.slice(0, 12).map((run) => (
-          <PulseRunCard
-            key={run.id}
-            run={run}
-            isExpanded={expandedRunIds.has(run.id)}
-            onToggleExpanded={handleToggleExpanded}
-            onDelete={handleDeleteRun}
-          />
-        ))
+        <div className="grid grid-cols-1 gap-2 panel-wide:grid-cols-2 panel-wide:grid-flow-row-dense">
+          {runs.slice(0, 12).map((run) => (
+            <PulseRunCard
+              key={run.id}
+              run={run}
+              isExpanded={expandedRunIds.has(run.id)}
+              onToggleExpanded={handleToggleExpanded}
+              onDelete={handleDeleteRun}
+            />
+          ))}
+        </div>
       ) : (
         <p className="rounded-xl border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-panel)] px-3 py-4 text-caption text-muted-foreground">
           As execucoes automaticas vao aparecer aqui.
