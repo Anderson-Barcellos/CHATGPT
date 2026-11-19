@@ -28,7 +28,7 @@ interface SettingsState {
   customInstructions: CustomInstructions | null;
   memories: Memory[];
   updateParameters: (updates: Partial<ModelParameters>) => void;
-  setChatModelCatalog: (catalog: ChatModelCatalog) => void;
+  setChatModelCatalog: (catalog: ChatModelCatalog, replacement?: { from: string; to: string }) => void;
   setCustomInstructions: (instructions: CustomInstructions | null) => void;
   setMemories: (memories: Memory[]) => void;
   getModelParameters: () => ModelParameters;
@@ -77,11 +77,11 @@ function resolveSupportedModelId(
   const legacy = Object.hasOwn(LEGACY_MODEL_FALLBACKS, modelId) ? LEGACY_MODEL_FALLBACKS[modelId] : undefined;
   if (legacy) {
     const replacement = catalog.rows.find((row) => row.model.id === legacy);
-    if (replacement?.visible || (!replacement && getChatModel(legacy)?.selectable !== false)) return legacy;
+    if (replacement?.visible || (!replacement && !DEFAULT_CHAT_MODEL_CATALOG.rows.some(row => row.model.id === legacy) && getChatModel(legacy)?.selectable !== false)) return legacy;
     return fallback?.model.id ?? DEFAULT_MODEL;
   }
   const model = getChatModel(modelId, catalog);
-  if (!managed && model && model.selectable !== false) return modelId;
+  if (!managed && model && model.selectable !== false && !DEFAULT_CHAT_MODEL_CATALOG.rows.some(row => row.model.id === modelId)) return modelId;
   return fallback?.model.id ?? DEFAULT_MODEL;
 }
 
@@ -340,10 +340,11 @@ export const useSettingsStore = create<SettingsState>()(persist((set, get) => ({
   },
   customInstructions: null,
   memories: [],
-  setChatModelCatalog: (catalog) =>
+  setChatModelCatalog: (catalog, replacement) =>
     set((state) => {
       if (state.catalogLoaded && catalog.revision <= state.chatModelCatalog.revision) return state;
-      const model = resolveSupportedModelId(state.pendingModelId ?? state.parameters.model, catalog);
+      const selected = state.pendingModelId ?? state.parameters.model;
+      const model = resolveSupportedModelId(replacement?.from === selected ? replacement.to : selected, catalog);
       const scoped = resolveModelSettings(model, state.modelSettingsById, catalog);
       return {
         chatModelCatalog: catalog,

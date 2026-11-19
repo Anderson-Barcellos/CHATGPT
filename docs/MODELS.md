@@ -7,6 +7,10 @@ Síntese pessoal (2026-11-13): `gpt-6-luna`, reasoning `low`, Responses API, `st
 
 ## Modelos configuráveis do chat
 
+O editor permite trocar o ID e o rótulo de uma linha, excluir inclusive os modelos de fábrica e ordenar os cards por arraste ou pelas setas. O chat usa a subsequência visível dessa ordem. Ao trocar o ID selecionado na aba, o próximo envio usa o novo perfil. O ID nas respostas anteriores permanece associado ao modelo original.
+
+“Sugerir rótulos” envia apenas metadados do catálogo visível ao Luna em esforço baixo. O servidor valida os termos propostos contra capacidades e preços conhecidos. A pessoa pode editar ou desmarcar termos antes de aplicar a seleção inteira em uma única revisão.
+
 Em Configurações → Modelos, adicione um nome e um ID de texto da OpenAI ou Anthropic. O app identifica o provedor pelo ID e consulta a conta configurada no servidor. A lista inclui os modelos iniciais e as edições salvas em `data/chat-model-catalog.json`. Renomear muda o seletor. Ocultar tira a opção do seletor, preserva a linha e permite mostrá-la novamente. Se o modelo selecionado for ocultado, o chat seleciona Luna quando ele estiver visível, ou o primeiro modelo visível. As respostas anteriores conservam os IDs que as geraram.
 
 - GPT‑6.2 Sol (`gpt-6.2-sol`) pode ser adicionado pelo formulário. O perfil do chat oferece `low`, `medium`, `high`, `xhigh` e `max`. [OpenAI Docs](https://developers.openai.com/api/docs/models/gpt-6.2-sol)

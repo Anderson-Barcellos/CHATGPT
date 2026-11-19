@@ -5,6 +5,7 @@ import {
   DEFAULT_CHAT_MODEL_CATALOG,
   getChatModel,
   hasOpenAIChatProfile,
+  inferChatModelProvider,
   type ChatModelCatalog,
   type ChatModelInfo,
   type ChatModelRow,
@@ -24,7 +25,9 @@ export class ChatCatalogError extends Error {
   }
 }
 
-async function readOverrides(): Promise<ChatModelCatalog> {
+type StoredCatalog = ChatModelCatalog & { version?: 2 };
+
+async function readOverrides(): Promise<StoredCatalog> {
   try {
     return JSON.parse(await readFile(path.join(process.cwd(), "data", FILE_NAME), "utf8"));
   } catch (error) {
@@ -33,7 +36,8 @@ async function readOverrides(): Promise<ChatModelCatalog> {
   }
 }
 
-function withDefaults(overrides: ChatModelCatalog): ChatModelCatalog {
+function withDefaults(overrides: StoredCatalog): ChatModelCatalog {
+  if (overrides.version === 2) return { revision: overrides.revision, rows: overrides.rows };
   const rows = new Map(DEFAULT_CHAT_MODEL_CATALOG.rows.map((row) => [row.model.id, row]));
   for (const row of overrides.rows) rows.set(row.model.id, row);
   return { revision: overrides.revision, rows: [...rows.values()] };
@@ -49,7 +53,7 @@ export async function resolveChatModelForRequest(id: string): Promise<ChatModelI
   return (await readOverrides()).rows.find(({ model }) => model.id === id)?.model;
 }
 
-function assertRevision(catalog: ChatModelCatalog, revision: number) {
+export function assertRevision(catalog: ChatModelCatalog, revision: number) {
   if (catalog.revision !== revision) {
     throw new ChatCatalogError(409, "A lista mudou em outra aba. Confira a versão atual e tente novamente.");
   }
@@ -151,63 +155,93 @@ async function discoverModel(
   };
 }
 
-async function saveRow(
-  revision: number,
-  change: (catalog: ChatModelCatalog) => ChatModelRow,
-): Promise<ChatModelCatalog> {
+async function changeCatalog(revision: number, change: (rows: ChatModelRow[]) => ChatModelRow[]) {
   return withDataFileLock(FILE_NAME, async () => {
-    const overrides = await readOverrides();
-    const current = withDefaults(overrides);
+    const current = await readChatModelCatalog();
     assertRevision(current, revision);
-    const updated = change(current);
-    const rows = new Map(overrides.rows.map((row) => [row.model.id, row]));
-    rows.set(updated.model.id, updated);
-    const next = {
-      revision: revision + 1,
-      rows: [...rows.values()],
-    };
-    await writeDataFile(FILE_NAME, next);
-    return withDefaults(next);
+    const rows = change(current.rows);
+    if (!rows.some(row => row.visible)) {
+      throw new ChatCatalogError(422, "Mantenha pelo menos um modelo visível no seletor.");
+    }
+    const next = { revision: revision + 1, rows };
+    await writeDataFile(FILE_NAME, { version: 2, ...next });
+    return next;
   });
 }
 
 export async function addChatModel(
-  revision: number,
-  id: string,
-  name: string,
-  provider: "openai" | "anthropic",
-  openAIEfforts: ReasoningEffort[],
-  signal?: AbortSignal,
-): Promise<ChatModelCatalog> {
+  revision: number, id: string, name: string, provider: "openai" | "anthropic",
+  openAIEfforts: ReasoningEffort[], signal?: AbortSignal,
+) {
   const current = await readChatModelCatalog();
   assertRevision(current, revision);
   assertNewModel(current, id);
   const model = await discoverModel(id, name, provider, openAIEfforts, signal);
   signal?.throwIfAborted();
-  return saveRow(revision, () => ({ model, visible: true }));
+  return changeCatalog(revision, rows => [...rows, { model, visible: true }]);
+}
+
+function requireRow(rows: ChatModelRow[], id: string) {
+  const row = rows.find(row => row.model.id === id);
+  if (!row) throw new ChatCatalogError(404, "Modelo não cadastrado.");
+  return row;
 }
 
 export async function updateChatModel(
-  revision: number,
-  id: string,
-  name: string,
-  visible: boolean,
-  openAIEfforts?: ReasoningEffort[],
-): Promise<ChatModelCatalog> {
-  return saveRow(revision, (catalog) => {
-    const row = catalog.rows.find(({ model }) => model.id === id);
-    if (!row) throw new ChatCatalogError(404, "Modelo não cadastrado.");
-    if (!visible && !catalog.rows.some((other) => other.model.id !== id && other.visible)) {
-      throw new ChatCatalogError(422, "Mantenha pelo menos um modelo visível no seletor.");
-    }
-    const model = { ...row.model, name };
-    if (openAIEfforts) {
+  revision: number, id: string, name: string, visible: boolean, openAIEfforts?: ReasoningEffort[],
+  newId = id, badge?: string, signal?: AbortSignal,
+) {
+  let replacement: ChatModelInfo | undefined;
+  if (newId !== id) {
+    const current = await readChatModelCatalog();
+    assertRevision(current, revision);
+    requireRow(current.rows, id);
+    assertNewModel(current, newId);
+    const provider = inferChatModelProvider(newId);
+    if (!provider) throw new ChatCatalogError(422, "Use um ID de chat da OpenAI ou da Anthropic.");
+    replacement = await discoverModel(newId, name, provider, openAIEfforts ?? [], signal);
+    signal?.throwIfAborted();
+  }
+  return changeCatalog(revision, rows => {
+    const row = requireRow(rows, id);
+    const model = { ...(replacement ?? row.model), name };
+    if (badge !== undefined) model.badge = badge.trim();
+    if (!replacement && openAIEfforts) {
       if (model.provider !== "openai" || model.supportsResponsesTools !== false) {
         throw new ChatCatalogError(422, "Este modelo já tem um perfil de raciocínio.");
       }
       model.supportedReasoningEfforts = openAIEfforts;
       model.capabilities = openAIEfforts.length ? ["chat", "reasoning"] : ["chat"];
     }
-    return { model, visible };
+    return rows.map(existing => existing === row ? { model, visible } : existing);
+  });
+}
+
+export function deleteChatModel(revision: number, id: string) {
+  return changeCatalog(revision, rows => {
+    const removed = requireRow(rows, id);
+    return rows.filter(row => row !== removed);
+  });
+}
+
+export function reorderChatModels(revision: number, ids: string[]) {
+  return changeCatalog(revision, rows => {
+    const byId = new Map(rows.map(row => [row.model.id, row]));
+    if (ids.length !== rows.length || new Set(ids).size !== rows.length || ids.some(id => !byId.has(id))) {
+      throw new ChatCatalogError(422, "Informe todos os modelos uma única vez.");
+    }
+    return ids.map(id => byId.get(id)!);
+  });
+}
+
+export function applyChatBadges(revision: number, badges: { id: string; badge: string }[]) {
+  return changeCatalog(revision, rows => {
+    const changes = new Map(badges.map(item => [item.id, item.badge.trim()]));
+    if (!changes.size || changes.size !== badges.length || [...changes.keys()].some(id => !requireRow(rows, id).visible)) {
+      throw new ChatCatalogError(422, "Selecione modelos visíveis para aplicar os rótulos.");
+    }
+    return rows.map(row => changes.has(row.model.id)
+      ? { ...row, model: { ...row.model, badge: changes.get(row.model.id) } }
+      : row);
   });
 }

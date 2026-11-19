@@ -632,3 +632,9 @@ Script na carga de 300 mensagens no desktop: 3.658 contra 3.668 ms, ou seja, a r
 Causa lida no código: `deriveScrollState` (`lib/chat/scrollState.ts:34`) devolve "tracking" sempre que `isTrackingBottom` é verdadeiro, e `syncScrollState` (`components/chat/ChatContainer.tsx:379`) só zera a ref quando o modo é "reading-history"; a ref nasce verdadeira e nunca sai. `scrollState.test.ts` só cobre `isTrackingBottom: false`. Com a regra, cada linha revelada muda a altura e dispara o puxão; sem a regra, o mesmo puxão deve ocorrer quando uma resposta chega enquanto se lê o histórico.
 
 Não validado: streaming real (o crescimento foi simulado por DOM), Safari/iPhone, estado de hover com a contenção de pintura. "Celular" é Chrome de servidor com CPU freada 4x. Limpeza conferida: porta 3148 livre, `data/` sintética removida. Evidências e os três scripts em `/root/.cache/gaucho-container-queries/qa/bloco5-medicao/` (`saida-60.txt`, `saida-300-desktop.txt`, `saida-300-celular.txt`, `raw.jsonl`, `diagnostico*.json`, `prova-puxao-atual.json`).
+
+## 2026-11-19 — Editor do catálogo portado para a `main` (sem a Anil)
+
+Worktree `/root/worktrees/gaucho-catalog-editor-main`, branch `feat/catalog-editor` sobre `f5fe8fe`. Onze arquivos do editor copiados de `/root/worktrees/gaucho-catalog-editor`, sem os registros e sem `INFRASTRUCTURE.md`. O `globals.css` da origem é idêntico ao da `main`.
+
+Primeira execução: typegen 0, tsc 0, lint 0 (1 aviso preexistente `_content`), vitest 234 arquivos/1.292 testes, build 0. O primeiro aceite falhou porque a build tinha saído sem `NEXT_PUBLIC_BASE_PATH=/chat` e os chunks deram 404. Com a build refeita no env do deploy (`QC5Ih-TAX9mHi3BHDGHPN`), o aceite Chrome com provedores sintéticos (`accept-main.mjs`, cópia do `accept.mjs` com a worktree nova na lista permitida) passou 15/15. Logs em `/root/.cache/gaucho-editor-main-20261119/`; evidências em `/root/.cache/gaucho-editor-qa/run-HoGppM`.

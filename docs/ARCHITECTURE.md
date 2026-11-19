@@ -210,7 +210,7 @@ Persistência server-side simples:
 
 - `data/conversations.json`
 - `data/chat-background-jobs.json` (metadados pendentes/terminais de Documento/Deepsearch em background)
-- `data/chat-model-catalog.json` (nomes, visibilidade e capacidades dos modelos editados no chat)
+- `data/chat-model-catalog.json` guarda revisão e linhas com perfil, nome, rótulo e visibilidade. No formato v2, a posição no array define a ordem e a ausência representa exclusão. O servidor lê o formato anterior de overrides e grava v2 na primeira alteração, sob o lock do catálogo. A sugestão de rótulos é calculada em memória e requer aplicação explícita na mesma revisão.
 - `data/memories.json`
 - `data/persona.json`
 - `data/memory-index` como índice vetorial local LanceDB para memória/RAG

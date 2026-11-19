@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { ArrowDown, ArrowUp, GripVertical, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ClientApiError } from "@/lib/api/errors";
@@ -11,17 +11,18 @@ import {
   hasOpenAIChatProfile,
   inferChatModelProvider,
   OPENAI_REASONING_EFFORTS,
-  type ChatModelRow,
+  type ChatModelRow, type ChatModelCatalog,
 } from "@/lib/models/chatModelCatalog";
 import {
-  chatModelCatalogKey,
+  chatModelCatalogKey, requestBadgeSuggestions,
+  type CatalogBadge, type CatalogCommand, type CatalogUpdate,
   saveChatModel,
   useChatModelCatalog,
 } from "@/hooks/useChatModelCatalog";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { ReasoningEffort } from "@/types";
 
-type CatalogUpdate = Omit<Parameters<typeof saveChatModel>[0], "revision">;
+type Save = (update: CatalogCommand, revision?: number) => Promise<boolean>;
 
 const rowColumns = "grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-x-3 gap-y-2";
 
@@ -95,26 +96,36 @@ function AddModelForm({ onSave, onCancel, pending }: {
   );
 }
 
-function ModelRow({ row, pending, onSave }: {
+function ModelRow({ row, revision, pending, onSave }: {
   row: ChatModelRow;
+  revision: number;
   pending: boolean;
-  onSave: (update: CatalogUpdate) => Promise<boolean>;
+  onSave: Save;
 }) {
+  const client = useQueryClient();
   const { model, visible } = row;
   const [draft, setDraft] = useState<string | null>(null);
   const [efforts, setEfforts] = useState<ReasoningEffort[]>([]);
-  const configurableEffort = model.provider === "openai" && model.supportsResponsesTools === false;
+  const [newId, setNewId] = useState(model.id);
+  const [badge, setBadge] = useState(model.badge ?? "");
+  const [editRevision, setEditRevision] = useState(revision);
+  const changedId = newId.trim() !== model.id;
+  const draftProvider = changedId ? inferChatModelProvider(newId.trim()) : model.provider;
+  const configurableEffort = changedId
+    ? draftProvider === "openai" && !hasOpenAIChatProfile(newId.trim())
+    : model.provider === "openai" && model.supportsResponsesTools === false;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (draft === null) return;
     const saved = await onSave({
       id: model.id,
-      name: draft,
+      name: draft, newId: newId.trim(), badge,
       visible,
       ...(configurableEffort && { openAIEfforts: efforts }),
-    });
+    }, editRevision);
     if (saved) setDraft(null);
+    else setEditRevision(client.getQueryData<ChatModelCatalog>(chatModelCatalogKey)?.revision ?? revision);
   }
 
   return (
@@ -125,12 +136,19 @@ function ModelRow({ row, pending, onSave }: {
           : <Input aria-label="Editar nome no seletor" value={draft}
               onChange={(event) => setDraft(event.target.value)}
               required maxLength={80} disabled={pending} />}
-        <p className="text-xs text-muted-foreground">{CHAT_MODEL_PROVIDER_LABELS[model.provider]}</p>
+        <p className="text-xs text-muted-foreground">{draft === null ? CHAT_MODEL_PROVIDER_LABELS[model.provider]
+          : draftProvider ? CHAT_MODEL_PROVIDER_LABELS[draftProvider] : "Confira o ID"}</p>
       </div>
       <div className="min-w-0">
-        <p className="break-all font-mono text-xs leading-5">{model.id}</p>
+        {draft === null ? <p className="break-all font-mono text-xs leading-5">{model.id}</p>
+          : <Input aria-label="Editar ID do modelo" value={newId} required maxLength={128} spellCheck={false}
+              disabled={pending} onChange={event => { setNewId(event.target.value); setEfforts([]); }} />}
+        {draft === null && model.badge && <span className="text-xs">{model.badge}</span>}
         {!visible && <p className="text-xs text-muted-foreground">Oculto no seletor</p>}
       </div>
+      {draft !== null && <label className="col-span-2 text-xs">Rótulo no seletor
+        <Input value={badge} maxLength={32} disabled={pending} onChange={event => setBadge(event.target.value)} />
+      </label>}
       {draft !== null && configurableEffort && (
         <div className="col-span-2">
           <OpenAIEffortPicker value={efforts} onChange={setEfforts} disabled={pending} />
@@ -143,6 +161,9 @@ function ModelRow({ row, pending, onSave }: {
               aria-label={"Editar " + model.name} onClick={(event) => {
                 event.preventDefault();
                 setEfforts(model.supportedReasoningEfforts ?? []);
+                setNewId(model.id);
+                setBadge(model.badge ?? "");
+                setEditRevision(revision);
                 setDraft(model.name);
               }}>Editar</Button>
             <Button type="button" variant="ghost" size="sm" disabled={pending}
@@ -150,6 +171,12 @@ function ModelRow({ row, pending, onSave }: {
               onClick={() => void onSave({ id: model.id, name: model.name, visible: !visible })}>
               {visible ? "Ocultar" : "Mostrar"}
             </Button>
+            <Button type="button" variant="ghost" size="sm" disabled={pending} aria-label={"Excluir " + model.name}
+              onClick={() => {
+                if (window.confirm("Excluir " + model.name + " (" + model.id + ") do catálogo?")) {
+                  void onSave({ action: "delete", id: model.id });
+                }
+              }}>Excluir</Button>
           </>
         ) : (
           <>
@@ -171,16 +198,39 @@ export function ChatModelCatalogSettings() {
   const [feedback, setFeedback] = useState<{ text: string; error: boolean } | null>(null);
   const catalog = query.data;
 
-  async function save(update: CatalogUpdate) {
-    if (!catalog || pending) return false;
+  const [preview, setPreview] = useState<{ revision: number; items: (CatalogBadge & { selected: boolean })[] } | null>(null);
+  const [target, setTarget] = useState<string | null>(null);
+
+  async function suggest() {
+    if (!catalog || pending) return;
+    setPending(true);
+    setFeedback(null);
+    setPreview(null);
+    try {
+      const result = await requestBadgeSuggestions(catalog.revision);
+      if (result.suggestions.length) {
+        setPreview({ revision: result.revision, items: result.suggestions.map(item => ({ ...item, selected: true })) });
+      } else setFeedback({ text: "Sem sugestões para este catálogo.", error: false });
+    } catch (error) {
+      if (error instanceof ClientApiError && error.status === 409) await query.refetch();
+      setFeedback({ text: error instanceof Error ? error.message : "Falha ao sugerir rótulos.", error: true });
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function save(update: CatalogCommand, revision = catalog?.revision) {
+    if (!catalog || pending || revision === undefined) return false;
     setPending(true);
     setFeedback(null);
     try {
       await client.cancelQueries({ queryKey: chatModelCatalogKey });
-      const saved = await saveChatModel({ ...update, revision: catalog.revision });
-      useSettingsStore.getState().setChatModelCatalog(saved);
+      const saved = await saveChatModel(update, revision);
+      const replacement = "newId" in update && update.newId ? { from: update.id, to: update.newId } : undefined;
+      useSettingsStore.getState().setChatModelCatalog(saved, replacement);
       client.setQueryData(chatModelCatalogKey, saved);
-      if (update.visible === undefined) setAdding(false);
+      if (!("action" in update) && update.visible === undefined) setAdding(false);
+      if ("action" in update && update.action === "badges") setPreview(null);
       setFeedback({ text: "Catálogo atualizado.", error: false });
       return true;
     } catch (error) {
@@ -204,10 +254,24 @@ export function ChatModelCatalogSettings() {
     ) : <p role="status" className="text-sm text-muted-foreground">Carregando modelos…</p>;
   }
 
+  const ids = catalog.rows.map(row => row.model.id);
+  function move(from: number, to: number) {
+    if (to < 0 || to >= ids.length || from === to) return;
+    const reordered = [...ids];
+    reordered.splice(to, 0, reordered.splice(from, 1)[0]);
+    void save({ action: "reorder", ids: reordered });
+  }
+
+  function updatePreview(id: string, changes: Partial<{ selected: boolean; badge: string }>) {
+    setPreview(current => current && { ...current,
+      items: current.items.map(item => item.id === id ? { ...item, ...changes } : item) });
+  }
+
   return (
     <section aria-label="Catálogo de modelos do chat" className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">Escolha quais modelos aparecem no seletor do chat.</p>
+        <Button type="button" size="sm" variant="outline" disabled={pending} onClick={suggest}>Sugerir rótulos</Button>
         {!adding && (
           <Button type="button" size="sm" variant="outline" disabled={pending} onClick={() => setAdding(true)}>
             <Plus className="size-4" /> Adicionar modelo
@@ -220,6 +284,25 @@ export function ChatModelCatalogSettings() {
           setFeedback(null);
         }} />
       )}
+      {preview && <fieldset className="space-y-2 rounded-xl border p-3" disabled={pending}>
+        <legend className="px-1 text-sm font-medium">Revisar sugestões</legend>
+        {preview.items.map(item => {
+          const model = catalog.rows.find(row => row.model.id === item.id)?.model;
+          return <div key={item.id} className={rowColumns}>
+            <label className="min-w-0 break-words text-sm"><input type="checkbox" checked={item.selected}
+              onChange={event => updatePreview(item.id, { selected: event.target.checked })} /> {model?.name ?? item.id}
+              <span className="block text-xs text-muted-foreground">Atual: {model?.badge || "Sem rótulo"}</span></label>
+            <Input aria-label={"Sugestão para " + (model?.name ?? item.id)} value={item.badge} maxLength={32}
+              onChange={event => updatePreview(item.id, { badge: event.target.value })} />
+          </div>;
+        })}
+        {preview.revision !== catalog.revision && <p role="alert">O catálogo mudou. Gere novas sugestões.</p>}
+        <Button type="button" size="sm" disabled={!preview.items.some(item => item.selected) || preview.revision !== catalog.revision}
+          onClick={() => void save({ action: "badges", badges: preview.items.filter(item => item.selected)
+            .map(({ id, badge }) => ({ id, badge })) }, preview.revision)}>Aplicar selecionados</Button>
+        <Button type="button" size="sm" variant="ghost" onClick={() => setPreview(null)}>Cancelar</Button>
+      </fieldset>}
+      {pending && <p role="status" className="text-sm text-muted-foreground">Aguarde…</p>}
       {feedback && (
         <p role={feedback.error ? "alert" : "status"}
           className={"text-sm " + (feedback.error ? "text-destructive" : "text-muted-foreground")}>{feedback.text}</p>
@@ -229,8 +312,37 @@ export function ChatModelCatalogSettings() {
           <span>Nome no seletor</span>
           <span>ID do modelo</span>
         </div>
-        {catalog.rows.map((row) => (
-          <ModelRow key={row.model.id} row={row} pending={pending} onSave={save} />
+        {catalog.rows.map((row, index) => (
+          <div key={row.model.id} data-catalog-id={row.model.id}
+            className={target === row.model.id ? "ring-2 ring-inset ring-primary" : ""}>
+            <div className="flex items-center gap-1 px-2 pt-1">
+              <button type="button" disabled={pending} aria-label={"Arrastar " + row.model.name}
+                className="touch-none cursor-grab rounded p-2 active:cursor-grabbing"
+                onPointerDown={event => {
+                  if (!event.isPrimary || event.button !== 0) return;
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  setTarget(row.model.id);
+                }}
+                onPointerMove={event => {
+                  if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+                  const hovered = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-catalog-id]");
+                  setTarget(hovered?.dataset.catalogId ?? null);
+                  hovered?.scrollIntoView({ block: "nearest" });
+                }}
+                onLostPointerCapture={() => setTarget(null)}
+                onPointerUp={event => {
+                  if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+                  const hovered = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-catalog-id]");
+                  move(index, ids.indexOf(hovered?.dataset.catalogId ?? ""));
+                  setTarget(null);
+                }}><GripVertical size={18} /></button>
+              <Button type="button" size="sm" variant="ghost" disabled={pending || index === 0}
+                aria-label={"Mover para cima " + row.model.name} onClick={() => move(index, index - 1)}><ArrowUp size={16} /></Button>
+              <Button type="button" size="sm" variant="ghost" disabled={pending || index === ids.length - 1}
+                aria-label={"Mover para baixo " + row.model.name} onClick={() => move(index, index + 1)}><ArrowDown size={16} /></Button>
+            </div>
+            <ModelRow row={row} revision={catalog.revision} pending={pending} onSave={save} />
+          </div>
         ))}
       </div>
     </section>

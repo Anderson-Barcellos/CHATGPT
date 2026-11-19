@@ -18,6 +18,8 @@ Todas as rotas abaixo são implementadas como Route Handlers do Next em `app/api
 
 Catálogo autenticado de opções do seletor. `GET` responde `{ revision, rows: [{ model, visible }] }`. `POST` recebe `{ revision, id, name, openAIEfforts? }`, verifica o ID na conta do provedor e devolve o catálogo atualizado com HTTP 201. `PATCH` recebe `{ revision, id, name, visible, openAIEfforts? }` e devolve o catálogo atualizado com HTTP 200. O campo opcional registra esforços documentados para IDs OpenAI sem perfil. A lista exige ao menos um modelo visível. Uma revisão obsoleta recebe HTTP 409.
 
+Para substituir um ID em sua posição, o PATCH também aceita `newId` e `badge` (até 32 caracteres, string vazia limpa). DELETE recebe `{revision,id}`. PATCH com `action: "reorder"` recebe `ids` com todos os IDs em ordem, incluindo ocultos. PATCH com `action: "badges"` recebe `badges: [{id,badge}]` para os modelos visíveis selecionados. Toda mutação exige a revisão lida. POST com `action: "suggest"` e `revision` responde `{revision,suggestions:[{id,badge}]}` sem alterar a lista. O servidor grava a lista ordenada completa no formato v2 na primeira mutação, depois de incorporar os overrides do formato anterior.
+
 ### `POST /api/chat`
 
 Proxy server-side para chat com streaming. Modelos OpenAI usam a `Responses API`; `deepseek-flash` usa o adapter DeepSeek e `gemini-3.8-flash` usa a Interactions API, ambos apenas no chat padrão streaming.
