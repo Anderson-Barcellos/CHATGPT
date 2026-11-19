@@ -2,6 +2,66 @@
 
 ## Estado operacional
 
+#### Consolidação da fonte publicada e organização das worktrees (2026-11-19)
+
+Fonte publicada `BQpqgs9UrXlwfM_QB2EU2` reunida com os registros atuais em `/root/worktrees/gaucho-catalog-consolidation-20261119`, base `2824f9d`. A candidata mantém o catálogo publicado, importa a medição histórica de rolagem para `TEST_LOGS.md` e ignora o catálogo runtime, a síntese pessoal e o backup da persona. `/root/worktrees/gaucho-chat-model-catalog` é a origem da build viva. `/root/worktrees/gaucho-catalog-editor` contém a candidata do editor.
+
+Anders autorizou remover a worktree Anil e arquivar as cópias antigas. A editorial está em `/root/.cache/gaucho-archive-20261119/gaucho-editorial-20261118`. Container queries, modelos de mídia e síntese pessoal saíram do registro do Git e permanecem como snapshots nos caminhos originais, usados nos manifestos das builds de rollback. O artefato Anil em `next-rolled-back` é histórico após a remoção da origem. As container queries de layout já estão incorporadas à `main`. O experimento de `content-visibility` continua descartado, com as evidências no `TEST_LOGS.md`.
+
+A comparação de 777 caminhos encontrou diferenças só nos registros e no `.gitignore`. Typegen, TypeScript, lint (um aviso preexistente), 1.291 testes em 233 arquivos e build isolada `j7QcdlwwWMHn_wMht_TGj` (44/44) concluíram com exit 0. O aceite do catálogo repetiu os 15 casos com Chrome desktop/mobile e provedores sintéticos. Logs em `/root/.cache/gaucho-archive-20261119/`. Anders autorizou o commit, a integração à `main` e o envio ao GitHub junto dos três commits de layout já locais. Produção segue na `BQpqgs9UrXlwfM_QB2EU2`.
+
+#### Repaginação visual Anil + editor do catálogo (publicada 2026-11-18 22h18, REVERTIDA 22h25)
+
+A repaginação foi feita pelo Gemini (CLI `agy`) na antiga worktree `/root/worktrees/gaucho-indigo-2026`, em cima do editor do catálogo. A sessão do Gemini derivou pro projeto /gemini antes de publicar. O Claude Code revalidou do zero: typegen, tsc, lint (1 warning antigo), 1.295 testes em 234 arquivos e build. Seis suítes Chrome passaram (chat-column, discover-panel, discover-controls, discover-delete, longpress com 12 cenários, security-runtime). Anders aprovou as telas e autorizou o deploy. Build `7Llcuq9XNLlcZBIgFPfn1` (env oficial), backup `/root/.cache/gaucho-deploy/20261119T011801Z/next-before`. Sem commit/push. Anders reverteu ao ver ao vivo: ficou pior que nas imagens e só trocou cores, sem layout nem arquitetura. Produção voltou a `BQpqgs9UrXlwfM_QB2EU2`. Origem removida em 19/11 por decisão de Anders. Detalhes no diário.
+
+#### Editor do catálogo de modelos (fechada por Anders em 2026-11-18, deploy pendente; esteve no ar de 22h18 a 22h25 junto com a Anil)
+
+Build `YRSxWd7aogYP8TQQePGRZ` em `/root/worktrees/gaucho-catalog-editor`. 1.292 testes em 234 arquivos, tsc, lint, build e diff passaram. O aviso de lint e os avisos de build já constam nos logs da versão anterior. O teste SoundCase que excedeu 15s passou ao repetir a suíte com dois workers, sem alterar limites ou asserções. Seis suítes de regressão no Chrome passaram, incluindo Descobrir após repetir a asserção da linha 95 já reproduzida na baseline. A regressão do catálogo anterior passou nos sete grupos. Aceite independente e reexecução 15/15, com Chrome desktop/mobile, endpoints sintéticos de provedores, envio após troca e restart do Next de teste. Provas em `/root/.cache/gaucho-editor-qa/{final,retest,run-B55zq9,run-jvIRX6}`. Produção continua com `BQpqgs9UrXlwfM_QB2EU2`.
+
+Plano aprovado e implementado em `/root/worktrees/gaucho-catalog-editor`, a partir da fonte publicada do catálogo. A build candidata `YRSxWd7aogYP8TQQePGRZ` permite substituir IDs, excluir, reordenar e revisar os rótulos sugeridos por Luna low. Aceite independente e evidências em `/root/.cache/gaucho-editor-qa`. Produção segue na entrega abaixo.
+
+#### Catálogo configurável dos modelos do chat (pronta para revisão, publicada em 2026-11-18)
+
+Em Configurações → Modelos, o cadastro por nome e ID alimenta o seletor. O servidor verifica o provedor e usa os esforços compatíveis. Renomear, ocultar e mostrar afetam o menu e preservam os IDs do histórico. O contrato atualizado está em `docs/MODELS.md`, `docs/API.md` e `docs/ARCHITECTURE.md` na fonte isolada.
+
+Anders autorizou deploy e um testador independente. Aceite e reexecução com 15/15 casos aprovados na build `BQpqgs9UrXlwfM_QB2EU2`, após 1.291 testes, typegen, TypeScript, lint, build e regressões Chrome. Publicação às 09h53 BRT, origem `/root/worktrees/gaucho-chat-model-catalog` (**preservar**), backup `/root/.cache/gaucho-deploy/20261118T125344Z/next-before` com a build `Dx12sP2E5ro_FfMl7GuWv`. Apenas `chatgpt.service` reiniciado. Health local/pública 200, catálogo anônimo 401 e autenticado 200, Chrome público desktop/mobile aprovado, 23 assets idênticos. Dez caminhos de dados conferidos por SHA-256, com a ponte de ditado no mesmo PID e agendadores ativos. Evidências em `/root/.cache/gaucho-chat-model-catalog/deploy-evidence` e `independent-qa`.
+
+#### Menu ao segurar balões longos (ajuste direto, 2026-11-15)
+
+Anders relatou vibração sem opções visíveis. Reproduzido no Chrome público com conversa sintética interceptada: o menu existia, mas ficava em y=4159 numa tela de 844px, ancorado ao botão no fim do balão. `MessageBubble` detecta a âncora fora do viewport visual e usa posicionamento lateral com `sticky="always"` para permitir correção vertical pelo Radix; botão visível mantém posicionamento inferior. Tempos 450/900ms e cancelamentos do gesto preservados. Registro e validação no diário; regressão em `scripts/qa-message-longpress.mjs`.
+
+Gates isolados: 1.290 testes/233 arquivos, typegen, TypeScript, lint e build exit 0; 12 cenários Chrome (390×844, 956×440 e 1440×1000; balão curto e início/meio/fim de longo), com menu visível após soltar, edição e cancelamento. Build publicada `Dx12sP2E5ro_FfMl7GuWv`; origem `/root/.cache/gaucho-longpress-20261115/source` (**preservar**), backup `/root/.cache/gaucho-deploy/20261115T042408Z/next-before`. Apenas chatgpt.service reiniciado; saúde local/pública 200. Os mesmos 12 cenários aprovados no endereço público, dados interceptados; evidências em `/root/.cache/gaucho-longpress-20261115/public`. Sem commit/push.
+
+#### Síntese da memória pessoal (`pronta para revisão`, publicada em 2026-11-13)
+
+Plano aprovado: `docs/plans/2026-11-13-sintese-memoria-pessoal.md`. Anders escolheu Luna low e resumo + busca. Worktree `/root/worktrees/gaucho-personal-synthesis`, base 2824f9d com WIP prévio preservado. Prompt fixo separa comportamento de biografia; migração preserva fonte editável e backup. Síntese até 4.000 caracteres com fontes/hash, invalidação imediata por revisão e fallback com originais atuais. Recuperação pessoal em tabela própria do índice existente; Settings expõe síntese/estado/tamanhos/regeneração. Sem compactação de conversas ou mudanças de contexto no Pulse/Studio/SoundCase.
+
+Gates finais: 233 arquivos/1.290 testes, typegen/tsc/lint e build isolado 43/43 exit 0. Smoke Luna real com fontes sintéticas: 5.509 → 604 caracteres, 1.259 tokens de entrada, 283 saída (74 reasoning), preservando negação, datas, hipótese e divergência explícita. Seis suítes Chrome aprovadas: memória pessoal (1440/390, composer, recuperação, pausa, falha/regeneração e remember_memory com/sem streaming), chat-column, discover-panel, controls, delete e security-runtime. Evidências `/root/.cache/gaucho-personal-synthesis/evidence`. Sem commit/push.
+
+Publicado às 23h09 BRT: build `CD4rlXjmJA8tQhzLgAIf_`, origem `/root/worktrees/gaucho-personal-synthesis` (**preservar**), backup `/root/.cache/gaucho-deploy/20261114T020936Z/next-before`. Só chatgpt.service reiniciado; saúde local/pública 200. Síntese real pronta: **17.643 → 2.327 caracteres** (86,8% de redução no bloco pessoal; não é estimativa de custo total). Uso da geração inicial: 5.524 tokens entrada, 1.010 saída. Chrome público 1440/390 confirmou cartão atualizado, zero pageerrors, endpoint autenticado em modo summary e anônimo 401. Hashes confirmaram conversas, memórias e notas intactas; campos anteriores de persona preservados; backup exato da persona em 0600; ditado com mesmo PID. Apenas biografia importada e derivados pessoais adicionados. Modelo de resposta e demais superfícies preservados.
+
+#### Largura e leitura do chat desktop (`pronta para revisão`, publicada em 2026-11-11)
+
+Anders pediu ampliar o limite do conteúdo central e reduzir um pouco a fonte dos balões. Baseline no Chrome público com dados sintéticos: thread 928px, resposta 736px, usuário 672px, composer 896px; corpo chega a 17px em 1920px. DECISÃO: tetos desktop de thread 1088px, resposta 896px, usuário 768px, composer 1056px; corpo fluido de 15–16px limitado aos balões. Mobile e paisagem curta com toque mantêm larguras e corpo de 14px. Tokens de geometria no Atmosphere, sem novos limitadores em JSX.
+
+Para preservar os tetos ao abrir o painel, encaixe derivado passa a 1907px normal/2067px ampliado. Casca e harnesses acompanham esses limites. Fonte isolada `/root/.cache/gaucho-desktop-width-20261111/source` (**preservar**); baseline público em `before/`. WIP e publicação de imagens 2.6 preservados.
+
+Gates: 44 testes focados, 1.264 testes completos em 229 arquivos, typegen, tsc, lint e build 43/43 aprovados. Avisos preexistentes de lint/CSS/Edge/tracing. Cinco suítes Chrome sequenciais aprovadas: qa-chat-column (17 cenários, até 3440px, tetos e fonte verificados), qa-discover-panel (14 cenários, até 6880px), qa-discover-controls, qa-discover-delete (5 cenários) e qa-security-runtime. Runtime sintético exclusivo, sem provedores pagos ou dados reais. Scripts antigos de Grok continuam fora da suíte ativa, conforme dívida já documentada.
+
+Publicação às 23h51 BRT: `bE8tTNiqUx3rZ6z5LYssq`, anterior `SJuHAhDn5K8K76Cyqw_Q-`, backup `/root/.cache/gaucho-deploy/20261112T025143Z/next-before`. Saúde local/pública 200, anônimo 401, agendadores retomados; todos os arquivos runtime idênticos por SHA-256 e ditado com mesmo PID. Sem mudança de portas/proxy/credenciais ou commit/push. Logs, medidas e capturas em `/root/.cache/gaucho-desktop-width-20261111/`.
+
+Pós-publicação: Chrome público aprovado em 1440/1920/2560/3440px e mobile 390×844/956×440 com APIs sintéticas. Tetos desktop medidos em 1088/768/896/1056px, fonte até 16px; as cinco medidas de largura e fonte mobile saíram idênticas ao baseline. Zero overflow/pageerror. Comparação e capturas em `before/` e `after/`; inspeção visual desktop aprovada. Nenhuma dependência instalada.
+
+#### Capas Pulse e modelos de imagem 2.6 (`pronta para revisão`, publicada em 2026-11-11)
+
+Anders autorizou corrigir a geração das capas e separar Flare 2.6 nas capas automáticas de Sunburst 2.6 nos pedidos do chat. Diagnóstico: sete runs de 04/11 às 21h até 10/11 às 16h50 BRT sem imagem, todos com fallback rejeitado por `Complexity 'medium' is not supported for this image model`; Descobrir também apresentou rejeição de `low`. Última capa Pulse salva em 03/11 às 21h BRT. Texto e imagens antigas preservados.
+
+DECISÃO: manter Responses API, PNG, qualidade e tamanho existentes; forçar ferramenta nas chamadas exclusivas de capa Pulse/Descobrir e usar Luna `low` no fallback Pulse, sem herdar esforço do texto. Falha ou resposta sem imagem preserva o texto e grava aviso no `error` já exibido pelo cartão. SoundCase mantém fallback SVG. Fonte isolada `/root/.cache/gaucho-image-26-20261111/source` (**preservar**). Nenhuma regeneração de histórico ou reativação das rotinas pausadas.
+
+Validação: 32 testes focados e 1.264 testes completos (229 arquivos), TypeScript, lint e build 43/43 aprovados. Primeiro teste completo recebeu indevidamente `NEXT_PUBLIC_BASE_PATH=/chat`, falhando três expectativas de URL; repetido sem a variável, passou. Build mantém `/chat`. Quatro gerações reais sintéticas via Responses (`store:false`) confirmaram PNG em Flare high/low e Sunburst normal/streaming; imagem descartada da memória, sem gravar no feed. Build `SJuHAhDn5K8K76Cyqw_Q-` publicada; backup `/root/.cache/gaucho-deploy/20261112T023130Z/next-before`. Saúde local/pública 200, Pulse anônimo 401, hashes dos dados privados e PID do ditado preservados. Evidências em `/root/.cache/gaucho-image-26-20261111/`. Sem commit/push nesta rodada.
+
+Chrome público em 1933 e 390 px aprovado: capa sintética carregada, aviso de falha visível no cartão fechado/aberto e texto preservado, sem pageerror. Todas as APIs do browser interceptadas com fixtures sintéticas. Capturas e resultados em `evidence/`. Primeira tentativa do smoke procurou o título salvo, mas o cartão deriva o título do conteúdo; seletor corrigido para o artigo com aviso, sem alteração no app. Não houve mudança frontend; Playwright completo não repetido, apenas smoke focado.
+
 #### Correções da revisão de layout (`publicada`, 2026-11-10)
 
 Versionamento autorizado por Anders em 10/11 após a publicação: commit das correções na `main`. A branch `claude/container-queries-painel` já está integralmente incorporada; não há merge pendente. O envio inclui também os dois commits anteriores `e0717fb` e `62361b6`; confirmação específica desse conjunto pendente antes do push. As menções abaixo a ausência de autorização descrevem o momento da publicação.

@@ -38,8 +38,9 @@ describe("integração da curadoria", () => {
     });
     expect(create.mock.calls[0][0].instructions).toContain("6 a 9 parágrafos");
     expect(create.mock.calls[1][0]).toMatchObject({
+      tool_choice: { type: "image_generation" },
       tools: [expect.objectContaining({
-        type: "image_generation", model: "gpt-image-2.5-sunburst", quality: "low", output_format: "png",
+        type: "image_generation", model: "gpt-image-2.6-flare", quality: "low", output_format: "png",
       })],
     });
   });

@@ -1,3 +1,4 @@
+import { schedulePersonalSynthesis } from "@/lib/server/memory/personalSynthesis";
 import { NextRequest, NextResponse } from "next/server";
 import { createMemory, listMemories } from "./data";
 import { isAuthEnabled, isAuthenticatedRequest } from "@/lib/server/auth";
@@ -54,6 +55,7 @@ export async function POST(request: NextRequest) {
       priority: Number.isFinite(body.priority) ? body.priority : 0,
     });
 
+    schedulePersonalSynthesis();
     return NextResponse.json(serializeMemory(memory), { status: 201 });
   } catch (error) {
     console.error("[memories] POST error", error);

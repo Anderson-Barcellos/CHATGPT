@@ -607,3 +607,28 @@ Autorizada por Anders. A build publicada é a mesma do gate final do Bloco 4; ne
 | Processos antigos após o restart | encerrados; só o servidor novo escuta em 3040 (aviso `left-over process` preexistente) |
 
 Evidências em `/root/.cache/gaucho-container-queries/evidence` (`deploy.log`). Não validado nesta rodada: Safari/iPhone físico, que depende de Anders.
+
+## 2026-11-09 — Bloco 5, complemento: rodada completa e diagnóstico de rolagem (Claude, sessão paralela)
+
+Feito por uma segunda sessão que seguiu medindo sem saber que o bloco já tinha sido encerrado na outra. Não altera a decisão registrada acima ("não entra"); acrescenta dados e uma causa. Nenhum arquivo do app mudou. A rodada interrompida gravava só no fim; o script passou a gravar a cada execução (`raw.jsonl`) e a campanha foi refeita em três pedaços, todos exit 0, 24 de 24 execuções.
+
+Mediana de três repetições, trabalho da thread principal (`TaskDuration`), atual → com a regra:
+
+| Thread e aparelho | Abrir a conversa | Resposta chegando (60 acréscimos) | Largura muda 3x | Rolar ao topo, 700 px por quadro |
+|---|---|---|---|---|
+| 60 msgs, desktop | 2.147 → 2.203 ms (+3%) | 495 → 398 ms (−20%) | 1.067 → 732 ms (−31%) | 39 → 359 quadros |
+| 60 msgs, celular 4x | 7.946 → 7.887 ms (−1%) | 2.076 → 1.465 ms (−29%) | 3.302 → 1.295 ms (−61%) | 47 → 543 quadros |
+| 300 msgs, desktop | 4.860 → 4.350 ms (−10%) | 952 → 492 ms (−48%) | 2.892 → 625 ms (−78%) | 190 quadros → teto de 60 s sem chegar |
+| 300 msgs, celular 4x | 21.335 → 17.782 ms (−17%) | 5.263 → 2.106 ms (−60%) | 12.652 → 1.406 ms (−89%) | 227 quadros → teto de 600 quadros sem chegar |
+
+Script na carga de 300 mensagens no desktop: 3.658 contra 3.668 ms, ou seja, a regra não alivia o React. Fim da thread visível e distância zero do fundo após a carga em todas as execuções.
+
+| Diagnóstico | Resultado |
+|---|---|
+| `diagnosticar-rolagem.mjs`: roda do mouse real, 700 px por passo, 1280×900, teto de 90 s | 60 msgs atual: topo em 37 passos, 0 recuos. 60 msgs com a regra: 170 passos sem passar da mensagem 51 de 60, 13 recuos. Com a regra e `overflow-anchor: none`: 156 passos, 12 recuos, mesma forma. 300 msgs: atual 0 recuos; com a regra 12 recuos, parou na mensagem 279 |
+| Traço passo a passo (`diagnostico-60-cv.json`) | a cada mudança de altura da thread a posição volta para o mesmo ponto colado no fim; a ancoragem do navegador não é a causa |
+| `provar-puxao.mjs`: build atual, sem regra nenhuma; leitura a 2.100 px do fim, depois o último balão cresce | posição puxada para o fim (distância 0): `puxouParaOFim: true` |
+
+Causa lida no código: `deriveScrollState` (`lib/chat/scrollState.ts:34`) devolve "tracking" sempre que `isTrackingBottom` é verdadeiro, e `syncScrollState` (`components/chat/ChatContainer.tsx:379`) só zera a ref quando o modo é "reading-history"; a ref nasce verdadeira e nunca sai. `scrollState.test.ts` só cobre `isTrackingBottom: false`. Com a regra, cada linha revelada muda a altura e dispara o puxão; sem a regra, o mesmo puxão deve ocorrer quando uma resposta chega enquanto se lê o histórico.
+
+Não validado: streaming real (o crescimento foi simulado por DOM), Safari/iPhone, estado de hover com a contenção de pintura. "Celular" é Chrome de servidor com CPU freada 4x. Limpeza conferida: porta 3148 livre, `data/` sintética removida. Evidências e os três scripts em `/root/.cache/gaucho-container-queries/qa/bloco5-medicao/` (`saida-60.txt`, `saida-300-desktop.txt`, `saida-300-celular.txt`, `raw.jsonl`, `diagnostico*.json`, `prova-puxao-atual.json`).

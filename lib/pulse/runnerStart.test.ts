@@ -69,6 +69,51 @@ beforeEach(() => {
 });
 
 describe("Pulse manual start", () => {
+  it("gera a capa ausente em chamada obrigatória e independente do raciocínio do texto", async () => {
+    openai.responses.create
+      .mockResolvedValueOnce({ id: "text", status: "completed", output_text: "Texto preservado", output: [] })
+      .mockResolvedValueOnce({ status: "completed", output: [
+        { type: "image_generation_call", status: "completed", result: "capa-base64" },
+      ] });
+    const result = await runDuePulseTasks(now);
+    expect(openai.responses.create).toHaveBeenCalledTimes(2);
+    expect(openai.responses.create.mock.calls[1][0]).toMatchObject({
+      reasoning: { effort: "low" },
+      tool_choice: { type: "image_generation" },
+      tools: [expect.objectContaining({ model: "gpt-image-2.6-flare", quality: "high" })],
+    });
+    expect(result.runs[0]).toMatchObject({ status: "completed", content: "Texto preservado", imageBase64: "capa-base64" });
+    expect(result.runs[0].error).toBeUndefined();
+    expect(runs()[0].imageBase64).toBe("capa-base64");
+  });
+
+  it.each(["rejected", "empty", "incomplete"])("preserva texto e registra aviso quando a capa termina %s", async (mode) => {
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      openai.responses.create.mockResolvedValueOnce({ id: "text", status: "completed", output_text: "Texto preservado", output: [] });
+      if (mode === "rejected") openai.responses.create.mockRejectedValueOnce(new Error("400 image generation error"));
+      else openai.responses.create.mockResolvedValueOnce({
+        status: mode === "incomplete" ? "incomplete" : "completed",
+        output: mode === "incomplete" ? [{ type: "image_generation_call", result: "partial" }] : [],
+      });
+      const result = await runDuePulseTasks(now);
+      expect(result.runs[0]).toMatchObject({
+        status: "completed", content: "Texto preservado",
+        error: "O texto foi concluído, mas não foi possível gerar a imagem de cabeçalho.",
+      });
+      expect(result.runs[0].imageBase64).toBeUndefined();
+      expect(runs()[0].error).toBe(result.runs[0].error);
+      expect(openai.responses.create).toHaveBeenCalledTimes(2);
+    } finally { warning.mockRestore(); }
+  });
+
+  it("não gera capa para um texto que falhou", async () => {
+    openai.responses.create.mockResolvedValueOnce({ status: "failed", error: { message: "Falha no texto" }, output: [] });
+    const result = await runDuePulseTasks(now);
+    expect(result.runs[0]).toMatchObject({ status: "failed", error: "Falha no texto" });
+    expect(openai.responses.create).toHaveBeenCalledTimes(1);
+  });
+
   it("returns the claimed running run immediately and settles it in the background", async () => {
     const pending = deferred<never>();
     openai.responses.create.mockReturnValue(pending.promise);
@@ -169,7 +214,7 @@ describe("Pulse manual start", () => {
       text: { verbosity: "high" },
       tools: [
         expect.objectContaining({ type: "web_search_preview" }),
-        expect.objectContaining({ type: "image_generation", model: "gpt-image-2.5-sunburst" }),
+        expect.objectContaining({ type: "image_generation", model: "gpt-image-2.6-flare" }),
       ],
     }));
     expect(result.runs[0]).toMatchObject({

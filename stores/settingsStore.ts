@@ -7,23 +7,28 @@ import {
   Memory,
 } from "@/types";
 import {
-  MODELS,
-  getFixedReasoningEffort,
-  getFixedVerbosity,
   getSupportedReasoningEfforts,
   isDeepSeekModel,
-  isReasoningModel,
-  modelSupportsCodeInterpreter,
   modelSupportsReasoningMode,
 } from "@/lib/models/modelConfig";
+import {
+  DEFAULT_CHAT_MODEL_CATALOG,
+  getChatModel,
+  inferChatModelProvider,
+  type ChatModelCatalog,
+} from "@/lib/models/chatModelCatalog";
 
 type ModelSettingsMap = Record<string, ModelScopedParameters>;
 interface SettingsState {
   parameters: ModelParameters;
   modelSettingsById: ModelSettingsMap;
+  chatModelCatalog: ChatModelCatalog;
+  catalogLoaded: boolean;
+  pendingModelId: string | null;
   customInstructions: CustomInstructions | null;
   memories: Memory[];
   updateParameters: (updates: Partial<ModelParameters>) => void;
+  setChatModelCatalog: (catalog: ChatModelCatalog) => void;
   setCustomInstructions: (instructions: CustomInstructions | null) => void;
   setMemories: (memories: Memory[]) => void;
   getModelParameters: () => ModelParameters;
@@ -60,11 +65,24 @@ const REMOVED_CHAT_MODEL_IDS = new Set([
   "gemini-3.8-flash",
 ]);
 
-function resolveSupportedModelId(modelId: string | undefined): string {
-  if (!modelId) return DEFAULT_MODEL;
-  if (LEGACY_MODEL_FALLBACKS[modelId]) return LEGACY_MODEL_FALLBACKS[modelId];
-  if (MODELS[modelId] && MODELS[modelId].selectable !== false) return modelId;
-  return DEFAULT_MODEL;
+function resolveSupportedModelId(
+  modelId: string | undefined,
+  catalog = DEFAULT_CHAT_MODEL_CATALOG
+): string {
+  const fallback = catalog.rows.find((row) => row.model.id === DEFAULT_MODEL && row.visible)
+    ?? catalog.rows.find((row) => row.visible);
+  if (!modelId) return fallback?.model.id ?? DEFAULT_MODEL;
+  const managed = catalog.rows.find((row) => row.model.id === modelId);
+  if (managed?.visible) return modelId;
+  const legacy = Object.hasOwn(LEGACY_MODEL_FALLBACKS, modelId) ? LEGACY_MODEL_FALLBACKS[modelId] : undefined;
+  if (legacy) {
+    const replacement = catalog.rows.find((row) => row.model.id === legacy);
+    if (replacement?.visible || (!replacement && getChatModel(legacy)?.selectable !== false)) return legacy;
+    return fallback?.model.id ?? DEFAULT_MODEL;
+  }
+  const model = getChatModel(modelId, catalog);
+  if (!managed && model && model.selectable !== false) return modelId;
+  return fallback?.model.id ?? DEFAULT_MODEL;
 }
 
 function usesNoReasoningByDefault(modelId: string): boolean {
@@ -75,59 +93,57 @@ function usesNoReasoningByDefault(modelId: string): boolean {
   );
 }
 
-function buildDefaultModelSettings(modelId: string): ModelScopedParameters {
-  const resolvedModelId = resolveSupportedModelId(modelId);
-  const defaultReasoningEffort =
-    isDeepSeekModel(resolvedModelId)
-      ? "low"
-      : resolvedModelId === "gemini-3.8-flash"
-      ? "high"
-      : usesNoReasoningByDefault(resolvedModelId)
-      ? "none"
-      : isReasoningModel(resolvedModelId)
-      ? "medium"
-      : "none";
+function buildDefaultModelSettings(modelId: string, catalog?: ChatModelCatalog): ModelScopedParameters {
+  const model = getChatModel(modelId, catalog);
+  const efforts = getSupportedReasoningEfforts(modelId, model);
+  const preferredEffort = isDeepSeekModel(modelId) ? "low"
+    : modelId === "gemini-3.8-flash" ? "high"
+    : usesNoReasoningByDefault(modelId) ? "none"
+    : "medium";
+  const defaultReasoningEffort = efforts.includes(preferredEffort) ? preferredEffort : efforts[0] ?? "none";
   const defaultReasoningSummary = "detailed" as const;
 
   return {
-    maxOutputTokens: MODELS[resolvedModelId]?.maxOutput || 32768,
+    maxOutputTokens: model?.maxOutput || 32768,
     temperature: 0.8,
     topP: 0.95,
-    reasoningEffort: getFixedReasoningEffort(resolvedModelId) ?? defaultReasoningEffort,
+    reasoningEffort: model?.fixedReasoningEffort ?? defaultReasoningEffort,
     reasoningMode: "standard",
     reasoningSummary: defaultReasoningSummary,
     verbosity:
-      getFixedVerbosity(resolvedModelId) ??
-      (isDeepSeekModel(resolvedModelId) ? "high" : "medium"),
+      model?.fixedVerbosity ??
+      (isDeepSeekModel(modelId) ? "high" : "medium"),
     codeInterpreterEnabled: false,
   };
 }
 
 function clampModelSettings(
   modelId: string,
-  settings: ModelScopedParameters
+  settings: ModelScopedParameters,
+  catalog?: ChatModelCatalog
 ): ModelScopedParameters {
-  const resolvedModelId = resolveSupportedModelId(modelId);
-  const modelMaxOutput = MODELS[resolvedModelId]?.maxOutput;
+  const model = getChatModel(modelId, catalog);
+  const modelMaxOutput = model?.maxOutput;
   const maxOutputTokens = modelMaxOutput
     ? Math.min(Math.max(Math.round(settings.maxOutputTokens), 256), modelMaxOutput)
     : Math.max(Math.round(settings.maxOutputTokens), 256);
 
-  const supportedEfforts = getSupportedReasoningEfforts(resolvedModelId);
+  const supportedEfforts = getSupportedReasoningEfforts(modelId, model);
   const reasoningEffort = supportedEfforts.includes(settings.reasoningEffort)
     ? settings.reasoningEffort
-    : buildDefaultModelSettings(resolvedModelId).reasoningEffort;
+    : buildDefaultModelSettings(modelId, catalog).reasoningEffort;
   const reasoningMode = modelSupportsReasoningMode(
-    resolvedModelId,
-    settings.reasoningMode
+    modelId,
+    settings.reasoningMode,
+    model
   )
     ? settings.reasoningMode
     : "standard";
-  const fixedReasoningEffort = getFixedReasoningEffort(resolvedModelId);
-  const fixedVerbosity = getFixedVerbosity(resolvedModelId);
-  const isDeepSeek = isDeepSeekModel(resolvedModelId);
+  const fixedReasoningEffort = model?.fixedReasoningEffort;
+  const fixedVerbosity = model?.fixedVerbosity;
+  const isDeepSeek = isDeepSeekModel(modelId);
   const codeInterpreterEnabled =
-    !isDeepSeek && modelSupportsCodeInterpreter(resolvedModelId)
+    !isDeepSeek && model?.supportsCodeInterpreter
       ? settings.codeInterpreterEnabled
       : false;
 
@@ -172,13 +188,13 @@ function mergeModelParameters(
 
 function resolveModelSettings(
   modelId: string,
-  modelSettingsById: ModelSettingsMap
+  modelSettingsById: ModelSettingsMap,
+  catalog?: ChatModelCatalog
 ): ModelScopedParameters {
-  const resolvedModelId = resolveSupportedModelId(modelId);
   return clampModelSettings(modelId, {
-    ...buildDefaultModelSettings(resolvedModelId),
-    ...modelSettingsById[resolvedModelId],
-  });
+    ...buildDefaultModelSettings(modelId, catalog),
+    ...sanitizeScopedSettings(modelSettingsById[modelId]),
+  }, catalog);
 }
 
 function pickModelScopedUpdates(
@@ -258,19 +274,24 @@ function mergePersistedSettings(
     }
   }
   const persistedModel = typeof raw.model === "string" ? raw.model : current.parameters.model;
-  const model = resolveSupportedModelId(persistedModel);
+  const catalog = current.chatModelCatalog;
+  const pendingModelId = !current.catalogLoaded && !getChatModel(persistedModel, catalog)
+    && !Object.hasOwn(LEGACY_MODEL_FALLBACKS, persistedModel) && inferChatModelProvider(persistedModel)
+    ? persistedModel : null;
+  const model = resolveSupportedModelId(persistedModel, catalog);
   const fallsBackToLuna =
     persistedModel !== model && REMOVED_CHAT_MODEL_IDS.has(persistedModel);
   const systemPrompt =
     typeof raw.systemPrompt === "string" ? raw.systemPrompt : current.parameters.systemPrompt;
   const scoped = clampModelSettings(model, {
-    ...buildDefaultModelSettings(model),
-    ...(!fallsBackToLuna &&
+    ...buildDefaultModelSettings(model, catalog),
+    ...(!fallsBackToLuna && !pendingModelId &&
       sanitizeScopedSettings(modelSettingsById[model] ?? modelSettingsById[persistedModel])),
-  });
+  }, catalog);
   modelSettingsById[model] = scoped;
   return {
     ...current,
+    pendingModelId,
     modelSettingsById,
     parameters: mergeModelParameters(model, systemPrompt, scoped),
   };
@@ -311,22 +332,39 @@ function sanitizeScopedSettings(
 
 export const useSettingsStore = create<SettingsState>()(persist((set, get) => ({
   parameters: defaultParameters,
+  chatModelCatalog: DEFAULT_CHAT_MODEL_CATALOG,
+  catalogLoaded: false,
+  pendingModelId: null,
   modelSettingsById: {
     [DEFAULT_MODEL]: defaultModelSettings,
   },
   customInstructions: null,
   memories: [],
+  setChatModelCatalog: (catalog) =>
+    set((state) => {
+      if (state.catalogLoaded && catalog.revision <= state.chatModelCatalog.revision) return state;
+      const model = resolveSupportedModelId(state.pendingModelId ?? state.parameters.model, catalog);
+      const scoped = resolveModelSettings(model, state.modelSettingsById, catalog);
+      return {
+        chatModelCatalog: catalog,
+        catalogLoaded: true,
+        pendingModelId: null,
+        parameters: mergeModelParameters(model, state.parameters.systemPrompt, scoped),
+      };
+    }),
   updateParameters: (updates) =>
     set((state) => {
-      const currentModel = resolveSupportedModelId(state.parameters.model);
-      const nextModel = resolveSupportedModelId(updates.model ?? currentModel);
+      const catalog = state.chatModelCatalog;
+      const currentModel = state.parameters.model;
+      const nextModel = resolveSupportedModelId(updates.model ?? currentModel, catalog);
       const nextSystemPrompt = updates.systemPrompt ?? state.parameters.systemPrompt;
       const scopedUpdates = pickModelScopedUpdates(updates);
       const modelSettingsById = {
         ...state.modelSettingsById,
         [currentModel]: clampModelSettings(
           currentModel,
-          extractModelSettings(state.parameters)
+          extractModelSettings(state.parameters),
+          catalog
         ),
       };
 
@@ -335,15 +373,16 @@ export const useSettingsStore = create<SettingsState>()(persist((set, get) => ({
           ? clampModelSettings(currentModel, {
               ...modelSettingsById[currentModel],
               ...scopedUpdates,
-            })
+            }, catalog)
           : clampModelSettings(nextModel, {
-              ...resolveModelSettings(nextModel, modelSettingsById),
+              ...resolveModelSettings(nextModel, modelSettingsById, catalog),
               ...scopedUpdates,
-            });
+            }, catalog);
 
       modelSettingsById[nextModel] = nextScopedSettings;
 
       return {
+        pendingModelId: updates.model === undefined ? state.pendingModelId : null,
         modelSettingsById,
         parameters: mergeModelParameters(
           nextModel,
@@ -366,7 +405,7 @@ export const useSettingsStore = create<SettingsState>()(persist((set, get) => ({
   // Hidratação manual no cliente (SettingsHydrator) para não divergir do SSR.
   skipHydration: true,
   partialize: (state): PersistedSettings => ({
-    model: state.parameters.model,
+    model: state.pendingModelId ?? state.parameters.model,
     systemPrompt: state.parameters.systemPrompt,
     modelSettingsById: state.modelSettingsById,
   }),

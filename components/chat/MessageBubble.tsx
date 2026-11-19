@@ -23,7 +23,7 @@ import { useNotes } from "@/hooks/useNotes";
 import { StickyNote } from "lucide-react";
 import { useUIStore } from "@/stores/uiStore";
 import { useMessageLongPress } from "@/hooks/useMessageLongPress";
-import { MODELS } from "@/lib/models/modelConfig";
+import { getChatModel, inferChatModelProvider, type ChatModelProvider } from "@/lib/models/chatModelCatalog";
 
 interface MessageBubbleProps {
   message: Message;
@@ -36,10 +36,8 @@ interface MessageBubbleProps {
 const APP_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 const USER_AVATAR_SRC = `${APP_BASE_PATH}/images/anders-avatar.png`;
 
-type AssistantProvider = "openai" | "anthropic" | "deepseek" | "google";
-
 const ASSISTANT_PROVIDER_BADGES: Record<
-  AssistantProvider,
+  ChatModelProvider,
   { label: string; letter: string; Icon?: ComponentType<{ className?: string }> }
 > = {
   openai: { label: "OpenAI", letter: "O", Icon: OpenAIIcon },
@@ -48,13 +46,8 @@ const ASSISTANT_PROVIDER_BADGES: Record<
   google: { label: "Google · Gemini", letter: "G" },
 };
 
-export function getAssistantProvider(modelId?: string): AssistantProvider {
-  const family = modelId ? MODELS[modelId]?.family : undefined;
-  if (family === "anthropic") return "anthropic";
-  if (family === "deepseek") return "deepseek";
-  if (family === "gemini") return "google";
-  // Compatibilidade: mensagens históricas ainda não persistem modelId.
-  return "openai";
+export function getAssistantProvider(modelId?: string): ChatModelProvider {
+  return modelId ? getChatModel(modelId)?.provider ?? inferChatModelProvider(modelId) ?? "openai" : "openai";
 }
 
 export function getWebSearchIndicatorStatus(
@@ -89,12 +82,19 @@ export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDe
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuAnchorOffscreen, setMenuAnchorOffscreen] = useState(false);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const editRef = useRef<HTMLTextAreaElement>(null);
   const editPanelRef = useRef<HTMLDivElement>(null);
   const [editPending, setEditPending] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const openMenu = useCallback(() => {
+    const bounds = menuTriggerRef.current?.getBoundingClientRect();
+    const viewport = window.visualViewport;
+    const top = viewport?.offsetTop ?? 0;
+    const bottom = top + (viewport?.height ?? window.innerHeight);
+    setMenuAnchorOffscreen(Boolean(bounds && (bounds.top < top || bounds.bottom > bottom)));
     setMenuOpen(true);
     navigator.vibrate?.(30);
   }, []);
@@ -388,9 +388,13 @@ export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDe
             {formatTime(message.timestamp)}
           </span>
           {!isEditing && (onEdit || onDelete) && (
-            <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+            <DropdownMenu open={menuOpen} onOpenChange={(open) => {
+              setMenuOpen(open);
+              if (!open) setMenuAnchorOffscreen(false);
+            }}>
               <DropdownMenuTrigger asChild>
                 <Button
+                  ref={menuTriggerRef}
                   variant="ghost"
                   size="icon-xs"
                   className={cn(
@@ -402,7 +406,15 @@ export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDe
                   <span className="sr-only">Acoes da mensagem</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align={isUser ? "end" : "start"} className="gc-chat-ui w-52">
+              <DropdownMenuContent
+                align={isUser ? "end" : "start"}
+                // Radix só desloca no eixo paralelo ao lado. Para uma âncora fora
+                // da tela, o lado lateral permite limitar a posição vertical.
+                side={menuAnchorOffscreen ? "right" : "bottom"}
+                sticky={menuAnchorOffscreen ? "always" : "partial"}
+                collisionPadding={8}
+                className="gc-chat-ui w-52"
+              >
                 {isUser && onEdit && (
                   <DropdownMenuItem
                     disabled={editDisabled}

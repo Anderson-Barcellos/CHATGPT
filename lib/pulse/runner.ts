@@ -19,7 +19,7 @@ import {
 } from "@/lib/pulse/store";
 import { derivePulseRunTitle } from "@/lib/pulse/runTitle";
 
-const DEFAULT_IMAGE_MODEL = "gpt-image-2.5-sunburst";
+const DEFAULT_IMAGE_MODEL = "gpt-image-2.6-flare";
 const DEFAULT_IMAGE_REQUEST_MODEL = "gpt-6-luna";
 const DEFAULT_PULSE_MAX_OUTPUT_TOKENS = 25_000;
 const MIN_PULSE_MAX_OUTPUT_TOKENS = 8_000;
@@ -74,7 +74,6 @@ async function generatePulseOpeningImage(params: {
   openai: OpenAI;
   task: PulseTask;
   content: string;
-  profile: PulseExecutionProfile;
 }): Promise<{ imageBase64?: string; imageMimeType?: string }> {
   const prompt = [
     `Gere uma imagem conceitual de abertura para a rotina Pulse "${params.task.title}".`,
@@ -94,7 +93,8 @@ async function generatePulseOpeningImage(params: {
       },
     ],
     max_output_tokens: 1200,
-    reasoning: { effort: params.profile.reasoningEffort },
+    reasoning: { effort: "low" },
+    tool_choice: { type: "image_generation" },
     tools: [
       {
         type: "image_generation",
@@ -108,6 +108,9 @@ async function generatePulseOpeningImage(params: {
   });
 
   const output = extractResponseOutput(response);
+  if (response.status !== "completed" || !output.imageBase64) {
+    throw new Error("A geração da capa não retornou uma imagem completa.");
+  }
   return {
     ...(output.imageBase64 ? { imageBase64: output.imageBase64 } : {}),
     ...(output.imageMimeType ? { imageMimeType: output.imageMimeType } : {}),
@@ -190,9 +193,10 @@ async function completeClaimedRun(
       output.content || (patch.streamStatus === "completed" ? patch.content || "" : "");
     const fallbackImage: { imageBase64?: string; imageMimeType?: string } =
       patch.streamStatus === "completed" && !output.imageBase64 && finalContent.trim()
-        ? await generatePulseOpeningImage({ openai, task, content: finalContent, profile }).catch(
+        ? await generatePulseOpeningImage({ openai, task, content: finalContent }).catch(
             (error) => {
-              console.warn("[pulse] Falha ao gerar imagem fallback:", error);
+              console.warn("[pulse] Falha ao gerar imagem fallback:",
+                error instanceof Error ? error.message : "Falha desconhecida");
               return {};
             }
           )
@@ -217,6 +221,10 @@ async function completeClaimedRun(
         : {}),
       responseId: response.id,
       completedAt: new Date().toISOString(),
+      ...(patch.streamStatus === "completed" &&
+        !(patch.imageBase64 || output.imageBase64 || fallbackImage.imageBase64)
+        ? { error: "O texto foi concluído, mas não foi possível gerar a imagem de cabeçalho." }
+        : {}),
       ...(patch.streamStatus !== "completed"
         ? {
             error: pulseFailureMessage(

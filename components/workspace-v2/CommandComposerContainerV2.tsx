@@ -35,14 +35,12 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useSpeechToText } from "@/hooks/useSpeechToText";
 import {
-  getChatModels,
-  getFixedReasoningEffort,
   getSupportedReasoningEfforts,
   isDeepSeekModel,
-  isReasoningModel as checkReasoning,
   MODELS,
   modelSupportsReasoningMode,
 } from "@/lib/models/modelConfig";
+import { getChatModel } from "@/lib/models/chatModelCatalog";
 import { resolveDeepsearchProfile } from "@/lib/chat/deepsearchConfig";
 import { resolveDocumentFallbackProfile } from "@/lib/chat/documentConfig";
 import { canSubmitComposerMessage } from "@/lib/chat/composerSubmit";
@@ -64,6 +62,16 @@ const REASONING_OPTIONS: { value: ReasoningEffort; label: string; desc: string }
   { value: "xhigh", label: "Muito alto", desc: "Analise exaustiva" },
   { value: "max", label: "Maximo", desc: "Qualidade extrema" },
 ];
+
+const REASONING_OPACITY: Record<ReasoningEffort, number> = {
+  none: 0.3,
+  minimal: 0.38,
+  low: 0.45,
+  medium: 0.6,
+  high: 0.8,
+  xhigh: 0.9,
+  max: 1,
+};
 
 const IMAGE_ATTACHMENT_ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
 const FILE_ATTACHMENT_ACCEPT =
@@ -126,26 +134,23 @@ export function CommandComposerContainerV2({
     status: speechStatus,
     toggleRecording,
   } = useSpeechToText({ onTranscriptPreview: handleTranscriptPreview });
-  const { parameters, updateParameters } = useSettingsStore();
+  const { parameters, updateParameters, chatModelCatalog } = useSettingsStore();
 
-  const modelList = useMemo(() => getChatModels(), []);
-  const hasReasoning = useMemo(() => checkReasoning(parameters.model), [parameters.model]);
+  const modelList = chatModelCatalog.rows.filter((row) => row.visible).map((row) => row.model);
+  const currentModel = getChatModel(parameters.model, chatModelCatalog);
+  const supportedReasoningEfforts = getSupportedReasoningEfforts(parameters.model, currentModel);
+  const hasReasoning = supportedReasoningEfforts.length > 0;
   const isDeepsearchMode =
     responseMode === "deepsearch_medium" || responseMode === "deepsearch_high";
-  const currentModel = MODELS[parameters.model];
   const documentFallback =
     responseMode === "document"
-      ? resolveDocumentFallbackProfile(parameters.model)
+      ? resolveDocumentFallbackProfile(parameters.model, currentModel)
       : null;
   const usesDocumentFallback = documentFallback !== null;
   const isDeepSeekSelected = isDeepSeekModel(parameters.model);
-  const fixedReasoningEffort = getFixedReasoningEffort(parameters.model);
-  const supportedReasoningEfforts = useMemo(
-    () => getSupportedReasoningEfforts(parameters.model),
-    [parameters.model]
-  );
+  const fixedReasoningEffort = currentModel?.fixedReasoningEffort;
   const hasProMode =
-    modelSupportsReasoningMode(parameters.model, "pro") &&
+    modelSupportsReasoningMode(parameters.model, "pro", currentModel) &&
     responseMode !== "quiz" &&
     !isDeepsearchMode;
   const deepsearchModelId = resolveDeepsearchProfile(
@@ -154,7 +159,7 @@ export function CommandComposerContainerV2({
   const effectiveModelId = isDeepsearchMode
     ? deepsearchModelId
     : documentFallback?.model ?? parameters.model;
-  const displayModel = MODELS[effectiveModelId] ?? currentModel;
+  const displayModel = getChatModel(effectiveModelId, chatModelCatalog) ?? currentModel;
   const deepsearchModelLabel = MODELS[deepsearchModelId]?.name ?? deepsearchModelId;
   const documentFallbackLabel = documentFallback
     ? `${displayModel?.name ?? documentFallback.model} com Raciocínio médio`
@@ -410,7 +415,7 @@ export function CommandComposerContainerV2({
               )}
             >
               <div className="flex w-full items-center justify-between gap-2">
-                <span className="text-[0.6875rem] font-medium md:text-xs">{model.name}</span>
+                <span className="min-w-0 break-words text-[0.6875rem] font-medium md:text-xs">{model.name}</span>
                 {model.badge && (
                   <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-nano font-semibold text-primary">
                     {model.badge}
@@ -434,18 +439,7 @@ export function CommandComposerContainerV2({
     </Tooltip>
   );
 
-  const reasoningOpacity = useMemo(() => {
-    const map: Record<ReasoningEffort, number> = {
-      none: 0.3,
-      minimal: 0.38,
-      low: 0.45,
-      medium: 0.6,
-      high: 0.8,
-      xhigh: 0.9,
-      max: 1.0,
-    };
-    return map[effectiveReasoningEffort] ?? 0.6;
-  }, [effectiveReasoningEffort]);
+  const reasoningOpacity = REASONING_OPACITY[effectiveReasoningEffort] ?? 0.6;
 
   const reasoningControl = (
     <DropdownMenu>

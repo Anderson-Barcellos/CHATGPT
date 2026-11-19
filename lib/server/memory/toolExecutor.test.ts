@@ -2,6 +2,8 @@ import OpenAI from "openai";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("./personalIndex", () => ({ searchPersonalSources: vi.fn(async () => []) }));
+vi.mock("./personalSynthesis", () => ({ schedulePersonalSynthesis: vi.fn() }));
 vi.mock("@/app/api/memories/data", () => ({
   createMemory: vi.fn(),
 }));

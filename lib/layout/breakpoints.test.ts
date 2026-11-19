@@ -13,18 +13,18 @@ import {
 describe("encaixe do painel operacional", () => {
   it("reserva o painel ampliado antes de encaixar sem comprimir o chat", () => {
     expect(CONTEXT_PANEL_EXPANDED_WIDTH_PX).toBe(760);
-    expect(CONTEXT_EXPANDED_SIDEBAR_BREAKPOINT).toBe(1933);
+    expect(CONTEXT_EXPANDED_SIDEBAR_BREAKPOINT).toBe(2067);
     expect(CONTEXT_EXPANDED_SIDEBAR_BREAKPOINT - CONTEXT_PANEL_EXPANDED_WIDTH_PX).toBe(CONTEXT_SIDEBAR_BREAKPOINT - CONTEXT_PANEL_DOCKED_WIDTH_PX);
   });
   it("só encaixa quando o quadro de mensagens mantém a largura máxima ao lado do painel", () => {
     expect(SHELL_RAIL_WIDTH_PX).toBe(232);
     expect(CONTEXT_PANEL_DOCKED_WIDTH_PX).toBe(600);
-    // Balão do usuário: min(76%, 42rem) → 672 px exigem 884,2 px de área útil.
-    expect(MESSAGE_FRAME_FULL_WIDTH_PX).toBe(Math.ceil((42 * 16) / 0.76));
+    // Ambos precisam alcançar o teto: 768/76% e 896/88%.
+    expect(MESSAGE_FRAME_FULL_WIDTH_PX).toBe(Math.ceil(Math.max(768 / 0.76, 896 / 0.88)));
     expect(CONTEXT_SIDEBAR_BREAKPOINT).toBe(
       SHELL_RAIL_WIDTH_PX + CONTEXT_PANEL_DOCKED_WIDTH_PX + MESSAGE_FRAME_FULL_WIDTH_PX + THREAD_PADDING_PX + SHELL_CHROME_PX
     );
-    expect(CONTEXT_SIDEBAR_BREAKPOINT).toBe(1773);
+    expect(CONTEXT_SIDEBAR_BREAKPOINT).toBe(1907);
   });
 });
 

@@ -1,19 +1,13 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type OpenAI from "openai";
 import type { AssistantStreamEvent } from "@/lib/chat/streamMachine";
+import { CLAUDE_EFFORTS, getChatModel, type ChatModelInfo } from "@/lib/models/chatModelCatalog";
 import {
   buildMemoryTools,
   MEMORY_TOOL_NAMES,
   type ChatRequestBody,
 } from "@/lib/server/chatRequest";
 import { executeMemoryToolCall } from "@/lib/server/memory/toolExecutor";
-
-export const ANTHROPIC_MODELS = [
-  "claude-sonnet-5-5",
-  "claude-opus-5-5",
-] as const;
-
-export type AnthropicModel = (typeof ANTHROPIC_MODELS)[number];
 
 const MAX_TOOL_ROUNDS = 2;
 const REQUEST_TIMEOUT_MS = 180_000;
@@ -133,21 +127,18 @@ export function buildAnthropicMessages(
 }
 
 export function resolveAnthropicEffort(
-  body: Pick<ChatRequestBody, "reasoning">
-): "low" | "medium" | "high" {
-  const effort = body.reasoning?.effort;
-  if (effort === "low" || effort === "medium" || effort === "high") {
-    return effort;
-  }
-  if (effort === "xhigh" || effort === "max") return "high";
-
-  return "medium";
+  body: Pick<ChatRequestBody, "reasoning">,
+  efforts: readonly string[] = CLAUDE_EFFORTS,
+): Anthropic.Messages.OutputConfig["effort"] {
+  const supported = CLAUDE_EFFORTS.filter((effort) => efforts.includes(effort));
+  return supported.find((effort) => effort === body.reasoning?.effort)
+    ?? supported.find((effort) => effort === "medium")
+    ?? supported[0];
 }
 
-function resolveMaxTokens(value: number | undefined): number {
-  const requested = value ?? DEFAULT_MAX_TOKENS;
-  if (!Number.isFinite(requested)) return DEFAULT_MAX_TOKENS;
-  return Math.min(Math.max(Math.round(requested), 1), MAX_TOKENS);
+function resolveMaxTokens(value: number | undefined, limit: number): number {
+  const requested = typeof value === "number" && Number.isFinite(value) ? value : DEFAULT_MAX_TOKENS;
+  return Math.min(Math.max(Math.round(requested), 1), limit);
 }
 
 function buildAnthropicMemoryTools(): Anthropic.Messages.Tool[] {
@@ -159,10 +150,10 @@ function buildAnthropicMemoryTools(): Anthropic.Messages.Tool[] {
 }
 
 export function buildAnthropicMessageParams(
-  body: ChatRequestBody
+  body: ChatRequestBody,
+  info = getChatModel(body.model ?? ""),
 ): Anthropic.Messages.MessageCreateParamsStreaming {
-  const model = body.model as AnthropicModel;
-  if (!ANTHROPIC_MODELS.includes(model)) {
+  if (info?.provider !== "anthropic" || info.id !== body.model) {
     throw new AnthropicInputError("Modelo Claude não suportado.");
   }
 
@@ -175,23 +166,24 @@ export function buildAnthropicMessageParams(
   }
 
   if (body.temperature !== undefined && body.temperature !== 1) {
-    throw new AnthropicInputError("Claude 5.5 não aceita temperatura personalizada.");
+    throw new AnthropicInputError("A integração do Claude não aceita temperatura personalizada.");
   }
 
   if (body.topP !== undefined && body.topP < 0.99) {
-    throw new AnthropicInputError("Claude 5.5 não aceita topP personalizado.");
+    throw new AnthropicInputError("A integração do Claude não aceita topP personalizado.");
   }
 
-  return {
-    model,
-    stream: true,
-    max_tokens: resolveMaxTokens(body.maxOutputTokens),
-    messages: buildAnthropicMessages(body.input),
-    ...(body.instructions?.trim() ? { system: body.instructions.trim() } : {}),
-    output_config: { effort: resolveAnthropicEffort(body) },
-    thinking: { type: "adaptive" },
-    tools: [
-      ...buildAnthropicMemoryTools(),
+  const effort = resolveAnthropicEffort(body, info.supportedReasoningEfforts);
+  const tools: NonNullable<Anthropic.Messages.MessageCreateParamsStreaming["tools"]> =
+    buildAnthropicMemoryTools();
+  if (info.supportsWebSearch === true) {
+    tools.push({
+      type: "web_search_20250305",
+      name: "web_search",
+      user_location: { type: "approximate", country: "BR" },
+    });
+  } else if (info.supportsWebSearch === undefined) {
+    tools.push(
       {
         type: "web_search_20260318",
         name: "web_search",
@@ -203,8 +195,19 @@ export function buildAnthropicMessageParams(
         name: "web_fetch",
         allowed_callers: ["direct"],
         citations: { enabled: true },
-      },
-    ],
+      }
+    );
+  }
+
+  return {
+    model: info.id,
+    stream: true,
+    max_tokens: resolveMaxTokens(body.maxOutputTokens, info.maxOutput || MAX_TOKENS),
+    messages: buildAnthropicMessages(body.input),
+    ...(body.instructions?.trim() ? { system: body.instructions.trim() } : {}),
+    ...(effort && { output_config: { effort } }),
+    ...(info.supportsAdaptiveThinking !== false && { thinking: { type: "adaptive" as const } }),
+    tools,
   };
 }
 
@@ -443,9 +446,10 @@ export function createAnthropicClient(): Anthropic | null {
 export function createAnthropicEventStream(
   client: Anthropic,
   body: ChatRequestBody,
-  requestSignal: AbortSignal
+  requestSignal: AbortSignal,
+  modelInfo?: ChatModelInfo,
 ): ReadableStream<Uint8Array> {
-  const initialParams = buildAnthropicMessageParams(body);
+  const initialParams = buildAnthropicMessageParams(body, modelInfo);
   const bridge = createAbortBridge(requestSignal);
 
   return new ReadableStream<Uint8Array>({

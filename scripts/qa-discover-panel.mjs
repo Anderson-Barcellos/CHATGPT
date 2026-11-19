@@ -13,7 +13,7 @@ const data = path.join(repo, 'data');
 try { await access(data); throw new Error('QA exige data inexistente'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
 const out = process.env.DISCOVER_QA_OUTPUT || '/root/.cache/gaucho-discover-context/evidence/browser';
 const port = process.env.DISCOVER_QA_PORT || '3148';
-const DOCK = 1773; // espelha CONTEXT_SIDEBAR_BREAKPOINT
+const DOCK = 1907; // espelha CONTEXT_SIDEBAR_BREAKPOINT
 const base = `http://127.0.0.1:${port}/chat`;
 const env = { PATH: '/usr/bin:/bin', NODE_ENV: 'production', NEXT_PUBLIC_BASE_PATH: '/chat',
   AUTH_ENABLED: 'true', AUTH_USERNAME: 'synthetic-user', AUTH_PASSWORD: 'synthetic-password',
@@ -50,7 +50,7 @@ try {
   server.stdout.on('data', b => log += b); server.stderr.on('data', b => log += b);
   await until(() => fetch(`${base}/login`).then(r => r.ok).catch(() => false), 'boot');
   browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox'], headless: true, env });
-  for (const [width, height, touch, theme] of [[1199, 1000, false, 'light'], [1280, 900, false, 'dark'], [1440, 1000, false, 'dark'], [1536, 1000, false, 'light'], [1772, 1000, false, 'dark'], [1773, 900, false, 'light'], [1920, 1000, false, 'dark'], [3440, 1000, false, 'dark'], [6880, 1000, false, 'light'], [820, 1180, true, 'light'], [390, 844, true, 'dark'], [320, 740, true, 'light'], [1100, 440, true, 'dark'], [956, 440, true, 'dark']]) {
+  for (const [width, height, touch, theme] of [[1199, 1000, false, 'light'], [1280, 900, false, 'dark'], [1440, 1000, false, 'dark'], [1536, 1000, false, 'light'], [1906, 1000, false, 'dark'], [1907, 900, false, 'light'], [1920, 1000, false, 'dark'], [3440, 1000, false, 'dark'], [6880, 1000, false, 'light'], [820, 1180, true, 'light'], [390, 844, true, 'dark'], [320, 740, true, 'light'], [1100, 440, true, 'dark'], [956, 440, true, 'dark']]) {
     if (process.env.DISCOVER_QA_WIDTH && width !== Number(process.env.DISCOVER_QA_WIDTH)) continue;
     const context = await browser.newContext({ viewport: { width, height }, hasTouch: touch, colorScheme: theme, reducedMotion: 'reduce' });
     await context.addInitScript(t => { sessionStorage.setItem('gpt-splash-shown', '1'); localStorage.setItem('theme', t); }, theme);
@@ -219,14 +219,14 @@ try {
     await panel.getByRole('tab', { name: 'Notas', exact: true }).click();
     await panel.getByRole('tab', { name: 'Rotinas', exact: true }).click();
     await panel.getByRole('heading', { name: 'Nova rotina Pulse', exact: true }).waitFor();
-    if (width === 1773) {
+    if (width === 1907) {
       // Uma abertura sobrevive a encaixado → flutuante → encaixado, sem gaveta nem véu.
-      await page.setViewportSize({ width: 1772, height });
+      await page.setViewportSize({ width: 1906, height });
       await until(async () => await panel.getAttribute('data-context-mode') === 'floating', 'flutuante ao reduzir');
       assert.equal(await panel.getByRole('tab', { name: 'Rotinas', exact: true }).getAttribute('aria-selected'), 'true');
       assert.equal(await page.locator('[role="dialog"], .gc-context-drawer-overlay').count(), 0);
       await composer.fill('Rascunho preservado');
-      await page.setViewportSize({ width: 1773, height });
+      await page.setViewportSize({ width: 1907, height });
       await until(async () => await panel.getAttribute('data-context-mode') === 'docked', 'encaixado ao ampliar');
       await until(async () => Math.abs((await panel.boundingBox()).width - 600) < 1, 'lateral aberta ao redimensionar');
       assert.equal(await panel.getByRole('tab', { name: 'Rotinas', exact: true }).getAttribute('aria-selected'), 'true');
@@ -240,7 +240,7 @@ try {
     await panel.getByRole('heading', { name: articles[0].title, exact: true }).waitFor();
     assert.equal(await page.locator('[data-discover-scroll-root]').count(), 1);
     assert.equal(await page.locator('nextjs-portal').count(), 0);
-    if (width === 1773) {
+    if (width === 1907) {
       // Criar conversa mantém a lateral aberta, como antes da unificação do estado.
       await page.keyboard.press('Control+Shift+n');
       await page.getByRole('heading', { name: 'Nova conversa', exact: true }).waitFor();
@@ -248,7 +248,7 @@ try {
       assert.equal(await panel.getByRole('tab', { name: 'Descobrir IA', exact: true }).getAttribute('aria-selected'), 'true');
     }
     assert.deepEqual(errors, []); assert.deepEqual(external, []);
-    results.push({ width, height, theme, mobile, desktop, panelWidth, cover, columns, mode: mobile ? 'mobile' : docked ? 'docked' : 'floating', normalWidth: mobile ? width : normalWidth, expandedWidth: desktop ? expandedWidth : null, navigation: true, cards: true, audio: true, resize: desktop, breakpointResize: width === 1773, draft: true, console: true });
+    results.push({ width, height, theme, mobile, desktop, panelWidth, cover, columns, mode: mobile ? 'mobile' : docked ? 'docked' : 'floating', normalWidth: mobile ? width : normalWidth, expandedWidth: desktop ? expandedWidth : null, navigation: true, cards: true, audio: true, resize: desktop, breakpointResize: width === 1907, draft: true, console: true });
     await context.close();
   }
   await writeFile(`${out}/results.json`, JSON.stringify(results, null, 2)); console.log(JSON.stringify(results));

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { CustomInstructions } from "@/types";
 import { readDataFile, withDataFileLock, writeDataFile } from "@/lib/server/jsonFileStore";
 import { isAuthEnabled, isAuthenticatedRequest } from "@/lib/server/auth";
+import { readPersonalPersona } from "@/lib/server/memory/personalSources";
+import { schedulePersonalSynthesis } from "@/lib/server/memory/personalSynthesis";
 import {
   DEFAULT_PERSONA,
   hydratePersona,
@@ -18,8 +20,7 @@ function unauthorized() {
 }
 
 async function readPersona(): Promise<CustomInstructions> {
-  const data = await readDataFile(FILE_NAME, DEFAULT_PERSONA);
-  return hydratePersona(data);
+  return readPersonalPersona();
 }
 
 async function writePersona(data: CustomInstructions) {
@@ -42,9 +43,10 @@ async function savePersonaRequest(request: NextRequest) {
 
   try {
     const body = await request.json();
+    await readPersona();
 
     const data = await withDataFileLock(FILE_NAME, async () => {
-      const current = await readPersona();
+      const current = hydratePersona(await readDataFile(FILE_NAME, DEFAULT_PERSONA));
       const update = normalizePersonaUpdate(current, body);
       if (!update.ok) {
         return update;
@@ -59,6 +61,7 @@ async function savePersonaRequest(request: NextRequest) {
       return NextResponse.json({ error: data.error }, { status: 400 });
     }
 
+    schedulePersonalSynthesis();
     return NextResponse.json(data.data);
   } catch (error) {
     console.error("[persona] save error", error);

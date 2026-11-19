@@ -2,15 +2,10 @@ import OpenAI from "openai";
 import type { ResponseMode, ResponseVerbosity } from "@/types";
 import {
   MODELS,
-  getFixedReasoningEffort,
-  getFixedVerbosity,
   getSupportedReasoningEfforts,
-  isReasoningModel,
-  modelSupportsCodeInterpreter,
-  modelSupportsTemperature,
-  modelSupportsVerbosity,
   modelSupportsReasoningMode,
 } from "@/lib/models/modelConfig";
+import { getChatModel, type ChatModelInfo } from "@/lib/models/chatModelCatalog";
 import {
   QUIZ_FORCED_MODEL,
   QUIZ_FORCED_REASONING_EFFORT,
@@ -42,7 +37,7 @@ export const ALLOWED_CHAT_MODELS = new Set(
 );
 
 export const DEFAULT_CHAT_MODEL = "gpt-6-luna";
-const DEFAULT_IMAGE_GENERATION_MODEL = "gpt-image-2.5-sunburst";
+const DEFAULT_IMAGE_GENERATION_MODEL = "gpt-image-2.6-sunburst";
 export const MEMORY_TOOL_NAMES = {
   remember: "remember_memory",
   search: "search_memory",
@@ -77,8 +72,7 @@ export function createOpenAIClient(): OpenAI | null {
 
 export function resolveRequestedModel(model: string | undefined): string {
   if (!model) return DEFAULT_CHAT_MODEL;
-  if (LEGACY_MODEL_FALLBACKS[model]) return LEGACY_MODEL_FALLBACKS[model];
-  if (ALLOWED_CHAT_MODELS.has(model)) return model;
+  if (Object.hasOwn(LEGACY_MODEL_FALLBACKS, model)) return LEGACY_MODEL_FALLBACKS[model];
   return model;
 }
 
@@ -131,7 +125,7 @@ export function buildMemoryTools(): OpenAI.Responses.FunctionTool[] {
       type: "function",
       name: MEMORY_TOOL_NAMES.search,
       description:
-        "Search prior conversation chunks when the user explicitly asks to recover more detail, history, evidence, or context from previous chats.",
+        "Search current personal sources when omitted details are needed to answer accurately, and prior conversation chunks when the user asks for history or evidence.",
       strict: true,
       parameters: {
         type: "object",
@@ -156,14 +150,14 @@ export function buildMemoryTools(): OpenAI.Responses.FunctionTool[] {
 }
 
 function buildTools(
-  model: string,
+  model: ChatModelInfo | undefined,
   codeInterpreterEnabled: boolean,
   responseMode: ResponseMode,
   imageQuality: ChatRequestBody["imageQuality"],
   imageSize: ChatRequestBody["imageSize"],
   stream: boolean
 ) {
-  if (responseMode === "quiz") return [];
+  if (responseMode === "quiz" || model?.supportsResponsesTools === false) return [];
 
   const tools: OpenAI.Responses.Tool[] = [];
 
@@ -185,7 +179,7 @@ function buildTools(
 
   tools.push(buildWebSearchTool());
 
-  if (codeInterpreterEnabled && modelSupportsCodeInterpreter(model)) {
+  if (codeInterpreterEnabled && model?.supportsCodeInterpreter) {
     tools.push({
       type: "code_interpreter",
       container: { type: "auto" },
@@ -195,7 +189,7 @@ function buildTools(
   return tools;
 }
 
-export function buildResponseCreateParams(body: ChatRequestBody) {
+export function buildResponseCreateParams(body: ChatRequestBody, registeredModel?: ChatModelInfo) {
   const {
     input,
     model = DEFAULT_CHAT_MODEL,
@@ -214,7 +208,8 @@ export function buildResponseCreateParams(body: ChatRequestBody) {
 
   const effectiveModel =
     responseMode === "quiz" ? QUIZ_FORCED_MODEL : resolveRequestedModel(model);
-  const modelMaxOutput = MODELS[effectiveModel]?.maxOutput;
+  const modelInfo = registeredModel ?? getChatModel(effectiveModel);
+  const modelMaxOutput = modelInfo?.maxOutput;
   const effectiveMaxTokens = maxOutputTokens ?? modelMaxOutput ?? 4096;
   const clampedMaxTokens = modelMaxOutput
     ? Math.min(Math.max(Math.round(effectiveMaxTokens), 1), modelMaxOutput)
@@ -229,7 +224,7 @@ export function buildResponseCreateParams(body: ChatRequestBody) {
     input: input!,
     max_output_tokens: clampedMaxTokens,
     tools: buildTools(
-      effectiveModel,
+      modelInfo,
       codeInterpreterEnabled,
       responseMode,
       imageQuality,
@@ -238,22 +233,22 @@ export function buildResponseCreateParams(body: ChatRequestBody) {
     ),
   };
 
-  if (modelSupportsTemperature(effectiveModel)) {
+  if (modelInfo?.supportsTemperature) {
     if (temperature !== undefined) requestParams.temperature = temperature;
     if (topP !== undefined) requestParams.top_p = topP;
   }
 
-  const fixedReasoningEffort = getFixedReasoningEffort(effectiveModel);
-  if (isReasoningModel(effectiveModel) && (reasoning || fixedReasoningEffort)) {
+  const fixedReasoningEffort = modelInfo?.fixedReasoningEffort;
+  if (modelInfo?.capabilities.includes("reasoning") && (reasoning || fixedReasoningEffort)) {
     const { effort, mode, ...supportedReasoning } = reasoning ?? {};
     const sanitizedReasoning = {
-      ...supportedReasoning,
+      ...(modelInfo.supportsResponsesTools !== false && supportedReasoning),
       ...(fixedReasoningEffort
         ? { effort: fixedReasoningEffort }
-        : effort && effort !== "minimal" && getSupportedReasoningEfforts(effectiveModel).includes(effort)
+        : effort && getSupportedReasoningEfforts(effectiveModel, modelInfo).includes(effort)
         ? { effort }
         : {}),
-      ...(mode === "pro" && modelSupportsReasoningMode(effectiveModel, "pro") && {
+      ...(mode === "pro" && modelSupportsReasoningMode(effectiveModel, "pro", modelInfo) && {
         mode,
       }),
     };
@@ -269,11 +264,11 @@ export function buildResponseCreateParams(body: ChatRequestBody) {
     };
   }
 
-  const fixedVerbosity = getFixedVerbosity(effectiveModel);
+  const fixedVerbosity = modelInfo?.fixedVerbosity;
   const effectiveVerbosity = fixedVerbosity ?? verbosity;
   if (
     responseMode !== "quiz" &&
-    modelSupportsVerbosity(effectiveModel) &&
+    modelInfo?.supportsVerbosity &&
     effectiveVerbosity
   ) {
     requestParams.text = {

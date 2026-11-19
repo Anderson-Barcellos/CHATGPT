@@ -46,6 +46,7 @@ vi.mock("@/hooks/useCustomInstructions", () => ({
     contextAboutUser: "",
     responsePreferences: "",
     customSystemInstructions: "",
+    getPersonalDraft: () => undefined,
   }),
 }));
 vi.mock("@/hooks/useMemories", () => ({
@@ -73,6 +74,7 @@ function installFetchMock() {
   vi.stubGlobal(
     "fetch",
     vi.fn((url: string, init?: RequestInit) => {
+      if (String(url).endsWith("/api/memory/personal")) return Promise.resolve(new Response(JSON.stringify({ personalText: "Perfil atual", details: [] })));
       if (!String(url).endsWith("/api/chat")) {
         const results = String(url).endsWith("/reconcile") ? reconcileResults : [];
         return Promise.resolve(
@@ -171,6 +173,18 @@ afterEach(async () => {
 });
 
 describe("useChat — Parar, reenviar e reconcile", () => {
+  it("keeps a long user message intact while bounding the personal retrieval query", async () => {
+    await mountHook();
+    const content = "Documento extenso. ".repeat(18000).trim();
+    await act(async () => { void api().sendMessage(content); });
+    await settle();
+    expect(streams).toHaveLength(1);
+    expect(streams[0].body).toContain(content);
+    const personal = vi.mocked(fetch).mock.calls.find(([url]) => String(url).endsWith("/api/memory/personal"));
+    expect(JSON.parse(String(personal?.[1]?.body)).query.length).toBeLessThanOrEqual(6000);
+    await act(async () => { api().stopGeneration(); });
+    await settle(ABORT_REJECTION_DELAY_MS * 3);
+  });
   it("keeps the newer send stoppable and loading after the aborted stream settles", async () => {
     await mountHook();
 

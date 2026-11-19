@@ -1,10 +1,18 @@
 # Infraestrutura
 
-**Última atualização:** 2026-11-10 (correções de edição, expansão e encaixe publicadas)
+**Última atualização:** 2026-11-18 (catálogo de modelos publicado)
 **Produção:** `https://sonaris.us/chat` — host `srv1927271`
 **Porta local:** `3040`
 
 ## Topologia
+
+Publicação em 18/11 às 09h53 BRT: build `BQpqgs9UrXlwfM_QB2EU2`, origem `/root/worktrees/gaucho-chat-model-catalog` (**preservar**), anterior `Dx12sP2E5ro_FfMl7GuWv`, backup `/root/.cache/gaucho-deploy/20261118T125344Z/next-before`. A API autenticada do catálogo usa `/chat/api/chat/model-catalog` no serviço existente, e as edições do usuário seguem em `data/chat-model-catalog.json`. Health local/pública 200, catálogo anônimo 401 e autenticado 200, Chrome público 1440×1000 e 390×844 aprovado. Somente `chatgpt.service` reiniciado. Detalhes e evidências no BACKLOG e no diário.
+
+Publicação em 13/11 às 23h09 BRT: build `CD4rlXjmJA8tQhzLgAIf_`, origem `/root/worktrees/gaucho-personal-synthesis` (**NÃO apagar**), anterior `bE8tTNiqUx3rZ6z5LYssq`, backup `/root/.cache/gaucho-deploy/20261114T020936Z/next-before`. Síntese pessoal e recuperação de originais; sem nova unidade/porta/proxy. Só chatgpt.service reiniciado após 1.290 testes, tipos/lint/build e seis suítes Chrome. Saúde local/pública 200, endpoint pessoal anônimo 401 e UI pública em 1440/390 aprovada. Campos anteriores de persona, conversas, memórias e notas preservados; biografia importada com backup 0600 e derivados em `data/personal-synthesis.json` e tabela `personal_chunks`. Ditado preservado. Sem reload Apache ou mudança de credenciais. Registro/evidências em BACKLOG e `/root/.cache/gaucho-personal-synthesis/evidence`. Publicações abaixo são histórico.
+
+Publicação em 11/11 às 23h51 BRT: build `bE8tTNiqUx3rZ6z5LYssq`, origem `/root/.cache/gaucho-desktop-width-20261111/source` (**NÃO apagar**), backup `/root/.cache/gaucho-deploy/20261112T025143Z/next-before`. Largura desktop ampliada, corpo dos balões até 16px e encaixe do painel 1907/2067px; mobile preservado. Mantém a migração de imagens 2.6. Apenas chatgpt.service reiniciado após gates e cinco suítes Chrome; dados runtime verificados por SHA-256 e ditado com mesmo PID. Saúde local/pública 200, anônimo 401, agendadores retomados. Sem mudança de porta/proxy/cookies/credenciais ou reload Apache. Evidências `/root/.cache/gaucho-desktop-width-20261111/`. As publicações abaixo são histórico.
+
+Publicação em 11/11 às 23h31 BRT: build `SJuHAhDn5K8K76Cyqw_Q-`, origem `/root/.cache/gaucho-image-26-20261111/source` (**NÃO apagar**), backup `/root/.cache/gaucho-deploy/20261112T023130Z/next-before`. Chat usa Sunburst 2.6; capas Pulse/Descobrir/SoundCase usam Flare 2.6. Fallback Pulse obrigatório, independente do esforço do texto e com aviso persistido se falhar. `scripts/deploy.sh --from` exit 0; apenas `chatgpt.service` reiniciado. Saúde local/pública 200; Pulse anônimo 401; todos os arquivos runtime conferidos por SHA-256 antes/depois, sem alterações. Timers/path retomados e ditado com PID preservado. Porta, proxy, cookies e credenciais inalterados; sem reload Apache. Evidências em `/root/.cache/gaucho-image-26-20261111/`.
 
 Publicação atual em 10/11, 19:01 BRT, autorizada por Anders: editor mobile largo, cartão aberto do Descobrir acompanhado no feed e encaixe ampliado desde 1933 px (normal 1773). Build `O9dclP3abTxpSM7cm-uNL`, origem `/root/.cache/gaucho-layout-review-20261110/source` (**NÃO apagar**), backup `/root/.cache/gaucho-deploy/20261110T220108Z/next-before`; substitui `AI1H1D_FOemEZxZr6ZbWA`. Somente `chatgpt.service` reiniciado; agendadores pausados durante a troca e retomados. Local/público 200, anônimo 401; Chrome público validou os três ajustes com dados sintéticos e nenhuma chamada paga. Ponte de ditado preservada (PID 2775207). Porta, proxy, cookies, credenciais, dados e TTS preservados; sem reload Apache. Publicações abaixo são histórico.
 

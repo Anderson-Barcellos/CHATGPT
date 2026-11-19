@@ -23,7 +23,7 @@ describe("capa SoundCase com Sunburst", () => {
     expect(create).toHaveBeenCalledWith(expect.objectContaining({
       store: false,
       tools: [expect.objectContaining({
-        type: "image_generation", model: "gpt-image-2.5-sunburst", quality: "high", output_format: "png",
+        type: "image_generation", model: "gpt-image-2.6-flare", quality: "high", output_format: "png",
       })],
     }), expect.any(Object));
     expect(result).toEqual({ status: "ready", contentType: "image/png", fileName: "cover.png" });

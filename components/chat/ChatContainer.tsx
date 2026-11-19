@@ -32,7 +32,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/uiStore";
 import { useSettingsStore } from "@/stores/settingsStore";
-import { isAnthropicModel } from "@/lib/models/modelConfig";
+import { getChatModel } from "@/lib/models/chatModelCatalog";
 import type { Conversation, Message } from "@/types";
 
 const SUGGESTIONS = [
@@ -302,8 +302,10 @@ export function ChatContainer({
   onOpenConversations,
 }: ChatContainerProps) {
   const openContextPanel = useUIStore((state) => state.openContextPanel);
-  const model = useSettingsStore((state) => state.parameters.model);
-  const canGenerateImages = !isAnthropicModel(model);
+  const canGenerateImages = useSettingsStore(({ parameters, chatModelCatalog }) => {
+    const model = getChatModel(parameters.model, chatModelCatalog);
+    return model?.provider !== "anthropic" && model?.supportsResponsesTools !== false;
+  });
   const regenerateLastMessage = useCallback(() => {
     const lastAssistantIdx = [...messages].reverse().findIndex((m) => m.role === "assistant");
     if (lastAssistantIdx === -1) return;

@@ -29,10 +29,15 @@
 /data/conversations.json
 /data/memories.json
 /data/persona.json
+/data/persona.json.before-personal-synthesis
+/data/personal-synthesis.json
+/data/personal-synthesis.json.tmp
 /data/google-calendar-token.json
 /data/calendar-event-drafts.json
 /data/workspace-notes.json
 /data/chat-background-jobs.json
+/data/chat-model-catalog.json
+/data/chat-model-catalog.json.tmp
 /data/pulse-tasks.json
 /data/pulse-runs.json
 /data/discover.json

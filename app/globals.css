@@ -1427,7 +1427,7 @@ body {
 }
 
 .gc-atmosphere-shell .gc-chat-thread {
-  max-width: 58rem;
+  max-width: var(--gc-thread-max, 58rem);
   padding-top: 0.95rem;
   padding-bottom: 1.3rem;
 }
@@ -1445,8 +1445,8 @@ body {
 .gc-atmosphere-shell .gc-user-bubble {
   display: flow-root;
   align-self: flex-end;
-  width: min(100%, 42rem);
-  max-width: min(76%, 42rem) !important;
+  width: min(100%, var(--gc-user-bubble-max, 42rem));
+  max-width: min(76%, var(--gc-user-bubble-max, 42rem)) !important;
   border-radius: 1rem 1rem 0.38rem 1rem;
   padding: 1.15rem 1.3rem;
 }
@@ -1474,8 +1474,8 @@ body {
 .gc-atmosphere-shell .gc-assistant-bubble {
   display: flow-root;
   align-self: flex-start;
-  width: min(100%, 46rem);
-  max-width: min(88%, 46rem) !important;
+  width: min(100%, var(--gc-assistant-bubble-max, 46rem));
+  max-width: min(88%, var(--gc-assistant-bubble-max, 46rem)) !important;
   border-radius: 1rem;
   padding: 1.15rem 1.3rem;
 }
@@ -1487,11 +1487,11 @@ body {
 }
 
 .gc-atmosphere-shell .gc-message-meta {
-  max-width: 42rem;
+  max-width: var(--gc-user-bubble-max, 42rem);
 }
 
 .gc-atmosphere-shell .gc-message-quick-actions {
-  max-width: 46rem;
+  max-width: var(--gc-assistant-bubble-max, 46rem);
   border-radius: 0.72rem;
 }
 
@@ -1506,7 +1506,21 @@ body {
 }
 
 .gc-atmosphere-shell .gc-composer-width {
-  max-width: 56rem;
+  max-width: var(--gc-composer-max, 56rem);
+}
+
+@media (min-width: 768px) and (not ((max-height: 500px) and (pointer: coarse))) {
+  .gc-atmosphere-shell {
+    --gc-thread-max: 68rem;
+    --gc-user-bubble-max: 48rem;
+    --gc-assistant-bubble-max: 56rem;
+    --gc-composer-max: 66rem;
+  }
+
+  /* Corpo dos balões: 15–16px, sem alterar controles, painel ou mobile. */
+  .gc-atmosphere-shell .gc-message-card {
+    --gc-text-body: clamp(0.9375rem, 0.8958rem + 0.0868vw, 1rem);
+  }
 }
 
 .gc-atmosphere-shell .gc-clinical-composer {

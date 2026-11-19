@@ -34,7 +34,7 @@ try {
   assert.equal((await context.request.post(`${base}/api/auth/login`,{data:{username:'synthetic-user',password:'synthetic-password'}})).status(),200);
   page=await context.newPage();page.setDefaultTimeout(12000);const errors=[];page.on('pageerror',e=>errors.push(e.stack || e.message));
   await page.goto(embedded?base:`${base}/discover`,{waitUntil:'networkidle'});
-  if(embedded){if(width>=1773)await page.getByRole('button',{name:'Abrir painel',exact:true}).click();else if(width>=768)await page.getByRole('button',{name:'Painel contextual',exact:true}).click();else await page.getByRole('button',{name:'Pulse',exact:true}).click();await page.getByRole('tab',{name:'Descobrir IA',exact:true}).click();}
+  if(embedded){if(width>=1907)await page.getByRole('button',{name:'Abrir painel',exact:true}).click();else if(width>=768)await page.getByRole('button',{name:'Painel contextual',exact:true}).click();else await page.getByRole('button',{name:'Pulse',exact:true}).click();await page.getByRole('tab',{name:'Descobrir IA',exact:true}).click();}
   const feed=page.locator('[data-discover-scroll-root]');await feed.getByRole('heading',{name:'Notícia sintética 1',exact:true}).waitFor();
   await feed.getByRole('button',{name:'Apagar notícia: Notícia sintética 1',exact:true}).click();
   const dialog=page.locator('[data-discover-confirmation]');await dialog.waitFor();assert.match(await dialog.innerText(),/Notícia sintética 1/);

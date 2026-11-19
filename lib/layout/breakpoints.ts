@@ -5,9 +5,9 @@ export const MOBILE_BREAKPOINT = 768;
 // O corte é a soma das peças, para acompanhar qualquer mudança nelas:
 export const SHELL_RAIL_WIDTH_PX = 232; // --gc-shell-rail-width (14.5rem)
 export const CONTEXT_PANEL_DOCKED_WIDTH_PX = 600; // teto de --gc-shell-context-width
-// Balão do usuário min(76%, 42rem): 672 px pedem 884,2 px de área útil (o do
-// assistente, min(88%, 46rem), enche antes, com 836,4 px).
-export const MESSAGE_FRAME_FULL_WIDTH_PX = Math.ceil((42 * 16) / 0.76);
+// Tetos desktop do Atmosphere: usuário min(76%, 48rem), assistente min(88%, 56rem).
+// Reservar a maior área útil requerida pelos dois antes de encaixar o painel.
+export const MESSAGE_FRAME_FULL_WIDTH_PX = Math.ceil(Math.max((48 * 16) / 0.76, (56 * 16) / 0.88));
 export const THREAD_PADDING_PX = 40; // .gc-chat-thread md:px-5
 export const SHELL_CHROME_PX = 16; // 2 × --gc-shell-gutter + bordas do shell, trilha e painel
 export const CONTEXT_SIDEBAR_BREAKPOINT =
@@ -29,4 +29,4 @@ export const MOBILE_MEDIA_QUERY = `(max-width: ${MOBILE_BREAKPOINT - 1}px), ((ma
 // md: 768  — mobile/tablet threshold; useIsMobile() uses MOBILE_MEDIA_QUERY
 //            (max-width: 767px OR short coarse landscape ≤ 500px tall)
 // lg: 1024 — sidebar becomes visible
-// 1773 — context panel docks beside the chat (CONTEXT_SIDEBAR_BREAKPOINT); below it floats over the chat
+// 1907 — context panel docks beside the chat (CONTEXT_SIDEBAR_BREAKPOINT); below it floats over the chat

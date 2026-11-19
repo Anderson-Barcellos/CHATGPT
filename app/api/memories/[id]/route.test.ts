@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+vi.mock("@/lib/server/memory/personalSynthesis", () => ({ schedulePersonalSynthesis: vi.fn() }));
 
 const mocks = vi.hoisted(() => ({
   updateMemory: vi.fn(),

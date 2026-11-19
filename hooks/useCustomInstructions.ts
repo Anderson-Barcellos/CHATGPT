@@ -19,12 +19,14 @@ function toSnapshot(
   instructions: Pick<
     CustomInstructions,
     | "contextAboutUser"
+    | "importedBiography"
     | "responsePreferences"
     | "customSystemInstructions"
     | "ttsPreferences"
   >
 ) {
   return JSON.stringify({
+    importedBiography: instructions.importedBiography || "",
     contextAboutUser: instructions.contextAboutUser,
     responsePreferences: instructions.responsePreferences,
     customSystemInstructions: instructions.customSystemInstructions || "",
@@ -190,6 +192,21 @@ export function useCustomInstructions() {
     }));
   }, [setCustomInstructions]);
 
+  const updateImportedBiography = useCallback((value: string) => {
+    const current = useSettingsStore.getState().getCustomInstructions();
+    setCustomInstructions(hydratePersona({ ...current, importedBiography: value }));
+  }, [setCustomInstructions]);
+
+  const getPersonalDraft = useCallback(() => {
+    const current = hydratePersona(useSettingsStore.getState().getCustomInstructions());
+    if (!lastSavedSnapshotRef.current) return undefined;
+    const saved = JSON.parse(lastSavedSnapshotRef.current) as CustomInstructions;
+    const draft: Record<string, string> = {};
+    if (current.contextAboutUser !== saved.contextAboutUser) draft.contextAboutUser = current.contextAboutUser;
+    if ((current.importedBiography || "") !== (saved.importedBiography || "")) draft.importedBiography = current.importedBiography || "";
+    return Object.keys(draft).length ? draft : undefined;
+  }, []);
+
   const updateResponsePreferences = useCallback((value: string) => {
     const current = useSettingsStore.getState().getCustomInstructions();
     setCustomInstructions(hydratePersona({
@@ -245,6 +262,7 @@ export function useCustomInstructions() {
     const parsed = JSON.parse(debouncedSnapshot) as Pick<
       CustomInstructions,
       | "contextAboutUser"
+      | "importedBiography"
       | "responsePreferences"
       | "customSystemInstructions"
       | "ttsPreferences"
@@ -253,6 +271,7 @@ export function useCustomInstructions() {
     void saveContextAboutUser({
       id: instructions.id,
       contextAboutUser: parsed.contextAboutUser,
+      importedBiography: parsed.importedBiography,
       responsePreferences: parsed.responsePreferences,
       customSystemInstructions: parsed.customSystemInstructions || "",
       ttsPreferences: normalizeTtsPreferences(parsed.ttsPreferences),
@@ -311,6 +330,9 @@ export function useCustomInstructions() {
   }, [saveStatus]);
 
   return {
+    importedBiography: instructions.importedBiography || "",
+    updateImportedBiography,
+    getPersonalDraft,
     contextAboutUser: instructions.contextAboutUser,
     responsePreferences: instructions.responsePreferences,
     customSystemInstructions: instructions.customSystemInstructions || "",

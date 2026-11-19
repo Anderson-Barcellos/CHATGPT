@@ -43,11 +43,7 @@ import { resolveDeepsearchProfile } from "@/lib/chat/deepsearchConfig";
 import { resolveDocumentFallbackProfile } from "@/lib/chat/documentConfig";
 import { appendDeepResearchInstructions } from "@/lib/chat/deepResearchPrompt";
 import { createThrottle } from "@/lib/performance/throttle";
-import {
-  modelSupportsCodeInterpreter,
-  modelSupportsTemperature,
-  modelSupportsVerbosity,
-} from "@/lib/models/modelConfig";
+import { getChatModel } from "@/lib/models/chatModelCatalog";
 import { conversationKeys } from "@/hooks/queries/useConversationQuery";
 import { toast } from "sonner";
 import { createMessageArtifact } from "@/lib/artifacts/messageArtifacts";
@@ -281,8 +277,8 @@ export function useChat() {
     activeConversationId,
     setActiveConversationId,
   } = useChatStore();
-  const { parameters } = useSettingsStore();
-  const { contextAboutUser, responsePreferences, customSystemInstructions } = useCustomInstructions();
+  const { parameters, chatModelCatalog } = useSettingsStore();
+  const { contextAboutUser, responsePreferences, customSystemInstructions, getPersonalDraft } = useCustomInstructions();
   const { memories } = useMemories();
   const [isLoading, setIsLoading] = useState(false);
   const [composerError, setComposerError] = useState<string | null>(null);
@@ -631,6 +627,11 @@ export function useChat() {
       if (!content.trim() && !hasAttachments) return false;
       if (isLoading) return false;
 
+      if (useSettingsStore.getState().pendingModelId) {
+        setComposerError("O modelo salvo ainda está carregando. Aguarde ou escolha um modelo no seletor.");
+        return false;
+      }
+
       if (!activeConversationId) {
         setComposerError("Ainda nao existe uma conversa pronta para enviar a mensagem.");
         return false;
@@ -660,8 +661,10 @@ export function useChat() {
         responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
           ? resolveDeepsearchProfile(responseMode)
           : null;
-      const documentFallback =
-        responseMode === "document" ? resolveDocumentFallbackProfile(parameters.model) : null;
+      const selectedModel = getChatModel(parameters.model, chatModelCatalog);
+      const documentFallback = responseMode === "document"
+        ? resolveDocumentFallbackProfile(parameters.model, selectedModel)
+        : null;
       const requestModel = responseMode === "quiz"
         ? QUIZ_FORCED_MODEL
         : documentFallback
@@ -681,13 +684,17 @@ export function useChat() {
         responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
           ? "high"
           : parameters.verbosity;
+      const requestModelInfo = requestModel === parameters.model
+        ? selectedModel
+        : getChatModel(requestModel);
       const reasoning = buildReasoningConfig(
         requestModel,
         requestReasoningEffort,
         parameters.reasoningSummary,
-        parameters.reasoningMode
+        parameters.reasoningMode,
+        requestModelInfo
       );
-      const usesReasoning = !!reasoning && responseMode !== "quiz";
+      const usesReasoning = !!reasoning && reasoning.effort !== "none" && responseMode !== "quiz";
       const preferredDisplayMode = getPreferredDisplayMode(responseMode);
       addMessage({
         id: assistantMessageId,
@@ -742,12 +749,23 @@ export function useChat() {
           return [];
         });
 
+        const personalResponse = await fetch(apiUrl("/api/memory/personal"), {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          // Retrieval uses an excerpt; the full message remains in the model input.
+          body: JSON.stringify({ query: content.slice(0, 6000), draft: getPersonalDraft() }),
+          signal: abortControllerRef.current?.signal,
+        });
+        if (!personalResponse.ok) throw new Error("Não consegui consultar o contexto pessoal atual. Tenta enviar novamente.");
+        const personal = await personalResponse.json() as { personalText: string; details: Array<{ sourceId: string; text: string }> };
+        const personalContext = [personal.personalText, ...personal.details.map(d => `[${d.sourceId}] ${d.text}`)].filter(Boolean).join("\n\n");
+
         const { systemMessage: baseSystemMessage } = buildSystemPrompt(
           parameters.systemPrompt,
           { id: "default", contextAboutUser, responsePreferences, customSystemInstructions },
           memories,
           retrievedContext,
-          responseMode === "default"
+          responseMode === "default",
+          personalContext
         );
         const systemMessage =
           responseMode === "deepsearch_medium" || responseMode === "deepsearch_high"
@@ -763,14 +781,14 @@ export function useChat() {
           model: requestModel,
           instructions: systemMessage,
           maxOutputTokens: parameters.maxOutputTokens,
-          ...(modelSupportsTemperature(requestModel) && {
+          ...(requestModelInfo?.supportsTemperature && {
             temperature: parameters.temperature,
             topP: parameters.topP,
           }),
-          ...(modelSupportsVerbosity(requestModel) && {
+          ...(requestModelInfo?.supportsVerbosity && {
             verbosity: requestVerbosity,
           }),
-          ...(modelSupportsCodeInterpreter(requestModel) && {
+          ...(requestModelInfo?.supportsCodeInterpreter && {
             codeInterpreterEnabled: parameters.codeInterpreterEnabled,
           }),
           imageQuality,
@@ -1017,9 +1035,11 @@ export function useChat() {
       addMessage,
       applyServerMessagePatch,
       contextAboutUser,
+      getPersonalDraft,
       customSystemInstructions,
       isLoading,
       memories,
+      chatModelCatalog,
       parameters.maxOutputTokens,
       parameters.model,
       parameters.codeInterpreterEnabled,

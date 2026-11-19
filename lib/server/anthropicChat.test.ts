@@ -542,11 +542,11 @@ describe("adaptador Claude", () => {
 });
 
 describe("parâmetros Claude", () => {
-  it("usa esforço medium como padrão e limita xhigh/max a high", () => {
+  it("usa esforço medium como padrão e envia xhigh/max quando o Claude aceita", () => {
     expect(resolveAnthropicEffort({})).toBe("medium");
     expect(resolveAnthropicEffort({ reasoning: { effort: "low" } })).toBe("low");
-    expect(resolveAnthropicEffort({ reasoning: { effort: "xhigh" } })).toBe("high");
-    expect(resolveAnthropicEffort({ reasoning: { effort: "max" } })).toBe("high");
+    expect(resolveAnthropicEffort({ reasoning: { effort: "xhigh" } })).toBe("xhigh");
+    expect(resolveAnthropicEffort({ reasoning: { effort: "max" } })).toBe("max");
   });
 
   it("configura somente as tools permitidas e preserva imagens HTTPS", () => {

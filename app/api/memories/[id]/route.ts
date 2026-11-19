@@ -1,3 +1,4 @@
+import { schedulePersonalSynthesis } from "@/lib/server/memory/personalSynthesis";
 import { NextRequest, NextResponse } from "next/server";
 import { deleteMemory, updateMemory } from "../data";
 import { isAuthEnabled, isAuthenticatedRequest } from "@/lib/server/auth";
@@ -72,6 +73,7 @@ export async function PUT(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    schedulePersonalSynthesis();
     return NextResponse.json(serializeMemory(memory));
   } catch (error) {
     console.error("[memories] PUT error", error);
@@ -94,6 +96,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    schedulePersonalSynthesis();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[memories] DELETE error", error);

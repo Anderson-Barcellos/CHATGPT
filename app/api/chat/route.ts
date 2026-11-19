@@ -4,7 +4,6 @@ import { jsonError } from "@/lib/api/errors";
 import { isAuthenticatedRequest, isAuthEnabled } from "@/lib/server/auth";
 import { readJsonWithLimit } from "@/lib/server/readJsonWithLimit";
 import {
-  ALLOWED_CHAT_MODELS,
   ChatRequestBody,
   DEFAULT_CHAT_MODEL,
   buildResponseCreateParams,
@@ -12,12 +11,10 @@ import {
   resolveRequestedModel,
 } from "@/lib/server/chatRequest";
 import {
-  DEEPSEEK_MODEL,
   createDeepSeekClient,
   createDeepSeekEventStream,
 } from "@/lib/server/deepseekChat";
 import {
-  GEMINI_MODEL,
   createGeminiClient,
   createGeminiEventStream,
 } from "@/lib/server/geminiChat";
@@ -26,7 +23,7 @@ import {
   createAnthropicEventStream,
   isAnthropicInputError,
 } from "@/lib/server/anthropicChat";
-import { isAnthropicModel } from "@/lib/models/modelConfig";
+import { resolveChatModelForRequest } from "@/lib/server/chatModelCatalog";
 import {
   createMemoryToolEventStream,
   createResponseWithMemoryTools,
@@ -77,14 +74,15 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (!ALLOWED_CHAT_MODELS.has(effectiveModel)) {
+    const modelInfo = await resolveChatModelForRequest(effectiveModel);
+    if (!modelInfo) {
       return jsonError(400, "Model not allowed", {
         message: "Modelo nao permitido.",
         code: "chat_model_not_allowed",
       });
     }
 
-    if (effectiveModel === GEMINI_MODEL) {
+    if (modelInfo.provider === "google") {
       if (responseMode !== "default") {
         return jsonError(400, "Gemini mode not supported", {
           message: "Gemini 3.8 Flash esta habilitado somente para chat padrao.",
@@ -122,7 +120,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (effectiveModel === DEEPSEEK_MODEL) {
+    if (modelInfo.provider === "deepseek") {
       if (responseMode !== "default") {
         return jsonError(400, "DeepSeek mode not supported", {
           message: "DeepSeek V4.1 Flash esta habilitado somente para chat padrao.",
@@ -160,7 +158,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (isAnthropicModel(effectiveModel)) {
+    if (modelInfo.provider === "anthropic") {
       if (responseMode !== "default") {
         return jsonError(400, "Claude mode not supported", {
           message: "Claude está habilitado somente para chat padrão.",
@@ -186,7 +184,8 @@ export async function POST(request: NextRequest) {
       const readableStream = createAnthropicEventStream(
         anthropic,
         body,
-        request.signal
+        request.signal,
+        modelInfo
       );
 
       return new Response(readableStream, {
@@ -206,7 +205,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const requestParams = buildResponseCreateParams(body);
+    const requestParams = buildResponseCreateParams(body, modelInfo);
 
     if (stream && responseMode !== "quiz") {
       const readableStream = createMemoryToolEventStream(

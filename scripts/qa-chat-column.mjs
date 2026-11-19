@@ -26,9 +26,9 @@ const conversations = [{ id: 'qa-conversation', title: 'Conversa sintética', li
   { id: 'm-user-1', role: 'user', content: longUser, timestamp: now },
   { id: 'm-assistant-1', role: 'assistant', modelId: 'gpt-6-luna', content: longAssistant, timestamp: now },
 ] }];
-// [largura, altura, toque]: celular, tablet em pé, e a faixa desktop em torno dos cortes 1024, 1490 e 1773.
+// [largura, altura, toque]: celular, tablet em pé, e a faixa desktop em torno dos cortes 1024, 1490 e 1907.
 const scenarios = [[390, 844, true], [956, 440, true], [820, 1180, true], [900, 1000, false], [1023, 1000, false], [1024, 1000, false], [1100, 1000, false],
-  [1280, 900, false], [1489, 1000, false], [1490, 1000, false], [1773, 1000, false], [1920, 1000, false], [1932, 1000, false], [1933, 1000, false]];
+  [1280, 900, false], [1489, 1000, false], [1490, 1000, false], [1906, 1000, false], [1907, 1000, false], [1920, 1000, false], [2066, 1000, false], [2067, 1000, false], [2560, 1200, false], [3440, 1440, false]];
 let server, browser, page, ownsData = false, log = '';
 const results = [];
 async function until(fn, label) {
@@ -76,6 +76,13 @@ try {
     await page.goto(base, { waitUntil: 'networkidle' });
     await page.locator('.gc-assistant-bubble').first().waitFor();
     const thread = await page.evaluate(measureThread);
+    const mobileReading = width <= 767 || (touch && height <= 500);
+    const fontSize = await page.locator('.gc-assistant-bubble p').first().evaluate(node => parseFloat(getComputedStyle(node).fontSize));
+    assert.ok(mobileReading ? fontSize === 14 : fontSize >= 15 && fontSize <= 16, 'corpo desktop 15–16px; mobile 14px preservado');
+    if (!mobileReading && width >= 1489) {
+      assert.ok(Math.abs(thread.assistant.width - 896) < 1, 'resposta usa o novo teto de 896px');
+      assert.ok(Math.abs(thread.user.width - 768) < 1, 'mensagem usa o novo teto de 768px');
+    }
     await page.locator('[data-message-id="m-user-1"]').getByRole('button', { name: 'Acoes da mensagem' }).click();
     await page.getByRole('menuitem', { name: /Editar/ }).click();
     await page.getByRole('textbox', { name: 'Editar mensagem', exact: true }).waitFor();
@@ -88,21 +95,21 @@ try {
       assert.ok(await page.evaluate(() => Math.abs(document.querySelector('.gc-user-bubble').getBoundingClientRect().width - document.querySelector('.gc-message-frame').getBoundingClientRect().width) < 1), 'edição mobile ocupa a largura disponível');
     }
     await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
-    if (width >= 1773) {
+    if (width >= 1907) {
       const panel = page.locator('[data-workspace-region="context"]');
       await page.getByRole('button', { name: 'Abrir painel', exact: true }).click();
       await until(async () => Math.abs((await panel.boundingBox()).width - 600) < 1, 'painel normal assentado');
       await page.getByRole('button', { name: 'Expandir canvas', exact: true }).click();
-      await until(async () => Math.abs((await panel.boundingBox()).width - 760) < 1 && await panel.getAttribute('data-context-mode') === (width >= 1933 ? 'docked' : 'floating'), 'encaixe ampliado assentado');
+      await until(async () => Math.abs((await panel.boundingBox()).width - 760) < 1 && await panel.getAttribute('data-context-mode') === (width >= 2067 ? 'docked' : 'floating'), 'encaixe ampliado assentado');
       await until(async () => {
         const measured = await page.evaluate(measureThread);
         return Math.abs(measured.user.width - thread.user.width) < 1 && Math.abs(measured.assistant.width - thread.assistant.width) < 1;
       }, 'ampliação preserva largura dos balões');
       console.log('REVIEW_DOCK_EXPANDED', JSON.stringify(await page.evaluate(measureThread)));
-      if (width === 1933) {
-        await page.setViewportSize({ width: 1932, height });
+      if (width === 2067) {
+        await page.setViewportSize({ width: 2066, height });
         await until(async () => await panel.getAttribute('data-context-mode') === 'floating', 'ampliado flutua ao reduzir');
-        await page.setViewportSize({ width: 1933, height });
+        await page.setViewportSize({ width: 2067, height });
         await until(async () => await panel.getAttribute('data-context-mode') === 'docked', 'ampliado encaixa ao aumentar');
       }
       await page.getByRole('button', { name: 'Recolher painel', exact: true }).click();
@@ -123,7 +130,7 @@ try {
     }
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'sem rolagem horizontal');
     assert.deepEqual(errors, []); assert.deepEqual(external, []);
-    results.push({ width, height, touch, thread, welcome });
+    results.push({ width, height, touch, fontSize, thread, welcome });
     await context.close();
   }
   await writeFile(`${out}/results.json`, JSON.stringify(results, null, 2)); console.log(JSON.stringify(results));

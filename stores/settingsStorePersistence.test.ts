@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
+import { DEFAULT_CHAT_MODEL_CATALOG, getChatModel } from "@/lib/models/chatModelCatalog";
 import {
   SETTINGS_STORAGE_KEY,
   useSettingsStore,
@@ -10,6 +11,9 @@ const initialState = useSettingsStore.getState();
 beforeEach(() => {
   localStorage.clear();
   useSettingsStore.setState({
+    chatModelCatalog: initialState.chatModelCatalog,
+    catalogLoaded: false,
+    pendingModelId: null,
     parameters: { ...initialState.parameters },
     modelSettingsById: { ...initialState.modelSettingsById },
     customInstructions: null,
@@ -18,6 +22,35 @@ beforeEach(() => {
 });
 
 describe("settings store persistence (B6)", () => {
+  it("restaura a escolha dinâmica só após carregar o catálogo e troca a seleção se ela for ocultada", async () => {
+    const id = "claude-synthetic-next";
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
+      state: { model: id, modelSettingsById: { [id]: { reasoningEffort: "max" } } },
+      version: 2,
+    }));
+    await useSettingsStore.persist.rehydrate();
+    expect(useSettingsStore.getState().parameters.model).toBe("gpt-6-luna");
+
+    const model = {
+      ...getChatModel("claude-sonnet-5-5")!,
+      id,
+      supportedReasoningEfforts: ["low", "max"] as const,
+    };
+    const rows = [
+      ...DEFAULT_CHAT_MODEL_CATALOG.rows,
+      { model: { ...model, supportedReasoningEfforts: [...model.supportedReasoningEfforts] }, visible: true },
+    ];
+    useSettingsStore.getState().setChatModelCatalog({ revision: 1, rows });
+    expect(useSettingsStore.getState().parameters).toMatchObject({ model: id, reasoningEffort: "max" });
+
+    useSettingsStore.getState().setChatModelCatalog({
+      revision: 2,
+      rows: rows.map((row) => row.model.id === id ? { ...row, visible: false } : row),
+    });
+    expect(useSettingsStore.getState().parameters.model).toBe("gpt-6-luna");
+    expect(useSettingsStore.getState().chatModelCatalog.rows.find((row) => row.model.id === id)?.model.id).toBe(id);
+  });
+
   it("keeps the chosen model and its parameters across a reload, but never memories", async () => {
     useSettingsStore.getState().updateParameters({ model: "gpt-6.1-sol", reasoningEffort: "high" });
     useSettingsStore.getState().setMemories([

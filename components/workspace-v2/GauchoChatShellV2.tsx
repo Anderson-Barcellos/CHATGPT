@@ -29,7 +29,8 @@ import { CommandPaletteProvider } from "@/components/command/CommandPaletteProvi
 import { CommandPalette } from "@/components/command/CommandPalette";
 import { useConversations } from "@/hooks/useConversations";
 import { useComponentPreloader } from "@/lib/performance/lazy";
-import { MODELS } from "@/lib/models/modelConfig";
+import { getChatModel } from "@/lib/models/chatModelCatalog";
+import { useChatModelCatalog } from "@/hooks/useChatModelCatalog";
 import { useChatStore } from "@/stores/chatStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useUIStore } from "@/stores/uiStore";
@@ -60,7 +61,8 @@ export function GauchoChatShellV2() {
   const isStreaming = useChatStore((state) => state.isStreaming);
   const setActiveConversationId = useChatStore((state) => state.setActiveConversationId);
   const { conversations, createConversation } = useConversations();
-  const { parameters } = useSettingsStore();
+  const { parameters, chatModelCatalog } = useSettingsStore();
+  useChatModelCatalog();
   const contextPanelOpen = useUIStore((state) => state.contextPanelOpen);
   const setContextPanelOpen = useUIStore((state) => state.setContextPanelOpen);
   const closeContextPanel = useUIStore((state) => state.closeContextPanel);
@@ -97,7 +99,7 @@ export function GauchoChatShellV2() {
         };
   }, [activeConversationId, conversations, messages]);
 
-  const currentModel = MODELS[parameters.model];
+  const currentModel = getChatModel(parameters.model, chatModelCatalog);
   const reasoningLabel = isReasoningModel(parameters.model)
     ? getReasoningLabel(parameters.reasoningEffort)
     : "";

@@ -134,7 +134,8 @@ describe("Claude na rota", () => {
     expect(anthropicMocks.createEventStream).toHaveBeenCalledWith(
       client,
       expect.objectContaining({ model: "claude-sonnet-5-5" }),
-      expect.any(AbortSignal)
+      expect.any(AbortSignal),
+      expect.objectContaining({ provider: "anthropic" })
     );
   });
 

@@ -8,6 +8,8 @@ import {
   type MemoryToolName,
 } from "@/lib/server/chatRequest";
 import { searchMemoryContext } from "@/lib/server/memory/indexStore";
+import { searchPersonalSources } from "./personalIndex";
+import { schedulePersonalSynthesis } from "./personalSynthesis";
 
 const VALID_CATEGORIES = new Set<MemoryCategory>([
   "personal",
@@ -71,13 +73,19 @@ async function executeSearchMemory(args: Record<string, unknown>) {
     };
   }
 
-  const results = await searchMemoryContext(query, {
-    topK: cleanTopK(args.topK),
-  });
+  const [history, personal] = await Promise.allSettled([
+    searchMemoryContext(query, { topK: cleanTopK(args.topK) }),
+    searchPersonalSources(query),
+  ]);
+  if (history.status === "rejected" && personal.status === "rejected") throw new Error("Busca de memória indisponível.");
+  const results = history.status === "fulfilled" ? history.value : [];
+  const personalSources = personal.status === "fulfilled" ? personal.value : [];
 
   return {
     ok: true,
     results,
+    personalSources,
+    ...(history.status === "rejected" || personal.status === "rejected" ? { warning: "Uma das fontes está indisponível; resultados parciais." } : {}),
   };
 }
 
@@ -97,6 +105,7 @@ async function executeRememberMemory(args: Record<string, unknown>) {
     priority: cleanPriority(args.priority),
     isActive: true,
   });
+  schedulePersonalSynthesis();
 
   return {
     ok: true,

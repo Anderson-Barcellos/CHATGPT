@@ -392,7 +392,7 @@ export function WorkspaceFrameV2({
                   <IconButton
                     label="Painel contextual"
                     onClick={() => setContextOpen(!contextOpen)}
-                    className="relative hidden md:max-[1773px]:inline-flex"
+                    className="relative hidden md:max-[1907px]:inline-flex"
                   >
                     <PanelRightOpen className="size-4" />
                     {!!artifactCount && artifactCount > 0 && (
@@ -485,8 +485,8 @@ export function WorkspaceFrameV2({
               data-expanded={contextExpanded}
               data-context-mode={desktopContext ? "docked" : "floating"}
               className={cn(
-                // O trilho recolhido aparece desde 1773px; aberto, o encaixe considera também a ampliação.
-                "gc-clinical-panel min-h-0 overflow-hidden min-[1773px]:block min-[1773px]:shrink-0 min-[1773px]:border-l min-[1773px]:border-[color:var(--gc-border)] min-[1773px]:transition-[width] min-[1773px]:duration-200",
+                // O trilho recolhido aparece desde 1907px; aberto, o encaixe considera também a ampliação.
+                "gc-clinical-panel min-h-0 overflow-hidden min-[1907px]:block min-[1907px]:shrink-0 min-[1907px]:border-l min-[1907px]:border-[color:var(--gc-border)] min-[1907px]:transition-[width] min-[1907px]:duration-200",
                 contextCollapsed
                   ? "hidden w-[2.85rem]"
                   : cn(

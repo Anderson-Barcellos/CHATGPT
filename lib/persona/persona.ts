@@ -3,6 +3,7 @@ import { DEFAULT_TTS_PREFERENCES, normalizeTtsPreferences } from "@/lib/tts/spee
 
 export const DEFAULT_PERSONA: CustomInstructions = {
   id: "default",
+  importedBiography: "",
   contextAboutUser: "",
   responsePreferences: "",
   customSystemInstructions: "",
@@ -22,6 +23,7 @@ export function hydratePersona(value: unknown): CustomInstructions {
 
   return {
     id: typeof value.id === "string" && value.id ? value.id : "default",
+    importedBiography: typeof value.importedBiography === "string" ? value.importedBiography : "",
     contextAboutUser:
       typeof value.contextAboutUser === "string" ? value.contextAboutUser : "",
     responsePreferences:
@@ -45,11 +47,16 @@ export function normalizePersonaUpdate(
   }
 
   const {
+    importedBiography,
     contextAboutUser,
     responsePreferences,
     customSystemInstructions,
     ttsPreferences,
   } = body;
+
+  if (importedBiography !== undefined && typeof importedBiography !== "string") {
+    return { ok: false, error: "importedBiography must be a string" };
+  }
 
   if (
     contextAboutUser !== undefined &&
@@ -83,6 +90,7 @@ export function normalizePersonaUpdate(
     ok: true,
     data: {
       ...current,
+      importedBiography: typeof importedBiography === "string" ? importedBiography : current.importedBiography,
       contextAboutUser:
         typeof contextAboutUser === "string"
           ? contextAboutUser

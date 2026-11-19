@@ -225,6 +225,7 @@ export interface ModelParameters extends ModelScopedParameters {
 
 export interface CustomInstructions {
   id: string;
+  importedBiography?: string;
   contextAboutUser: string;
   responsePreferences: string;
   customSystemInstructions?: string;

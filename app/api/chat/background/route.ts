@@ -4,12 +4,13 @@ import { jsonError } from "@/lib/api/errors";
 import { isAuthenticatedRequest, isAuthEnabled } from "@/lib/server/auth";
 import { readJsonWithLimit } from "@/lib/server/readJsonWithLimit";
 import {
-  ALLOWED_CHAT_MODELS,
   ChatRequestBody,
   buildResponseCreateParams,
   createOpenAIClient,
   resolveRequestedModel,
 } from "@/lib/server/chatRequest";
+import { resolveChatModelForRequest } from "@/lib/server/chatModelCatalog";
+import { supportsDocumentModel } from "@/lib/chat/documentConfig";
 import {
   applyBackgroundResponseToConversation,
   isBackgroundResponseMode,
@@ -81,10 +82,17 @@ export async function POST(request: NextRequest) {
     }
 
     const effectiveModel = resolveRequestedModel(body.model);
-    if (!ALLOWED_CHAT_MODELS.has(effectiveModel)) {
+    const modelInfo = await resolveChatModelForRequest(effectiveModel);
+    if (!modelInfo) {
       return jsonError(400, "Model not allowed", {
         message: "Modelo nao permitido.",
         code: "chat_model_not_allowed",
+      });
+    }
+    if (!supportsDocumentModel(modelInfo)) {
+      return jsonError(400, "Model does not support background", {
+        message: "Este modelo está disponível para o chat padrão.",
+        code: "chat_model_background_not_supported",
       });
     }
 
@@ -97,7 +105,7 @@ export async function POST(request: NextRequest) {
     }
 
     const response = await openai.responses.create({
-      ...buildResponseCreateParams(body),
+      ...buildResponseCreateParams(body, modelInfo),
       background: true,
       stream: false,
     });

@@ -1,3 +1,4 @@
+import { schedulePersonalSynthesis } from "@/lib/server/memory/personalSynthesis";
 import { NextRequest, NextResponse } from "next/server";
 import { createMemory } from "@/app/api/memories/data";
 import { requireAppAuth } from "@/lib/server/routeAuth";
@@ -54,6 +55,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    if (memoryId) schedulePersonalSynthesis();
     return NextResponse.json({
       suggestion: serializeMemorySuggestion(updated),
       memoryId,

@@ -132,7 +132,7 @@ describe("Gaucho Chat visual contract", () => {
     expect(layout).toContain("w-[var(--gc-shell-context-width)]");
     expect(layout).toContain("w-[var(--gc-shell-context-expanded-width)]");
     expect(breakpoints).toContain("CONTEXT_SIDEBAR_BREAKPOINT =");
-    expect(layout).toContain("min-[1773px]:block");
+    expect(layout).toContain(`min-[${CONTEXT_SIDEBAR_BREAKPOINT}px]:block`);
     expect(layout).not.toContain("min-[1281px]:block");
     // Faixa empilhada (max-[X] é "< X"): md:inline-flex solto vencia min-[…]:hidden pela ordem do CSS.
     expect(layout).toContain(`className="relative hidden md:max-[${CONTEXT_SIDEBAR_BREAKPOINT}px]:inline-flex"`);
@@ -318,10 +318,10 @@ describe("Gaucho Chat visual contract", () => {
     });
 
     it("deixa a largura de thread, balões e composer com um dono só: o tema", () => {
-      expect(css).toMatch(/\.gc-atmosphere-shell \.gc-chat-thread\s*\{[^}]*max-width:\s*58rem;/);
-      expect(css).toMatch(/\.gc-atmosphere-shell \.gc-user-bubble\s*\{[^}]*max-width:\s*min\(76%, 42rem\) !important;/);
-      expect(css).toMatch(/\.gc-atmosphere-shell \.gc-assistant-bubble\s*\{[^}]*max-width:\s*min\(88%, 46rem\) !important;/);
-      expect(css).toMatch(/\.gc-atmosphere-shell \.gc-composer-width\s*\{[^}]*max-width:\s*56rem;/);
+      expect(css).toMatch(/\.gc-atmosphere-shell \.gc-chat-thread\s*\{[^}]*max-width:\s*var\(--gc-thread-max, 58rem\);/);
+      expect(css).toMatch(/\.gc-atmosphere-shell \.gc-user-bubble\s*\{[^}]*max-width:\s*min\(76%, var\(--gc-user-bubble-max, 42rem\)\) !important;/);
+      expect(css).toMatch(/\.gc-atmosphere-shell \.gc-assistant-bubble\s*\{[^}]*max-width:\s*min\(88%, var\(--gc-assistant-bubble-max, 46rem\)\) !important;/);
+      expect(css).toMatch(/\.gc-atmosphere-shell \.gc-composer-width\s*\{[^}]*max-width:\s*var\(--gc-composer-max, 56rem\);/);
       // Classes de largura vencidas pelo tema eram código morto com corte de viewport.
       expect(bubble).not.toMatch(/max-w-\[(?:76%|78%|48rem|54rem)\]/);
       expect(chat).not.toMatch(/gc-chat-thread[^"]*max-w-/);

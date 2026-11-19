@@ -23,7 +23,7 @@ const GEMINI_FLASH_REASONING_EFFORTS: ReasoningEffort[] = [
   "low", "medium", "high",
 ];
 const CLAUDE_REASONING_EFFORTS: ReasoningEffort[] = [
-  "low", "medium", "high",
+  "low", "medium", "high", "xhigh", "max",
 ];
 
 export const MODELS: Record<string, ModelInfo> = {
@@ -350,17 +350,20 @@ export function modelSupportsCodeInterpreter(modelId: string): boolean {
   return model?.supportsCodeInterpreter ?? false;
 }
 
-export function getSupportedReasoningEfforts(modelId: string): ReasoningEffort[] {
-  const model = MODELS[modelId];
+export function getSupportedReasoningEfforts(
+  modelId: string,
+  model: Pick<ModelInfo, "capabilities" | "supportedReasoningEfforts"> | undefined = MODELS[modelId]
+): ReasoningEffort[] {
   if (!model?.capabilities.includes("reasoning")) return [];
   return model.supportedReasoningEfforts ?? STANDARD_REASONING_EFFORTS;
 }
 
 export function modelSupportsReasoningMode(
   modelId: string,
-  mode: ReasoningMode
+  mode: ReasoningMode,
+  model: Pick<ModelInfo, "supportedReasoningModes"> | undefined = MODELS[modelId]
 ): boolean {
-  const modes = MODELS[modelId]?.supportedReasoningModes ?? ["standard"];
+  const modes = model?.supportedReasoningModes ?? ["standard"];
   return modes.includes(mode);
 }
 

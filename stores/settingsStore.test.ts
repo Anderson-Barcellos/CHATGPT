@@ -46,7 +46,7 @@ describe("settings store model defaults", () => {
       });
 
       expect(useSettingsStore.getState().parameters).toMatchObject({
-        reasoningEffort: "medium",
+        reasoningEffort: "max",
         reasoningMode: "standard",
         codeInterpreterEnabled: false,
       });

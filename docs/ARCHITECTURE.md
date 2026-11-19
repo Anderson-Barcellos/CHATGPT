@@ -110,6 +110,10 @@ superfície em portal, reutilize os tokens globais e não introduza uma paleta
 local. Verde deve continuar semântico — online, salvo e sucesso — enquanto
 seleção e foco visual usam o azul-frio do Atmosphere.
 
+### Largura e leitura no desktop
+
+No desktop (mesma condição negada de `MOBILE_MEDIA_QUERY`), os tokens `--gc-thread-max`, `--gc-user-bubble-max`, `--gc-assistant-bubble-max` e `--gc-composer-max` definem tetos de 68/48/56/66rem. Os balões mantêm também os limites relativos de 76%/88%. O corpo fluido dos balões vai de 15 a 16px por override local de `--gc-text-body` em `.gc-message-card`; controles e painel preservam a régua global. Mobile/paisagem curta não recebem esses overrides, mantendo os tetos anteriores de thread/composer e o corpo de 14px. Revisão desktop de 11/11/2026.
+
 ### Densidade visual mobile
 
 A compactação mobile atual foi implementada como uma passada paralela ao fluxo Codex de refinamentos. Abaixo de `md`, o app usa tokens `--gc-mobile-*` em `app/globals.css` para reduzir em torno de 15% o sistema espacial do shell: frame, header, subheader, composer, área do chat, empty state, painel contextual, rail e settings. A regra é compactar espaçamento, altura, raio e agrupamento; não usar `zoom`, viewport artificial ou `transform: scale()` global, e não escalar tipografia de leitura por viewport.
@@ -124,7 +128,7 @@ No desktop, a tipografia do `.gc-chat-ui` é uma régua única em `clamp()` que 
 
 ### Painel operacional flutuante (2026-10-28)
 
-No desktop, o painel normal encaixa ao lado do chat desde `CONTEXT_SIDEBAR_BREAKPOINT` (1773 px); o ampliado, desde `CONTEXT_EXPANDED_SIDEBAR_BREAKPOINT` (1933 px). Os valores derivam em `lib/layout/breakpoints.ts` da trilha, do teto do painel (600 ou 760 px), da área útil que enche os balões, do padding e do chrome. Sem espaço suficiente, o mesmo `<aside data-context-mode="floating">` recebe `.gc-context-floating` e flutua sobre a borda direita, sem véu nem foco preso. A classe é controlada pelo estado de encaixe, sem uma segunda media query CSS para contrariá-lo. O painel fecha por Esc enquanto flutua (salvo com outro diálogo aberto) ou por "Recolher painel". A gaveta `Sheet` fica só no mobile. Larguras: `clamp(500px, 40vw, 600px)` e `clamp(640px, 50vw, 760px)`, limitadas a `100% − 3rem` no flutuante. Trilho recolhido e gatilhos do cabeçalho mantêm o corte 1773 px. A transição preserva o aside e seus consumidores; QA cobre leitura/player, largura dos balões e os dois cortes.
+No desktop, o painel normal encaixa ao lado do chat desde `CONTEXT_SIDEBAR_BREAKPOINT` (1907 px); o ampliado, desde `CONTEXT_EXPANDED_SIDEBAR_BREAKPOINT` (2067 px). Os valores derivam em `lib/layout/breakpoints.ts` da trilha, do teto do painel (600 ou 760 px), da maior área útil requerida pelos dois balões, do padding e do chrome. Sem espaço suficiente, o mesmo `<aside data-context-mode="floating">` recebe `.gc-context-floating` e flutua sobre a borda direita, sem véu nem foco preso. A classe é controlada pelo estado de encaixe, sem uma segunda media query CSS para contrariá-lo. O painel fecha por Esc enquanto flutua (salvo com outro diálogo aberto) ou por "Recolher painel". A gaveta `Sheet` fica só no mobile. Larguras: `clamp(500px, 40vw, 600px)` e `clamp(640px, 50vw, 760px)`, limitadas a `100% − 3rem` no flutuante. Trilho recolhido e gatilhos do cabeçalho mantêm o corte 1907 px. A transição preserva o aside e seus consumidores; QA cobre leitura/player, largura dos balões e os dois cortes.
 
 No Descobrir embutido, abrir um cartão em duas colunas pode movê-lo para outra linha. Após atualizar o layout, se o título aberto ficar fora da área de leitura, ajusta-se somente `scrollTop` do feed até o início desse cartão. A página independente mantém sua rolagem existente. Na edição mobile de mensagem, o seletor `.gc-atmosphere-shell .gc-user-bubble:has(.gc-message-editor)` prevalece sobre o balão ajustado ao conteúdo, mantendo o editor largo sem alterar mensagens em leitura.
 
@@ -136,8 +140,8 @@ Três mecanismos garantem fluência no iPhone 17 Pro Max (440 × 956 pt, Dynamic
 
 1. O composer chama `useChat`.
 2. `useChat` monta payload com mensagens, anexos, persona, modelo e opções.
-3. `POST /api/chat` valida auth, body e modelo.
-4. A rota chama `openai.responses.create()` com streaming quando aplicável, ou os adapters dedicados para `deepseek-flash` e `gemini-3.8-flash`.
+3. `POST /api/chat` valida autenticação, payload e ID no catálogo de chat.
+4. O provedor do modelo seleciona a Responses API da OpenAI ou o adaptador Anthropic, DeepSeek ou Gemini.
 5. Eventos SSE passam pelo reducer em `lib/chat/streamMachine.ts`.
 6. A mensagem do assistente é atualizada incrementalmente e persistida durante o stream.
 
@@ -163,10 +167,7 @@ O adapter exige `GEMINI_API_KEY`, aceita thinking `low`, `medium` e `high`, não
 ## Reasoning
 
 O reasoning é montado em `lib/chat/reasoningConfig.ts` e usado por `hooks/useChat.ts`.
-Modelos sem capacidade de reasoning, ou effort `none`, não enviam `reasoning` no payload.
-Para efforts ativos (`minimal`, `low`, `medium`, `high`, `xhigh`), o payload preserva a preferência
-`reasoningSummary`; o valor local `off` vira omissão do campo `summary`, pois a API aceita
-apenas `auto`, `concise` e `detailed`.
+O catálogo decide quais níveis aparecem no composer e passam pelo clamp do store. A seleção `none` é enviada explicitamente quando o modelo do chat a aceita. Perfis Responses completos preservam a preferência `reasoningSummary` para esforços ativos. Com `off`, o campo `summary` é omitido. Claude recebe o esforço em `output_config.effort`.
 
 Na UI, `ReasoningPanel` aparece quando há summary/texto de reasoning ou quando
 `response.completed.usage.output_tokens_details.reasoning_tokens` confirma que houve
@@ -209,6 +210,7 @@ Persistência server-side simples:
 
 - `data/conversations.json`
 - `data/chat-background-jobs.json` (metadados pendentes/terminais de Documento/Deepsearch em background)
+- `data/chat-model-catalog.json` (nomes, visibilidade e capacidades dos modelos editados no chat)
 - `data/memories.json`
 - `data/persona.json`
 - `data/memory-index` como índice vetorial local LanceDB para memória/RAG
@@ -255,11 +257,20 @@ O prompt efetivo é montado em `lib/openai/contextBuilder.ts`:
 - `BASE_SYSTEM_PROMPT`, vindo de `lib/prompts/systemPrompt.ts`;
 - `FIXED_PERSONA_PROMPT`, vindo de `lib/prompts/personaPrompt.ts`;
 - prompt extra do seletor (`parameters.systemPrompt`), quando houver;
-- `contextAboutUser`, `responsePreferences` e `customSystemInstructions` de `/api/persona`;
-- memórias ativas de `data/memories.json`;
+- `responsePreferences` e `customSystemInstructions` de `/api/persona`, literalmente;
+- síntese pessoal persistida de `contextAboutUser`, `importedBiography` e memórias ativas, ou originais atuais quando não existir síntese válida;
+- até três trechos pessoais recuperados antes do envio, separados dos trechos históricos;
 - contexto recuperado do RAG local quando `useChat.ts` chama `searchMemoryContext`.
 
 Na aba Persona, `SettingsDrawer` mostra `BASE_SYSTEM_PROMPT + FIXED_PERSONA_PROMPT` como prévia somente leitura e deixa editáveis os campos persistidos em `/api/persona`.
+
+Síntese pessoal (2026-11-13): `personalSources`, `personalSynthesis` e `personalIndex` em `lib/server/memory/` mantêm a fonte JSON e os derivados separados. A primeira leitura importa a biografia antiga para `importedBiography`, preservando o arquivo anterior em `persona.json.before-personal-synthesis`; não importa biografia real em runtime isolado. Campo vazio explícito nunca é repopulado. Perfil e memórias originais não são reescritos pelo sintetizador.
+
+`personal-synthesis.json` contém hash das fontes, versão, estado, itens com IDs de origem, modelo, data e uso. Luna low gera até 4.000 caracteres via Responses/store:false, com timeout de 60 s e até duas tentativas automáticas por revisão (intervalo mínimo de 60 s após falha). Regeneração manual reinicia tentativas. `after()` agrupa gravações por 800 ms; uma geração roda por vez e descarta revisões antigas. O hash em disco invalida o cache mesmo após restart; acessos reconciliam trabalho pendente. Alterações apenas de TTS não invalidam o hash. Falha usa originais atuais e não bloqueia a resposta por indisponibilidade do sintetizador.
+
+A tabela LanceDB `personal_chunks` é derivada, separada de `conversation_chunks`, com embeddings `text-embedding-3-small`. A recuperação combina similaridade cosseno (distância máxima 0,55) e busca lexical, até três trechos de 1.200 caracteres; cada trecho precisa corresponder à fonte atual. Falha de embeddings mantém busca lexical. Desativar/excluir impede a recuperação pessoal, mas não apaga menções já salvas em conversas. `useChat` consulta o servidor por envio, aplica apenas campos pessoais localmente sujos como fallback e usa o mesmo contexto nos modos background. `search_memory` também consulta fontes pessoais quando detalhes forem necessários; as permissões de salvar memória continuam explícitas. Pulse/Studio/SoundCase mantêm seus contextos próprios.
+
+A consulta pessoal anterior ao envio usa os primeiros 6.000 caracteres da mensagem; o texto completo continua intacto no input do modelo. Isso impede que um documento longo ultrapasse o limite do endpoint auxiliar ou vire uma consulta de embedding excessiva. O salvamento de uma memória por ferramenta também agenda a atualização; a confirmação da ferramenta continua vinculada à gravação da fonte original.
 
 Em `responseMode="default"`, `lib/server/chatRequest.ts` também expõe `remember_memory` e `search_memory` como function tools. `lib/server/chatToolOrchestrator.ts` executa até duas rodadas de function-call/output para salvar memória explícita ou buscar histórico quando o modelo usar essas tools sob a policy injetada pelo `contextBuilder`.
 
@@ -315,6 +326,8 @@ O TTS padrão do Chat/Pulse usa `/api/tts/xai` com voz Orion e MP3 24 kHz/128 kb
 - `/api/realtime/grok-session` emite token efêmero autenticado para `grok-voice-latest`; o browser conecta por WebSocket à xAI, envia o texto sanitizado em turnos de até 3.200 caracteres e reproduz PCM com a voz Orion. Chat e Pulse expõem um único alto-falante que abre `MiniAudioPlayer`; dentro dele, o usuário alterna entre **Grok TTS · Orion** e Grok Realtime. `/api/realtime/tts-call` permanece como rota legada OpenAI, fora do player.
 
 ## Modelos
+
+O catálogo do seletor combina as opções iniciais com as linhas salvas no servidor. O Settings Drawer lê e edita o catálogo autenticado, o Zustand aplica os metadados à seleção local e o servidor consulta o registro ao resolver IDs. A preferência local mantém o ID enquanto espera a lista carregada. Edições usam revisão otimista, lock e escrita atômica.
 
 O catálogo vive em `lib/models/modelConfig.ts`. O default do chat é Luna (`medium/standard`); o mini e o Grok resolvem para Luna, preservando os registros históricos. 6.1 Sol (sem `none`) e Luna aceitam effort até `max`, sem modo `pro`; o GPT-5.6 Sol voltou com modo `pro`. Documento segue o chat (fallback Luna/`medium` para DeepSeek/Gemini); Deepsearch Medium usa Luna/`medium` e High 6.1 Sol/`high`; Pulse nasce em 6.1 Sol/`medium`; extrações internas de agenda e rotina usam Luna/`low`; Studio e SoundCase usam Luna/`medium`; Quiz continua `gpt-5.4/high`. O contexto web auxiliar do DeepSeek mantém Luna/low. Capacidades, parâmetros e preços ficam documentados em `docs/MODELS.md`.
 

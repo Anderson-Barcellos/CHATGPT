@@ -2,7 +2,7 @@
 
 ## Anthropic no chat — 2026-10-15
 
-`POST /api/chat` aceita `claude-sonnet-5-5` e `claude-opus-5-5` em `responseMode="default"`, com streaming. O adaptador usa a Messages API e mantém o contrato SSE consumido pelo frontend: texto, atividade, citações e uso agregado. `reasoning.effort` aceita `low|medium|high`, default `medium`; `xhigh|max` é limitado a `high`. Controles OpenAI incompatíveis não são repassados. Imagens e texto são convertidos explicitamente; entrada incompatível é recusada.
+`POST /api/chat` aceita os Claude iniciais e os IDs Anthropic cadastrados, em `responseMode="default"` com streaming. O adaptador usa a Messages API e traduz texto, atividade, citações e uso agregado para o SSE interno. Os Claude 5.5 iniciais aceitam `low|medium|high|xhigh|max` e começam em `medium`. Para novos IDs, o adaptador aplica os esforços retornados pela Models API.
 
 Busca e leitura web usam ferramentas Anthropic. `remember_memory` e `search_memory` usam o executor e a persistência existentes do Gaúcho, limitados a duas rodadas. O cancelamento encerra a chamada upstream; falhas parciais não produzem conclusão falsa. Credencial ausente resulta em indisponibilidade explícita. Studio/Pulse e contratos OpenAI permanecem independentes.
 
@@ -13,6 +13,10 @@ Busca e leitura web usam ferramentas Anthropic. `remember_memory` e `search_memo
 Todas as rotas abaixo são implementadas como Route Handlers do Next em `app/api/*`. Produção exige `AUTH_ENABLED=true`, usuário, senha e segredo JWT configurados; `proxy.ts` protege rotas privadas com cookie JWT `auth-token`. Configuração inválida impede boot e nunca abre acesso; rotas auth retornam 503 se chamadas nesse estado. Fora de produção, desativação exige `AUTH_ENABLED=false` explícito.
 
 ## Chat
+
+### `/api/chat/model-catalog`
+
+Catálogo autenticado de opções do seletor. `GET` responde `{ revision, rows: [{ model, visible }] }`. `POST` recebe `{ revision, id, name, openAIEfforts? }`, verifica o ID na conta do provedor e devolve o catálogo atualizado com HTTP 201. `PATCH` recebe `{ revision, id, name, visible, openAIEfforts? }` e devolve o catálogo atualizado com HTTP 200. O campo opcional registra esforços documentados para IDs OpenAI sem perfil. A lista exige ao menos um modelo visível. Uma revisão obsoleta recebe HTTP 409.
 
 ### `POST /api/chat`
 
@@ -46,7 +50,7 @@ Os identificadores legados `grok-4.7` e `gpt-5.4-mini` resolvem para `gpt-6-luna
 | Campo | Tipo | Padrão | Observação |
 |---|---|---|---|
 | `input` | array | obrigatório | Payload compatível com Responses API |
-| `model` | string | `gpt-6-luna` | Precisa existir em `lib/models/modelConfig.ts` com capacidade `chat` ou `reasoning`; IDs GPT-5.6 Sol/Luna/Terra conhecidos resolvem para GPT-6 |
+| `model` | string | `gpt-6-luna` | Modelo inicial com capacidade de chat ou ID cadastrado. Os aliases legados seguem as regras acima. |
 | `instructions` | string | nenhum | Instruções de sistema |
 | `maxOutputTokens` | number | máximo do modelo | Sempre limitado ao `maxOutput` do modelo |
 | `temperature` | number | nenhum | Só enviado se o modelo suportar temperatura |
@@ -63,7 +67,7 @@ Os identificadores legados `grok-4.7` e `gpt-5.4-mini` resolvem para `gpt-6-luna
 
 Ferramentas injetadas pelo backend:
 
-- `image_generation` com `gpt-image-2.5-sunburst`, `partial_images: 2`, `output_format: png`, apenas em `responseMode="default"`.
+- `image_generation` com `gpt-image-2.6-sunburst`, `partial_images: 2`, `output_format: png`, apenas em `responseMode="default"`.
 - `web_search_preview` com localização aproximada `BR` e contexto `medium`, em modos não-quiz.
 - `remember_memory` e `search_memory` apenas em `responseMode="default"`, com até duas rodadas de function-call/output para salvar memórias explícitas ou recuperar contexto histórico quando o usuário pedir.
 - `code_interpreter` apenas quando `codeInterpreterEnabled=true` e o modelo suporta.
@@ -284,6 +288,12 @@ As semânticas de ciclo de vida valem nas duas autoridades. Por padrão, produç
 
 Memórias explícitas continuam em `/api/memories/*`. O índice semântico/RAG e sugestões de memória ficam em `/api/memory/*`.
 
+`GET /api/memory/personal` (autenticado, no-store) devolve `status: pending|ready|failed`, `summary`, `items` com `sourceIds`, `generatedAt`, `originalChars`, `summaryChars` e erro sanitizado. Reconcilia geração pendente depois da resposta, sem aguardar o provedor.
+
+`POST /api/memory/personal` aceita `{query?, draft?: {contextAboutUser?, importedBiography?}}` e devolve `revision`, `mode: summary|originals`, `personalText`, `details` e preferências/regras atuais. Limite de corpo: 256.000 bytes. Draft é transitório e substitui somente seus campos no contexto completo; nunca persiste. Sem draft, o hash atual decide síntese versus originais. Detalhes são filtrados novamente contra fontes atuais. `{regenerate:true}` solicita regeneração manual e responde 202. O endpoint não envia texto pessoal a logs.
+
+`search_memory` mantém `results` históricos e acrescenta `personalSources`; quando apenas uma busca falha, retorna os resultados disponíveis com `warning`. A política permite recuperar detalhes pessoais omitidos da síntese sem exigir que o usuário formule um pedido explícito de busca. `remember_memory` continua restrita a pedido explícito.
+
 | Método | Rota | Função |
 |---|---|---|
 | `GET` | `/api/memories` | Lista memórias |
@@ -311,6 +321,7 @@ O painel de Persona também exibe uma prévia somente leitura do prompt principa
 Atualiza:
 
 - `contextAboutUser`
+- `importedBiography`: biografia anterior preservada como fonte pessoal editável; omissão preserva o valor existente e string vazia remove seu conteúdo ativo.
 - `responsePreferences`
 - `customSystemInstructions`
 - `ttsPreferences`
@@ -349,7 +360,7 @@ Notas do PDF:
 
 ## SoundCase
 
-`/soundcase` reutiliza o mesmo cookie JWT do Chat. O texto e os assets ficam privados no servidor; o browser recebe apenas projeções autenticadas e URLs protegidas. A leitura ao vivo usa OpenAI Realtime ou Grok Realtime, independentemente do TTS do arquivo final. O pipeline durável usa Luna para direção, OpenAI `gpt-4o-mini-tts` ou xAI `/v1/tts` para áudio, e `gpt-image-2.5-sunburst` para capa. `ttsProvider` e `grokVoice` ficam no snapshot de cada versão; versões legadas sem provedor usam OpenAI.
+`/soundcase` reutiliza o mesmo cookie JWT do Chat. O texto e os assets ficam privados no servidor; o browser recebe apenas projeções autenticadas e URLs protegidas. A leitura ao vivo usa OpenAI Realtime ou Grok Realtime, independentemente do TTS do arquivo final. O pipeline durável usa Luna para direção, OpenAI `gpt-4o-mini-tts` ou xAI `/v1/tts` para áudio, e `gpt-image-2.6-flare` para capa. `ttsProvider` e `grokVoice` ficam no snapshot de cada versão; versões legadas sem provedor usam OpenAI.
 
 | Método | Rota | Função |
 |---|---|---|
@@ -379,6 +390,8 @@ Nota atual: a aba visível do produto usa **Pulse nativo** para rotinas recorren
 Todas as rotas abaixo são privadas quando `AUTH_ENABLED=true`. O browser nunca recebe `client_secret`, `refresh_token`, `access_token` ou token bruto do Google.
 
 ## Pulse
+
+Capas usam `gpt-image-2.6-flare` pela Responses API. Se a resposta principal não traz imagem, uma chamada exclusiva força a ferramenta de imagem com Luna `low`. Resposta incompleta, vazia ou rejeitada nessa chamada preserva o texto (`status: completed`) e grava `error` com aviso de que a capa falhou, exibido pelo cartão existente. Não há regeneração automática dos históricos sem capa.
 
 Todas as rotas de Pulse são privadas quando `AUTH_ENABLED=true`, exceto o runner interno `/api/pulse/run-due`, que exige `Authorization: Bearer <PULSE_RUNNER_TOKEN>` (comparação em tempo constante), responde `503` se o token não estiver configurado, passa pelo rate limit do proxy e é usado pelo timer local do servidor. Não há fallback por hostname. A reivindicação de execução é atômica dentro do lock de `pulse-runs.json` (timer e disparo manual nunca abrem dois runs da mesma rotina), e todo run `running` que nenhum processo vivo reconhece (sobra de restart) é marcado `failed` com aviso no próximo tick do runner ou disparo manual; a rotina segue vencida e roda de novo no tick seguinte.
 

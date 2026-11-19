@@ -68,11 +68,11 @@ describe("buildResponseCreateParams", () => {
     );
 
     expect(streamingImageTool).toMatchObject({
-      model: "gpt-image-2.5-sunburst", quality: "high", size: "auto",
+      model: "gpt-image-2.6-sunburst", quality: "high", size: "auto",
       output_format: "png", partial_images: 2,
     });
     expect(nonStreamingImageTool).toMatchObject({
-      model: "gpt-image-2.5-sunburst", quality: "high", output_format: "png",
+      model: "gpt-image-2.6-sunburst", quality: "high", output_format: "png",
     });
     expect(nonStreamingImageTool).not.toHaveProperty("partial_images");
   });

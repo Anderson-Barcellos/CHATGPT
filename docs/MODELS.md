@@ -1,11 +1,21 @@
 # Modelos
 
-**Última atualização:** 2026-11-02
-**Fontes:** `lib/models/modelConfig.ts` (catálogo de texto e compatibilidade), `lib/server/chatRequest.ts`, `lib/pulse/runner.ts`, `lib/discover/curator.ts`, `lib/server/soundcase/cover.ts` e `app/api/transcribe/route.ts` (defaults de mídia).
+Síntese pessoal (2026-11-13): `gpt-6-luna`, reasoning `low`, Responses API, `store:false`, sem ferramentas, JSON Schema estrito; saída de até 4.000 caracteres, limite de 6.000 tokens incluindo reasoning, timeout 60 s. Geração somente quando as fontes mudam ou por regeneração manual. Recuperação pessoal reutiliza `text-embedding-3-small`; dados originais são preservados. Não altera o modelo escolhido para responder no chat.
+
+**Última atualização:** 2026-11-18
+**Fontes:** `lib/models/modelConfig.ts`, `lib/models/chatModelCatalog.ts`, `lib/server/chatModelCatalog.ts`, `lib/server/chatRequest.ts`, `lib/pulse/runner.ts`, `lib/discover/curator.ts`, `lib/server/soundcase/cover.ts` e `app/api/transcribe/route.ts`.
+
+## Modelos configuráveis do chat
+
+Em Configurações → Modelos, adicione um nome e um ID de texto da OpenAI ou Anthropic. O app identifica o provedor pelo ID e consulta a conta configurada no servidor. A lista inclui os modelos iniciais e as edições salvas em `data/chat-model-catalog.json`. Renomear muda o seletor. Ocultar tira a opção do seletor, preserva a linha e permite mostrá-la novamente. Se o modelo selecionado for ocultado, o chat seleciona Luna quando ele estiver visível, ou o primeiro modelo visível. As respostas anteriores conservam os IDs que as geraram.
+
+- GPT‑6.2 Sol (`gpt-6.2-sol`) pode ser adicionado pelo formulário. O perfil do chat oferece `low`, `medium`, `high`, `xhigh` e `max`. [OpenAI Docs](https://developers.openai.com/api/docs/models/gpt-6.2-sol)
+- Para novos Claude, o catálogo lê os níveis e os limites da Models API da Anthropic. Claude Sonnet 5.5 e Opus 5.5 oferecem os cinco esforços `low`, `medium`, `high`, `xhigh` e `max`. [Anthropic](https://platform.claude.com/docs/en/build-with-claude/effort)
+- IDs OpenAI sem perfil cadastrado entram como modelos de texto pelo Responses API, com teto local de 4.096 tokens. É possível informar os esforços documentados ao adicionar ou editar. Ferramentas de Responses e Documento usam apenas perfis com suporte conhecido. A consulta de ID à OpenAI retorna metadados básicos. [OpenAI Docs](https://developers.openai.com/api/reference/resources/models/methods/retrieve)
 
 ## Catálogo Atual
 
-Sonnet 5.5 (`claude-sonnet-5-5`) e Opus 5.5 (`claude-opus-5-5`) entram somente no chat padrão. Ambos começam em `medium` e oferecem `low`, `medium` e `high`, com teto aplicado também no backend. Contexto de 1M e saída máxima de 128K; preços por milhão de tokens (entrada/cache read/saída): Sonnet US$ 2/0,10/10, Opus US$ 4/0,20/20. São estimativas de tokens, não uma fatura completa de ferramentas ou cache writes. Fontes: [Sonnet](https://platform.claude.com/docs/en/models/sonnet-5-5/overview), [Opus](https://platform.claude.com/docs/en/models/opus-5-5/overview).
+Sonnet 5.5 (`claude-sonnet-5-5`) e Opus 5.5 (`claude-opus-5-5`) entram no chat padrão e começam em `medium`. Contexto de 1M e saída máxima de 128K. Os preços por milhão de tokens (entrada/cache read/saída) são US$ 2/0,10/10 no Sonnet e US$ 4/0,20/20 no Opus. A estimativa local cobre tokens. [Sonnet](https://platform.claude.com/docs/en/models/sonnet-5-5/overview) · [Opus](https://platform.claude.com/docs/en/models/opus-5-5/overview)
 
 Astra e Gemini permanecem no catálogo para compatibilidade, mas deixam as novas escolhas do chat. Preferências antigas desses modelos no chat passam a Luna `medium`, sem reescrever históricos. Astra permanece no Studio e no Pulse. Claude suporta imagens de entrada, web search/fetch e as ferramentas de memória do Gaúcho; não oferece geração de imagens, code interpreter ou modo Pro. Documento com Claude usa Luna `medium`; Deepsearch e Quiz mantêm seus presets.
 
@@ -28,7 +38,8 @@ Astra e Gemini permanecem no catálogo para compatibilidade, mas deixam as novas
 
 | ID | Nome | Família | Uso |
 |---|---|---|---|
-| `gpt-image-2.5-sunburst` | GPT Image 2.5 Sunburst | `gpt-image` | Tool de geração de imagem no chat, Pulse, Descobrir e capas SoundCase |
+| `gpt-image-2.6-sunburst` | GPT Image 2.6 Sunburst | `gpt-image` | Tool de geração de imagem nos pedidos do chat |
+| `gpt-image-2.6-flare` | GPT Image 2.6 Flare | `gpt-image` | Capas automáticas do Pulse, Descobrir e SoundCase |
 | `gpt-image-2` | GPT Image 2 | `gpt-image` | Entrada de compatibilidade no catálogo; nenhum gerador ativo usa este default |
 | `dall-e-3` | DALL-E 3 | `dall-e` | Modelo legado/listado no catálogo |
 
@@ -45,7 +56,7 @@ Astra e Gemini permanecem no catálogo para compatibilidade, mas deixam as novas
 - `gpt-chat-latest` e `gpt-5-chat-latest` são aceitos como aliases locais e resolvem para `chat-latest`.
 - `gpt-5.2` inicia com reasoning `medium` + summary `detailed`.
 - Modelos mini iniciam com reasoning `none` + summary `detailed`; como o effort começa em `none`, esse summary não é enviado ao backend até o usuário ativar reasoning.
-- Modelo de imagem usado pelas tools: `gpt-image-2.5-sunburst`, mantendo `high` no chat/Pulse/SoundCase e `low` no Descobrir. O chat continua respeitando qualidade e tamanho explícitos.
+- Tools de imagem: `gpt-image-2.6-sunburst` no chat e `gpt-image-2.6-flare` nas capas do Pulse/Descobrir/SoundCase. Qualidade preservada: `high` no chat/Pulse/SoundCase e `low` no Descobrir. O chat continua respeitando qualidade e tamanho explícitos, com PNG e duas imagens parciais no streaming. As chamadas exclusivas de capa no Pulse e Descobrir forçam `tool_choice: image_generation`; o fallback Pulse usa Luna `low`, independente do esforço do texto.
 - Quiz força `gpt-5.4` com reasoning `high`.
 - Documento segue o modelo do chat; com DeepSeek ou Gemini selecionados cai para `gpt-6-luna` + `medium` (`lib/chat/documentConfig.ts`). Deepsearch Medium usa `gpt-6-luna` + `medium` e Deepsearch High usa `gpt-6.1-sol` + `high` (`lib/chat/deepsearchConfig.ts`). Quiz continua em `gpt-5.4` com reasoning `high`.
 - O Pulse usa `gpt-6.1-sol` + `medium` por padrão em rotinas novas e oferece Astra, Luna e GPT-5.6 Sol como opções; rotinas salvas com 6 Sol/Terra passam a rodar no 6.1 Sol e as com Grok/mini no Luna. Astra mantém reasoning/verbosity `medium`; os demais usam verbosity `high`. Imagens continuam OpenAI.
@@ -59,15 +70,19 @@ Astra e Gemini permanecem no catálogo para compatibilidade, mas deixam as novas
 - TTS do Chat/Pulse usa a API xAI `/v1/tts` com Orion e MP3; `gpt-4o-mini-tts` em `lib/tts/speechText.ts` permanece como opção do SoundCase e rota legada.
 - Realtime opcional do Chat/Pulse usa `grok-voice-latest` com voz Orion; `gpt-realtime-2.1-mini` permanece no SoundCase e na rota legada OpenAI.
 - Ditado ao vivo usa `gpt-live-transcribe`, português, delay `low`, PCM16 mono a 24 kHz e commits explícitos por pausa. O fallback HTTP após a gravação usa `gpt-transcribe`, tanto em NDJSON quanto em JSON. Sem seletor novo; TTS preservado.
-- SoundCase usa `gpt-6-luna` com reasoning `medium` para direção estruturada, xAI `/v1/tts` (Grok TTS, Orion inicial) ou `gpt-4o-mini-tts` para chunks do arquivo final, e `gpt-image-2.5-sunburst` para capa. Texto narrado nunca é reescrito pela etapa de direção. A escuta imediata tem escolha independente entre OpenAI Realtime (`gpt-realtime-2.1-mini`) e Grok Realtime.
+- SoundCase usa `gpt-6-luna` com reasoning `medium` para direção estruturada, xAI `/v1/tts` (Grok TTS, Orion inicial) ou `gpt-4o-mini-tts` para chunks do arquivo final, e `gpt-image-2.6-flare` para capa. Texto narrado nunca é reescrito pela etapa de direção. A escuta imediata tem escolha independente entre OpenAI Realtime (`gpt-realtime-2.1-mini`) e Grok Realtime.
 - O arquivo SoundCase usa MP3 por padrão, com FLAC/WAV por override; o Realtime é transitório e não substitui a versão durável para download.
 - SoundCase também oferece `grok-voice-latest` experimental: texto → áudio, sem microfone, com vozes xAI e velocidade entre 0.7x e 1.5x. Preferências da leitura ao vivo são independentes da geração de arquivo; engine OpenAI permanece default para Realtime.
 
 Referência do provider de voz: [Realtime](https://docs.x.ai/developers/model-capabilities/audio/speech-to-speech). Voz: US$ 0.08 por minuto de áudio enviado/recebido e US$ 0.004 por mensagem de texto de entrada. A chave xAI (`XAI_API_KEY` ou `GROK_API_KEY`) segue em uso só para TTS e Realtime.
 
-### Revisão de mídia OpenAI — 2026-11-02
+### Revisão de imagem — 2026-11-11
 
-Os defaults acima estão publicados desde 02/11/2026, build `gz-rfWQLxKyrhbFFQ7nHU`. Sunburst é o modelo atual de maior capacidade; Flare prioriza velocidade. Ambos aceitam os formatos, tamanhos e níveis de qualidade já usados aqui. As tarifas por token são iguais às do GPT Image 2, mas o consumo e o custo por imagem podem mudar. Ver [guia de imagem](https://developers.openai.com/api/docs/guides/image-generation) e [Sunburst](https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst).
+Anders escolheu Flare para as capas automáticas e Sunburst para pedidos de imagem no chat. Ambos os IDs 2.6 foram confirmados pela Models API. A documentação 2.6 aceita complexidade low/medium/high; não adicionamos `complexity` ao contrato da tool nem mudamos endpoint. Referências: [Flare](https://developers.openai.com/api/docs/models/gpt-image-2.6-flare), [Sunburst](https://developers.openai.com/api/docs/models/gpt-image-2.6-sunburst), [complexidade](https://developers.openai.com/api/docs/guides/image-generation#gpt-image-26). Não há estimativa nova de preço por imagem no app.
+
+### Histórico: revisão de mídia OpenAI — 2026-11-02
+
+Em 02/11/2026 foi publicado GPT Image 2.5 Sunburst, build `gz-rfWQLxKyrhbFFQ7nHU`; esse default de imagem foi substituído pela revisão 2.6 acima. Ver [guia de imagem](https://developers.openai.com/api/docs/guides/image-generation).
 
 `gpt-transcribe` é o sucessor recomendado para arquivo e mantém streaming de texto. `gpt-4o-transcribe` está descontinuado, com desligamento previsto em 26/02/2027. O ditado incremental continua em `gpt-live-transcribe`, modelo atual para baixa latência. Ver [transcrição de arquivo](https://developers.openai.com/api/docs/guides/speech-to-text) e [ditado ao vivo](https://developers.openai.com/api/docs/models/gpt-live-transcribe).
 

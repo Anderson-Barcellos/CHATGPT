@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Brain,
+  Boxes,
   Check,
   CheckCircle2,
   Image as ImageIcon,
@@ -26,14 +27,8 @@ import { useUIStore } from "@/stores/uiStore";
 import { useMemories } from "@/hooks/useMemories";
 import { useMemorySuggestions } from "@/hooks/useMemorySuggestions";
 import { useCustomInstructions } from "@/hooks/useCustomInstructions";
-import {
-  MODELS,
-  isDeepSeekModel,
-  getFixedVerbosity,
-  modelSupportsCodeInterpreter,
-  modelSupportsTemperature,
-  modelSupportsVerbosity,
-} from "@/lib/models/modelConfig";
+import { isDeepSeekModel } from "@/lib/models/modelConfig";
+import { getChatModel } from "@/lib/models/chatModelCatalog";
 import { useDebounce } from "@/lib/performance/debounce";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
@@ -49,6 +44,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getXaiTtsSpeed } from "@/lib/tts/speechText";
 import { indexRecentConversationMemories } from "@/lib/storage/memoryRag";
+import { PersonalSynthesisCard } from "./PersonalSynthesisCard";
+import { ChatModelCatalogSettings } from "./ChatModelCatalogSettings";
 import { BASE_SYSTEM_PROMPT } from "@/lib/prompts/systemPrompt";
 import { FIXED_PERSONA_PROMPT } from "@/lib/prompts/personaPrompt";
 import { MEMORY_CATEGORIES } from "@/types";
@@ -80,6 +77,7 @@ const VERBOSITY_OPTIONS = [
 
 const SETTINGS_TABS = [
   { key: "tuning", label: "Tuning", icon: Sliders },
+  { key: "models", label: "Modelos", icon: Boxes },
   { key: "memory", label: "Memória", icon: Brain },
   { key: "persona", label: "Persona", icon: User },
 ] as const;
@@ -322,7 +320,7 @@ function MemorySuggestionCard({
 }
 
 export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
-  const { parameters, updateParameters } = useSettingsStore();
+  const { parameters, updateParameters, chatModelCatalog } = useSettingsStore();
   const activeMode = useUIStore((state) => state.activeMode);
   const imageQuality = useUIStore((state) => state.imageQuality);
   const imageSize = useUIStore((state) => state.imageSize);
@@ -339,6 +337,8 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   } = useMemorySuggestions();
   const {
     contextAboutUser,
+    importedBiography,
+    updateImportedBiography,
     responsePreferences,
     customSystemInstructions,
     ttsPreferences,
@@ -355,12 +355,12 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   const [isCreatingMemory, setIsCreatingMemory] = useState(false);
   const [isIndexingMemory, setIsIndexingMemory] = useState(false);
 
-  const currentModel = MODELS[parameters.model];
+  const currentModel = getChatModel(parameters.model, chatModelCatalog);
   const isDeepSeekSelected = isDeepSeekModel(parameters.model);
-  const fixedVerbosity = getFixedVerbosity(parameters.model);
-  const showTemperature = modelSupportsTemperature(parameters.model);
-  const showVerbosity = modelSupportsVerbosity(parameters.model);
-  const showCodeInterpreter = modelSupportsCodeInterpreter(parameters.model);
+  const fixedVerbosity = currentModel?.fixedVerbosity;
+  const showTemperature = currentModel?.supportsTemperature;
+  const showVerbosity = currentModel?.supportsVerbosity;
+  const showCodeInterpreter = currentModel?.supportsCodeInterpreter;
   const maxTokensLimit = currentModel?.maxOutput ?? parameters.maxOutputTokens;
   const minTokensLimit = Math.min(256, maxTokensLimit);
   const mainPromptPreview = useMemo(
@@ -369,6 +369,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   );
 
   const panelStatus = useMemo<SaveStatus>(() => {
+    if (activeTab === "models") return "idle";
     if (activeTab === "persona" || activeTab === "tuning") return saveStatus;
     if (
       isCreatingMemory ||
@@ -479,7 +480,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
             <div
               role="tablist"
               aria-label="Seções das configurações"
-              className="mt-[var(--gc-mobile-context-header-y)] grid grid-cols-3 gap-1 rounded-xl border border-[color:var(--gc-border-soft)] bg-background/72 p-1 sm:rounded-2xl"
+              className="mt-[var(--gc-mobile-context-header-y)] grid grid-cols-4 gap-1 rounded-xl border border-[color:var(--gc-border-soft)] bg-background/72 p-1 sm:rounded-2xl"
             >
               {SETTINGS_TABS.map(({ key, label, icon: Icon }) => (
                 <button
@@ -503,6 +504,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
           </div>
 
           <div className="flex-1 overflow-y-auto px-[var(--gc-mobile-panel-content-pad)] pb-[var(--gc-mobile-panel-content-pad)] pt-[var(--gc-mobile-panel-content-pad)]">
+            {activeTab === "models" && <ChatModelCatalogSettings />}
             {activeTab === "tuning" && (
               <div className="space-y-[var(--gc-mobile-settings-section-gap)]">
                 <div className="gc-refined-accent-surface rounded-[1.6rem] border p-[var(--gc-mobile-settings-card-pad)] text-body-sm shadow-[0_18px_36px_rgba(15,118,110,0.10)] sm:text-sm">
@@ -750,9 +752,10 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
 
             {activeTab === "memory" && (
               <div className="space-y-4">
+                <PersonalSynthesisCard />
                 <div className="gc-refined-accent-surface rounded-2xl border p-3">
                   <p className="text-xs leading-relaxed text-muted-foreground">
-                    Memórias ativas entram no prompt. Sugestões vindas das conversas ficam
+                    Memórias ativas alimentam a síntese e a busca pessoal. Sugestões vindas das conversas ficam
                     pendentes até tu aceitar, editar ou rejeitar.
                   </p>
                   <Button
@@ -881,6 +884,12 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
 
             {activeTab === "persona" && (
               <div className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="imported-biography" className="text-xs font-medium text-muted-foreground">Biografia importada da persona anterior</label>
+                  <p className="text-xs text-muted-foreground">Fonte pessoal preservada, agora editável. Confere informações que possam ter envelhecido.</p>
+                  <textarea id="imported-biography" value={importedBiography} onChange={e => updateImportedBiography(e.target.value)} rows={6}
+                    className="gc-refined-soft-surface w-full resize-y rounded-2xl border p-3 text-xs outline-none focus:ring-2 focus:ring-primary/15" />
+                </div>
                 <div className="gc-refined-accent-surface rounded-2xl border p-3">
                   <p className="text-xs leading-relaxed text-muted-foreground">
                     Persona e regras base seguem fixas no servidor. Abaixo tu enxerga o

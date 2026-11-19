@@ -106,7 +106,7 @@ describe("chat model capabilities", () => {
       supportsTemperature: false,
       supportsVerbosity: false,
       supportsCodeInterpreter: false,
-      supportedReasoningEfforts: ["low", "medium", "high"],
+      supportedReasoningEfforts: ["low", "medium", "high", "xhigh", "max"],
     });
     expect(MODELS[model]?.capabilities).toEqual(
       expect.arrayContaining(["chat", "reasoning", "vision"])

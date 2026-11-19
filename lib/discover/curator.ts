@@ -115,7 +115,8 @@ async function generateCover(client: OpenAI, article: Draft): Promise<string | u
     input: `Manchete: ${article.title}\nResumo: ${article.summary}`,
     reasoning: { effort: "low" },
     max_output_tokens: 1200,
-    tools: [{ type: "image_generation", model: "gpt-image-2.5-sunburst", quality: "low", size: "auto", background: "auto", output_format: "png" }],
+    tools: [{ type: "image_generation", model: "gpt-image-2.6-flare", quality: "low", size: "auto", background: "auto", output_format: "png" }],
+    tool_choice: { type: "image_generation" },
   });
   return extractResponseOutput(response).imageBase64;
 }
