@@ -2,9 +2,9 @@
 
 ## Estado operacional
 
-#### Editor do catálogo na `main`, sem a Anil (candidata, 2026-11-19)
+#### Editor do catálogo na `main`, sem a Anil (publicada 2026-11-19 20h04)
 
-Anders pediu para recuperar o editor (alças de arrastar, excluir, editar ID, sugestão de rótulos), que saiu do ar junto com a reversão da Anil. Portado para `/root/worktrees/gaucho-catalog-editor-main` (branch `feat/catalog-editor` sobre `f5fe8fe`). Gates completos e aceite 15/15 na build `QC5Ih-TAX9mHi3BHDGHPN`; detalhes no `TEST_LOGS.md`. Commit e deploy aguardam o ok de Anders.
+Anders pediu para recuperar o editor (alças de arrastar, excluir, editar ID, sugestão de rótulos), que saiu do ar junto com a reversão da Anil. Portado para `/root/worktrees/gaucho-catalog-editor-main` (branch `feat/catalog-editor` sobre `f5fe8fe`). Gates completos e aceite 15/15 na build `QC5Ih-TAX9mHi3BHDGHPN`; detalhes no `TEST_LOGS.md`. Commit `2ffcb9e` enviado ao GitHub junto dos quatro retidos. Publicado às 20h04 BRT com `scripts/deploy.sh --from`; anterior `BQpqgs9UrXlwfM_QB2EU2`, backup `/root/.cache/gaucho-deploy/20261119T230418Z/next-before`, origem `/root/worktrees/gaucho-catalog-editor-main` (**preservar**). Health local/pública 200, catálogo anônimo 401, chunk público 200. Conferência visual autenticada fica com Anders.
 
 #### Consolidação da fonte publicada e organização das worktrees (2026-11-19)
 

@@ -1,10 +1,12 @@
 # Infraestrutura
 
-**Última atualização:** 2026-11-18 (catálogo de modelos publicado)
+**Última atualização:** 2026-11-19 (editor do catálogo publicado)
 **Produção:** `https://sonaris.us/chat` — host `srv1927271`
 **Porta local:** `3040`
 
 ## Topologia
+
+Publicação em 19/11 às 20h04 BRT: build `QC5Ih-TAX9mHi3BHDGHPN` (editor do catálogo, commit `2ffcb9e`), origem `/root/worktrees/gaucho-catalog-editor-main` (**preservar**), anterior `BQpqgs9UrXlwfM_QB2EU2`, backup `/root/.cache/gaucho-deploy/20261119T230418Z/next-before`. Só `chatgpt.service` reiniciado; health local/pública 200, catálogo anônimo 401. Sem mudança de porta, proxy ou credenciais.
 
 Publicação em 18/11 às 09h53 BRT: build `BQpqgs9UrXlwfM_QB2EU2`, origem `/root/worktrees/gaucho-chat-model-catalog` (**preservar**), anterior `Dx12sP2E5ro_FfMl7GuWv`, backup `/root/.cache/gaucho-deploy/20261118T125344Z/next-before`. A API autenticada do catálogo usa `/chat/api/chat/model-catalog` no serviço existente, e as edições do usuário seguem em `data/chat-model-catalog.json`. Health local/pública 200, catálogo anônimo 401 e autenticado 200, Chrome público 1440×1000 e 390×844 aprovado. Somente `chatgpt.service` reiniciado. Detalhes e evidências no BACKLOG e no diário.
 
