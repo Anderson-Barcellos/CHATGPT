@@ -78,7 +78,7 @@ try {
     const thread = await page.evaluate(measureThread);
     const mobileReading = width <= 767 || (touch && height <= 500);
     const fontSize = await page.locator('.gc-assistant-bubble p').first().evaluate(node => parseFloat(getComputedStyle(node).fontSize));
-    assert.ok(mobileReading ? fontSize === 14 : fontSize >= 15 && fontSize <= 16, 'corpo desktop 15–16px; mobile 14px preservado');
+    assert.ok(mobileReading ? fontSize === 14 : fontSize >= 14.5 && fontSize <= 15.5, 'corpo desktop 14,5–15,5px; mobile 14px preservado');
     if (!mobileReading && width >= 1489) {
       assert.ok(Math.abs(thread.assistant.width - 896) < 1, 'resposta usa o novo teto de 896px');
       assert.ok(Math.abs(thread.user.width - 768) < 1, 'mensagem usa o novo teto de 768px');

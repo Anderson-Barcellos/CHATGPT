@@ -89,7 +89,7 @@ async function save(request: NextRequest, action: "add" | "update" | "delete") {
     }
 
     const provider = inferChatModelProvider(cleanId);
-    if (!provider) return jsonError(422, "Use um ID de modelo de chat da OpenAI ou da Anthropic.");
+    if (!provider) return jsonError(422, "Use um ID de modelo de chat da OpenAI, da Anthropic ou do Google (Gemini).");
     if (provider !== "openai" && efforts !== undefined) {
       return jsonError(400, "Os níveis de raciocínio informados são inválidos.");
     }

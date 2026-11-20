@@ -638,3 +638,17 @@ Não validado: streaming real (o crescimento foi simulado por DOM), Safari/iPhon
 Worktree `/root/worktrees/gaucho-catalog-editor-main`, branch `feat/catalog-editor` sobre `f5fe8fe`. Onze arquivos do editor copiados de `/root/worktrees/gaucho-catalog-editor`, sem os registros e sem `INFRASTRUCTURE.md`. O `globals.css` da origem é idêntico ao da `main`.
 
 Primeira execução: typegen 0, tsc 0, lint 0 (1 aviso preexistente `_content`), vitest 234 arquivos/1.292 testes, build 0. O primeiro aceite falhou porque a build tinha saído sem `NEXT_PUBLIC_BASE_PATH=/chat` e os chunks deram 404. Com a build refeita no env do deploy (`QC5Ih-TAX9mHi3BHDGHPN`), o aceite Chrome com provedores sintéticos (`accept-main.mjs`, cópia do `accept.mjs` com a worktree nova na lista permitida) passou 15/15. Logs em `/root/.cache/gaucho-editor-main-20261119/`; evidências em `/root/.cache/gaucho-editor-qa/run-HoGppM`.
+
+## 2026-11-19 — Gemini como provedor do catálogo (Neon e Hydrogen)
+
+Worktree `/root/worktrees/gaucho-gemini4`, branch `feat/gemini-4-models` sobre `6e4f10e`. RED: 13 testes novos falharam (reconhecimento `gemini-*`, adapter com o modelo do pedido, cadastro via `models.get`), 33 antigos verdes. Dois testes de "modelo embutido" foram retirados ao decidir não inventar preço para Neon/Hydrogen. GREEN focado: 8 arquivos, 68 testes.
+
+Gates completos: typegen 0, tsc 0, lint 0 (1 aviso preexistente), vitest 236 arquivos/1.314 testes, build 0 com `NEXT_PUBLIC_BASE_PATH=/chat`. Logs em `/root/.cache/gaucho-gemini4-20261119/`.
+
+Smoke real com o Google (rodado por Anders em 2026-11-20, via `gemini-smoke.sh` no scratchpad da sessão): `gemini-4-neon` e `gemini-4-hydrogen` com thinking low pelo adapter da worktree, os dois com `DONE` e texto de resposta. A primeira tentativa do script falhou no tsx (top-level await em saída CJS); corrigido com `main()` assíncrona. Aceite Chrome do cadastro pelo editor fica para depois do deploy.
+
+## 2026-11-19 — Fonte dos balões desktop 14,5–15,5px
+
+Pedido de Anders: reduzir de leve a fonte dos balões. Token `--gc-text-body` em `.gc-message-card` (desktop) passou de 15–16px para 14,5–15,5px com a mesma inclinação; mobile e paisagem com toque intactos (14px). RED: teste de contrato em `app/globals.visual.test.ts` falhou antes do CSS (1 failed/41 passed); GREEN 42/42. `qa-chat-column.mjs` passou a exigir 14,5–15,5px.
+
+Gates na mesma worktree do Gemini: tsc 0, lint 0 (1 aviso preexistente), vitest 1.315 testes, build `Mj7zxrfqGjoUiG5GImL_o` com basePath `/chat`, `qa-chat-column` exit 0 (de 390 a 3440px; 15,5px a partir de 1920px, 14px no mobile, larguras inalteradas). Logs em `/root/.cache/gaucho-gemini4-20261119/`.

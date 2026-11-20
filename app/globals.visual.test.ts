@@ -5,6 +5,12 @@ import { CONTEXT_SIDEBAR_BREAKPOINT } from "@/lib/layout/breakpoints";
 const css = readFileSync(new URL("./globals.css", import.meta.url), "utf8");
 
 describe("Gaucho Chat visual contract", () => {
+  it("mantém o corpo dos balões desktop em 14,5–15,5px", () => {
+    expect(css).toContain(
+      "--gc-text-body: clamp(0.90625rem, 0.8646rem + 0.0868vw, 0.96875rem);"
+    );
+  });
+
   it("does not scan archived Next.js output as Tailwind source", () => {
     expect(css).toContain('@source not "../.next-before-sc2-20260906T170822Z"');
   });

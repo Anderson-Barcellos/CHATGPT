@@ -11,10 +11,11 @@ O editor permite trocar o ID e o rótulo de uma linha, excluir inclusive os mode
 
 “Sugerir rótulos” envia apenas metadados do catálogo visível ao Luna em esforço baixo. O servidor valida os termos propostos contra capacidades e preços conhecidos. A pessoa pode editar ou desmarcar termos antes de aplicar a seleção inteira em uma única revisão.
 
-Em Configurações → Modelos, adicione um nome e um ID de texto da OpenAI ou Anthropic. O app identifica o provedor pelo ID e consulta a conta configurada no servidor. A lista inclui os modelos iniciais e as edições salvas em `data/chat-model-catalog.json`. Renomear muda o seletor. Ocultar tira a opção do seletor, preserva a linha e permite mostrá-la novamente. Se o modelo selecionado for ocultado, o chat seleciona Luna quando ele estiver visível, ou o primeiro modelo visível. As respostas anteriores conservam os IDs que as geraram.
+Em Configurações → Modelos, adicione um nome e um ID de texto da OpenAI, da Anthropic ou do Google (`gemini-*`). O app identifica o provedor pelo ID e consulta a conta configurada no servidor. A lista inclui os modelos iniciais e as edições salvas em `data/chat-model-catalog.json`. Renomear muda o seletor. Ocultar tira a opção do seletor, preserva a linha e permite mostrá-la novamente. Se o modelo selecionado for ocultado, o chat seleciona Luna quando ele estiver visível, ou o primeiro modelo visível. As respostas anteriores conservam os IDs que as geraram.
 
 - GPT‑6.2 Sol (`gpt-6.2-sol`) pode ser adicionado pelo formulário. O perfil do chat oferece `low`, `medium`, `high`, `xhigh` e `max`. [OpenAI Docs](https://developers.openai.com/api/docs/models/gpt-6.2-sol)
 - Para novos Claude, o catálogo lê os níveis e os limites da Models API da Anthropic. Claude Sonnet 5.5 e Opus 5.5 oferecem os cinco esforços `low`, `medium`, `high`, `xhigh` e `max`. [Anthropic](https://platform.claude.com/docs/en/build-with-claude/effort)
+- Para novos Gemini, o catálogo confirma o ID com `models.get` na conta de `GEMINI_API_KEY`. Modelos com thinking recebem `low`, `medium` e `high` (sem `xhigh`, por decisão de 2026-11-19), teto de saída fixo de 65.536 tokens e badge Gemini. Transcribe, TTS, imagem/Nano Banana, Live, robótica, computer use e customtools não são aceitos. Gemini 4 Neon e Hydrogen entram por esse cadastro, sem preço conhecido.
 - IDs OpenAI sem perfil cadastrado entram como modelos de texto pelo Responses API, com teto local de 4.096 tokens. É possível informar os esforços documentados ao adicionar ou editar. Ferramentas de Responses e Documento usam apenas perfis com suporte conhecido. A consulta de ID à OpenAI retorna metadados básicos. [OpenAI Docs](https://developers.openai.com/api/reference/resources/models/methods/retrieve)
 
 ## Catálogo Atual
@@ -103,7 +104,7 @@ O `gpt-4o-mini-tts` está descontinuado, com desligamento em 06/01/2027. A migra
 - só adiciona `code_interpreter` quando o usuário habilita e o modelo suporta.
 - faz enforcement rígido apenas para `responseMode="quiz"`; presets `document` e `deepsearch_*` são montados no app por `hooks/useChat.ts`.
 - força reasoning e verbosity `medium` para `gpt-6-astra`, mesmo se o cliente enviar outros valores;
-- roteia `gemini-3.8-flash` para o adapter Interactions API apenas em chat padrão streaming.
+- roteia modelos do provedor Google (`gemini-3.8-flash` e os `gemini-*` cadastrados) para o adapter Interactions API, que envia o ID escolhido, apenas em chat padrão streaming.
 
 `lib/chat/reasoningConfig.ts`:
 

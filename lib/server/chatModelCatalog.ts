@@ -1,17 +1,21 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import {
+  CHAT_MODEL_PROVIDER_LABELS,
   CLAUDE_EFFORTS,
+  GEMINI_REASONING_EFFORTS,
   DEFAULT_CHAT_MODEL_CATALOG,
   getChatModel,
   hasOpenAIChatProfile,
   inferChatModelProvider,
+  type CatalogProvider,
   type ChatModelCatalog,
   type ChatModelInfo,
   type ChatModelRow,
 } from "@/lib/models/chatModelCatalog";
 import type { ReasoningEffort } from "@/types";
 import { createAnthropicClient } from "./anthropicChat";
+import { createGeminiClient } from "./geminiChat";
 import { ALLOWED_CHAT_MODELS, createOpenAIClient, resolveRequestedModel } from "./chatRequest";
 import { withDataFileLock, writeDataFile } from "./jsonFileStore";
 
@@ -84,7 +88,7 @@ async function lookupModel<T>(lookup: () => Promise<T>): Promise<T> {
 async function discoverModel(
   id: string,
   name: string,
-  provider: "openai" | "anthropic",
+  provider: CatalogProvider,
   openAIEfforts: ReasoningEffort[],
   signal?: AbortSignal,
 ): Promise<ChatModelInfo> {
@@ -92,8 +96,8 @@ async function discoverModel(
     id,
     name,
     provider,
-    family: provider === "anthropic" ? "anthropic" : "gpt-6",
-    description: provider === "anthropic" ? "Anthropic" : "OpenAI",
+    family: provider === "anthropic" ? "anthropic" : provider === "google" ? "gemini" : "gpt-6",
+    description: CHAT_MODEL_PROVIDER_LABELS[provider],
     contextWindow: 0,
     maxOutput: 4096,
     capabilities: ["chat"],
@@ -102,6 +106,24 @@ async function discoverModel(
     supportsVerbosity: false,
     supportsCodeInterpreter: false,
   };
+
+  if (provider === "google") {
+    const client = createGeminiClient();
+    if (!client) throw new ChatCatalogError(503, "A credencial Gemini está indisponível no servidor.");
+    const meta = await lookupModel(() => client.models.get({ model: id, config: { abortSignal: signal } }));
+    const builtIn = getChatModel(id);
+    if (builtIn?.provider === "google" && ALLOWED_CHAT_MODELS.has(id)) return { ...builtIn, name };
+    // A API informa só se o modelo pensa; os níveis aceitos no chat são os do adapter.
+    const efforts = meta.thinking ? GEMINI_REASONING_EFFORTS : [];
+    return {
+      ...base,
+      contextWindow: meta.inputTokenLimit ?? base.contextWindow,
+      maxOutput: 65_536,
+      capabilities: ["chat", "vision", ...(efforts.length ? ["reasoning" as const] : [])],
+      supportedReasoningEfforts: efforts,
+      badge: "Gemini",
+    };
+  }
 
   if (provider === "anthropic") {
     const client = createAnthropicClient();
@@ -170,7 +192,7 @@ async function changeCatalog(revision: number, change: (rows: ChatModelRow[]) =>
 }
 
 export async function addChatModel(
-  revision: number, id: string, name: string, provider: "openai" | "anthropic",
+  revision: number, id: string, name: string, provider: CatalogProvider,
   openAIEfforts: ReasoningEffort[], signal?: AbortSignal,
 ) {
   const current = await readChatModelCatalog();
@@ -198,7 +220,7 @@ export async function updateChatModel(
     requireRow(current.rows, id);
     assertNewModel(current, newId);
     const provider = inferChatModelProvider(newId);
-    if (!provider) throw new ChatCatalogError(422, "Use um ID de chat da OpenAI ou da Anthropic.");
+    if (!provider) throw new ChatCatalogError(422, "Use um ID de chat da OpenAI, da Anthropic ou do Google (Gemini).");
     replacement = await discoverModel(newId, name, provider, openAIEfforts ?? [], signal);
     signal?.throwIfAborted();
   }

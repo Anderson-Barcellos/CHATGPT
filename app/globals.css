@@ -1517,9 +1517,9 @@ body {
     --gc-composer-max: 66rem;
   }
 
-  /* Corpo dos balões: 15–16px, sem alterar controles, painel ou mobile. */
+  /* Corpo dos balões: 14,5–15,5px (reduzido em 2026-11-19), sem alterar controles, painel ou mobile. */
   .gc-atmosphere-shell .gc-message-card {
-    --gc-text-body: clamp(0.9375rem, 0.8958rem + 0.0868vw, 1rem);
+    --gc-text-body: clamp(0.90625rem, 0.8646rem + 0.0868vw, 0.96875rem);
   }
 }
 

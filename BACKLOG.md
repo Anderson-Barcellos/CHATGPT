@@ -2,6 +2,10 @@
 
 ## Estado operacional
 
+#### Gemini como provedor do catálogo (candidata, 2026-11-19)
+
+Anders pediu Gemini 4 Neon e Hydrogen no chat, com `low|medium|high` (sem `xhigh`), teto de saída fixo e só no chat padrão. DECISÃO: sem entradas embutidas (preço desconhecido distorceria o rótulo Econômico, e o catálogo vivo é v2); o editor aceita qualquer `gemini-*` de texto, confirmado por `models.get`, e o adapter envia o ID escolhido. Worktree `/root/worktrees/gaucho-gemini4`, branch `feat/gemini-4-models`, sem commit. Gates verdes (1.314 testes). Na mesma branch, a fonte dos balões desktop caiu para 14,5–15,5px (mobile intacto), com `qa-chat-column` aprovado. Build candidata `Mj7zxrfqGjoUiG5GImL_o`. Falta smoke real, deploy e Anders cadastrar `gemini-4-neon`/`gemini-4-hydrogen` em Configurações → Modelos.
+
 #### Editor do catálogo na `main`, sem a Anil (publicada 2026-11-19 20h04)
 
 Anders pediu para recuperar o editor (alças de arrastar, excluir, editar ID, sugestão de rótulos), que saiu do ar junto com a reversão da Anil. Portado para `/root/worktrees/gaucho-catalog-editor-main` (branch `feat/catalog-editor` sobre `f5fe8fe`). Gates completos e aceite 15/15 na build `QC5Ih-TAX9mHi3BHDGHPN`; detalhes no `TEST_LOGS.md`. Commit `2ffcb9e` enviado ao GitHub junto dos quatro retidos. Publicado às 20h04 BRT com `scripts/deploy.sh --from`; anterior `BQpqgs9UrXlwfM_QB2EU2`, backup `/root/.cache/gaucho-deploy/20261119T230418Z/next-before`, origem `/root/worktrees/gaucho-catalog-editor-main` (**preservar**). Health local/pública 200, catálogo anônimo 401, chunk público 200. Conferência visual autenticada fica com Anders.

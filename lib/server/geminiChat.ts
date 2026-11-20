@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import type { ChatRequestBody } from "@/lib/server/chatRequest";
 import type { AssistantStreamEvent } from "@/lib/chat/streamMachine";
+import { inferChatModelProvider } from "@/lib/models/chatModelCatalog";
 
 export const GEMINI_MODEL = "gemini-3.8-flash";
 const GEMINI_MAX_OUTPUT_TOKENS = 65_536;
@@ -26,7 +27,7 @@ type GeminiInputStep = {
 };
 
 export type GeminiInteractionParams = {
-  model: typeof GEMINI_MODEL;
+  model: string;
   input: GeminiInputStep[];
   system_instruction?: string;
   tools: Array<{ type: "google_search" } | { type: "url_context" }>;
@@ -138,8 +139,11 @@ export function buildGeminiInteractionParams(
     .filter((step): step is GeminiInputStep => step !== null);
   const requestedMaxTokens = body.maxOutputTokens ?? GEMINI_MAX_OUTPUT_TOKENS;
 
+  // O despacho já validou o modelo no catálogo; aqui só se garante um ID Gemini.
+  const model = body.model && inferChatModelProvider(body.model) === "google" ? body.model : GEMINI_MODEL;
+
   return {
-    model: GEMINI_MODEL,
+    model,
     input,
     ...(body.instructions?.trim() && {
       system_instruction: body.instructions.trim(),

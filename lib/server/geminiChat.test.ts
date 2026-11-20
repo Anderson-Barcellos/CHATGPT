@@ -74,6 +74,22 @@ describe("buildGeminiInteractionParams", () => {
     }
   );
 
+  it.each(["gemini-4-neon", "gemini-4-hydrogen", "gemini-4-argon"])(
+    "envia ao Google o modelo %s escolhido no pedido",
+    (model) => {
+      expect(
+        buildGeminiInteractionParams({ model, input: [{ role: "user", content: "Teste" }] }).model
+      ).toBe(model);
+    }
+  );
+
+  it("usa o Gemini padrão quando o pedido não traz um ID gemini", () => {
+    expect(buildGeminiInteractionParams({ input: [{ role: "user", content: "Teste" }] }).model).toBe(GEMINI_MODEL);
+    expect(
+      buildGeminiInteractionParams({ model: "gpt-6-luna", input: [{ role: "user", content: "Teste" }] }).model
+    ).toBe(GEMINI_MODEL);
+  });
+
   it.each(["minimal", "max"] as const)(
     "defaults unsupported %s reasoning to medium",
     (effort) => {

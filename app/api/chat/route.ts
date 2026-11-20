@@ -85,14 +85,14 @@ export async function POST(request: NextRequest) {
     if (modelInfo.provider === "google") {
       if (responseMode !== "default") {
         return jsonError(400, "Gemini mode not supported", {
-          message: "Gemini 3.8 Flash esta habilitado somente para chat padrao.",
+          message: "Os modelos Gemini estao habilitados somente para chat padrao.",
           code: "chat_gemini_mode_not_supported",
         });
       }
 
       if (!stream) {
         return jsonError(400, "Gemini requires streaming", {
-          message: "Gemini 3.8 Flash esta habilitado somente no fluxo de chat com streaming.",
+          message: "Os modelos Gemini estao habilitados somente no fluxo de chat com streaming.",
           code: "chat_gemini_stream_required",
         });
       }

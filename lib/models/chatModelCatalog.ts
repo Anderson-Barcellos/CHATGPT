@@ -53,9 +53,17 @@ export function getChatModel(modelId: string, catalog?: ChatModelCatalog): ChatM
   return catalog?.rows.find(({ model }) => model.id === modelId)?.model ?? builtInModels.get(modelId);
 }
 
-export function inferChatModelProvider(id: string): "openai" | "anthropic" | undefined {
+export type CatalogProvider = "openai" | "anthropic" | "google";
+
+export const GEMINI_REASONING_EFFORTS: ReasoningEffort[] = ["low", "medium", "high"];
+
+export function inferChatModelProvider(id: string): CatalogProvider | undefined {
   if (/^claude-[a-z0-9][a-z0-9.-]*$/.test(id)) return "anthropic";
   if (/\b(?:image|audio|realtime|transcribe|tts|embedding)\b/.test(id)) return;
+  // Gemini de texto; robótica, computer use, Live, customtools e Nano Banana não são chat.
+  if (/^gemini-[a-z0-9][a-z0-9.-]*$/.test(id)) {
+    return /\b(?:banana|robotics|computer-use|customtools|live)\b/.test(id) ? undefined : "google";
+  }
   if (/^(?:(?:gpt|chat|chatgpt)-[a-z0-9][a-z0-9.-]*|o\d+(?:-[a-z0-9][a-z0-9.-]*)?)$/.test(id)) return "openai";
 }
 
