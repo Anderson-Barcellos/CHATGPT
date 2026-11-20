@@ -1,10 +1,12 @@
 # Infraestrutura
 
-**Última atualização:** 2026-11-19 (editor do catálogo publicado)
+**Última atualização:** 2026-11-20 (Gemini no catálogo publicado)
 **Produção:** `https://sonaris.us/chat` — host `srv1927271`
 **Porta local:** `3040`
 
 ## Topologia
+
+Publicação em 20/11 às 00h01 BRT: build `Mj7zxrfqGjoUiG5GImL_o` (Gemini no catálogo e fonte desktop menor, commit `275adf6`), origem `/root/worktrees/gaucho-gemini4` (**preservar**), anterior `QC5Ih-TAX9mHi3BHDGHPN`, backup `/root/.cache/gaucho-deploy/20261120T030102Z/next-before`. Só `chatgpt.service` reiniciado; health local/pública 200, catálogo anônimo 401. Usa a `GEMINI_API_KEY` já existente; sem mudança de porta, proxy ou credenciais.
 
 Publicação em 19/11 às 20h04 BRT: build `QC5Ih-TAX9mHi3BHDGHPN` (editor do catálogo, commit `2ffcb9e`), origem `/root/worktrees/gaucho-catalog-editor-main` (**preservar**), anterior `BQpqgs9UrXlwfM_QB2EU2`, backup `/root/.cache/gaucho-deploy/20261119T230418Z/next-before`. Só `chatgpt.service` reiniciado; health local/pública 200, catálogo anônimo 401. Sem mudança de porta, proxy ou credenciais.
 

@@ -2,9 +2,9 @@
 
 ## Estado operacional
 
-#### Gemini como provedor do catálogo (candidata, 2026-11-19)
+#### Gemini como provedor do catálogo (publicada 2026-11-20 00h01)
 
-Anders pediu Gemini 4 Neon e Hydrogen no chat, com `low|medium|high` (sem `xhigh`), teto de saída fixo e só no chat padrão. DECISÃO: sem entradas embutidas (preço desconhecido distorceria o rótulo Econômico, e o catálogo vivo é v2); o editor aceita qualquer `gemini-*` de texto, confirmado por `models.get`, e o adapter envia o ID escolhido. Worktree `/root/worktrees/gaucho-gemini4`, branch `feat/gemini-4-models`, sem commit. Gates verdes (1.314 testes). Na mesma branch, a fonte dos balões desktop caiu para 14,5–15,5px (mobile intacto), com `qa-chat-column` aprovado. Build candidata `Mj7zxrfqGjoUiG5GImL_o`. Falta smoke real, deploy e Anders cadastrar `gemini-4-neon`/`gemini-4-hydrogen` em Configurações → Modelos.
+Anders pediu Gemini 4 Neon e Hydrogen no chat, com `low|medium|high` (sem `xhigh`), teto de saída fixo e só no chat padrão. DECISÃO: sem entradas embutidas (preço desconhecido distorceria o rótulo Econômico, e o catálogo vivo é v2); o editor aceita qualquer `gemini-*` de texto, confirmado por `models.get`, e o adapter envia o ID escolhido. Worktree `/root/worktrees/gaucho-gemini4`, branch `feat/gemini-4-models`, sem commit. Gates verdes (1.314 testes). Na mesma branch, a fonte dos balões desktop caiu para 14,5–15,5px (mobile intacto), com `qa-chat-column` aprovado. Smoke real com o Google 2/2 (Neon e Hydrogen). Commit `275adf6`. Publicado em 20/11 às 00h01 BRT com `scripts/deploy.sh --from`: build `Mj7zxrfqGjoUiG5GImL_o`, anterior `QC5Ih-TAX9mHi3BHDGHPN`, backup `/root/.cache/gaucho-deploy/20261120T030102Z/next-before`, origem `/root/worktrees/gaucho-gemini4` (**preservar**). Health local/pública 200, catálogo anônimo 401, chunk público 200. Falta Anders cadastrar `gemini-4-neon`/`gemini-4-hydrogen` em Configurações → Modelos; aberto: reduzir também a fonte no mobile (14px).
 
 #### Editor do catálogo na `main`, sem a Anil (publicada 2026-11-19 20h04)
 
