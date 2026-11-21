@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { ClientApiError } from "@/lib/api/errors";
 import {
   CHAT_MODEL_PROVIDER_LABELS,
+  getChatModel,
+  hasKnownOpenAIWebSearch,
   hasOpenAIChatProfile,
   inferChatModelProvider,
   OPENAI_REASONING_EFFORTS,
@@ -50,6 +52,23 @@ function OpenAIEffortPicker({ value, onChange, disabled }: {
   );
 }
 
+function OpenAIWebSearchOption({ checked, onChange, disabled }: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="text-xs text-muted-foreground">
+      <label className="flex min-h-8 items-center gap-2">
+        <input type="checkbox" checked={checked} disabled={disabled}
+          onChange={(event) => onChange(event.target.checked)} />
+        Busca na web
+      </label>
+      <p>Ative se a documentação do modelo confirmar suporte a web_search na Responses API.</p>
+    </div>
+  );
+}
+
 function AddModelForm({ onSave, onCancel, pending }: {
   onSave: (update: CatalogUpdate) => Promise<boolean>;
   onCancel: () => void;
@@ -58,12 +77,19 @@ function AddModelForm({ onSave, onCancel, pending }: {
   const [id, setId] = useState("");
   const [name, setName] = useState("");
   const [efforts, setEfforts] = useState<ReasoningEffort[]>([]);
-  const provider = inferChatModelProvider(id.trim());
-  const configurableEffort = provider === "openai" && !hasOpenAIChatProfile(id.trim());
+  const [webSearch, setWebSearch] = useState<boolean>();
+  const modelId = id.trim();
+  const provider = inferChatModelProvider(modelId);
+  const configurableEffort = provider === "openai" && !hasOpenAIChatProfile(modelId);
+  const configurableWebSearch = configurableEffort && !getChatModel(modelId);
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    void onSave({ id, name, ...(configurableEffort && { openAIEfforts: efforts }) });
+    void onSave({
+      id, name,
+      ...(configurableEffort && { openAIEfforts: efforts }),
+      ...(configurableWebSearch && webSearch !== undefined && { webSearchEnabled: webSearch }),
+    });
   }
 
   return (
@@ -76,7 +102,11 @@ function AddModelForm({ onSave, onCancel, pending }: {
         </label>
         <label className="min-w-0 space-y-1 text-xs">
           <span>ID do modelo</span>
-          <Input value={id} onChange={(event) => setId(event.target.value)}
+          <Input value={id} onChange={(event) => {
+            const value = event.target.value;
+            if (value.trim() !== modelId) setWebSearch(undefined);
+            setId(value);
+          }}
             placeholder="gpt-6.2-sol" maxLength={128} required disabled={pending}
             autoCapitalize="none" autoCorrect="off" spellCheck={false} />
         </label>
@@ -85,6 +115,10 @@ function AddModelForm({ onSave, onCancel, pending }: {
       {!provider && id.trim() && <p className="text-xs text-muted-foreground">Use um ID de chat da OpenAI ou da Anthropic.</p>}
       {configurableEffort && (
         <OpenAIEffortPicker value={efforts} onChange={setEfforts} disabled={pending} />
+      )}
+      {configurableWebSearch && (
+        <OpenAIWebSearchOption checked={webSearch ?? hasKnownOpenAIWebSearch(modelId)}
+          onChange={setWebSearch} disabled={pending} />
       )}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" size="sm" disabled={pending || !provider || !name.trim()}>
@@ -106,23 +140,28 @@ function ModelRow({ row, revision, pending, onSave }: {
   const { model, visible } = row;
   const [draft, setDraft] = useState<string | null>(null);
   const [efforts, setEfforts] = useState<ReasoningEffort[]>([]);
+  const [webSearch, setWebSearch] = useState<boolean>();
   const [newId, setNewId] = useState(model.id);
   const [badge, setBadge] = useState(model.badge ?? "");
   const [editRevision, setEditRevision] = useState(revision);
-  const changedId = newId.trim() !== model.id;
-  const draftProvider = changedId ? inferChatModelProvider(newId.trim()) : model.provider;
+  const draftId = newId.trim();
+  const changedId = draftId !== model.id;
+  const draftProvider = changedId ? inferChatModelProvider(draftId) : model.provider;
   const configurableEffort = changedId
-    ? draftProvider === "openai" && !hasOpenAIChatProfile(newId.trim())
+    ? draftProvider === "openai" && !hasOpenAIChatProfile(draftId)
     : model.provider === "openai" && model.supportsResponsesTools === false;
+  const configurableWebSearch = configurableEffort && (!changedId || !getChatModel(draftId));
+  const defaultWebSearch = changedId ? hasKnownOpenAIWebSearch(draftId) : model.supportsWebSearch === true;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (draft === null) return;
     const saved = await onSave({
       id: model.id,
-      name: draft, newId: newId.trim(), badge,
+      name: draft, newId: draftId, badge,
       visible,
       ...(configurableEffort && { openAIEfforts: efforts }),
+      ...(configurableWebSearch && webSearch !== undefined && { webSearchEnabled: webSearch }),
     }, editRevision);
     if (saved) setDraft(null);
     else setEditRevision(client.getQueryData<ChatModelCatalog>(chatModelCatalogKey)?.revision ?? revision);
@@ -142,7 +181,14 @@ function ModelRow({ row, revision, pending, onSave }: {
       <div className="min-w-0">
         {draft === null ? <p className="break-all font-mono text-xs leading-5">{model.id}</p>
           : <Input aria-label="Editar ID do modelo" value={newId} required maxLength={128} spellCheck={false}
-              disabled={pending} onChange={event => { setNewId(event.target.value); setEfforts([]); }} />}
+              disabled={pending} onChange={event => {
+                const value = event.target.value;
+                if (value.trim() !== draftId) {
+                  setEfforts(value.trim() === model.id ? model.supportedReasoningEfforts ?? [] : []);
+                  setWebSearch(undefined);
+                }
+                setNewId(value);
+              }} />}
         {draft === null && model.badge && <span className="text-xs">{model.badge}</span>}
         {!visible && <p className="text-xs text-muted-foreground">Oculto no seletor</p>}
       </div>
@@ -154,6 +200,11 @@ function ModelRow({ row, revision, pending, onSave }: {
           <OpenAIEffortPicker value={efforts} onChange={setEfforts} disabled={pending} />
         </div>
       )}
+      {draft !== null && configurableWebSearch && (
+        <div className="col-span-2">
+          <OpenAIWebSearchOption checked={webSearch ?? defaultWebSearch} onChange={setWebSearch} disabled={pending} />
+        </div>
+      )}
       <div className="col-span-2 flex flex-wrap gap-x-1 gap-y-1">
         {draft === null ? (
           <>
@@ -161,6 +212,7 @@ function ModelRow({ row, revision, pending, onSave }: {
               aria-label={"Editar " + model.name} onClick={(event) => {
                 event.preventDefault();
                 setEfforts(model.supportedReasoningEfforts ?? []);
+                setWebSearch(undefined);
                 setNewId(model.id);
                 setBadge(model.badge ?? "");
                 setEditRevision(revision);

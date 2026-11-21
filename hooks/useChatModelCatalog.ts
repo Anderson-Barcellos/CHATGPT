@@ -17,6 +17,7 @@ export type CatalogUpdate = {
   name: string;
   visible?: boolean;
   openAIEfforts?: ReasoningEffort[];
+  webSearchEnabled?: boolean;
 };
 
 export type CatalogCommand = CatalogUpdate

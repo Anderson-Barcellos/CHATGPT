@@ -6,6 +6,7 @@ import {
   GEMINI_REASONING_EFFORTS,
   DEFAULT_CHAT_MODEL_CATALOG,
   getChatModel,
+  hasKnownOpenAIWebSearch,
   hasOpenAIChatProfile,
   inferChatModelProvider,
   type CatalogProvider,
@@ -30,10 +31,27 @@ export class ChatCatalogError extends Error {
 }
 
 type StoredCatalog = ChatModelCatalog & { version?: 2 };
+type ModelSaveOptions = { signal?: AbortSignal; webSearchEnabled?: boolean };
+
+function withWebSearchPreference(model: ChatModelInfo, enabled?: boolean): ChatModelInfo {
+  if (model.provider === "openai" && model.supportsResponsesTools === false) {
+    const supportsWebSearch = enabled ?? model.supportsWebSearch;
+    if (supportsWebSearch !== undefined) return { ...model, supportsWebSearch };
+    return hasKnownOpenAIWebSearch(model.id) ? { ...model, supportsWebSearch: true } : model;
+  }
+  if (enabled !== undefined) {
+    throw new ChatCatalogError(422, "A busca na web só é configurável em modelos OpenAI sem perfil completo.");
+  }
+  return model;
+}
 
 async function readOverrides(): Promise<StoredCatalog> {
   try {
-    return JSON.parse(await readFile(path.join(process.cwd(), "data", FILE_NAME), "utf8"));
+    const stored: StoredCatalog = JSON.parse(await readFile(path.join(process.cwd(), "data", FILE_NAME), "utf8"));
+    return {
+      ...stored,
+      rows: stored.rows.map(row => ({ ...row, model: withWebSearchPreference(row.model) })),
+    };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return EMPTY_CATALOG;
     throw error;
@@ -193,12 +211,14 @@ async function changeCatalog(revision: number, change: (rows: ChatModelRow[]) =>
 
 export async function addChatModel(
   revision: number, id: string, name: string, provider: CatalogProvider,
-  openAIEfforts: ReasoningEffort[], signal?: AbortSignal,
+  openAIEfforts: ReasoningEffort[], { signal, webSearchEnabled }: ModelSaveOptions = {},
 ) {
   const current = await readChatModelCatalog();
   assertRevision(current, revision);
   assertNewModel(current, id);
-  const model = await discoverModel(id, name, provider, openAIEfforts, signal);
+  const model = withWebSearchPreference(
+    await discoverModel(id, name, provider, openAIEfforts, signal), webSearchEnabled,
+  );
   signal?.throwIfAborted();
   return changeCatalog(revision, rows => [...rows, { model, visible: true }]);
 }
@@ -211,7 +231,7 @@ function requireRow(rows: ChatModelRow[], id: string) {
 
 export async function updateChatModel(
   revision: number, id: string, name: string, visible: boolean, openAIEfforts?: ReasoningEffort[],
-  newId = id, badge?: string, signal?: AbortSignal,
+  newId = id, badge?: string, { signal, webSearchEnabled }: ModelSaveOptions = {},
 ) {
   let replacement: ChatModelInfo | undefined;
   if (newId !== id) {
@@ -235,7 +255,8 @@ export async function updateChatModel(
       model.supportedReasoningEfforts = openAIEfforts;
       model.capabilities = openAIEfforts.length ? ["chat", "reasoning"] : ["chat"];
     }
-    return rows.map(existing => existing === row ? { model, visible } : existing);
+    const updated = withWebSearchPreference(model, webSearchEnabled);
+    return rows.map(existing => existing === row ? { model: updated, visible } : existing);
   });
 }
 

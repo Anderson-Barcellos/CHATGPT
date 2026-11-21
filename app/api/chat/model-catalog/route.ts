@@ -43,7 +43,7 @@ async function save(request: NextRequest, action: "add" | "update" | "delete") {
   if (!parsed.ok) return jsonError(parsed.status, "Dados do modelo inválidos.");
 
   const body = parsed.value ?? {};
-  const { id, name, revision, visible, openAIEfforts, newId, badge } = body;
+  const { id, name, revision, visible, openAIEfforts, newId, badge, webSearchEnabled } = body;
   const cleanId = typeof id === "string" ? id.trim() : "";
   const cleanName = typeof name === "string" ? name.trim() : "";
   if (typeof revision !== "number" || !Number.isSafeInteger(revision) || revision < 0) {
@@ -81,11 +81,15 @@ async function save(request: NextRequest, action: "add" | "update" | "delete") {
   const efforts = Array.isArray(openAIEfforts)
     ? OPENAI_REASONING_EFFORTS.filter((effort) => openAIEfforts.includes(effort))
     : undefined;
+  if (webSearchEnabled !== undefined && typeof webSearchEnabled !== "boolean") {
+    return jsonError(400, "Informe se o modelo suporta busca na web.");
+  }
+  const options = { signal: request.signal, webSearchEnabled };
 
   try {
     if (action === "update") {
       if (typeof visible !== "boolean") return jsonError(400, "Informe a visibilidade do modelo.");
-      return Response.json(await updateChatModel(revision, cleanId, cleanName, visible, efforts, newId?.trim(), badge, request.signal), { headers });
+      return Response.json(await updateChatModel(revision, cleanId, cleanName, visible, efforts, newId?.trim(), badge, options), { headers });
     }
 
     const provider = inferChatModelProvider(cleanId);
@@ -93,7 +97,7 @@ async function save(request: NextRequest, action: "add" | "update" | "delete") {
     if (provider !== "openai" && efforts !== undefined) {
       return jsonError(400, "Os níveis de raciocínio informados são inválidos.");
     }
-    const data = await addChatModel(revision, cleanId, cleanName, provider, efforts ?? [], request.signal);
+    const data = await addChatModel(revision, cleanId, cleanName, provider, efforts ?? [], options);
     return Response.json(data, { status: 201, headers });
   } catch (error) {
     return failure(error);

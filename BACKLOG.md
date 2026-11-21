@@ -2,6 +2,12 @@
 
 ## Estado operacional
 
+#### Busca web em modelos OpenAI sem perfil completo (validação local concluída, publicação pendente)
+
+O `gpt-6.1-terra` recebe `web_search` por padrão, inclusive no cadastro existente. Para outros IDs OpenAI sem perfil completo, a opção **Busca na web** registra suporte declarado e funciona no primeiro envio após salvar. A permissão de busca independe das demais ferramentas e os esforços salvos são preservados.
+
+Candidata `ZcV65Zq0C6w_RI6p7XBSP` em `/root/worktrees/gaucho-openai-web-search`, base `9360924`. Typegen, TypeScript, lint, 1.317 testes e build 44/44 concluídos. Chrome desktop/mobile validou cadastro, envio em streaming, edição, persistência e regressão do catálogo. O provedor usado no teste de integração foi sintético. Evidências em `/root/.cache/gaucho-openai-web-search-qa` e no diário.
+
 #### Gemini como provedor do catálogo (publicada 2026-11-20 00h01)
 
 Anders pediu Gemini 4 Neon e Hydrogen no chat, com `low|medium|high` (sem `xhigh`), teto de saída fixo e só no chat padrão. DECISÃO: sem entradas embutidas (preço desconhecido distorceria o rótulo Econômico, e o catálogo vivo é v2); o editor aceita qualquer `gemini-*` de texto, confirmado por `models.get`, e o adapter envia o ID escolhido. Worktree `/root/worktrees/gaucho-gemini4`, branch `feat/gemini-4-models`, sem commit. Gates verdes (1.314 testes). Na mesma branch, a fonte dos balões desktop caiu para 14,5–15,5px (mobile intacto), com `qa-chat-column` aprovado. Smoke real com o Google 2/2 (Neon e Hydrogen). Commit `275adf6`. Publicado em 20/11 às 00h01 BRT com `scripts/deploy.sh --from`: build `Mj7zxrfqGjoUiG5GImL_o`, anterior `QC5Ih-TAX9mHi3BHDGHPN`, backup `/root/.cache/gaucho-deploy/20261120T030102Z/next-before`, origem `/root/worktrees/gaucho-gemini4` (**preservar**). Health local/pública 200, catálogo anônimo 401, chunk público 200. Falta Anders cadastrar `gemini-4-neon`/`gemini-4-hydrogen` em Configurações → Modelos; aberto: reduzir também a fonte no mobile (14px).

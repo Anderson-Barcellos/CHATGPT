@@ -157,7 +157,12 @@ function buildTools(
   imageSize: ChatRequestBody["imageSize"],
   stream: boolean
 ) {
-  if (responseMode === "quiz" || model?.supportsResponsesTools === false) return [];
+  if (responseMode === "quiz") return [];
+  if (model?.supportsResponsesTools === false) {
+    return model.provider === "openai" && model.supportsWebSearch
+      ? [{ ...buildWebSearchTool(), type: "web_search" } satisfies OpenAI.Responses.WebSearchTool]
+      : [];
+  }
 
   const tools: OpenAI.Responses.Tool[] = [];
 

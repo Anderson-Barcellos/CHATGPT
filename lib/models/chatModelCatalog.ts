@@ -70,3 +70,7 @@ export function inferChatModelProvider(id: string): CatalogProvider | undefined 
 export function hasOpenAIChatProfile(id: string): boolean {
   return id === "gpt-6.2-sol";
 }
+
+export function hasKnownOpenAIWebSearch(id: string): boolean {
+  return id === "gpt-6.1-terra";
+}
