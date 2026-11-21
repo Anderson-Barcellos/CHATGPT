@@ -2,11 +2,13 @@
 
 ## Estado operacional
 
-#### Busca web em modelos OpenAI sem perfil completo (validação local concluída, publicação pendente)
+#### Busca web em modelos OpenAI sem perfil completo (publicada 2026-11-21 às 19h19 BRT)
 
 O `gpt-6.1-terra` recebe `web_search` por padrão, inclusive no cadastro existente. Para outros IDs OpenAI sem perfil completo, a opção **Busca na web** registra suporte declarado e funciona no primeiro envio após salvar. A permissão de busca independe das demais ferramentas e os esforços salvos são preservados.
 
-Candidata `ZcV65Zq0C6w_RI6p7XBSP` em `/root/worktrees/gaucho-openai-web-search`, base `9360924`. Typegen, TypeScript, lint, 1.317 testes e build 44/44 concluídos. Chrome desktop/mobile validou cadastro, envio em streaming, edição, persistência e regressão do catálogo. O provedor usado no teste de integração foi sintético. Evidências em `/root/.cache/gaucho-openai-web-search-qa` e no diário.
+Build `ZcV65Zq0C6w_RI6p7XBSP` em `/root/worktrees/gaucho-openai-web-search` (**preservar**), commit de código `92ed9c6`. Typegen, TypeScript, lint, 1.317 testes e build 44/44 concluídos. Chrome desktop/mobile validou cadastro, envio em streaming, edição, persistência e regressão do catálogo com provedor sintético. Produção confirmou health local e público 200, catálogo anônimo 401, catálogo autenticado 200 com busca habilitada para o Terra já salvo e asset público idêntico ao da candidata. Backup `/root/.cache/gaucho-deploy/20261121T221949Z/next-before`. Evidências em `/root/.cache/gaucho-openai-web-search-qa` e no diário.
+
+O envio à `main` remota recebeu HTTP 403 após autenticação como `Anderson-Barcellos`. O acesso por SSH também foi recusado. Último HEAD remoto verificado `9360924`.
 
 #### Gemini como provedor do catálogo (publicada 2026-11-20 00h01)
 
