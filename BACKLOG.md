@@ -2,11 +2,13 @@
 
 ## Estado operacional
 
-#### Instruções unificadas do Gaúcho (ativa, 2026-11-23)
+#### Instruções unificadas do Gaúcho (pronta para revisão, publicada em 2026-11-23)
 
-Anders aprovou a persona editável, inclusive com tom caricato, com a condição de preservar as instruções de chamadas de ferramentas. A candidata está na worktree `/root/worktrees/gaucho-unified-instructions`, branch `feat/unified-chat-instructions`, base `7f60c3c`. O editor usa salvamento explícito com proteção contra versão obsoleta. O chat lê o texto salvo a cada envio. A prévia usa a montagem do chat e permite selecionar o modo. A base e a política das ferramentas de memória seguem copiáveis como regras do sistema. Os campos legados compõem o texto inicial e continuam disponíveis ao Pulse.
+Anders aprovou a persona editável, inclusive com tom caricato, com a condição de preservar as instruções de chamadas de ferramentas. O código está no commit `b9cfb30`, base `7f60c3c`. O editor usa salvamento explícito com proteção contra versão obsoleta. O chat lê o texto salvo a cada envio. A prévia usa a montagem do chat e permite selecionar o modo. A base e a política das ferramentas de memória seguem copiáveis como regras do sistema. Os campos legados compõem o texto inicial e continuam disponíveis ao Pulse.
 
-A build isolada `03Aclu2dLUwJE0rr4-b4A` passou em 1.321 testes de 237 arquivos, typegen, TypeScript, lint, build 44/44 e diff. A suíte da Persona em Chrome 1440×1000 e 390×844 capturou dois envios ao provedor sintético local, antes e depois de salvar. Confirmou a troca do prompt, as declarações de web, imagem e memória, a prévia por modo, o conflito HTTP 409 e a restauração. As seis regressões Chrome do projeto passaram. Anders autorizou o aceite independente, que passou nos 9 casos na mesma build, com reexecução pelo principal. Publicação autorizada. Evidências em `/root/.cache/gaucho-unified-instructions`.
+A build `03Aclu2dLUwJE0rr4-b4A` passou em 1.321 testes de 237 arquivos, typegen, TypeScript, lint, build 44/44 e diff. As seis regressões Chrome e os nove casos do aceite independente passaram, com reexecução pelo principal. O provedor sintético confirmou a troca de voz com as ferramentas de busca, imagem e memória preservadas. Campos legados inteiros iguais após trim entram uma vez. Campos distintos retêm o texto integral, inclusive trechos coincidentes.
+
+Publicado às 00h21 BRT a partir de `/root/worktrees/gaucho-unified-instructions` (**preservar**). Backup da build anterior em `/root/.cache/gaucho-deploy/20261123T032153Z/next-before` e boot de rollback testado em cópia isolada. Saúde local/pública 200, Persona anônima 401 e autenticada 200, dois chunks públicos idênticos e Chrome autenticado 1440×1000 e 390×844 com prévia e regras verificadas. Só `chatgpt.service` reiniciou. Arquivos monitorados da Persona, conversas, memórias e notas, PIDs do Apache e ditado e estado dos agendadores conferidos. Evidências em `/root/.cache/gaucho-unified-instructions/release`.
 
 #### Busca web em modelos OpenAI sem perfil completo (publicada 2026-11-21 às 19h19 BRT)
 

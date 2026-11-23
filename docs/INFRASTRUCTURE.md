@@ -1,12 +1,16 @@
 # Infraestrutura
 
-**Última atualização:** 2026-11-21 (busca web em modelos OpenAI publicada)
+**Última atualização:** 2026-11-23 (instruções unificadas do Gaúcho publicadas)
 **Produção:** `https://sonaris.us/chat` — host `srv1927271`
 **Porta local:** `3040`
 
 ## Topologia
 
-Publicação em 21/11 às 19h19 BRT com a busca web em modelos OpenAI. Build `ZcV65Zq0C6w_RI6p7XBSP`, commit de código `92ed9c6`, origem `/root/worktrees/gaucho-openai-web-search` (**preservar**). Build anterior `Mj7zxrfqGjoUiG5GImL_o` em `/root/.cache/gaucho-deploy/20261121T221949Z/next-before`. Só `chatgpt.service` reiniciou. Health local e público 200, catálogo anônimo 401 e autenticado 200. A ponte de ditado e os agendadores permaneceram ativos. Porta, proxy e credenciais ficaram iguais.
+Publicação em 23/11 às 00h21 BRT com a Persona unificada. Build `03Aclu2dLUwJE0rr4-b4A`, commit de código `b9cfb30`, origem `/root/worktrees/gaucho-unified-instructions` (**preservar**), anterior `ZcV65Zq0C6w_RI6p7XBSP` guardada em `/root/.cache/gaucho-deploy/20261123T032153Z/next-before`. A cópia da build anterior iniciou em isolamento e respondeu health 200 e Persona 401/200 antes da promoção. Reiniciou apenas `chatgpt.service`. Health local e público 200, Persona anônima 401 e autenticada 200, Chrome público em desktop e mobile e dois chunks públicos idênticos. Arquivos privados monitorados idênticos, Apache e ditado com os mesmos PIDs e agendadores ativos.
+
+O `apache2ctl configtest` anterior à publicação encontrou `Include snippets/pulso.conf` em vhost legado com arquivo ausente. A troca da build do Gaúcho opera apenas em `.next` e `chatgpt.service`. O Apache ativo continuou servindo a rota. O include legado permaneceu fora do escopo.
+
+Publicação em 21/11 às 19h19 BRT com a busca web em modelos OpenAI. Build `ZcV65Zq0C6w_RI6p7XBSP`, commit de código `92ed9c6`, origem histórica `/root/worktrees/gaucho-openai-web-search` ausente na conferência de 23/11. Build anterior `Mj7zxrfqGjoUiG5GImL_o` em `/root/.cache/gaucho-deploy/20261121T221949Z/next-before`. Só `chatgpt.service` reiniciou. Health local e público 200, catálogo anônimo 401 e autenticado 200. A ponte de ditado e os agendadores permaneceram ativos. Porta, proxy e credenciais ficaram iguais.
 
 Publicação em 20/11 às 00h01 BRT: build `Mj7zxrfqGjoUiG5GImL_o` (Gemini no catálogo e fonte desktop menor, commit `275adf6`), origem `/root/worktrees/gaucho-gemini4` (**preservar**), anterior `QC5Ih-TAX9mHi3BHDGHPN`, backup `/root/.cache/gaucho-deploy/20261120T030102Z/next-before`. Só `chatgpt.service` reiniciado; health local/pública 200, catálogo anônimo 401. Usa a `GEMINI_API_KEY` já existente; sem mudança de porta, proxy ou credenciais.
 
