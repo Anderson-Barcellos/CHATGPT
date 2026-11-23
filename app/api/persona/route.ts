@@ -46,19 +46,20 @@ async function savePersonaRequest(request: NextRequest) {
     await readPersona();
 
     const data = await withDataFileLock(FILE_NAME, async () => {
-      const current = hydratePersona(await readDataFile(FILE_NAME, DEFAULT_PERSONA));
+      const raw = await readDataFile(FILE_NAME, DEFAULT_PERSONA);
+      const current = hydratePersona(raw);
       const update = normalizePersonaUpdate(current, body);
       if (!update.ok) {
         return update;
       }
 
       const data = update.data;
-      await writePersona(data);
+      await writePersona({ ...raw, ...data });
       return { ok: true as const, data };
     });
 
     if (!data.ok) {
-      return NextResponse.json({ error: data.error }, { status: 400 });
+      return NextResponse.json({ error: data.error }, { status: data.status ?? 400 });
     }
 
     schedulePersonalSynthesis();

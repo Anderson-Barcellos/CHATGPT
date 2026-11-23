@@ -12,7 +12,7 @@ export const DEFAULT_PERSONA: CustomInstructions = {
 
 type PersonaUpdateResult =
   | { ok: true; data: CustomInstructions }
-  | { ok: false; error: string };
+  | { ok: false; error: string; status?: 409 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
@@ -32,6 +32,7 @@ export function hydratePersona(value: unknown): CustomInstructions {
       typeof value.customSystemInstructions === "string"
         ? value.customSystemInstructions
         : "",
+    chatInstructions: typeof value.chatInstructions === "string" ? value.chatInstructions : undefined,
     ttsPreferences: normalizeTtsPreferences(
       value.ttsPreferences as Partial<CustomInstructions["ttsPreferences"]>
     ),
@@ -51,6 +52,8 @@ export function normalizePersonaUpdate(
     contextAboutUser,
     responsePreferences,
     customSystemInstructions,
+    chatInstructions,
+    previousChatInstructions,
     ttsPreferences,
   } = body;
 
@@ -79,6 +82,20 @@ export function normalizePersonaUpdate(
     return { ok: false, error: "customSystemInstructions must be a string" };
   }
 
+  if (chatInstructions !== undefined && typeof chatInstructions !== "string") {
+    return { ok: false, error: "chatInstructions must be a string" };
+  }
+
+  if (previousChatInstructions !== undefined) {
+    if (typeof chatInstructions !== "string" ||
+        (previousChatInstructions !== null && typeof previousChatInstructions !== "string")) {
+      return { ok: false, error: "Invalid chat instructions revision" };
+    }
+    if (previousChatInstructions !== (current.chatInstructions ?? null)) {
+      return { ok: false, error: "As instruções foram alteradas em outra sessão.", status: 409 };
+    }
+  }
+
   if (
     ttsPreferences !== undefined &&
     !isRecord(ttsPreferences)
@@ -103,6 +120,7 @@ export function normalizePersonaUpdate(
         typeof customSystemInstructions === "string"
           ? customSystemInstructions
           : current.customSystemInstructions,
+      chatInstructions: typeof chatInstructions === "string" ? chatInstructions : current.chatInstructions,
       ttsPreferences:
         ttsPreferences !== undefined
           ? normalizeTtsPreferences(ttsPreferences)

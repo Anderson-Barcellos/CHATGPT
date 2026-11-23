@@ -228,7 +228,7 @@ Camadas principais:
 - `app/api/memory/*` e `lib/server/memory/*`: indexação semântica com `text-embedding-3-small`, busca RAG, sugestões e execução das memory tools.
 - `lib/storage/conversationPersistence.ts`: retry/normalização de writes.
 
-O cliente também usa stores Zustand e cache local. Em produção, `MEMORY_V2_ENABLED` permanece desligada e o estado canônico continua no servidor JSON. O `settingsStore` persiste no `localStorage` (`gaucho-chat:settings:v1`) apenas modelo, prompt de sistema e parâmetros por modelo; a reidratação acontece no cliente depois do primeiro paint (`SettingsHydrator` em `components/providers/query-provider.tsx`) e passa pelo mesmo clamp do runtime, então modelo removido cai no suportado mais próximo. Memórias e instruções nunca vão para o navegador.
+O cliente também usa stores Zustand e cache local. Em produção, `MEMORY_V2_ENABLED` permanece desligada e o estado canônico continua no servidor JSON. O `settingsStore` persiste no `localStorage` (`gaucho-chat:settings:v1`) apenas modelo, prompt de sistema e parâmetros por modelo. A reidratação acontece no cliente depois do primeiro paint (`SettingsHydrator` em `components/providers/query-provider.tsx`) e passa pelo mesmo clamp do runtime, então modelo removido cai no suportado mais próximo. Memórias e instruções da persona ficam fora do `localStorage`.
 
 ### Fundação Memory V2 E1/E2
 
@@ -252,17 +252,18 @@ Dados ficam sob `SOUNDCASE_DATA_DIR` (default `data/soundcase`) com modo privado
 
 ## Prompt, Persona e Memória
 
-O prompt efetivo é montado em `lib/openai/contextBuilder.ts`:
+O prompt efetivo segue esta ordem na montagem de `lib/openai/contextBuilder.ts` e `useChat.ts`.
 
-- `BASE_SYSTEM_PROMPT`, vindo de `lib/prompts/systemPrompt.ts`;
-- `FIXED_PERSONA_PROMPT`, vindo de `lib/prompts/personaPrompt.ts`;
-- prompt extra do seletor (`parameters.systemPrompt`), quando houver;
-- `responsePreferences` e `customSystemInstructions` de `/api/persona`, literalmente;
-- síntese pessoal persistida de `contextAboutUser`, `importedBiography` e memórias ativas, ou originais atuais quando não existir síntese válida;
-- até três trechos pessoais recuperados antes do envio, separados dos trechos históricos;
-- contexto recuperado do RAG local quando `useChat.ts` chama `searchMemoryContext`.
+- `BASE_SYSTEM_PROMPT`, vindo de `lib/prompts/systemPrompt.ts`.
+- Instruções editáveis do chat, lidas a cada envio em `/api/memory/personal`. `lib/prompts/personaPrompt.ts` reúne a persona padrão e as preferências/regras legadas quando ainda não há texto salvo.
+- Prompt extra do seletor (`parameters.systemPrompt`), quando houver.
+- Política de `remember_memory` e `search_memory` no modo Chat.
+- Síntese pessoal persistida de `contextAboutUser`, `importedBiography` e memórias ativas, ou originais atuais quando não existir síntese válida.
+- Até três trechos pessoais recuperados antes do envio, separados dos trechos históricos.
+- Contexto recuperado do RAG local quando `useChat.ts` chama `searchMemoryContext`.
+- Instruções de Documento, Deepsearch ou Quiz, acrescentadas por `lib/chat/chatModeInstructions.ts`.
 
-Na aba Persona, `SettingsDrawer` mostra `BASE_SYSTEM_PROMPT + FIXED_PERSONA_PROMPT` como prévia somente leitura e deixa editáveis os campos persistidos em `/api/persona`.
+Na aba Persona, `ChatInstructionsSettings` usa a mesma montagem para a prévia das instruções por modo. Contexto pessoal e resultados de busca de memória entram durante o envio. Regras do sistema ficam disponíveis para leitura e cópia. O botão **Salvar instruções** atualiza só o bloco editável por meio de `/api/persona`, com verificação de concorrência. O backend continua selecionando ferramentas conforme modo e modelo. Pulse continua lendo os campos legados e Biografia/Sobre você mantêm o autosave.
 
 Síntese pessoal (2026-11-13): `personalSources`, `personalSynthesis` e `personalIndex` em `lib/server/memory/` mantêm a fonte JSON e os derivados separados. A primeira leitura importa a biografia antiga para `importedBiography`, preservando o arquivo anterior em `persona.json.before-personal-synthesis`; não importa biografia real em runtime isolado. Campo vazio explícito nunca é repopulado. Perfil e memórias originais não são reescritos pelo sintetizador.
 

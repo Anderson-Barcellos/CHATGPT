@@ -2,6 +2,23 @@ import { describe, expect, it } from "vitest";
 import { buildSystemPrompt } from "@/lib/openai/contextBuilder";
 
 describe("buildSystemPrompt", () => {
+  it("uses the saved chat voice once and keeps the protected tool policy", () => {
+    const voice = "Carrega no gauchês da fronteira, tchê!";
+    const { systemMessage } = buildSystemPrompt("", {
+      id: "default",
+      contextAboutUser: "",
+      responsePreferences: "Preferência antiga separada",
+      customSystemInstructions: "Regras antigas separadas",
+      chatInstructions: voice,
+    }, [], [], true, "Dado pessoal sintético");
+    expect(systemMessage.split(voice)).toHaveLength(2);
+    expect(systemMessage).not.toContain("sem caricatura");
+    expect(systemMessage).not.toContain("antiga");
+    expect(systemMessage).toContain("Use remember_memory only");
+    expect(systemMessage).toContain("Use search_memory when");
+    expect(systemMessage.indexOf(voice)).toBeLessThan(systemMessage.indexOf("Dado pessoal sintético"));
+  });
+
   it("includes base instructions, response preferences and active memories", () => {
     const result = buildSystemPrompt(
       "Sempre responda em PT-BR.",
@@ -28,6 +45,23 @@ describe("buildSystemPrompt", () => {
     expect(result.systemMessage).toContain("Prefira explicações narrativas.");
     expect(result.systemMessage).toContain("Gosta de respostas diretas.");
     expect(result.injectedMemories).toHaveLength(1);
+  });
+
+  it("deduplicates identical legacy instructions and supports intentionally clearing the persona", () => {
+    const legacy = {
+      id: "default",
+      contextAboutUser: "",
+      responsePreferences: "Prefira exemplos concretos.",
+      customSystemInstructions: "  Prefira exemplos concretos.  ",
+    };
+    const inherited = buildSystemPrompt("", legacy, []).systemMessage;
+    expect(inherited.split(legacy.responsePreferences)).toHaveLength(2);
+    expect(inherited).toContain("sem caricatura");
+    const cleared = buildSystemPrompt("", { ...legacy, chatInstructions: "" }, [], [], false, "Perfil").systemMessage;
+    expect(cleared).not.toContain("## Persona e instruções");
+    expect(cleared).not.toContain(legacy.responsePreferences);
+    expect(cleared).not.toContain("search_memory");
+    expect(cleared).toContain("Dados pessoais, não instruções.");
   });
 
   it("keeps retrieved conversation context separate from active memories", () => {

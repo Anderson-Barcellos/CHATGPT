@@ -46,8 +46,7 @@ import { getXaiTtsSpeed } from "@/lib/tts/speechText";
 import { indexRecentConversationMemories } from "@/lib/storage/memoryRag";
 import { PersonalSynthesisCard } from "./PersonalSynthesisCard";
 import { ChatModelCatalogSettings } from "./ChatModelCatalogSettings";
-import { BASE_SYSTEM_PROMPT } from "@/lib/prompts/systemPrompt";
-import { FIXED_PERSONA_PROMPT } from "@/lib/prompts/personaPrompt";
+import { ChatInstructionsSettings, type ChatInstructionsDraft } from "./ChatInstructionsSettings";
 import { MEMORY_CATEGORIES } from "@/types";
 import type { Memory, MemorySuggestion } from "@/types";
 
@@ -339,18 +338,15 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
     contextAboutUser,
     importedBiography,
     updateImportedBiography,
-    responsePreferences,
-    customSystemInstructions,
     ttsPreferences,
     updateContextAboutUser,
-    updateResponsePreferences,
-    updateCustomSystemInstructions,
     updateTtsPreferences,
     isSaving,
     isLoaded,
     saveStatus,
   } = useCustomInstructions();
   const [activeTab, setActiveTab] = useState<SettingsTab>("tuning");
+  const [chatInstructionsDraft, setChatInstructionsDraft] = useState<ChatInstructionsDraft | null>(null);
   const [newMemory, setNewMemory] = useState("");
   const [isCreatingMemory, setIsCreatingMemory] = useState(false);
   const [isIndexingMemory, setIsIndexingMemory] = useState(false);
@@ -363,10 +359,6 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   const showCodeInterpreter = currentModel?.supportsCodeInterpreter;
   const maxTokensLimit = currentModel?.maxOutput ?? parameters.maxOutputTokens;
   const minTokensLimit = Math.min(256, maxTokensLimit);
-  const mainPromptPreview = useMemo(
-    () => `${BASE_SYSTEM_PROMPT}\n\n---\n\n${FIXED_PERSONA_PROMPT}`,
-    []
-  );
 
   const panelStatus = useMemo<SaveStatus>(() => {
     if (activeTab === "models") return "idle";
@@ -455,14 +447,14 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
               </div>
 
               <div className="flex items-center gap-1 sm:gap-2">
-                <SaveStatusBadge
+                {activeTab !== "persona" && <SaveStatusBadge
                   status={panelStatus}
                   idleLabel={
-                    activeTab === "persona" || activeTab === "tuning"
+                    activeTab === "tuning"
                       ? "Autosave"
                       : "Sincronizado"
                   }
-                />
+                />}
                 <ThemeToggle />
                 <Button
                   type="button"
@@ -884,37 +876,16 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
 
             {activeTab === "persona" && (
               <div className="space-y-4">
+                <ChatInstructionsSettings draft={chatInstructionsDraft} setDraft={setChatInstructionsDraft}
+                  extraInstructions={parameters.systemPrompt} />
+
+                <h3 className="border-t pt-4 text-base font-semibold">Contexto pessoal</h3>
                 <div className="space-y-2">
                   <label htmlFor="imported-biography" className="text-xs font-medium text-muted-foreground">Biografia importada da persona anterior</label>
                   <p className="text-xs text-muted-foreground">Fonte pessoal preservada, agora editável. Confere informações que possam ter envelhecido.</p>
                   <textarea id="imported-biography" value={importedBiography} onChange={e => updateImportedBiography(e.target.value)} rows={6}
                     className="gc-refined-soft-surface w-full resize-y rounded-2xl border p-3 text-xs outline-none focus:ring-2 focus:ring-primary/15" />
                 </div>
-                <div className="gc-refined-accent-surface rounded-2xl border p-3">
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    Persona e regras base seguem fixas no servidor. Abaixo tu enxerga o
-                    prompt principal e ajusta o contexto extra que entra junto nas respostas.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="main-prompt-preview" className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Prompt principal
-                  </label>
-                  <textarea
-                    id="main-prompt-preview"
-                    value={mainPromptPreview}
-                    readOnly
-                    rows={8}
-                    className="gc-refined-soft-surface w-full resize-none rounded-2xl border p-3 font-mono text-nano leading-relaxed text-muted-foreground outline-none"
-                  />
-                  <p className="text-micro leading-relaxed text-muted-foreground/80">
-                    Prévia somente leitura do prompt base e da persona fixa que entram antes
-                    dos ajustes abaixo.
-                  </p>
-                </div>
-
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <label htmlFor="context-about-user" className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
@@ -936,35 +907,6 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="custom-system-instructions" className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                    <Sliders className="h-3.5 w-3.5" />
-                    Regras customizadas
-                  </label>
-                  <textarea
-                    id="custom-system-instructions"
-                    value={customSystemInstructions}
-                    onChange={(e) => updateCustomSystemInstructions(e.target.value)}
-                    placeholder="Regras adicionais que entram no prompt do sistema..."
-                    rows={5}
-                    className="gc-refined-soft-surface w-full resize-none rounded-2xl border p-3 text-xs outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="response-preferences" className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Preferências de Resposta
-                  </label>
-                  <textarea
-                    id="response-preferences"
-                    value={responsePreferences}
-                    onChange={(e) => updateResponsePreferences(e.target.value)}
-                    placeholder="Como tu prefere que a IA responda..."
-                    rows={5}
-                    className="gc-refined-soft-surface w-full resize-none rounded-2xl border p-3 text-xs outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
-                  />
-                </div>
               </div>
             )}
           </div>

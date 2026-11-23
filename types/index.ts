@@ -229,6 +229,7 @@ export interface CustomInstructions {
   contextAboutUser: string;
   responsePreferences: string;
   customSystemInstructions?: string;
+  chatInstructions?: string;
   ttsPreferences?: TtsPreferences;
 }
 

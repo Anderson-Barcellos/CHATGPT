@@ -44,5 +44,6 @@ export async function POST(request: NextRequest) {
   schedulePersonalSynthesis();
   return NextResponse.json({ revision: state.hash, mode: state.valid && !draft ? "summary" : "originals", personalText,
     details: currentDetails, responsePreferences: state.persona.responsePreferences, customSystemInstructions: state.persona.customSystemInstructions || "",
+    chatInstructions: state.persona.chatInstructions ?? null,
   }, { headers: { "Cache-Control": "no-store" } });
 }

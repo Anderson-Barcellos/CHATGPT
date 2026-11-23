@@ -292,7 +292,7 @@ Memórias explícitas continuam em `/api/memories/*`. O índice semântico/RAG e
 
 `GET /api/memory/personal` (autenticado, no-store) devolve `status: pending|ready|failed`, `summary`, `items` com `sourceIds`, `generatedAt`, `originalChars`, `summaryChars` e erro sanitizado. Reconcilia geração pendente depois da resposta, sem aguardar o provedor.
 
-`POST /api/memory/personal` aceita `{query?, draft?: {contextAboutUser?, importedBiography?}}` e devolve `revision`, `mode: summary|originals`, `personalText`, `details` e preferências/regras atuais. Limite de corpo: 256.000 bytes. Draft é transitório e substitui somente seus campos no contexto completo; nunca persiste. Sem draft, o hash atual decide síntese versus originais. Detalhes são filtrados novamente contra fontes atuais. `{regenerate:true}` solicita regeneração manual e responde 202. O endpoint não envia texto pessoal a logs.
+`POST /api/memory/personal` aceita `{query?, draft?: {contextAboutUser?, importedBiography?}}` e devolve `revision`, `mode: summary|originals`, `personalText`, `details`, preferências/regras legadas e `chatInstructions` salvas (`null` quando ainda não definidas). Limite de corpo de 256.000 bytes. O draft pessoal é transitório e substitui somente seus campos no contexto completo. Sem draft, o hash atual decide síntese versus originais. Detalhes são filtrados novamente contra fontes atuais. `{regenerate:true}` solicita regeneração manual e responde 202. O endpoint não envia texto pessoal a logs.
 
 `search_memory` mantém `results` históricos e acrescenta `personalSources`; quando apenas uma busca falha, retorna os resultados disponíveis com `warning`. A política permite recuperar detalhes pessoais omitidos da síntese sem exigir que o usuário formule um pedido explícito de busca. `remember_memory` continua restrita a pedido explícito.
 
@@ -316,7 +316,7 @@ Memórias explícitas continuam em `/api/memories/*`. O índice semântico/RAG e
 
 Lê persona persistida.
 
-O painel de Persona também exibe uma prévia somente leitura do prompt principal (`BASE_SYSTEM_PROMPT` + `FIXED_PERSONA_PROMPT`) antes dos campos editáveis.
+O painel de Persona exibe as regras do sistema somente para leitura e uma prévia das instruções por modo. O editor reúne a persona e as preferências do chat.
 
 ### `PUT /api/persona` / `POST /api/persona`
 
@@ -326,6 +326,8 @@ Atualiza:
 - `importedBiography`: biografia anterior preservada como fonte pessoal editável; omissão preserva o valor existente e string vazia remove seu conteúdo ativo.
 - `responsePreferences`
 - `customSystemInstructions`
+- `chatInstructions` é o texto unificado para as próximas respostas do chat. Omissão preserva o valor existente e string vazia desativa o bloco editável. Sem valor salvo, o chat usa a persona padrão e os campos legados.
+- `previousChatInstructions` permite salvar com verificação de concorrência. O editor envia o texto salvo que leu, ou `null` na primeira edição. Uma versão divergente retorna HTTP 409 e preserva o valor persistido.
 - `ttsPreferences`
 
 `POST` é aceito como alias para autosave forte/flush de saída do navegador

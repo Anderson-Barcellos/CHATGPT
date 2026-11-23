@@ -6,6 +6,43 @@ import {
 } from "@/lib/persona/persona";
 
 describe("persona helpers", () => {
+  it("saves the chat override alongside existing settings and preserves it during other saves", () => {
+    const current = hydratePersona({
+      ...DEFAULT_PERSONA,
+      importedBiography: "Biografia sintética",
+      responsePreferences: "Preferência legada",
+      customSystemInstructions: "Regra legada",
+    });
+    const first = normalizePersonaUpdate(current, { chatInstructions: "Bah, que peleia!" });
+    if (!first.ok) throw new Error(first.error);
+    const reloaded = hydratePersona(first.data);
+    const second = normalizePersonaUpdate(reloaded, { contextAboutUser: "Contexto novo" });
+    expect(second).toMatchObject({
+      ok: true,
+      data: {
+        chatInstructions: "Bah, que peleia!",
+        responsePreferences: "Preferência legada",
+        customSystemInstructions: "Regra legada",
+        importedBiography: "Biografia sintética",
+        contextAboutUser: "Contexto novo",
+        ttsPreferences: current.ttsPreferences,
+      },
+    });
+    expect(normalizePersonaUpdate(reloaded, { chatInstructions: [] })).toMatchObject({ ok: false });
+  });
+
+  it("rejects a stale edit and accepts an explicit empty prompt for the current revision", () => {
+    const current = hydratePersona({ ...DEFAULT_PERSONA, chatInstructions: "Versão salva" });
+    expect(normalizePersonaUpdate(current, {
+      chatInstructions: "Versão obsoleta",
+      previousChatInstructions: null,
+    })).toMatchObject({ ok: false, status: 409 });
+    expect(normalizePersonaUpdate(current, {
+      chatInstructions: "",
+      previousChatInstructions: "Versão salva",
+    })).toMatchObject({ ok: true, data: { chatInstructions: "" } });
+  });
+
   it("round-trips TTS preferences without dropping voice settings", () => {
     const current = hydratePersona({
       ...DEFAULT_PERSONA,

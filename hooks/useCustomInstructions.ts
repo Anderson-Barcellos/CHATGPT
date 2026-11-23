@@ -41,7 +41,7 @@ async function persistPersona(
   const res = await fetch(apiUrl("/api/persona"), {
     method: options.keepalive ? "POST" : "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(instructions),
+    body: toSnapshot(instructions),
     keepalive: options.keepalive,
   });
   if (!res.ok) throw new Error("Failed to save");
@@ -49,7 +49,7 @@ async function persistPersona(
 }
 
 function persistPersonaOnUnload(instructions: CustomInstructions) {
-  const body = JSON.stringify(instructions);
+  const body = toSnapshot(instructions);
   const url = apiUrl("/api/persona");
 
   if (navigator.sendBeacon) {

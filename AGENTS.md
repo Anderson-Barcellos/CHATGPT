@@ -65,7 +65,7 @@ Principais areas:
 - Primitivos de animação framer-motion em `components/motion/`
 - `MessageBubble` usa `motion.div` com `layout` (streaming suave); `AnimatePresence` no loop
 - Chips do header conectados ao estado real (model, reasoning, responseMode)
-- Aba Persona mostra prévia somente-leitura do prompt principal (`BASE_SYSTEM_PROMPT` + `FIXED_PERSONA_PROMPT`) e edita `contextAboutUser`, `customSystemInstructions` e `responsePreferences`
+- Aba Persona oferece um editor de instruções do chat com salvamento explícito, regras do sistema copiáveis e prévia por modo. Biografia e `contextAboutUser` têm autosave. Os campos legados `customSystemInstructions` e `responsePreferences` alimentam o texto inicial e os consumidores existentes.
 - Memory tools (`remember_memory`, `search_memory`) ativas apenas em `responseMode="default"`; document/deepsearch/quiz seguem sem essas tools
 - Gemini 3.8 Flash usa Interactions API stateless com thinking `low|medium|high`, Google Search e URL Context. Documento segue o chat e cai para Luna `medium` com DeepSeek/Gemini; Deepsearch Medium usa Luna `medium` e High Sol `high`; Quiz permanece OpenAI (`gpt-5.4`). Jobs Grok são executados no servidor e persistidos localmente, pois xAI não implementa `background=true`.
 - Deepsearch/Documento devem seguir o protocolo de pesquisa profunda com neuro-storytelling estruturado: plano validado quando o pedido for aberto, fontes autoritativas, citacoes inline e prosa narrativa clara, sem tom gauchesco em conteudo de pesquisa

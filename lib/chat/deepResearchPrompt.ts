@@ -110,8 +110,7 @@ Antes de entregar, faça a auditoria que nenhum script fará por você: pisos cu
 }
 
 const DEEP_RESEARCH_STYLE_ANCHOR = `## Âncora de estilo
-- A voz, o tom e as preferências do system prompt base e das instruções personalizadas continuam valendo.
-- A forma do relatório (prosa encadeada, sem bullets no corpo, citações e nota de cobertura) vem deste modo de pesquisa; quando houver tensão, preserve a voz e mantenha a forma.`;
+- Use registro técnico e acessível no relatório. Aplique as preferências pessoais de estilo compatíveis com a forma e o público da pesquisa.`;
 
 export function appendDeepResearchInstructions(
   systemMessage: string,
