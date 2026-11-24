@@ -3,9 +3,11 @@
 import { createContext, useContext, type ReactNode } from "react";
 import { useSoundCaseRealtime } from "@/hooks/useSoundCaseRealtime";
 import { useSoundCaseGrokRealtime } from "@/hooks/useSoundCaseGrokRealtime";
+import { useOpenAILiveSpeech } from "@/hooks/useOpenAILiveSpeech";
 
 export type SoundCaseRealtimeSession = ReturnType<typeof useSoundCaseRealtime> & {
   grok: ReturnType<typeof useSoundCaseGrokRealtime>;
+  live: ReturnType<typeof useOpenAILiveSpeech>;
 };
 
 export const SoundCaseRealtimeContext = createContext<SoundCaseRealtimeSession | null>(null);
@@ -18,7 +20,8 @@ export const SoundCaseRealtimeContext = createContext<SoundCaseRealtimeSession |
 export function SoundCaseRealtimeProvider({ children }: { children: ReactNode }) {
   const openai = useSoundCaseRealtime();
   const grok = useSoundCaseGrokRealtime();
-  const session: SoundCaseRealtimeSession = { ...openai, grok };
+  const live = useOpenAILiveSpeech();
+  const session: SoundCaseRealtimeSession = { ...openai, grok, live };
 
   return (
     <SoundCaseRealtimeContext.Provider value={session}>

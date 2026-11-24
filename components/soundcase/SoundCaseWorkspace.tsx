@@ -42,11 +42,13 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
   const realtime = useSoundCaseRealtimeSession();
   // Os testes legados mockam somente a sessão OpenAI; em produto o provider sempre entrega Grok.
   const grokRealtime = realtime.grok ?? null;
+  const liveRealtime = realtime.live ?? null;
   const isPanel = variant === "panel";
 
   const stopRealtimeContext = () => {
     realtime.stop();
     grokRealtime?.stop();
+    liveRealtime?.stop();
     setPendingRealtimeVersionId(null);
     startedRealtimeVersionRef.current = null;
   };
@@ -63,16 +65,19 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
   const overLimit = estimate > 90 * 60 || new TextEncoder().encode(soundcase.draftText).byteLength > 1024 * 1024;
   const actionsDisabled = !words || overLimit || Boolean(soundcase.conflict);
   const selectedVersionId = soundcase.selectedVersion?.id ?? null;
-  const activeRealtime = grokSettings.engine === "grok" && grokRealtime ? grokRealtime : realtime;
+  const activeRealtime = grokSettings.engine === "grok" ? grokRealtime ?? realtime
+    : grokSettings.engine === "openai-live" ? liveRealtime ?? realtime : realtime;
   const startRealtime = (version: { projectId: string; id: string }) => {
     if (grokSettings.engine === "grok") {
       return grokRealtime?.start({ projectId: version.projectId, versionId: version.id, voice: grokSettings.voice, speed: grokSettings.speed });
     }
+    if (grokSettings.engine === "openai-live") return liveRealtime?.start({ projectId: version.projectId, versionId: version.id });
     return realtime.start({ projectId: version.projectId, versionId: version.id });
   };
   // Realtime tem precedência: o player interrompe o arquivo antes de iniciar a leitura ao vivo.
-  const playback = (realtime.isActive || Boolean(grokRealtime?.isActive)) && (realtime.isActive ? realtime.versionId : grokRealtime?.versionId)
-    ? { versionId: realtime.isActive ? realtime.versionId! : grokRealtime!.versionId!, source: "realtime" as const }
+  const playingRealtime = realtime.isActive ? realtime : grokRealtime?.isActive ? grokRealtime : liveRealtime;
+  const playback = playingRealtime?.isActive && playingRealtime.versionId
+    ? { versionId: playingRealtime.versionId, source: "realtime" as const }
     : playingFinalVersionId && playingFinalVersionId === selectedVersionId
       ? { versionId: selectedVersionId, source: "file" as const }
       : null;
@@ -93,7 +98,7 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
   const generate = async (playbackMode: "realtime" | "silent") => {
     if (playbackMode === "realtime") {
       if (grokSettings.engine === "openai") prepareSoundCaseRealtimeGeneration(stopRealtimeContext, realtime.prime);
-      else { stopRealtimeContext(); grokRealtime?.prime(); }
+      else { stopRealtimeContext(); activeRealtime.prime(); }
       startedRealtimeVersionRef.current = null;
     } else {
       stopRealtimeContext();
@@ -141,10 +146,11 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
       audioUrl={soundCaseApi.audioUrl(soundcase.selectedVersion.projectId, soundcase.selectedVersion.id)}
       realtime={{ ...activeRealtime, isActive: activeRealtime.isActive && activeRealtime.versionId === selectedVersionId,
         error: activeRealtime.errorVersionId === selectedVersionId ? activeRealtime.error : null,
+        label: grokSettings.engine === "openai-live" ? "OpenAI Live 1.1" : undefined,
         stop: stopRealtimeContext }}
       onStartRealtime={() => {
         if (grokSettings.engine === "openai") prepareSoundCaseRealtimeGeneration(stopRealtimeContext, realtime.prime);
-        else { stopRealtimeContext(); grokRealtime?.prime(); }
+        else { stopRealtimeContext(); activeRealtime.prime(); }
         void startRealtime(soundcase.selectedVersion!);
       }}
       onPlaybackChange={(playing) => setPlayingFinalVersionId(playing ? selectedVersionId : null)}

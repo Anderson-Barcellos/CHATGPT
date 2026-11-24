@@ -23,6 +23,7 @@ export interface SoundCasePlayerProps {
     isActive: boolean;
     stop: () => void;
     error?: string | null;
+    label?: string;
   };
   onStartRealtime?: () => void;
   /** Avisa o acervo quando o arquivo final começa ou para de tocar. */
@@ -78,7 +79,7 @@ export function SoundCasePlayer({ version, audioUrl, realtime, onStartRealtime, 
         {realtime.isActive ? <Square /> : playingFinal ? <Pause /> : <Play />}
       </button>
       <div className={styles.playerNow}>
-        <strong>{realtime.isActive ? <><Radio /> Realtime</> : <><FileAudio /> Arquivo final</>}</strong>
+        <strong>{realtime.isActive ? <><Radio /> {realtime.label ?? "Realtime"}</> : <><FileAudio /> Arquivo final</>}</strong>
         <span>{realtime.isActive ? (realtime.status === "connecting" ? "Conectando…" : "Leitura em andamento") : readyAudio ? `${readyAudio.format.toUpperCase()} · ${Math.ceil(readyAudio.durationSeconds / 60)} min` : "Em preparação"}</span>
       </div>
       {finalReady && realtime.isActive ? (
@@ -95,7 +96,9 @@ export function SoundCasePlayer({ version, audioUrl, realtime, onStartRealtime, 
             setPlayError(null);
             onStartRealtime();
           }}><Radio /> Ouvir com Realtime</button>
-          <span>{version.direction && version.effectiveSettings ? "Leitura ao vivo com os ajustes desta narração. Não cria outro arquivo." : "Realtime disponível quando a direção de leitura estiver pronta."}</span>
+          <span>{version.direction && version.effectiveSettings
+            ? realtime.label ? "Leitura ao vivo com a voz Marin." : "Leitura ao vivo com os ajustes desta narração. Não cria outro arquivo."
+            : "Realtime disponível quando a direção de leitura estiver pronta."}</span>
         </div>
       ) : null}
       {finalReady && !realtime.isActive ? (

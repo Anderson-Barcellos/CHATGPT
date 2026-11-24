@@ -348,6 +348,7 @@ usa Orion/MP3 e aplica apenas `mode` e `speed`.
 | `POST` | `/api/tts/xai/merge` | Recebe dois ou mais trechos MP3 autenticados e remuxa o arquivo completo para download, sem chamar a xAI |
 | `POST` | `/api/realtime/tts-call` | Cria sessão SDP/WebRTC experimental com `gpt-realtime-2.1-mini` |
 | `POST` | `/api/realtime/grok-session` | Emite token efêmero autenticado e sem cache para a leitura Grok Realtime do Chat/Pulse |
+| `POST` | `/api/realtime/openai-live-speech` | Lê um trecho em `gpt-live-1.1` com a voz e o ritmo escolhidos (Marin/natural por padrão) e retorna PCM16 mono de 24 kHz após conferir a saída falada |
 | `POST` | `/api/realtime/tts-call/log` | Recebe telemetria sanitizada do cliente Realtime para diagnóstico local |
 | `POST` | `/api/transcribe` | Transcreve áudio com `gpt-transcribe`; streaming NDJSON ativo por padrão e desativável com `TRANSCRIPTION_STREAMING_ENABLED=false` |
 | `WebSocket` | `/api/transcribe/realtime` | Ditado incremental com `gpt-live-transcribe`; ponte separada, mesmo cookie `auth-token`, origem conferida contra Host preservado |
@@ -364,7 +365,7 @@ Notas do PDF:
 
 ## SoundCase
 
-`/soundcase` reutiliza o mesmo cookie JWT do Chat. O texto e os assets ficam privados no servidor; o browser recebe apenas projeções autenticadas e URLs protegidas. A leitura ao vivo usa OpenAI Realtime ou Grok Realtime, independentemente do TTS do arquivo final. O pipeline durável usa Luna para direção, OpenAI `gpt-4o-mini-tts` ou xAI `/v1/tts` para áudio, e `gpt-image-2.6-flare` para capa. `ttsProvider` e `grokVoice` ficam no snapshot de cada versão; versões legadas sem provedor usam OpenAI.
+`/soundcase` reutiliza o mesmo cookie JWT do Chat. O texto e os assets ficam privados no servidor; o browser recebe apenas projeções autenticadas e URLs protegidas. A leitura ao vivo oferece OpenAI Realtime, Grok Realtime e OpenAI Live 1.1, independentemente do TTS do arquivo final. O pipeline durável usa Luna para direção, OpenAI `gpt-4o-mini-tts` ou xAI `/v1/tts` para áudio, e `gpt-image-2.6-flare` para capa. `ttsProvider` e `grokVoice` ficam no snapshot de cada versão; versões legadas sem provedor usam OpenAI.
 
 | Método | Rota | Função |
 |---|---|---|
@@ -399,7 +400,9 @@ Capas usam `gpt-image-2.6-flare` pela Responses API. Se a resposta principal nã
 
 Todas as rotas de Pulse são privadas quando `AUTH_ENABLED=true`, exceto o runner interno `/api/pulse/run-due`, que exige `Authorization: Bearer <PULSE_RUNNER_TOKEN>` (comparação em tempo constante), responde `503` se o token não estiver configurado, passa pelo rate limit do proxy e é usado pelo timer local do servidor. Não há fallback por hostname. A reivindicação de execução é atômica dentro do lock de `pulse-runs.json` (timer e disparo manual nunca abrem dois runs da mesma rotina), e todo run `running` que nenhum processo vivo reconhece (sobra de restart) é marcado `failed` com aviso no próximo tick do runner ou disparo manual; a rotina segue vencida e roda de novo no tick seguinte.
 
-Os resultados do Pulse e as mensagens do chat reutilizam o mesmo mini-player. Ele abre no **Grok TTS · Orion** via `/api/tts/xai` (trechos MP3 e download completo) e permite selecionar manualmente Grok Realtime via `/api/realtime/grok-session`; nenhuma engine inicia apenas ao abrir o player.
+Os resultados do Pulse e as mensagens do chat reutilizam o mesmo mini-player. Ele abre no **Grok TTS · Orion** via `/api/tts/xai` (trechos MP3 e download completo) e permite selecionar manualmente Grok Realtime via `/api/realtime/grok-session` ou **OpenAI Live 1.1**; nenhuma engine inicia apenas ao abrir o player.
+
+O POST de leitura Live aceita JSON `{ "text": "...", "voice": "marin|bossa|tempo", "pace": "natural|calmo|agil" }` com até 240 caracteres por trecho e exige a autenticação do app. Voz ou ritmo desconhecidos voltam a Marin/natural. O ritmo vira pedido nas instruções da sessão, porque o GPT-Live não tem campo de velocidade. O sucesso retorna `application/octet-stream` sem cache. Texto inválido retorna 400, divergência na fala retorna 502 e timeout retorna 504. O SoundCase busca o snapshot autenticado em `/source` e usa a mesma rota.
 
 As execuções do Pulse usam `gpt-6.1-sol` + reasoning `medium` por padrão em rotinas novas e oferecem Astra, Luna e GPT-5.6 Sol. Rotinas salvas com 6 Sol/Terra rodam no 6.1 Sol e com mini/Grok no Luna; execuções históricas preservam o modelo gravado. O modelo e effort efetivos ficam registrados em cada execução. Astra fica em verbosity `medium`; os demais em `high`. A criação de rotina por texto usa Luna `low`. O prompt continua enxuto e a imagem continua OpenAI em chamada separada quando necessário. Overrides operacionais permanecem; identificadores incompatíveis com o provider devem falhar explicitamente.
 

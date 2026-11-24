@@ -19,14 +19,14 @@ export interface SoundCaseRealtimeInput {
   segments?: SoundCaseSegment[];
 }
 
-export function buildSoundCaseRealtimeSegments(text: string): SoundCaseSegment[] {
+export function buildSoundCaseRealtimeSegments(text: string, maxChars = 3_200): SoundCaseSegment[] {
   const normalized = text.replace(/\r\n?/gu, "\n");
   const segments: SoundCaseSegment[] = [];
   let cursor = 0;
   while (cursor < normalized.length) {
     while (cursor < normalized.length && /\s/u.test(normalized[cursor])) cursor += 1;
     if (cursor >= normalized.length) break;
-    const hardEnd = Math.min(normalized.length, cursor + 3_200);
+    const hardEnd = Math.min(normalized.length, cursor + maxChars);
     let end = hardEnd;
     if (hardEnd < normalized.length) {
       const window = normalized.slice(cursor, hardEnd);

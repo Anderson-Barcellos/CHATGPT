@@ -26,6 +26,10 @@ function makeSession(overrides: Partial<SoundCaseRealtimeSession> = {}): SoundCa
     stop: vi.fn(),
     skipToSegment: vi.fn(async () => undefined),
     grok: { isActive: false } as SoundCaseRealtimeSession["grok"],
+    live: {
+      status: "idle", versionId: null, firstAudioMs: null, error: null, errorVersionId: null,
+      isActive: false, prime: vi.fn(), start: vi.fn(async () => undefined), stop: vi.fn(),
+    },
     ...overrides,
   };
 }
@@ -106,5 +110,18 @@ describe("SoundCaseRealtimeBar", () => {
     });
 
     expect(session.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it("identifica e para a sessão Live acima do painel fechado", async () => {
+    const session = makeSession({ status: "idle", isActive: false });
+    session.live = { ...session.live, status: "speaking", versionId: "v", isActive: true };
+    await renderBar(session);
+
+    expect(container!.textContent).toContain("OpenAI Live está lendo");
+    await act(async () => {
+      container!.querySelector<HTMLButtonElement>('[aria-label="Parar leitura"]')!.click();
+    });
+    expect(session.live.stop).toHaveBeenCalledOnce();
+    expect(session.stop).not.toHaveBeenCalled();
   });
 });

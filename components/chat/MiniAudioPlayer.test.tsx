@@ -55,6 +55,7 @@ describe("MiniAudioPlayer", () => {
     expect(markup).toContain("Grok TTS · Orion");
     expect(markup).toContain('aria-pressed="true"');
     expect(markup).toContain("Grok Realtime");
+    expect(markup).toContain("OpenAI Live 1.1");
     expect(markup).toContain('aria-label="Tocar"');
     expect(markup).toContain("text-micro");
     expect(assistantTts.togglePlay).not.toHaveBeenCalled();
@@ -73,6 +74,7 @@ describe("MiniAudioPlayer", () => {
 
     expect(markup).toContain("Grok TTS · Orion");
     expect(markup).not.toContain("Grok Realtime");
+    expect(markup).not.toContain("OpenAI Live 1.1");
     expect(realtimeTts.start).not.toHaveBeenCalled();
   });
 });

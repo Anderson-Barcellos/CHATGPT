@@ -75,7 +75,8 @@ Astra e Gemini permanecem no catálogo para compatibilidade, mas deixam as novas
 - TTS do Chat/Pulse usa a API xAI `/v1/tts` com Orion e MP3; `gpt-4o-mini-tts` em `lib/tts/speechText.ts` permanece como opção do SoundCase e rota legada.
 - Realtime opcional do Chat/Pulse usa `grok-voice-latest` com voz Orion; `gpt-realtime-2.1-mini` permanece no SoundCase e na rota legada OpenAI.
 - Ditado ao vivo usa `gpt-live-transcribe`, português, delay `low`, PCM16 mono a 24 kHz e commits explícitos por pausa. O fallback HTTP após a gravação usa `gpt-transcribe`, tanto em NDJSON quanto em JSON. Sem seletor novo; TTS preservado.
-- SoundCase usa `gpt-6-luna` com reasoning `medium` para direção estruturada, xAI `/v1/tts` (Grok TTS, Orion inicial) ou `gpt-4o-mini-tts` para chunks do arquivo final, e `gpt-image-2.6-flare` para capa. Texto narrado nunca é reescrito pela etapa de direção. A escuta imediata tem escolha independente entre OpenAI Realtime (`gpt-realtime-2.1-mini`) e Grok Realtime.
+- Mensagens, Pulse e SoundCase oferecem `gpt-live-1.1` para leitura ao vivo pela API GPT-Live, com voz Marin (padrão), Bossa ou Tempo (brasileiras) e ritmo natural, calmo ou ágil pedido nas instruções.
+- SoundCase usa `gpt-6-luna` com reasoning `medium` para direção estruturada, xAI `/v1/tts` (Grok TTS, Orion inicial) ou `gpt-4o-mini-tts` para chunks do arquivo final, e `gpt-image-2.6-flare` para capa. Texto narrado nunca é reescrito pela etapa de direção. A escuta imediata tem escolha independente entre OpenAI Realtime (`gpt-realtime-2.1-mini`), Grok Realtime e OpenAI Live 1.1.
 - O arquivo SoundCase usa MP3 por padrão, com FLAC/WAV por override; o Realtime é transitório e não substitui a versão durável para download.
 - SoundCase também oferece `grok-voice-latest` experimental: texto → áudio, sem microfone, com vozes xAI e velocidade entre 0.7x e 1.5x. Preferências da leitura ao vivo são independentes da geração de arquivo; engine OpenAI permanece default para Realtime.
 

@@ -13,9 +13,10 @@ import {
 } from "lucide-react";
 import { useAssistantTts } from "@/hooks/useAssistantTts";
 import { useGrokMessageRealtime } from "@/hooks/useGrokMessageRealtime";
+import { useOpenAILiveSpeech } from "@/hooks/useOpenAILiveSpeech";
 import { cn } from "@/lib/utils";
 
-export type AudioEngine = "standard" | "realtime";
+export type AudioEngine = "standard" | "realtime" | "openai-live";
 
 interface MiniAudioPlayerProps {
   content: string;
@@ -23,6 +24,7 @@ interface MiniAudioPlayerProps {
   onClose: () => void;
   /** Mantém o Realtime disponível nas superfícies de conversa; o feed é TTS de arquivo. */
   allowRealtime?: boolean;
+  allowOpenAILive?: boolean;
   className?: string;
 }
 
@@ -56,16 +58,20 @@ export function MiniAudioPlayer({
   messageId,
   onClose,
   allowRealtime = true,
+  allowOpenAILive = allowRealtime,
   className,
 }: MiniAudioPlayerProps) {
   const [engine, setEngine] = useState<AudioEngine>("standard");
   const tts = useAssistantTts(content, messageId);
   const realtime = useGrokMessageRealtime(content);
+  const live = useOpenAILiveSpeech();
+  const activeRealtime = engine === "openai-live" ? live : realtime;
 
   const stopAll = useCallback(() => {
     tts.stop();
     realtime.stop();
-  }, [realtime, tts]);
+    live.stop();
+  }, [live, realtime, tts]);
 
   const selectEngine = useCallback(
     (nextEngine: AudioEngine) => {
@@ -79,17 +85,19 @@ export function MiniAudioPlayer({
   const toggleSelectedEngine = useCallback(() => {
     if (engine === "standard" || !allowRealtime) {
       realtime.stop();
+      live.stop();
       tts.togglePlay();
       return;
     }
 
     tts.stop();
-    if (realtime.isActive) {
-      realtime.stop();
+    if (activeRealtime.isActive) {
+      activeRealtime.stop();
       return;
     }
-    void realtime.start();
-  }, [allowRealtime, engine, realtime, tts]);
+    if (engine === "openai-live") void live.start({ text: content });
+    else void realtime.start();
+  }, [activeRealtime, allowRealtime, content, engine, live, realtime, tts]);
 
   const close = useCallback(() => {
     stopAll();
@@ -99,23 +107,23 @@ export function MiniAudioPlayer({
   const isStandard = engine === "standard";
   const isLoading = isStandard
     ? tts.status === "loading"
-    : realtime.status === "connecting" || realtime.status === "ready";
-  const isPlaying = isStandard ? tts.isPlaying : realtime.isActive;
-  const realtimeStatus = realtime.error
-    ? realtime.error
-    : realtime.firstAudioMs
-      ? `Primeiro áudio em ${realtime.firstAudioMs}ms`
-      : realtime.status === "idle"
-        ? "Pronto para baixa latência"
-        : realtime.status === "connecting"
+    : activeRealtime.status === "connecting" || activeRealtime.status === "ready";
+  const isPlaying = isStandard ? tts.isPlaying : activeRealtime.isActive;
+  const realtimeStatus = activeRealtime.error
+    ? activeRealtime.error
+    : activeRealtime.status === "completed"
+      ? "Leitura concluída"
+      : activeRealtime.firstAudioMs
+        ? `Primeiro áudio em ${activeRealtime.firstAudioMs}ms`
+        : activeRealtime.status === "idle"
+        ? engine === "openai-live" ? "Pronto · cada trecho é conferido antes de tocar" : "Pronto para baixa latência"
+        : activeRealtime.status === "connecting"
           ? "Conectando sessão..."
-          : realtime.status === "ready"
+          : activeRealtime.status === "ready"
             ? "Sessão pronta..."
-            : realtime.status === "speaking"
+            : activeRealtime.status === "speaking"
               ? "Recebendo áudio ao vivo"
-              : realtime.status === "completed"
-                ? "Leitura concluída"
-                : "Não foi possível iniciar o Realtime";
+              : "Não foi possível iniciar o Realtime";
 
   return (
     <div
@@ -130,7 +138,7 @@ export function MiniAudioPlayer({
           <div
             role="group"
             aria-label="Motor de áudio"
-            className="flex min-w-0 items-center rounded-lg bg-background/55 p-0.5 text-micro md:text-nano"
+            className="flex min-w-0 flex-wrap items-center rounded-lg bg-background/55 p-0.5 text-micro md:text-nano"
           >
             <button
               type="button"
@@ -149,17 +157,33 @@ export function MiniAudioPlayer({
             <button
               type="button"
               aria-label="Escolher Grok Realtime"
-              aria-pressed={!isStandard}
+              aria-pressed={engine === "realtime"}
               onClick={() => selectEngine("realtime")}
               className={cn(
                 "h-6 whitespace-nowrap rounded-md px-1.5 transition-colors",
-                !isStandard
+                engine === "realtime"
                   ? "bg-background font-medium text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               Grok Realtime
             </button>
+            {allowOpenAILive && (
+              <button
+                type="button"
+                aria-label="Escolher OpenAI Live 1.1"
+                aria-pressed={engine === "openai-live"}
+                onClick={() => selectEngine("openai-live")}
+                className={cn(
+                  "h-6 whitespace-nowrap rounded-md px-1.5 transition-colors",
+                  engine === "openai-live"
+                    ? "bg-background font-medium text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                OpenAI Live 1.1
+              </button>
+            )}
           </div>
         ) : (
           <span className="text-micro font-medium text-foreground">
@@ -241,7 +265,7 @@ export function MiniAudioPlayer({
           <p
             className={cn(
               "min-w-0 flex-1 truncate text-micro md:text-nano",
-              realtime.error && "text-rose-600 dark:text-rose-300"
+              activeRealtime.error && "text-rose-600 dark:text-rose-300"
             )}
             aria-live="polite"
           >

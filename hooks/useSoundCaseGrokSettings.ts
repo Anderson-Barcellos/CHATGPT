@@ -3,7 +3,7 @@
 import { useMemo, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 
-export type SoundCaseRealtimeEngine = "openai" | "grok";
+export type SoundCaseRealtimeEngine = "openai" | "grok" | "openai-live";
 export interface SoundCaseGrokSettings { engine: SoundCaseRealtimeEngine; voice: string; speed: number; }
 export interface SoundCaseGrokVoice { id: string; name: string; }
 
@@ -24,7 +24,7 @@ export function normalizeSoundCaseGrokSettings(raw: string | null): SoundCaseGro
     const value = JSON.parse(raw ?? "null");
     if (!value || typeof value !== "object" || Array.isArray(value)) return DEFAULT_SOUNDCASE_GROK_SETTINGS;
     return {
-      engine: value.engine === "grok" ? "grok" : "openai",
+      engine: value.engine === "grok" || value.engine === "openai-live" ? value.engine : "openai",
       voice: typeof value.voice === "string" && value.voice.trim() ? value.voice.slice(0, 120) : "eve",
       speed: typeof value.speed === "number" && Number.isFinite(value.speed) ? Math.min(1.5, Math.max(0.7, value.speed)) : 1,
     };

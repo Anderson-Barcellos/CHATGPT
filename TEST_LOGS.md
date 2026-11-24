@@ -689,3 +689,22 @@ Gates: typegen 0 · tsc 0 · lint 0 (1 aviso pré-existente em `CommandComposerC
 Chrome (headless, dados sintéticos): qa-chat-column 0 (contrato atualizado: resposta 697 px, mensagem 602 px, fonte 14–15 px; 1ª execução falhou no teto antigo de 896 px, esperado) · qa-discover-panel 0 · qa-discover-controls 0 · qa-discover-delete 0 · qa-runtime-ownership 0 · qa-message-longpress 0 (12 cenários; 1ª execução sem servidor na 3158, repetida com servidor isolado).
 
 Sonda nova `scripts/qa-desktop-type.mjs`: balão 14,0 px em 1024–1436, 14,7 em 1920, 15 em 2560; celular 390 px idêntico ao antes (13,5 px, bordas 0). Capturas antes/depois em `/root/.cache/gaucho-desktop-type/evidence`, logs em `/root/.cache/gaucho-desktop-type/gates`.
+
+
+## 2026-11-24 16h10 BRT — OpenAI Live 1.1 nas caixinhas de voz e seção de ajustes (Claude)
+
+Cópia de trabalho `/root/worktrees/gaucho-live-voice` (branch `feat/openai-live-voice` a partir de `6e5672b`), com os arquivos do Live trazidos de `/root/worktrees/gaucho-live-11` (Codex, sem commit).
+
+Unitários (TDD, primeira execução):
+- `lib/tts/openaiLiveSpeech.test.ts` (3 casos: vozes/padrão, normalização, ritmo → instrução): RED (exports inexistentes) → GREEN.
+- `lib/server/openaiLiveSpeech.test.ts` › "abre a sessão com a voz e o ritmo escolhidos": RED (voz fixa Marin) → GREEN; "mantém Marin quando nenhum ajuste chega": verde desde a 1ª execução (contrato preservado).
+- `components/settings/OpenAILiveSettingsFields.test.tsx` (2 casos: campos com vozes brasileiras; aparece no SoundCase só com o motor Live): RED (componente inexistente) → GREEN.
+- Testes herdados do Codex (`MiniAudioPlayer`, `SoundCaseRealtimeBar`, servidor Live): verdes.
+
+Gates: typegen 0 · tsc 0 · lint 0 (1 aviso pré-existente em `CommandComposerContainerV2.test.tsx:120`) · Vitest 1.334/1.334 em 240 arquivos · build 0 (base `/chat`, URL de QA local, rota nova no manifesto).
+
+Prova real paga (servidor Live direto): Bossa/calmo 3,83 s de áudio pronto em 8,8 s; Tempo/ágil 3,41 s em 7,8 s; transcrição conferida nos dois. PCM em `/root/.cache/gaucho-live-voice/`.
+
+Chrome (sonda nova `scripts/qa-openai-live-settings.mjs`, dados sintéticos, rota Live interceptada): 1440 dark e 390 light aprovados — seção nas Configurações salva Bossa/calmo, três motores no player, escolher o motor não inicia leitura, Tocar envia `voice`/`pace`, sem rolagem horizontal nem pageerror. Capturas em `/root/.cache/gaucho-live-voice/evidence`.
+
+Rodada final após o ajuste do texto ocioso do player (Live: "Pronto · cada trecho é conferido antes de tocar"): tsc 0 · lint 0 erros · Vitest 1.334/1.334 em 240 arquivos · build 0 · Chrome do projeto 6/6 (chat-column, discover-panel, discover-controls, discover-delete, runtime-ownership, message-longpress 12 cenários com servidor temporário na 3158 e `data/` sintética removida) · sonda Live 2/2. Logs em `/root/.cache/gaucho-live-voice/`.

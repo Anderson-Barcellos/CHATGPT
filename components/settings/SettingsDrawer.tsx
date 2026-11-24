@@ -1,5 +1,7 @@
 "use client";
 
+import { OpenAILiveSettingsFields } from "@/components/settings/OpenAILiveSettingsFields";
+import { useOpenAILiveSettings } from "@/hooks/useOpenAILiveSettings";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -320,6 +322,7 @@ function MemorySuggestionCard({
 
 export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   const { parameters, updateParameters, chatModelCatalog } = useSettingsStore();
+  const openAILive = useOpenAILiveSettings();
   const activeMode = useUIStore((state) => state.activeMode);
   const imageQuality = useUIStore((state) => state.imageQuality);
   const imageSize = useUIStore((state) => state.imageSize);
@@ -651,6 +654,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                           Chat e Pulse usam Grok TTS com voz Orion no MP3 e
                           Orion no Grok Realtime. O modo e a velocidade abaixo
                           afetam o TTS MP3; o Realtime segue sua própria cadência.
+                          O OpenAI Live 1.1 tem voz e ritmo próprios, mais abaixo.
                         </p>
                         <label className="flex flex-col gap-1 text-xs">
                           <span className="text-muted-foreground">
@@ -694,6 +698,17 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                             value={[getXaiTtsSpeed(ttsPreferences.speed)]}
                             onValueChange={([value]) => updateTtsPreferences({ speed: value })}
                           />
+                        </div>
+
+                        <div data-slot="openai-live-settings" className="space-y-3 border-t border-[color:var(--gc-border)] pt-4">
+                          <div>
+                            <p className="text-xs font-medium">OpenAI Live 1.1</p>
+                            <p className="text-micro text-muted-foreground">
+                              Vale no player das mensagens, no Pulse e no SoundCase.
+                              O ritmo é um pedido ao modelo, não um controle exato.
+                            </p>
+                          </div>
+                          <OpenAILiveSettingsFields settings={openAILive.settings} onChange={openAILive.setSettings} />
                         </div>
 
                       </div>
