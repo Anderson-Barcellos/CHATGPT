@@ -78,10 +78,11 @@ try {
     const thread = await page.evaluate(measureThread);
     const mobileReading = width <= 767 || (touch && height <= 500);
     const fontSize = await page.locator('.gc-assistant-bubble p').first().evaluate(node => parseFloat(getComputedStyle(node).fontSize));
-    assert.ok(mobileReading ? fontSize === 14 : fontSize >= 14.5 && fontSize <= 15.5, 'corpo desktop 14,5–15,5px; mobile 14px preservado');
+    assert.ok(mobileReading ? fontSize === 13.5 : fontSize >= 14 && fontSize <= 15, 'tamanho de leitura compacto');
+    // Linha de leitura curta: thread de 52rem (832px) com 20px de cada lado; resposta em 88% e mensagem em 76% do miolo.
     if (!mobileReading && width >= 1489) {
-      assert.ok(Math.abs(thread.assistant.width - 896) < 1, 'resposta usa o novo teto de 896px');
-      assert.ok(Math.abs(thread.user.width - 768) < 1, 'mensagem usa o novo teto de 768px');
+      assert.ok(Math.abs(thread.assistant.width - 696.96) < 1, 'resposta usa o teto de leitura de 697px');
+      assert.ok(Math.abs(thread.user.width - 601.92) < 1, 'mensagem usa o teto de leitura de 602px');
     }
     await page.locator('[data-message-id="m-user-1"]').getByRole('button', { name: 'Acoes da mensagem' }).click();
     await page.getByRole('menuitem', { name: /Editar/ }).click();
@@ -95,21 +96,25 @@ try {
       assert.ok(await page.evaluate(() => Math.abs(document.querySelector('.gc-user-bubble').getBoundingClientRect().width - document.querySelector('.gc-message-frame').getBoundingClientRect().width) < 1), 'edição mobile ocupa a largura disponível');
     }
     await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
-    if (width >= 1907) {
+    if (width >= 1280) {
       const panel = page.locator('[data-workspace-region="context"]');
+      const expectedNormal = Math.min(Math.max(500, width * 0.4), 600);
+      const expectedExpanded = Math.min(Math.max(640, width * 0.5), 760);
       await page.getByRole('button', { name: 'Abrir painel', exact: true }).click();
-      await until(async () => Math.abs((await panel.boundingBox()).width - 600) < 1, 'painel normal assentado');
+      await until(async () => Math.abs((await panel.boundingBox()).width - expectedNormal) < 1, 'painel normal assentado');
       await page.getByRole('button', { name: 'Expandir canvas', exact: true }).click();
-      await until(async () => Math.abs((await panel.boundingBox()).width - 760) < 1 && await panel.getAttribute('data-context-mode') === (width >= 2067 ? 'docked' : 'floating'), 'encaixe ampliado assentado');
-      await until(async () => {
-        const measured = await page.evaluate(measureThread);
-        return Math.abs(measured.user.width - thread.user.width) < 1 && Math.abs(measured.assistant.width - thread.assistant.width) < 1;
-      }, 'ampliação preserva largura dos balões');
+      await until(async () => Math.abs((await panel.boundingBox()).width - expectedExpanded) < 1 && await panel.getAttribute('data-context-mode') === (width >= 1440 ? 'docked' : 'floating'), 'encaixe ampliado assentado');
+      if (width >= 2067) {
+        await until(async () => {
+          const measured = await page.evaluate(measureThread);
+          return Math.abs(measured.user.width - thread.user.width) < 1 && Math.abs(measured.assistant.width - thread.assistant.width) < 1;
+        }, 'ampliação preserva largura dos balões em telas amplas');
+      }
       console.log('REVIEW_DOCK_EXPANDED', JSON.stringify(await page.evaluate(measureThread)));
-      if (width === 2067) {
-        await page.setViewportSize({ width: 2066, height });
-        await until(async () => await panel.getAttribute('data-context-mode') === 'floating', 'ampliado flutua ao reduzir');
-        await page.setViewportSize({ width: 2067, height });
+      if (width === 1490) {
+        await page.setViewportSize({ width: 1439, height });
+        await until(async () => await panel.getAttribute('data-context-mode') === 'floating', 'ampliado flutua ao reduzir abaixo de 1440');
+        await page.setViewportSize({ width: 1490, height });
         await until(async () => await panel.getAttribute('data-context-mode') === 'docked', 'ampliado encaixa ao aumentar');
       }
       await page.getByRole('button', { name: 'Recolher painel', exact: true }).click();

@@ -80,7 +80,7 @@ export function CommandPalette() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent
-        className="gc-chat-ui overflow-hidden p-0 shadow-2xl [&>button]:hidden"
+        className="gc-chat-ui gc-workspace-type overflow-hidden p-0 shadow-2xl [&>button]:hidden"
         style={{ zIndex: 300, maxWidth: "560px", width: "100%" }}
         aria-describedby={undefined}
       >

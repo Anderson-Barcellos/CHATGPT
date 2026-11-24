@@ -175,7 +175,7 @@ describe("Descobrir IA", () => {
     expect(article("primeira").querySelector<HTMLButtonElement>('[aria-label^="Apagar notícia"]')!.disabled).toBe(true);
   });
 
-  it("mantém o escopo Lexend e mostra a atualização automática prevista", async () => {
+  it("mantém o escopo tipográfico do chat e mostra a atualização automática prevista", async () => {
     await renderPage();
 
     expect(container.querySelector("[data-discover-scroll-root]")?.className).toContain("gc-chat-ui");

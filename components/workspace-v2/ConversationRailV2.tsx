@@ -178,7 +178,7 @@ function ConversationRowV2({
             <MoreVertical className="size-3.5" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="gc-chat-ui">
+        <DropdownMenuContent align="end" className="gc-chat-ui gc-workspace-type">
           <DropdownMenuItem onClick={onTogglePin}>
             {isPinned ? (
               <PinOff className="mr-2 size-3.5" />
@@ -397,15 +397,6 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
     return sortedConversations.filter((c) => ids.has(c.id));
   }, [pinnedIds, sortedConversations]);
 
-  const todayCount = useMemo(
-    () =>
-      sortedConversations.filter(
-        (conversation) =>
-          getConversationSection(getConversationDate(conversation.updatedAt)) === "Hoje"
-      ).length,
-    [sortedConversations]
-  );
-
   if (compact) {
     return (
       <div className="flex h-full flex-col items-center gap-1 py-2.5">
@@ -520,17 +511,6 @@ export function ConversationRailV2({ onOpenSettings, onClose, compact }: Convers
               {option.label}
             </button>
           ))}
-        </div>
-
-        <div className="gc-rail-stats mt-2 grid grid-cols-2 gap-1.5">
-          <div className={cn("px-2 py-1.5", RAIL_SURFACE_CARD_CLASS)}>
-            <p className="text-nano uppercase tracking-label text-muted-foreground">Hoje</p>
-            <p className="text-xs font-semibold text-foreground">{todayCount}</p>
-          </div>
-          <div className={cn("px-2 py-1.5", RAIL_SURFACE_CARD_CLASS)}>
-            <p className="text-nano uppercase tracking-label text-muted-foreground">Fixadas</p>
-            <p className="text-xs font-semibold text-foreground">{pinnedConversations.length}</p>
-          </div>
         </div>
       </div>
 

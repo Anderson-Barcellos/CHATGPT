@@ -91,6 +91,7 @@ audio.writeUInt16LE(16, 34); audio.write('data', 36); audio.writeUInt32LE(audio.
       const paused = await context.request.post(`${base}/api/discover/run-due`, { headers: { Authorization: 'Bearer synthetic-runner' } });
       assert.equal((await paused.json()).status, 'paused');
       await page.reload({ waitUntil: 'networkidle' });
+      await until(() => toggle.isEnabled(), 'preferência carregada após a recarga');
       assert.equal(await toggle.getAttribute('aria-checked'), 'false');
       assert.equal(await page.getByRole('button', { name: 'Buscar novidades', exact: true }).isEnabled(), true);
       await page.getByRole('button', { name: 'Buscar novidades', exact: true }).click();

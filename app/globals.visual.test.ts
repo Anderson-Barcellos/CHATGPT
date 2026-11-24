@@ -5,24 +5,33 @@ import { CONTEXT_SIDEBAR_BREAKPOINT } from "@/lib/layout/breakpoints";
 const css = readFileSync(new URL("./globals.css", import.meta.url), "utf8");
 
 describe("Gaucho Chat visual contract", () => {
-  it("mantém o corpo dos balões desktop em 14,5–15,5px", () => {
-    expect(css).toContain(
-      "--gc-text-body: clamp(0.90625rem, 0.8646rem + 0.0868vw, 0.96875rem);"
-    );
-  });
-
   it("does not scan archived Next.js output as Tailwind source", () => {
     expect(css).toContain('@source not "../.next-before-sc2-20260906T170822Z"');
   });
 
-  it("loads Lexend with scoped typography instead of changing every product", () => {
+  it("carrega a Roboto local no escopo do chat, sem Lexend no corpo nem no chat", () => {
     const bodyBlock = css.match(/body\s*\{([^}]*)\}/)?.[1] ?? "";
 
-    expect(css).toContain('@import "@fontsource/lexend/latin-400.css"');
-    expect(css).toContain('@import "@fontsource/lexend/latin-500.css"');
-    expect(css).toContain('@import "@fontsource/lexend/latin-600.css"');
-    expect(css).toMatch(/\.gc-chat-ui\s*\{[\s\S]*font-family:\s*"Lexend"/);
-    expect(bodyBlock).not.toContain('font-family: "Lexend"');
+    expect(css).not.toContain("@fontsource/lexend");
+    expect(css).not.toContain("Lexend");
+    expect(css).toMatch(/@font-face\s*\{[^}]*font-family:\s*"Roboto"[^}]*roboto-latin-wght-normal\.woff2[^}]*font-weight:\s*100 900/);
+    expect(css).toMatch(/@font-face\s*\{[^}]*font-family:\s*"Roboto"[^}]*roboto-latin-wght-italic\.woff2[^}]*font-style:\s*italic/);
+    expect(css).toMatch(/\.gc-chat-ui\s*\{[\s\S]*font-family:\s*"Roboto"/);
+    expect(css).toMatch(/--font-sans:\s*"Roboto"/);
+    expect(bodyBlock).not.toContain('font-family: "Roboto"');
+  });
+
+  it("dá respiro de placas flutuantes no desktop e limita a linha de leitura", () => {
+    const desktop = css.match(/@media \(min-width: 768px\) and \(not \(\(max-height: 500px\) and \(pointer: coarse\)\)\) \{\s*\.gc-atmosphere-shell \{([^}]*)\}/)?.[1] ?? "";
+
+    expect(desktop).toMatch(/--gc-shell-gutter:\s*clamp\(1rem, 2\.4vmin, 1\.75rem\)/);
+    expect(desktop).toMatch(/--gc-workspace-gap:\s*clamp\(0\.875rem, 1\.1vw, 1\.25rem\)/);
+    expect(desktop).toMatch(/--gc-thread-max:\s*52rem/);
+    expect(desktop).toMatch(/--gc-assistant-bubble-max:\s*48rem/);
+    expect(desktop).toMatch(/--gc-user-bubble-max:\s*38rem/);
+    expect(desktop).toMatch(/--gc-composer-max:\s*50rem/);
+    expect(css).toMatch(/\.gc-atmosphere-shell \.gc-message-quick-actions \{\s*max-width:\s*min\(88%, var\(--gc-assistant-bubble-max, 46rem\)\);/);
+    expect(css).toMatch(/\.gc-atmosphere-shell \.gc-message-card \{\s*--gc-text-body:\s*clamp\(0\.875rem, 0\.8rem \+ 0\.12cqi, 0\.9375rem\)/);
   });
 
   it("keeps panel motion short and disables it for reduced motion", () => {
@@ -32,7 +41,7 @@ describe("Gaucho Chat visual contract", () => {
 
   it("expresses the 92 percent mobile density through responsive tokens", () => {
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-composer-controls-y:\s*0\.25rem;/);
-    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-header-height:\s*2\.53125rem;/);
+    expect(css).toMatch(/\.gc-header-row\s*\{[^}]*min-height:\s*3rem;/);
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-composer-control-height:\s*2\.5rem;/);
     expect(css).toMatch(/@media \(max-width: 359px\)[\s\S]*--gc-mobile-composer-control-height:\s*2\.125rem;/);
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*--gc-mobile-composer-send-size:\s*2\.5rem;/);

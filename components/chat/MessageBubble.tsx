@@ -197,25 +197,29 @@ export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDe
           onTouchCancel={longPress.onTouchCancel}
           onContextMenu={longPress.onContextMenu}
         >
-          {isUser ? (
-            <div className="gc-message-avatar-inside float-left mr-2 flex size-[1.6rem] items-center justify-center overflow-hidden rounded-[0.46rem] border border-[color:var(--gc-border)] bg-[var(--gc-surface-control)] shadow-[0_0_13px_rgba(14,116,144,0.10)] md:size-8 md:rounded-lg">
-              {/* eslint-disable-next-line @next/next/no-img-element -- small local avatar */}
-              <img
-                src={USER_AVATAR_SRC}
-                alt="Anders"
-                className="h-full w-full object-cover"
-              />
-            </div>
-          ) : (
-            <div className="gc-message-avatar gc-message-avatar-inside gc-refined-accent-surface float-right ml-2 flex size-7 items-center justify-center rounded-[0.8rem] border shadow-[0_9px_26px_rgba(15,118,110,0.12)] md:size-[2.125rem] md:rounded-xl" title={assistantProviderBadge.label}>
-              {assistantProviderBadge.Icon ? (
-                <assistantProviderBadge.Icon className="size-4 text-primary md:size-[1.125rem]" />
-              ) : (
-                <span aria-hidden="true" className="flex size-[1.125rem] items-center justify-center rounded-full bg-[var(--gc-surface-control)] text-[0.7rem] font-semibold leading-none text-foreground md:size-[1.25rem] md:text-xs">
-                  {assistantProviderBadge.letter}
+          {!isUser && (
+            <div className="gc-bubble-header">
+              <div className="flex min-w-0 items-center gap-2">
+                <div
+                  className="gc-message-avatar gc-message-avatar-inside gc-refined-accent-surface flex size-6 shrink-0 items-center justify-center rounded-lg border shadow-[0_6px_18px_rgba(0,70,113,0.16)] md:size-7 md:rounded-xl"
+                  title={assistantProviderBadge.label}
+                >
+                  {assistantProviderBadge.Icon ? (
+                    <assistantProviderBadge.Icon className="size-3.5 text-primary md:size-4" />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="flex size-4 items-center justify-center rounded-full bg-[var(--gc-surface-control)] text-[0.68rem] font-semibold leading-none text-foreground md:size-[1.125rem] md:text-xs"
+                    >
+                      {assistantProviderBadge.letter}
+                    </span>
+                  )}
+                  <span className="sr-only">Provider: {assistantProviderBadge.label}</span>
+                </div>
+                <span className="truncate text-nano font-semibold tracking-tight text-muted-foreground/85 md:text-micro">
+                  {assistantProviderBadge.label}
                 </span>
-              )}
-              <span className="sr-only">Provider: {assistantProviderBadge.label}</span>
+              </div>
             </div>
           )}
 
@@ -300,6 +304,20 @@ export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDe
                 <Button size="sm" className="h-10 px-3 text-xs md:h-7 md:px-2" onClick={() => void handleSaveEdit()} disabled={!editContent.trim() || editDisabled || editPending}>
                   <Send className="h-3 w-3 mr-1" />Enviar
                 </Button>
+              </div>
+            </div>
+          ) : isUser ? (
+            <div className="gc-user-bubble-row flex items-start gap-2.5">
+              <div className="gc-message-avatar-inside mt-0.5 flex size-[1.6rem] shrink-0 items-center justify-center overflow-hidden rounded-[0.46rem] border border-[color:var(--gc-bubble-user-border)] bg-[var(--gc-surface-control)] shadow-[0_4px_12px_rgba(2,24,38,0.22)] md:size-7 md:rounded-lg">
+                {/* eslint-disable-next-line @next/next/no-img-element -- small local avatar */}
+                <img
+                  src={USER_AVATAR_SRC}
+                  alt="Anders"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <MessageContent message={message} />
               </div>
             </div>
           ) : (
@@ -413,7 +431,7 @@ export const MessageBubble = memo(function MessageBubble({ message, onEdit, onDe
                 side={menuAnchorOffscreen ? "right" : "bottom"}
                 sticky={menuAnchorOffscreen ? "always" : "partial"}
                 collisionPadding={8}
-                className="gc-chat-ui w-52"
+                className="gc-chat-ui w-52 gc-workspace-type"
               >
                 {isUser && onEdit && (
                   <DropdownMenuItem

@@ -1,8 +1,5 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "@fontsource/lexend/latin-400.css";
-@import "@fontsource/lexend/latin-500.css";
-@import "@fontsource/lexend/latin-600.css";
 @source not "../.next-before-sc2-20260906T170822Z";
 
 @custom-variant dark (&:is(.dark *));
@@ -159,8 +156,6 @@ body {
   /* ── Responsive mobile density contract ────────────── */
   --gc-mobile-frame-pad: 0.125rem;
   --gc-mobile-shell-radius: 0.95rem;
-  --gc-mobile-header-height: 2.55rem;
-  --gc-mobile-header-x: 0.5rem;
   --gc-mobile-subheader-height: 1.62rem;
   --gc-mobile-subheader-x: 0.5rem;
   --gc-mobile-subheader-y: 0.1875rem;
@@ -186,11 +181,9 @@ body {
   --gc-mobile-brand-size: 2.25rem;
   --gc-mobile-primary-nav-height: 3.2rem;
   --gc-mobile-touch-target: 2.75rem;
-  --gc-composer-control-bg: rgb(255 255 255 / 76%);
-  --gc-composer-control-border: rgb(63 103 130 / 24%);
-  --gc-composer-control-fg: #47677f;
-  --gc-mobile-header-title-font-size: 0.8rem;
-  --gc-mobile-header-caption-font-size: 0.6rem;
+  --gc-composer-control-bg: rgb(226 241 248 / 88%);
+  --gc-composer-control-border: rgb(54 92 115 / 24%);
+  --gc-composer-control-fg: #042A41;
   --gc-mobile-subheader-font-size: 0.6875rem;
   --gc-mobile-panel-title-font-size: 0.875rem;
   --gc-mobile-tab-font-size: 0.75rem;
@@ -243,50 +236,50 @@ body {
 
   /* ── Splash ──────────────────────────────────────────── */
   --gc-bg-splash:
-    radial-gradient(ellipse at 50% 38%, #356f9e 0%, #14395b 52%, #030812 100%);
+    radial-gradient(ellipse at 50% 38%, #365C73 0%, #004671 46%, #042A41 74%, #021826 100%);
 
-  /* ── Shadcn tokens ──────────────────────────────────── */
-  --background: oklch(0.988 0.004 218);
-  --foreground: oklch(0.150 0.026 232);
-  --card: oklch(0.997 0.002 218);
-  --card-foreground: oklch(0.165 0.030 232);
-  --popover: oklch(0.993 0.004 222);
-  --popover-foreground: oklch(0.165 0.030 232);
-  --primary: oklch(0.48 0.105 190);
-  --primary-foreground: oklch(0.988 0.004 222);
-  --secondary: oklch(0.922 0.010 218);
-  --secondary-foreground: oklch(0.235 0.032 232);
-  --muted: oklch(0.940 0.006 218);
-  --muted-foreground: oklch(0.430 0.025 226);
-  --accent: oklch(0.630 0.090 184);
-  --accent-foreground: oklch(0.115 0.026 232);
+  /* ── Shadcn tokens (Polar Fjord Light) ──────────────── */
+  --background: #eef8fb;
+  --foreground: #042a41;
+  --card: #fafeff;
+  --card-foreground: #042a41;
+  --popover: #ffffff;
+  --popover-foreground: #042a41;
+  --primary: #004671;
+  --primary-foreground: #eaffff;
+  --secondary: #d7ecf7;
+  --secondary-foreground: #042a41;
+  --muted: #e2f2f9;
+  --muted-foreground: #365c73;
+  --accent: #c2e8ff;
+  --accent-foreground: #042a41;
   --destructive: oklch(0.60 0.20 25);
-  --border: oklch(0.840 0.014 218);
-  --input: oklch(0.895 0.010 218);
-  --ring: oklch(0.55 0.095 190);
-  --chart-1: oklch(0.54 0.12 214);
-  --chart-2: oklch(0.61 0.10 190);
-  --chart-3: oklch(0.47 0.10 235);
+  --border: rgb(54 92 115 / 20%);
+  --input: rgb(54 92 115 / 24%);
+  --ring: #004671;
+  --chart-1: #004671;
+  --chart-2: #365c73;
+  --chart-3: #7298af;
   --chart-4: oklch(0.66 0.11 160);
   --chart-5: oklch(0.70 0.13 82);
-  --sidebar: oklch(0.938 0.010 220);
-  --sidebar-foreground: oklch(0.165 0.030 232);
-  --sidebar-primary: oklch(0.48 0.120 218);
-  --sidebar-primary-foreground: oklch(0.988 0.004 222);
-  --sidebar-accent: oklch(0.885 0.024 198);
-  --sidebar-accent-foreground: oklch(0.145 0.028 232);
-  --sidebar-border: oklch(0.815 0.018 220);
-  --sidebar-ring: oklch(0.56 0.112 210);
+  --sidebar: #e1f1f8;
+  --sidebar-foreground: #042a41;
+  --sidebar-primary: #004671;
+  --sidebar-primary-foreground: #eaffff;
+  --sidebar-accent: #c2e8ff;
+  --sidebar-accent-foreground: #042a41;
+  --sidebar-border: rgb(54 92 115 / 18%);
+  --sidebar-ring: #004671;
 
   /* ── Page background ────────────────────────────────── */
   --gc-bg-page:
-    linear-gradient(180deg, oklch(0.996 0.002 214) 0%, oklch(0.966 0.009 214) 56%, oklch(0.992 0.004 220) 100%);
+    linear-gradient(180deg, #f5fcfe 0%, #e7f4fa 56%, #eef8fc 100%);
 
   /* ── Brand ──────────────────────────────────────────── */
-  --gc-brand-cyan: oklch(0.62 0.090 188);
-  --gc-brand-blue: oklch(0.50 0.092 202);
-  --gc-brand-indigo: oklch(0.36 0.058 226);
-  --gc-brand-sky: oklch(0.82 0.036 198);
+  --gc-brand-cyan: #c2e8ff;
+  --gc-brand-blue: #004671;
+  --gc-brand-indigo: #042a41;
+  --gc-brand-sky: #eaffff;
   --gc-brand-success: oklch(0.58 0.105 168);
   --gc-brand-warning: oklch(0.70 0.125 78);
   --gc-brand-danger: oklch(0.60 0.190 25);
@@ -409,8 +402,8 @@ body {
   --text-sm: var(--gc-text-body-sm);
   --gc-tracking-label: 0.1em;
   --gc-tracking-eyebrow: 0.14em;
-  font-family: "Lexend", var(--font-geist-sans);
-  letter-spacing: -0.012em;
+  font-family: "Roboto", var(--font-geist-sans);
+  letter-spacing: 0;
 }
 
 .gc-chat-ui :is(button, input, select, textarea, [role="tab"], [role="menuitem"]) {
@@ -960,8 +953,6 @@ body {
     /* 92% mobile density, expressed through real component dimensions. */
     --gc-mobile-frame-pad: 0;
     --gc-mobile-shell-radius: 0;
-    --gc-mobile-header-height: 2.53125rem;
-    --gc-mobile-header-x: 0.46rem;
     --gc-mobile-subheader-height: 1.4375rem;
     --gc-mobile-subheader-x: 0.46rem;
     --gc-mobile-subheader-y: 0.1725rem;
@@ -988,8 +979,6 @@ body {
     --gc-mobile-brand-size: 2.0625rem;
     --gc-mobile-primary-nav-height: 2.95rem;
     --gc-mobile-touch-target: 2.5rem;
-    --gc-mobile-header-title-font-size: 0.75rem;
-    --gc-mobile-header-caption-font-size: 0.625rem;
     --gc-mobile-subheader-font-size: 0.625rem;
     --gc-mobile-panel-title-font-size: 0.75rem;
     --gc-mobile-tab-font-size: 0.6875rem;
@@ -1029,144 +1018,144 @@ body {
   }
 }
 
-/* ── Atmosphere glass system ─────────────────────────── */
+/* ── Atmosphere glass system (Polar Fjord Light & Abyssal Ocean Dark) ── */
 :root {
-  --background: #eef6fa;
-  --foreground: #142536;
-  --card: #f8fbfd;
-  --card-foreground: #142536;
-  --popover: #f9fcfe;
-  --popover-foreground: #142536;
-  --primary: #356f9e;
-  --primary-foreground: #f8fdff;
-  --secondary: #dceaf2;
-  --secondary-foreground: #1c3547;
-  --muted: #e3edf3;
-  --muted-foreground: #62798b;
-  --accent: #739bb8;
-  --accent-foreground: #102a3b;
-  --border: rgb(63 103 130 / 20%);
-  --input: rgb(63 103 130 / 24%);
-  --ring: #4b82ac;
-  --sidebar: #e8f2f7;
-  --sidebar-foreground: #1a3041;
-  --sidebar-accent: #d7e9f2;
-  --sidebar-accent-foreground: #142b3c;
-  --sidebar-border: rgb(63 103 130 / 18%);
+  --background: #eef8fb;
+  --foreground: #042a41;
+  --card: #fafeff;
+  --card-foreground: #042a41;
+  --popover: #ffffff;
+  --popover-foreground: #042a41;
+  --primary: #004671;
+  --primary-foreground: #eaffff;
+  --secondary: #d7ecf7;
+  --secondary-foreground: #042a41;
+  --muted: #e2f2f9;
+  --muted-foreground: #365c73;
+  --accent: #c2e8ff;
+  --accent-foreground: #042a41;
+  --border: rgb(54 92 115 / 20%);
+  --input: rgb(54 92 115 / 24%);
+  --ring: #004671;
+  --sidebar: #e1f1f8;
+  --sidebar-foreground: #042a41;
+  --sidebar-accent: #c2e8ff;
+  --sidebar-accent-foreground: #042a41;
+  --sidebar-border: rgb(54 92 115 / 18%);
 
-  --gc-bg: #dfeaf1;
-  --gc-bg-page: #edf5f9;
-  --gc-surface-shell: rgb(245 250 253 / 97%);
-  --gc-surface-panel: rgb(232 242 248 / 96%);
-  --gc-surface-panel-strong: rgb(248 252 254 / 98%);
-  --gc-surface-composer: rgb(247 251 254 / 98%);
-  --gc-surface-control: rgb(53 104 135 / 7%);
-  --gc-surface-control-hover: rgb(53 119 156 / 13%);
-  --gc-surface-canvas: rgb(238 247 251 / 97%);
-  --gc-surface-canvas-soft: rgb(214 231 240 / 84%);
+  --gc-bg: #dceef6;
+  --gc-bg-page: #ebf6fa;
+  --gc-surface-shell: rgb(246 252 254 / 98%);
+  --gc-surface-panel: rgb(225 241 248 / 96%);
+  --gc-surface-panel-strong: rgb(250 254 255 / 99%);
+  --gc-surface-composer: rgb(250 254 255 / 99%);
+  --gc-surface-control: rgb(54 92 115 / 9%);
+  --gc-surface-control-hover: rgb(0 70 113 / 15%);
+  --gc-surface-canvas: rgb(240 249 253 / 98%);
+  --gc-surface-canvas-soft: rgb(212 234 245 / 88%);
   --gc-overlay-gradient:
-    radial-gradient(ellipse 58% 66% at 92% 92%, rgb(85 170 221 / 22%), transparent 69%),
-    linear-gradient(135deg, rgb(249 252 254 / 96%), rgb(235 245 250 / 94%) 58%, rgb(222 239 249 / 94%));
+    radial-gradient(ellipse 58% 66% at 92% 92%, rgb(194 232 255 / 55%), transparent 69%),
+    linear-gradient(135deg, rgb(250 254 255 / 97%), rgb(234 246 252 / 95%) 58%, rgb(216 238 249 / 95%));
   --gc-ambient-aura:
-    radial-gradient(ellipse 52% 44% at 91% 84%, rgb(81 165 217 / 22%), transparent 70%),
-    radial-gradient(ellipse 38% 32% at 38% 8%, rgb(113 171 203 / 14%), transparent 72%);
+    radial-gradient(ellipse 52% 44% at 91% 84%, rgb(194 232 255 / 52%), transparent 70%),
+    radial-gradient(ellipse 38% 32% at 38% 8%, rgb(114 152 175 / 20%), transparent 72%);
   --gc-ambient-mesh:
-    radial-gradient(ellipse 48% 58% at 88% 78%, rgb(78 163 216 / 16%), transparent 70%),
-    linear-gradient(180deg, rgb(255 255 255 / 50%), transparent 30%);
+    radial-gradient(ellipse 48% 58% at 88% 78%, rgb(114 152 175 / 18%), transparent 70%),
+    linear-gradient(180deg, rgb(234 255 255 / 65%), transparent 32%);
 
-  --gc-border: rgb(63 103 130 / 22%);
-  --gc-border-soft: rgb(63 103 130 / 13%);
+  --gc-border: rgb(54 92 115 / 22%);
+  --gc-border-soft: rgb(54 92 115 / 14%);
   --gc-bubble-user:
-    linear-gradient(145deg, rgb(55 91 119 / 98%), rgb(35 68 94 / 98%) 76%);
-  --gc-bubble-user-fg: #f7fbfe;
-  --gc-bubble-user-border: rgb(42 84 114 / 30%);
+    linear-gradient(142deg, #004671 0%, #042a41 64%, #365c73 100%);
+  --gc-bubble-user-fg: #eaffff;
+  --gc-bubble-user-border: rgb(0 70 113 / 32%);
   --gc-bubble-user-shadow:
-    0 20px 54px rgb(40 76 104 / 20%),
-    0 1px 0 rgb(255 255 255 / 18%) inset;
+    0 18px 46px rgb(4 42 65 / 20%),
+    0 1px 0 rgb(234 255 255 / 24%) inset;
   --gc-bubble-assistant:
-    linear-gradient(150deg, rgb(253 255 255 / 98%), rgb(237 246 251 / 97%));
-  --gc-bubble-assistant-border: rgb(63 103 130 / 20%);
-  --gc-bubble-assistant-accent: #2f7fbd;
+    linear-gradient(155deg, rgb(255 255 255 / 99%), rgb(238 249 253 / 98%));
+  --gc-bubble-assistant-border: rgb(54 92 115 / 20%);
+  --gc-bubble-assistant-accent: linear-gradient(180deg, #004671 0%, #365c73 56%, #7298af 100%);
   --gc-bubble-assistant-shadow:
-    0 20px 54px rgb(49 83 105 / 14%),
-    0 1px 0 rgb(255 255 255 / 88%) inset;
-  --gc-glass-bg: rgb(248 252 254 / 82%);
-  --gc-glass-bg-strong: rgb(251 254 255 / 94%);
-  --gc-glass-border: rgb(63 103 130 / 18%);
-  --gc-glass-highlight: rgb(255 255 255 / 72%);
+    0 18px 48px rgb(4 42 65 / 11%),
+    0 1px 0 rgb(255 255 255 / 92%) inset;
+  --gc-glass-bg: rgb(248 253 255 / 86%);
+  --gc-glass-bg-strong: rgb(252 255 255 / 95%);
+  --gc-glass-border: rgb(54 92 115 / 18%);
+  --gc-glass-highlight: rgb(255 255 255 / 78%);
 
   --gc-clinical-shell-bg:
-    linear-gradient(145deg, rgb(246 251 253 / 98%), rgb(230 241 247 / 98%)),
+    linear-gradient(145deg, rgb(248 253 255 / 98%), rgb(228 243 250 / 98%)),
     var(--gc-surface-shell);
   --gc-clinical-shell-shadow:
-    0 26px 74px rgb(43 75 96 / 18%),
-    0 0 0 1px rgb(255 255 255 / 70%) inset;
+    0 26px 74px rgb(4 42 65 / 16%),
+    0 0 0 1px rgb(255 255 255 / 78%) inset;
   --gc-clinical-panel-bg:
-    linear-gradient(180deg, rgb(239 247 251 / 98%), rgb(228 239 246 / 98%)),
+    linear-gradient(180deg, rgb(233 245 251 / 98%), rgb(220 237 246 / 98%)),
     var(--gc-surface-panel);
   --gc-clinical-header-bg:
-    linear-gradient(180deg, rgb(249 252 254 / 99%), rgb(235 244 249 / 98%)),
+    linear-gradient(180deg, rgb(250 254 255 / 99%), rgb(234 245 251 / 98%)),
     var(--gc-surface-panel-strong);
-  --gc-clinical-header-shadow: 0 1px 0 rgb(255 255 255 / 84%) inset;
+  --gc-clinical-header-shadow: 0 1px 0 rgb(255 255 255 / 88%) inset;
   --gc-clinical-canvas-bg:
-    radial-gradient(ellipse 58% 64% at 91% 90%, rgb(81 164 220 / 24%), transparent 68%),
-    radial-gradient(ellipse 44% 34% at 42% 3%, rgb(116 172 204 / 13%), transparent 74%),
-    linear-gradient(145deg, #f7fbfd 0%, #edf6fa 54%, #dcecf7 100%);
+    radial-gradient(ellipse 58% 64% at 91% 90%, rgb(194 232 255 / 45%), transparent 68%),
+    radial-gradient(ellipse 44% 34% at 42% 3%, rgb(114 152 175 / 16%), transparent 74%),
+    linear-gradient(145deg, #f8fdff 0%, #ecf7fb 54%, #daedf7 100%);
   --gc-clinical-composer-bg:
-    linear-gradient(180deg, rgb(251 254 255 / 99%), rgb(235 245 250 / 99%)),
+    linear-gradient(180deg, rgb(253 255 255 / 99%), rgb(236 247 252 / 99%)),
     var(--gc-surface-composer);
-  --gc-clinical-composer-border: rgb(55 119 154 / 26%);
+  --gc-clinical-composer-border: rgb(0 70 113 / 26%);
   --gc-clinical-composer-shadow:
-    0 24px 62px rgb(42 78 103 / 18%),
-    0 1px 0 rgb(255 255 255 / 88%) inset,
-    0 0 0 1px rgb(69 132 168 / 7%);
+    0 22px 58px rgb(4 42 65 / 15%),
+    0 1px 0 rgb(255 255 255 / 92%) inset,
+    0 0 0 1px rgb(0 70 113 / 8%);
   --gc-clinical-subheader-bg:
-    linear-gradient(90deg, rgb(237 246 250 / 98%), rgb(248 252 254 / 98%) 52%, rgb(221 238 248 / 96%));
+    linear-gradient(90deg, rgb(234 246 251 / 98%), rgb(248 253 255 / 98%) 52%, rgb(219 238 248 / 96%));
   --gc-clinical-section-header-bg:
-    linear-gradient(180deg, rgb(248 252 254 / 99%), rgb(232 242 248 / 98%));
+    linear-gradient(180deg, rgb(246 252 255 / 99%), rgb(228 242 249 / 98%));
   --gc-clinical-card-bg:
-    linear-gradient(180deg, rgb(252 254 255 / 88%), rgb(232 242 248 / 90%));
-  --gc-clinical-card-shadow: 0 1px 0 rgb(255 255 255 / 88%) inset;
+    linear-gradient(180deg, rgb(253 255 255 / 92%), rgb(232 244 250 / 94%));
+  --gc-clinical-card-shadow: 0 1px 0 rgb(255 255 255 / 90%) inset;
   --gc-clinical-row-bg:
-    linear-gradient(135deg, rgb(248 252 254 / 90%), rgb(229 240 247 / 92%));
+    linear-gradient(135deg, rgb(249 253 255 / 92%), rgb(227 241 248 / 94%));
   --gc-workspace-note-bg:
-    linear-gradient(145deg, rgb(255 255 255 / 96%), rgb(236 246 251 / 98%));
-  --gc-workspace-note-border: rgb(53 111 158 / 28%);
-  --gc-workspace-note-body: #405c72;
+    linear-gradient(145deg, rgb(255 255 255 / 98%), rgb(235 247 252 / 98%));
+  --gc-workspace-note-border: rgb(0 70 113 / 26%);
+  --gc-workspace-note-body: #365c73;
   --gc-workspace-note-shadow:
-    0 10px 26px rgb(42 78 103 / 10%),
+    0 10px 26px rgb(4 42 65 / 10%),
     0 1px 0 rgb(255 255 255 / 94%) inset;
   --gc-clinical-active-bg:
-    linear-gradient(135deg, rgb(114 178 208 / 25%), rgb(225 239 247 / 96%));
+    linear-gradient(135deg, rgb(194 232 255 / 62%), rgb(222 240 249 / 96%));
   --gc-clinical-active-shadow:
-    0 12px 30px rgb(47 83 105 / 14%),
-    0 1px 0 rgb(255 255 255 / 82%) inset;
-  --gc-clinical-input-shadow: 0 1px 0 rgb(255 255 255 / 80%) inset;
+    0 10px 26px rgb(0 70 113 / 14%),
+    0 1px 0 rgb(255 255 255 / 86%) inset;
+  --gc-clinical-input-shadow: 0 1px 0 rgb(255 255 255 / 84%) inset;
 
   --gc-refined-panel-bg:
-    linear-gradient(180deg, rgb(252 254 255 / 92%), rgb(232 242 248 / 94%));
-  --gc-refined-panel-border: rgb(63 103 130 / 18%);
+    linear-gradient(180deg, rgb(253 255 255 / 95%), rgb(232 244 250 / 96%));
+  --gc-refined-panel-border: rgb(54 92 115 / 18%);
   --gc-refined-panel-shadow:
-    0 22px 56px rgb(45 78 99 / 14%),
-    0 1px 0 rgb(255 255 255 / 86%) inset;
+    0 20px 52px rgb(4 42 65 / 12%),
+    0 1px 0 rgb(255 255 255 / 90%) inset;
   --gc-refined-soft-bg:
-    linear-gradient(180deg, rgb(249 253 255 / 90%), rgb(230 241 247 / 94%));
-  --gc-refined-soft-border: rgb(63 103 130 / 16%);
+    linear-gradient(180deg, rgb(249 253 255 / 94%), rgb(229 242 249 / 96%));
+  --gc-refined-soft-border: rgb(54 92 115 / 16%);
   --gc-refined-accent-bg:
-    linear-gradient(145deg, rgb(216 237 246 / 92%), rgb(237 247 251 / 96%));
-  --gc-refined-accent-border: rgb(55 119 154 / 20%);
+    linear-gradient(145deg, rgb(194 232 255 / 55%), rgb(235 247 253 / 96%));
+  --gc-refined-accent-border: rgb(0 70 113 / 22%);
   --gc-refined-citation-bg:
-    linear-gradient(180deg, rgb(250 253 255 / 94%), rgb(231 241 247 / 95%));
-  --gc-refined-citation-border: rgb(63 103 130 / 16%);
+    linear-gradient(180deg, rgb(250 254 255 / 96%), rgb(230 243 249 / 96%));
+  --gc-refined-citation-border: rgb(54 92 115 / 16%);
   --gc-refined-action-bg:
-    linear-gradient(180deg, rgb(248 252 254 / 90%), rgb(228 239 246 / 94%));
-  --gc-refined-action-border: rgb(63 103 130 / 15%);
-  --gc-refined-chip-bg: rgb(216 233 242 / 88%);
-  --gc-refined-chip-border: rgb(63 103 130 / 15%);
-  --gc-refined-chip-text: #536c7e;
+    linear-gradient(180deg, rgb(248 253 255 / 94%), rgb(227 241 248 / 96%));
+  --gc-refined-action-border: rgb(54 92 115 / 16%);
+  --gc-refined-chip-bg: rgb(214 235 246 / 90%);
+  --gc-refined-chip-border: rgb(54 92 115 / 18%);
+  --gc-refined-chip-text: #042a41;
 
-  --gc-shell-gutter: 0.35rem;
   --gc-shell-rail-width: 14.5rem;
+  --gc-shell-rail-compact-width: 3.25rem;
   --gc-shell-context-width: clamp(500px, 40vw, 600px);
   --gc-shell-context-expanded-width: clamp(640px, 50vw, 760px);
 }
@@ -1182,6 +1171,75 @@ body {
   container: gc-panel / inline-size;
 }
 
+.gc-atmosphere-shell,
+.gc-workspace-sheet,
+.gc-workspace-type,
+.gc-composer-menu,
+:is(.gc-atmosphere-shell, .gc-workspace-sheet, .gc-workspace-type) .gc-chat-ui {
+  font-family: "Roboto", var(--font-geist-sans);
+  --font-sans: "Roboto", var(--font-geist-sans);
+  --gc-type-rise: clamp(0rem, 0.15cqi - 0.03rem, 0.0625rem);
+  --gc-text-nano: calc(0.6875rem + var(--gc-type-rise));
+  --gc-text-micro: calc(0.6875rem + var(--gc-type-rise));
+  --gc-text-caption: calc(0.75rem + var(--gc-type-rise));
+  --gc-text-body-sm: calc(0.8125rem + var(--gc-type-rise));
+  --gc-text-body: calc(0.875rem + var(--gc-type-rise));
+  --gc-text-h3: calc(0.90625rem + var(--gc-type-rise));
+  --gc-text-h2: calc(1rem + var(--gc-type-rise));
+  --gc-text-h1: calc(1.3125rem + var(--gc-type-rise));
+  --text-xs: var(--gc-text-micro);
+  --text-sm: var(--gc-text-body-sm);
+  --gc-mobile-control-font-size: var(--gc-text-nano);
+  --gc-mobile-send-font-size: var(--gc-text-nano);
+  --gc-mobile-tab-font-size: var(--gc-text-nano);
+  --gc-mobile-panel-title-font-size: var(--gc-text-body-sm);
+}
+
+:is(.gc-atmosphere-shell, .gc-workspace-sheet) .gc-conversation-rail,
+.gc-clinical-panel.gc-workspace-type {
+  container-type: inline-size;
+}
+
+.gc-atmosphere-shell {
+  --gc-shell-gutter: clamp(0.625rem, 1.8vmin, 1rem);
+}
+
+/* Roboto variável local (Fontsource 5.3.0, OFL): fonte estreita que
+   rende mais texto por linha no mesmo tamanho. */
+@font-face {
+  font-family: "Roboto";
+  src: url("./fonts/roboto/roboto-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url("./fonts/roboto/roboto-latin-wght-italic.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+.gc-header-row {
+  min-height: 3rem;
+  gap: clamp(0.5rem, 1.25cqi, 1rem);
+  padding: 0.375rem clamp(0.75rem, 1.5cqi, 1.25rem);
+}
+
+.gc-atmosphere-shell h1.gc-header-title {
+  text-wrap: nowrap;
+}
+
+.gc-header-search {
+  width: clamp(12rem, 28cqi, 24rem);
+}
+
+.gc-welcome-heading {
+  font-size: clamp(1.25rem, 3cqi, 2.125rem);
+}
+
 @container gc-chat (width < 375px) {
   .gc-new-conversation-suffix {
     display: none;
@@ -1189,182 +1247,324 @@ body {
 }
 
 @media (min-width: 768px) and (not ((max-height: 500px) and (pointer: coarse))) {
-  @container gc-chat (width < 640px) {
-    .gc-header-search {
+  .gc-header-row {
+    min-height: 3.25rem;
+    padding-block: 0.5rem;
+  }
+
+  @container gc-chat (width < 760px) {
+    .gc-header-product {
       display: none;
+    }
+  }
+
+  @container gc-chat (width >= 760px) {
+    .gc-header-search {
+      display: flex;
     }
 
     .gc-header-search-trigger {
-      display: inline-flex;
+      display: none;
     }
   }
 }
 
 .dark {
-  --background: #07101d;
-  --foreground: #eef5ff;
-  --card: #0d1929;
-  --card-foreground: #eef5ff;
-  --popover: #0a1422;
-  --popover-foreground: #eef5ff;
-  --primary: #6f9fd0;
-  --primary-foreground: #03101a;
-  --secondary: #142238;
-  --secondary-foreground: #e6f0fb;
-  --muted: #152338;
-  --muted-foreground: #8498b0;
-  --accent: #537faa;
-  --accent-foreground: #f3f8ff;
-  --border: rgb(126 157 193 / 14%);
-  --input: rgb(126 157 193 / 16%);
-  --ring: #6f9fd0;
-  --sidebar: #07111e;
-  --sidebar-foreground: #dfeaf6;
-  --sidebar-accent: #13243a;
-  --sidebar-accent-foreground: #f2f7fd;
-  --sidebar-border: rgb(126 157 193 / 12%);
+  /* ── Abyssal Ocean Dark Mode (#EAFFFF · #C2E8FF · #7298AF · #365C73 · #042A41 · #004671) ── */
+  --background: #021826;
+  --foreground: #eaffff;
+  --card: #042a41;
+  --card-foreground: #eaffff;
+  --popover: #042a41;
+  --popover-foreground: #eaffff;
+  --primary: #c2e8ff;
+  --primary-foreground: #021826;
+  --secondary: #004671;
+  --secondary-foreground: #eaffff;
+  --muted: #063552;
+  --muted-foreground: #7298af;
+  --accent: #365c73;
+  --accent-foreground: #eaffff;
+  --border: rgb(114 152 175 / 22%);
+  --input: rgb(114 152 175 / 26%);
+  --ring: #c2e8ff;
+  --sidebar: #032135;
+  --sidebar-foreground: #eaffff;
+  --sidebar-accent: #004671;
+  --sidebar-accent-foreground: #eaffff;
+  --sidebar-border: rgb(114 152 175 / 18%);
 
-  --gc-bg: #030812;
-  --gc-bg-page: #030812;
-  --gc-surface-shell: rgb(5 13 24 / 97%);
-  --gc-surface-panel: rgb(7 17 30 / 96%);
-  --gc-surface-panel-strong: rgb(8 18 31 / 96%);
-  --gc-surface-composer: rgb(12 24 42 / 96%);
-  --gc-surface-control: rgb(112 148 187 / 7%);
-  --gc-surface-control-hover: rgb(112 170 210 / 13%);
-  --gc-surface-canvas: rgb(4 10 19 / 96%);
-  --gc-surface-canvas-soft: rgb(18 35 58 / 78%);
+  --gc-bg: #021826;
+  --gc-bg-page: #021826;
+  --gc-surface-shell: rgb(3 28 45 / 98%);
+  --gc-surface-panel: rgb(4 42 65 / 96%);
+  --gc-surface-panel-strong: rgb(5 48 74 / 98%);
+  --gc-surface-composer: rgb(4 42 65 / 97%);
+  --gc-surface-control: rgb(54 92 115 / 24%);
+  --gc-surface-control-hover: rgb(54 92 115 / 42%);
+  --gc-surface-canvas: rgb(2 24 38 / 96%);
+  --gc-surface-canvas-soft: rgb(4 42 65 / 84%);
+  --gc-composer-control-bg: rgb(54 92 115 / 28%);
+  --gc-composer-control-border: rgb(114 152 175 / 32%);
+  --gc-composer-control-fg: #c2e8ff;
   --gc-overlay-gradient:
-    radial-gradient(ellipse 56% 62% at 92% 92%, rgb(17 74 164 / 34%), transparent 68%),
-    linear-gradient(135deg, rgb(2 7 15 / 94%), rgb(4 13 26 / 88%) 60%, rgb(5 24 57 / 88%));
+    radial-gradient(ellipse 56% 62% at 92% 92%, rgb(0 70 113 / 48%), transparent 68%),
+    linear-gradient(135deg, rgb(2 21 34 / 96%), rgb(4 42 65 / 90%) 60%, rgb(0 70 113 / 44%));
   --gc-ambient-aura:
-    radial-gradient(ellipse 50% 42% at 91% 84%, rgb(20 86 189 / 34%), transparent 70%),
-    radial-gradient(ellipse 36% 30% at 38% 9%, rgb(62 119 164 / 11%), transparent 72%);
+    radial-gradient(ellipse 50% 42% at 91% 84%, rgb(0 70 113 / 45%), transparent 70%),
+    radial-gradient(ellipse 36% 30% at 38% 9%, rgb(54 92 115 / 24%), transparent 72%);
   --gc-ambient-mesh:
-    radial-gradient(ellipse 46% 58% at 88% 78%, rgb(16 72 166 / 24%), transparent 70%),
-    linear-gradient(180deg, rgb(255 255 255 / 1.5%), transparent 28%);
+    radial-gradient(ellipse 46% 58% at 88% 78%, rgb(0 70 113 / 32%), transparent 70%),
+    linear-gradient(180deg, rgb(194 232 255 / 3%), transparent 28%);
 
-  --gc-border: rgb(126 157 193 / 15%);
-  --gc-border-soft: rgb(126 157 193 / 9%);
+  --gc-border: rgb(114 152 175 / 22%);
+  --gc-border-soft: rgb(114 152 175 / 14%);
   --gc-bubble-user:
-    linear-gradient(145deg, rgb(26 48 77 / 96%), rgb(13 31 55 / 97%) 76%);
-  --gc-bubble-user-fg: #edf5ff;
-  --gc-bubble-user-border: rgb(118 163 205 / 23%);
+    linear-gradient(142deg, #365c73 0%, #004671 58%, #042a41 100%);
+  --gc-bubble-user-fg: #eaffff;
+  --gc-bubble-user-border: rgb(194 232 255 / 28%);
   --gc-bubble-user-shadow:
-    0 22px 62px rgb(0 4 12 / 48%),
-    0 1px 0 rgb(186 220 244 / 8%) inset;
+    0 20px 56px rgb(1 10 18 / 54%),
+    0 1px 0 rgb(234 255 255 / 14%) inset;
   --gc-bubble-assistant:
-    linear-gradient(150deg, rgb(20 39 65 / 94%), rgb(10 24 43 / 96%));
-  --gc-bubble-assistant-border: rgb(118 163 205 / 18%);
-  --gc-bubble-assistant-accent: #79bdf2;
+    linear-gradient(155deg, rgb(6 52 80 / 95%), rgb(4 42 65 / 97%));
+  --gc-bubble-assistant-border: rgb(114 152 175 / 24%);
+  --gc-bubble-assistant-accent: linear-gradient(180deg, #c2e8ff 0%, #7298af 52%, #004671 100%);
   --gc-bubble-assistant-shadow:
-    0 22px 62px rgb(0 4 12 / 42%),
-    0 1px 0 rgb(186 220 244 / 6%) inset;
-  --gc-glass-bg: rgb(9 20 35 / 78%);
-  --gc-glass-bg-strong: rgb(14 29 49 / 90%);
-  --gc-glass-border: rgb(126 157 193 / 14%);
-  --gc-glass-highlight: rgb(196 224 246 / 7%);
+    0 20px 56px rgb(1 10 18 / 46%),
+    0 1px 0 rgb(194 232 255 / 10%) inset;
+  --gc-glass-bg: rgb(4 42 65 / 82%);
+  --gc-glass-bg-strong: rgb(6 52 80 / 92%);
+  --gc-glass-border: rgb(114 152 175 / 20%);
+  --gc-glass-highlight: rgb(194 232 255 / 10%);
 
   --gc-clinical-shell-bg:
-    linear-gradient(145deg, rgb(8 18 31 / 97%), rgb(3 10 20 / 98%)),
+    linear-gradient(145deg, rgb(4 42 65 / 97%), rgb(2 24 38 / 98%)),
     var(--gc-surface-shell);
   --gc-clinical-shell-shadow:
-    0 26px 80px rgb(0 3 10 / 58%),
-    0 0 0 1px rgb(121 166 207 / 6%) inset;
+    0 26px 80px rgb(1 8 15 / 64%),
+    0 0 0 1px rgb(194 232 255 / 10%) inset;
   --gc-clinical-panel-bg:
-    linear-gradient(180deg, rgb(8 19 32 / 97%), rgb(5 13 24 / 98%)),
+    linear-gradient(180deg, rgb(4 42 65 / 97%), rgb(3 31 48 / 98%)),
     var(--gc-surface-panel);
   --gc-clinical-header-bg:
-    linear-gradient(180deg, rgb(10 22 38 / 97%), rgb(6 15 27 / 98%)),
+    linear-gradient(180deg, rgb(5 48 74 / 97%), rgb(4 38 58 / 98%)),
     var(--gc-surface-panel-strong);
-  --gc-clinical-header-shadow: 0 1px 0 rgb(163 201 232 / 5%) inset;
+  --gc-clinical-header-shadow: 0 1px 0 rgb(194 232 255 / 8%) inset;
   --gc-clinical-canvas-bg:
-    radial-gradient(ellipse 58% 64% at 91% 90%, rgb(15 68 159 / 34%), transparent 68%),
-    radial-gradient(ellipse 44% 34% at 42% 3%, rgb(52 98 143 / 10%), transparent 74%),
-    linear-gradient(145deg, #020711 0%, #040c18 54%, #061734 100%);
+    radial-gradient(ellipse 58% 64% at 91% 90%, rgb(0 70 113 / 38%), transparent 68%),
+    radial-gradient(ellipse 44% 34% at 42% 3%, rgb(54 92 115 / 18%), transparent 74%),
+    linear-gradient(145deg, #021522 0%, #031e30 54%, #042a41 100%);
   --gc-clinical-composer-bg:
-    linear-gradient(180deg, rgb(18 35 58 / 97%), rgb(9 23 41 / 98%)),
+    linear-gradient(180deg, rgb(6 52 80 / 97%), rgb(4 42 65 / 98%)),
     var(--gc-surface-composer);
-  --gc-clinical-composer-border: rgb(105 164 206 / 24%);
+  --gc-clinical-composer-border: rgb(114 152 175 / 30%);
   --gc-clinical-composer-shadow:
-    0 24px 70px rgb(0 3 12 / 54%),
-    0 1px 0 rgb(181 220 245 / 8%) inset,
-    0 0 0 1px rgb(88 151 196 / 5%);
+    0 24px 68px rgb(1 8 15 / 56%),
+    0 1px 0 rgb(194 232 255 / 12%) inset,
+    0 0 0 1px rgb(114 152 175 / 8%);
   --gc-clinical-subheader-bg:
-    linear-gradient(90deg, rgb(12 27 47 / 96%), rgb(5 15 29 / 96%) 52%, rgb(7 28 61 / 94%));
+    linear-gradient(90deg, rgb(4 42 65 / 96%), rgb(3 30 47 / 96%) 52%, rgb(0 70 113 / 88%));
   --gc-clinical-section-header-bg:
-    linear-gradient(180deg, rgb(10 22 37 / 97%), rgb(6 15 27 / 98%));
+    linear-gradient(180deg, rgb(5 48 74 / 97%), rgb(4 38 58 / 98%));
   --gc-clinical-card-bg:
-    linear-gradient(180deg, rgb(18 34 55 / 76%), rgb(8 20 36 / 82%));
-  --gc-clinical-card-shadow: 0 1px 0 rgb(185 218 240 / 5%) inset;
+    linear-gradient(180deg, rgb(6 52 80 / 82%), rgb(4 42 65 / 88%));
+  --gc-clinical-card-shadow: 0 1px 0 rgb(194 232 255 / 8%) inset;
   --gc-clinical-row-bg:
-    linear-gradient(135deg, rgb(17 33 55 / 78%), rgb(8 20 36 / 84%));
+    linear-gradient(135deg, rgb(6 52 80 / 82%), rgb(4 42 65 / 88%));
   --gc-workspace-note-bg:
-    linear-gradient(145deg, rgb(18 36 60 / 96%), rgb(9 23 42 / 98%));
-  --gc-workspace-note-border: rgb(121 189 242 / 24%);
-  --gc-workspace-note-body: #c2d2e2;
+    linear-gradient(145deg, rgb(6 52 80 / 96%), rgb(4 42 65 / 98%));
+  --gc-workspace-note-border: rgb(194 232 255 / 28%);
+  --gc-workspace-note-body: #c2e8ff;
   --gc-workspace-note-shadow:
-    0 12px 30px rgb(0 4 13 / 34%),
-    0 1px 0 rgb(186 220 244 / 7%) inset;
+    0 12px 30px rgb(1 10 18 / 38%),
+    0 1px 0 rgb(194 232 255 / 10%) inset;
   --gc-clinical-active-bg:
-    linear-gradient(135deg, rgb(73 116 151 / 30%), rgb(18 35 57 / 92%));
+    linear-gradient(135deg, rgb(0 70 113 / 72%), rgb(54 92 115 / 44%));
   --gc-clinical-active-shadow:
-    0 12px 34px rgb(0 5 14 / 34%),
-    0 1px 0 rgb(190 221 242 / 5%) inset;
-  --gc-clinical-input-shadow: 0 1px 0 rgb(185 218 240 / 4%) inset;
+    0 12px 34px rgb(1 10 18 / 38%),
+    0 1px 0 rgb(194 232 255 / 12%) inset;
+  --gc-clinical-input-shadow: 0 1px 0 rgb(194 232 255 / 7%) inset;
 
   --gc-refined-panel-bg:
-    linear-gradient(180deg, rgb(18 35 58 / 88%), rgb(8 21 38 / 92%));
-  --gc-refined-panel-border: rgb(126 157 193 / 14%);
+    linear-gradient(180deg, rgb(6 52 80 / 92%), rgb(4 42 65 / 95%));
+  --gc-refined-panel-border: rgb(114 152 175 / 20%);
   --gc-refined-panel-shadow:
-    0 24px 64px rgb(0 4 13 / 42%),
-    0 1px 0 rgb(186 220 244 / 6%) inset;
+    0 24px 64px rgb(1 10 18 / 46%),
+    0 1px 0 rgb(194 232 255 / 9%) inset;
   --gc-refined-soft-bg:
-    linear-gradient(180deg, rgb(19 36 59 / 82%), rgb(9 22 39 / 88%));
-  --gc-refined-soft-border: rgb(126 157 193 / 12%);
+    linear-gradient(180deg, rgb(6 52 80 / 86%), rgb(4 42 65 / 92%));
+  --gc-refined-soft-border: rgb(114 152 175 / 18%);
   --gc-refined-accent-bg:
-    linear-gradient(145deg, rgb(26 56 78 / 80%), rgb(9 24 42 / 94%));
-  --gc-refined-accent-border: rgb(111 159 208 / 18%);
+    linear-gradient(145deg, rgb(0 70 113 / 78%), rgb(4 42 65 / 95%));
+  --gc-refined-accent-border: rgb(194 232 255 / 26%);
   --gc-refined-citation-bg:
-    linear-gradient(180deg, rgb(17 34 56 / 88%), rgb(8 21 38 / 92%));
-  --gc-refined-citation-border: rgb(126 157 193 / 12%);
+    linear-gradient(180deg, rgb(6 50 76 / 90%), rgb(4 42 65 / 94%));
+  --gc-refined-citation-border: rgb(114 152 175 / 18%);
   --gc-refined-action-bg:
-    linear-gradient(180deg, rgb(16 32 53 / 76%), rgb(7 19 35 / 84%));
-  --gc-refined-action-border: rgb(126 157 193 / 11%);
-  --gc-refined-chip-bg: rgb(21 40 64 / 78%);
-  --gc-refined-chip-border: rgb(126 157 193 / 11%);
-  --gc-refined-chip-text: #a9bbcd;
+    linear-gradient(180deg, rgb(6 50 76 / 82%), rgb(4 42 65 / 88%));
+  --gc-refined-action-border: rgb(114 152 175 / 18%);
+  --gc-refined-chip-bg: rgb(54 92 115 / 38%);
+  --gc-refined-chip-border: rgb(114 152 175 / 22%);
+  --gc-refined-chip-text: #c2e8ff;
 }
 
-.gc-atmosphere-shell .gc-clinical-shell {
-  border-radius: 1rem;
+.gc-atmosphere-shell,
+.gc-workspace-sheet {
+  --gc-workspace-stage: linear-gradient(148deg, #eff8ff, #c9dff7 62%, #accded);
+  --gc-workspace-orb: radial-gradient(circle at 24% 21%, #f2fdff, #98d8fa 37%, #658be1 77%, #5379d0);
+  --gc-workspace-disc: linear-gradient(162deg, #e6faff 2%, #8fcff4 48%, #3c6fc7 90%);
+  --gc-workspace-reflection: rgb(255 255 255 / 72%);
+  --gc-workspace-disc-rim: #6191d8;
+  --gc-workspace-edge: rgb(255 255 255 / 75%);
+  --gc-workspace-rim: rgb(54 92 140 / 22%);
+  --gc-workspace-shadow: rgb(35 67 120 / 18%);
+  --gc-workspace-plate-fallback: linear-gradient(148deg, #f4faff, #deedf9);
+  --gc-workspace-plate: linear-gradient(148deg, rgb(251 254 255 / 74%), rgb(233 245 255 / 60%) 48%, rgb(242 250 255 / 72%));
+  --gc-workspace-overlay: linear-gradient(148deg, rgb(249 253 255 / 96%), rgb(225 239 253 / 94%));
+  --gc-workspace-chrome: linear-gradient(155deg, rgb(255 255 255 / 73%), rgb(228 243 255 / 54%));
+  --gc-clinical-header-bg: var(--gc-workspace-chrome);
+  --gc-clinical-section-header-bg: var(--gc-workspace-chrome);
+  --gc-clinical-composer-bg: linear-gradient(155deg, rgb(255 255 255 / 99%), rgb(231 244 255 / 94%));
 }
 
-.gc-atmosphere-shell .gc-clinical-rail::before,
-.gc-atmosphere-shell .gc-clinical-panel::before {
+.dark :is(.gc-atmosphere-shell, .gc-workspace-sheet) {
+  --muted-foreground: #a1bdd7;
+  --gc-workspace-stage: linear-gradient(148deg, #142a67, #091a43 52%, #09132e 83%, #142b62);
+  --gc-workspace-orb: radial-gradient(circle at 24% 21%, #8fe7ff, #3676e6 28%, #1d3eac 58%, #14256d 88%);
+  --gc-workspace-disc: linear-gradient(162deg, #94ddff 2%, #487bfa 34%, #263fbc 68%, #172a82);
+  --gc-workspace-reflection: rgb(151 221 255 / 60%);
+  --gc-workspace-disc-rim: #17276e;
+  --gc-workspace-edge: rgb(176 221 255 / 24%);
+  --gc-workspace-rim: rgb(139 183 247 / 28%);
+  --gc-workspace-shadow: rgb(3 7 30 / 55%);
+  --gc-workspace-plate-fallback: linear-gradient(148deg, #15264e, #101e42);
+  --gc-workspace-plate: linear-gradient(148deg, rgb(14 30 76 / 62%), rgb(10 23 53 / 74%) 54%, rgb(12 26 63 / 66%));
+  --gc-workspace-overlay: linear-gradient(148deg, rgb(17 32 69 / 96%), rgb(11 24 53 / 96%));
+  --gc-workspace-chrome: linear-gradient(155deg, rgb(36 60 111 / 63%), rgb(14 28 60 / 67%));
+  --gc-clinical-composer-bg: linear-gradient(155deg, rgb(31 53 102 / 97%), rgb(13 27 56 / 98%));
+  --gc-clinical-composer-border: rgb(145 186 250 / 35%);
+  --gc-bubble-assistant: linear-gradient(155deg, #1a3464, #11264c);
+  --gc-bubble-user: linear-gradient(142deg, #294984, #1b3b72 58%, #172c58);
+}
+
+.gc-atmosphere-shell {
+  isolation: isolate;
+  background: var(--gc-workspace-stage);
+}
+
+.gc-workspace-backdrop::before,
+.gc-workspace-backdrop::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+}
+
+.gc-workspace-backdrop::before {
+  top: -9%;
+  left: 4%;
+  width: clamp(17rem, 42vw, 49rem);
+  aspect-ratio: 1;
+  background: var(--gc-workspace-orb);
+  box-shadow: inset 3px 1px 1px var(--gc-workspace-reflection);
+}
+
+.gc-workspace-backdrop::after {
+  right: 3%;
+  bottom: -7%;
+  width: clamp(24rem, 62vw, 72rem);
+  aspect-ratio: 3.8;
+  background: var(--gc-workspace-disc);
+  transform: rotate(-13deg);
+  box-shadow:
+    inset 0 2px 1px var(--gc-workspace-reflection),
+    0 1rem 0 var(--gc-workspace-disc-rim),
+    0 2.25rem 3rem var(--gc-workspace-shadow);
+}
+
+.gc-atmosphere-shell .gc-clinical-shell,
+.gc-workspace-sheet:is(.gc-clinical-rail, .gc-clinical-panel) {
+  background: var(--gc-workspace-plate-fallback);
+}
+
+.gc-atmosphere-shell .gc-clinical-canvas {
+  background: transparent;
+}
+
+.gc-atmosphere-shell .gc-welcome-desktop {
+  --gc-refined-panel-bg: var(--gc-workspace-overlay);
+  background: var(--gc-workspace-chrome);
+  border-color: var(--gc-workspace-rim);
+}
+
+.gc-atmosphere-shell :is(.gc-clinical-rail, .gc-clinical-panel)::before,
+.gc-workspace-sheet::before {
   display: none;
 }
 
-.gc-atmosphere-shell .gc-subtle-grid {
-  opacity: 0.08 !important;
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .gc-atmosphere-shell .gc-clinical-shell,
+  .gc-workspace-sheet:is(.gc-clinical-rail, .gc-clinical-panel) {
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+  }
+
+  .gc-atmosphere-shell .gc-clinical-shell {
+    background: var(--gc-workspace-plate);
+  }
+
+  .gc-workspace-sheet:is(.gc-clinical-rail, .gc-clinical-panel) {
+    background: var(--gc-workspace-overlay);
+  }
 }
 
-.gc-atmosphere-shell .gc-ambient-overlay {
-  opacity: 0.88;
-}
+/* Desktop e tablet: placas flutuando com folga sobre o fundo e linha de leitura
+   curta (~80 caracteres), em vez de esticar o texto pela coluna inteira. */
+@media (min-width: 768px) and (not ((max-height: 500px) and (pointer: coarse))) {
+  .gc-atmosphere-shell {
+    --gc-shell-gutter: clamp(1rem, 2.4vmin, 1.75rem);
+    --gc-workspace-gap: clamp(0.875rem, 1.1vw, 1.25rem);
+    --gc-thread-max: 52rem;
+    --gc-user-bubble-max: 38rem;
+    --gc-assistant-bubble-max: 48rem;
+    --gc-composer-max: 50rem;
+  }
 
-.gc-atmosphere-shell.gc-dynamic-bg::before {
-  opacity: 0.46;
-  filter: blur(30px);
-}
+  .gc-atmosphere-shell .gc-clinical-shell {
+    gap: var(--gc-workspace-gap);
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 
-.gc-atmosphere-shell .gc-clinical-header > div:first-child {
-  height: 2.8rem;
+  .gc-atmosphere-shell .gc-clinical-shell > :is(.gc-clinical-rail, .gc-chat-column, .gc-clinical-panel) {
+    overflow: hidden;
+    border: 1px solid var(--gc-workspace-rim);
+    border-radius: 1.5rem;
+    background: var(--gc-workspace-plate-fallback);
+    box-shadow: inset 0 1px 0 var(--gc-workspace-edge), 0 8px 28px var(--gc-workspace-shadow);
+  }
+
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .gc-atmosphere-shell .gc-clinical-shell > :is(.gc-clinical-rail, .gc-chat-column, .gc-clinical-panel) {
+      background: var(--gc-workspace-plate);
+      -webkit-backdrop-filter: blur(28px) saturate(140%);
+      backdrop-filter: blur(28px) saturate(140%);
+    }
+
+    .gc-atmosphere-shell .gc-clinical-shell > .gc-context-floating {
+      background: var(--gc-workspace-overlay);
+    }
+  }
 }
 
 .gc-atmosphere-shell .gc-clinical-subheader {
   min-height: 1.9rem;
   padding-block: 0.28rem;
+  padding-inline: 0.625rem;
 }
 
 .gc-atmosphere-shell .gc-clinical-header .gc-clinical-input-surface {
@@ -1460,15 +1660,15 @@ body {
 }
 
 .gc-atmosphere-shell .gc-user-meta-chip {
-  border-color: rgb(63 103 130 / 18%);
-  background: rgb(235 244 249 / 82%);
-  color: #607789;
+  border-color: rgb(54 92 115 / 22%);
+  background: rgb(225 241 248 / 88%);
+  color: #365c73;
 }
 
 .dark .gc-atmosphere-shell .gc-user-meta-chip {
-  border-color: rgb(255 255 255 / 18%);
-  background: rgb(255 255 255 / 10%);
-  color: rgb(255 255 255 / 72%);
+  border-color: rgb(114 152 175 / 26%);
+  background: rgb(4 42 65 / 86%);
+  color: #c2e8ff;
 }
 
 .gc-atmosphere-shell .gc-assistant-bubble {
@@ -1478,12 +1678,23 @@ body {
   max-width: min(88%, var(--gc-assistant-bubble-max, 46rem)) !important;
   border-radius: 1rem;
   padding: 1.15rem 1.3rem;
+  backdrop-filter: none;
 }
 
 .gc-atmosphere-shell .gc-assistant-bubble::before {
-  width: 2px;
+  width: 3px;
   background: var(--gc-bubble-assistant-accent);
   opacity: 1;
+}
+
+.gc-atmosphere-shell .gc-bubble-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.55rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--gc-border-soft);
 }
 
 .gc-atmosphere-shell .gc-message-meta {
@@ -1491,12 +1702,12 @@ body {
 }
 
 .gc-atmosphere-shell .gc-message-quick-actions {
-  max-width: var(--gc-assistant-bubble-max, 46rem);
+  max-width: min(88%, var(--gc-assistant-bubble-max, 46rem));
   border-radius: 0.72rem;
 }
 
 .dark .gc-atmosphere-shell .gc-message-quick-actions {
-  background: rgb(8 20 36 / 62%);
+  background: rgb(4 42 65 / 76%);
 }
 
 .gc-atmosphere-shell .gc-composer-dock {
@@ -1510,16 +1721,13 @@ body {
 }
 
 @media (min-width: 768px) and (not ((max-height: 500px) and (pointer: coarse))) {
-  .gc-atmosphere-shell {
-    --gc-thread-max: 68rem;
-    --gc-user-bubble-max: 48rem;
-    --gc-assistant-bubble-max: 56rem;
-    --gc-composer-max: 66rem;
+  .gc-atmosphere-shell .gc-chat-thread {
+    padding-top: 2.25rem;
   }
 
-  /* Corpo dos balões: 14,5–15,5px (reduzido em 2026-11-19), sem alterar controles, painel ou mobile. */
+  /* A largura da coluna determina o tamanho de leitura. */
   .gc-atmosphere-shell .gc-message-card {
-    --gc-text-body: clamp(0.90625rem, 0.8646rem + 0.0868vw, 0.96875rem);
+    --gc-text-body: clamp(0.875rem, 0.8rem + 0.12cqi, 0.9375rem);
   }
 }
 
@@ -1600,11 +1808,7 @@ body {
     );
   }
 
-  /* Rolagem fluida: sem blur por balão e sem rubber-band vazando pro shell. */
-  .gc-atmosphere-shell .gc-assistant-bubble {
-    backdrop-filter: none;
-  }
-
+  /* Sem rubber-band vazando pro shell. */
   .gc-atmosphere-shell [data-radix-scroll-area-viewport],
   .gc-chat-ui[data-slot="sheet-content"] [data-radix-scroll-area-viewport] {
     overscroll-behavior: contain;
@@ -1615,6 +1819,18 @@ body {
     --gc-shell-rail-width: 100vw;
     --gc-shell-context-width: 100vw;
     --gc-shell-context-expanded-width: 100vw;
+    --gc-mobile-composer-footer-x: 0.625rem;
+    --gc-mobile-chat-content-x: 0.75rem;
+    --gc-mobile-welcome-outer-x: 0.625rem;
+    --gc-mobile-welcome-title-size: var(--gc-text-h2);
+    --gc-mobile-welcome-subtitle-size: var(--gc-text-micro);
+    --gc-mobile-welcome-action-font-size: calc(0.625rem + var(--gc-type-rise));
+    --gc-mobile-welcome-footnote-size: var(--gc-text-nano);
+  }
+
+  .gc-atmosphere-shell .gc-message-card {
+    --gc-text-body: 0.84375rem;
+    --gc-text-body-sm: var(--gc-text-body);
   }
 
   .gc-atmosphere-shell .gc-clinical-shell {

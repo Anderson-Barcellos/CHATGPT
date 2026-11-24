@@ -24,6 +24,8 @@ import {
   Mic,
   Newspaper,
   Plus,
+  PanelLeftClose,
+  PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
   PencilLine,
@@ -66,7 +68,11 @@ import { GPTLogo } from "@/components/ui/gpt-logo";
 import { useCommandPaletteContext } from "@/components/command/CommandPaletteProvider";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useVisualViewport } from "@/hooks/useVisualViewport";
-import { CONTEXT_SIDEBAR_BREAKPOINT, CONTEXT_EXPANDED_SIDEBAR_BREAKPOINT } from "@/lib/layout/breakpoints";
+import {
+  CONTEXT_SIDEBAR_BREAKPOINT,
+  CONTEXT_EXPANDED_SIDEBAR_BREAKPOINT,
+  THREE_COLUMN_FULL_BREAKPOINT,
+} from "@/lib/layout/breakpoints";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/uiStore";
 import type { FileAttachment, ResponseMode } from "@/types";
@@ -81,13 +87,22 @@ const RESPONSE_MODE_LABELS: Record<ResponseMode, string> = {
 
 const DESKTOP_CONTEXT_QUERY = `(min-width: ${CONTEXT_SIDEBAR_BREAKPOINT}px)`;
 const EXPANDED_CONTEXT_QUERY = `(min-width: ${CONTEXT_EXPANDED_SIDEBAR_BREAKPOINT}px)`;
+const THREE_COLUMN_QUERY = `(min-width: ${THREE_COLUMN_FULL_BREAKPOINT}px)`;
 function subscribeDesktopContext(callback: () => void) {
-  const queries = [DESKTOP_CONTEXT_QUERY, EXPANDED_CONTEXT_QUERY].map(query => window.matchMedia(query));
-  queries.forEach(query => query.addEventListener("change", callback));
-  return () => queries.forEach(query => query.removeEventListener("change", callback));
+  const queries = [DESKTOP_CONTEXT_QUERY, EXPANDED_CONTEXT_QUERY, THREE_COLUMN_QUERY].map((query) =>
+    window.matchMedia(query)
+  );
+  queries.forEach((query) => query.addEventListener("change", callback));
+  return () => queries.forEach((query) => query.removeEventListener("change", callback));
 }
-const getDesktopContextSnapshot = () => window.matchMedia(EXPANDED_CONTEXT_QUERY).matches
-  ? 2 : window.matchMedia(DESKTOP_CONTEXT_QUERY).matches ? 1 : 0;
+const getDesktopContextSnapshot = () =>
+  window.matchMedia(THREE_COLUMN_QUERY).matches
+    ? 3
+    : window.matchMedia(EXPANDED_CONTEXT_QUERY).matches
+      ? 2
+      : window.matchMedia(DESKTOP_CONTEXT_QUERY).matches
+        ? 1
+        : 0;
 const getDesktopContextServerSnapshot = () => 0;
 
 interface WorkspaceFrameV2Props {
@@ -186,21 +201,6 @@ function IconButton({
   );
 }
 
-function ContextChip({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <span className="gc-clinical-card inline-flex max-w-[11rem] items-center gap-1 rounded-lg border border-[color:var(--gc-border-soft)] px-2 py-0.75 text-nano text-muted-foreground">
-      <span className="text-foreground/55">{label}</span>
-      <span className="truncate font-medium text-foreground">{value}</span>
-    </span>
-  );
-}
-
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes}B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
@@ -250,10 +250,27 @@ export function WorkspaceFrameV2({
   const setSidebarOpen = onMobileSidebarOpenChange ?? setInternalSidebarOpen;
   const [internalContextOpen, setInternalContextOpen] = useState(false);
   const [contextExpanded, setContextExpanded] = useState(false);
+  const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(false);
+  const [desktopSidebarPinnedOpen, setDesktopSidebarPinnedOpen] = useState(false);
   const desktopContext = contextDockSpace >= (contextExpanded ? 2 : 1) && !isMobile;
   const contextOpen = mobileContextOpen ?? internalContextOpen;
   const contextCollapsed = !contextOpen;
   const setContextOpen = onMobileContextOpenChange ?? setInternalContextOpen;
+  // Entre 1280px e 1679px, abrir o painel direito auto-recolhe a sidebar esquerda
+  // para 52px (salvo se o usuário expandi-la explicitamente), mantendo o chat largo.
+  const autoCollapseSidebar = contextOpen && desktopContext && contextDockSpace < 3 && !desktopSidebarPinnedOpen;
+  const isDesktopSidebarCompact = desktopSidebarCollapsed || autoCollapseSidebar;
+  const handleToggleDesktopSidebar = useCallback(() => {
+    if (autoCollapseSidebar) {
+      setDesktopSidebarPinnedOpen(true);
+      setDesktopSidebarCollapsed(false);
+    } else if (desktopSidebarPinnedOpen && contextOpen && contextDockSpace < 3) {
+      setDesktopSidebarPinnedOpen(false);
+      setDesktopSidebarCollapsed(true);
+    } else {
+      setDesktopSidebarCollapsed((prev) => !prev);
+    }
+  }, [autoCollapseSidebar, contextDockSpace, contextOpen, desktopSidebarPinnedOpen]);
   // Flutuante não é modal: Esc fecha, salvo quando outro diálogo está por cima.
   useEffect(() => {
     if (isMobile || desktopContext || !contextOpen) return;
@@ -279,34 +296,36 @@ export function WorkspaceFrameV2({
 
   return (
     <div
-      className="gc-chat-ui gc-atmosphere-shell gc-dynamic-bg gc-device-frame relative overflow-clip text-foreground"
+      className="gc-chat-ui gc-atmosphere-shell gc-device-frame relative overflow-clip text-foreground"
       data-visual-theme="atmosphere-glass"
     >
       <div
         aria-hidden="true"
-        className="gc-ambient-overlay pointer-events-none absolute inset-0"
-      />
-      <div
-        aria-hidden="true"
-        className="gc-subtle-grid pointer-events-none absolute inset-0 opacity-35"
+        className="gc-workspace-backdrop pointer-events-none absolute inset-0"
       />
       <div className="relative z-10 flex h-full flex-col p-[var(--gc-shell-gutter)]">
-        <div className="gc-clinical-shell gc-safe-x relative flex min-h-0 flex-1 overflow-hidden border border-[color:var(--gc-border-soft)] backdrop-blur-xl md:rounded-[1.65rem]">
-          {!isMobile && <aside
-            data-workspace-region="sidebar"
-            className="gc-clinical-rail hidden min-h-0 w-[var(--gc-shell-rail-width)] shrink-0 overflow-hidden border-r border-[color:var(--gc-border)] lg:block"
-          >
-            <FadeIn duration={0.24} className="h-full">
-              {sidebar}
-            </FadeIn>
-          </aside>}
+        <div className="gc-clinical-shell gc-safe-x relative flex min-h-0 flex-1 overflow-hidden border border-[color:var(--gc-border-soft)]">
+          {!isMobile && (
+            <aside
+              data-workspace-region="sidebar"
+              data-sidebar-compact={isDesktopSidebarCompact ? "true" : "false"}
+              className={cn(
+                "gc-clinical-rail hidden min-h-0 shrink-0 overflow-hidden border-r border-[color:var(--gc-border)] transition-[width] duration-200 ease-out lg:block",
+                isDesktopSidebarCompact ? "w-[3.25rem]" : "w-[var(--gc-shell-rail-width)]"
+              )}
+            >
+              <FadeIn duration={0.2} className="h-full">
+                {isDesktopSidebarCompact && tabletSidebar ? tabletSidebar : sidebar}
+              </FadeIn>
+            </aside>
+          )}
 
           {tabletSidebar && !isMobile && (
             <aside
               data-workspace-region="tablet-rail"
-              className="gc-clinical-rail hidden min-h-0 w-12 shrink-0 overflow-hidden border-r border-[color:var(--gc-border)] md:block lg:hidden"
+              className="gc-clinical-rail hidden min-h-0 w-[3.25rem] shrink-0 overflow-hidden border-r border-[color:var(--gc-border)] md:block lg:hidden"
             >
-              <FadeIn duration={0.24} className="h-full">
+              <FadeIn duration={0.2} className="h-full">
                 {tabletSidebar}
               </FadeIn>
             </aside>
@@ -314,7 +333,7 @@ export function WorkspaceFrameV2({
 
           <div className="gc-chat-column flex min-h-0 min-w-0 flex-1 flex-col">
             <header className="gc-clinical-header shrink-0 border-b border-[color:var(--gc-border-soft)] gc-safe-top md:border-[color:var(--gc-border)] md:pt-0">
-              <div className="relative flex h-[var(--gc-mobile-header-height)] items-center justify-center px-[var(--gc-mobile-header-x)] md:h-[3.15rem] md:justify-between md:px-4">
+              <div className="gc-header-row relative flex items-center justify-center md:justify-between">
                 <IconButton
                   label="Abrir conversas"
                   onClick={() => setSidebarOpen(true)}
@@ -324,15 +343,15 @@ export function WorkspaceFrameV2({
                 </IconButton>
 
                 <div className="flex items-center gap-[0.6875rem] md:hidden">
-                  <div className="flex size-[var(--gc-mobile-brand-size)] items-center justify-center rounded-[0.6875rem] border border-primary/20 bg-primary/10 shadow-[0_7px_17px_rgba(15,118,110,0.12)]">
+                  <div className="flex size-[var(--gc-mobile-brand-size)] items-center justify-center rounded-[0.6875rem] border border-primary/20 bg-primary/10 shadow-[0_7px_17px_rgba(0,70,113,0.16)]">
                     <GPTLogo size={18} />
                   </div>
-                  <h1 className="text-[1.0625rem] font-semibold tracking-[-0.03em] text-foreground">
+                  <h1 className="gc-header-title text-h3 font-semibold leading-tight tracking-[-0.03em] text-foreground">
                     Gaucho Chat
                   </h1>
                 </div>
 
-                <div className="hidden min-w-0 items-center gap-1 md:flex md:gap-2">
+                <div className="hidden min-w-0 flex-1 items-center gap-2 md:flex md:gap-2.5">
                   <IconButton
                     label="Abrir conversas"
                     onClick={() => setSidebarOpen(true)}
@@ -340,19 +359,42 @@ export function WorkspaceFrameV2({
                   >
                     <Menu className="size-4" />
                   </IconButton>
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/12 shadow-[0_8px_22px_rgba(15,118,110,0.12)]">
+                  <IconButton
+                    label={isDesktopSidebarCompact ? "Expandir conversas" : "Recolher conversas"}
+                    onClick={handleToggleDesktopSidebar}
+                    className="hidden lg:inline-flex"
+                  >
+                    {isDesktopSidebarCompact ? (
+                      <PanelLeftOpen className="size-4" />
+                    ) : (
+                      <PanelLeftClose className="size-4" />
+                    )}
+                  </IconButton>
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-primary/12 shadow-[0_8px_22px_rgba(0,70,113,0.16)]">
                     <GPTLogo size={22} />
                   </div>
-                  <div className="min-w-0 leading-tight">
-                    <div className="flex items-center gap-2">
-                      <h1 className="truncate text-[length:var(--gc-mobile-header-title-font-size)] font-semibold tracking-[-0.02em] text-foreground md:text-[0.96rem]">
-                        <span className="hidden sm:inline">{activeConversationTitle}</span>
-                        <span className="sm:hidden">Gaucho Chat</span>
+                  <div className="min-w-0 flex-1 leading-tight">
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <h1 title={activeConversationTitle} className="gc-header-title min-w-0 truncate text-h3 font-semibold leading-tight tracking-[-0.02em] text-foreground">
+                        {activeConversationTitle}
                       </h1>
+                      {activeResponseMode && activeResponseMode !== "default" && (
+                        <span className="hidden shrink-0 rounded-md border border-primary/30 bg-primary/12 px-1.5 py-0.5 text-nano font-semibold text-primary sm:inline-flex">
+                          {RESPONSE_MODE_LABELS[activeResponseMode]}
+                        </span>
+                      )}
                     </div>
-                    <p className="truncate text-[length:var(--gc-mobile-header-caption-font-size)] text-muted-foreground/72 md:text-micro">
-                      <span className="hidden sm:inline">Gaucho Chat</span>
-                      <span className="sm:hidden">{activeConversationTitle}</span>
+                    <p className="gc-header-caption flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap text-micro leading-tight text-muted-foreground">
+                      <span className="gc-header-product shrink-0">Gaucho Chat</span>
+                      <span aria-hidden="true" className="gc-header-product shrink-0 text-muted-foreground/45">·</span>
+                      <span className="min-w-0 truncate font-medium text-foreground/85">
+                        {currentModelName}
+                      </span>
+                      {reasoningLabel && reasoningLabel !== "—" && (
+                        <span className="shrink-0 rounded border border-[color:var(--gc-border-soft)] bg-[var(--gc-surface-control)] px-1 text-nano font-medium text-muted-foreground">
+                          {reasoningLabel}
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -361,13 +403,13 @@ export function WorkspaceFrameV2({
                   type="button"
                   aria-label="Buscar conversas, notas e rotinas"
                   onClick={() => openCommandPalette(true)}
-                  className="gc-header-search gc-clinical-input-surface mx-3 hidden h-8 min-w-[13rem] max-w-[24rem] flex-1 items-center gap-2 rounded-xl border border-[color:var(--gc-border-soft)] px-3 text-left text-[11px] text-muted-foreground transition-colors hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground md:flex"
+                  className="gc-header-search gc-clinical-input-surface hidden h-8 shrink-0 items-center gap-2 rounded-xl border border-[color:var(--gc-border-soft)] px-3 text-left text-micro text-muted-foreground transition-colors hover:bg-[var(--gc-surface-control-hover)] hover:text-foreground"
                 >
                   <Search className="size-3.5 shrink-0" />
-                  <span className="truncate">Buscar conversas, notas, rotinas...</span>
-                  <span className="ml-auto rounded-md border border-[color:var(--gc-border-soft)] bg-background/70 px-1.5 py-0.5 text-nano text-muted-foreground/75">
+                  <span className="min-w-0 truncate">Buscar conversas, notas, rotinas...</span>
+                  <kbd className="ml-auto shrink-0 whitespace-nowrap rounded-md border border-[color:var(--gc-border-soft)] bg-background/70 px-1.5 py-0.5 font-sans text-nano text-muted-foreground">
                     Cmd K
-                  </span>
+                  </kbd>
                 </button>
 
                 <div className="absolute right-[0.6875rem] top-1/2 flex shrink-0 -translate-y-1/2 items-center gap-0.5 md:static md:translate-y-0 md:gap-1.5">
@@ -375,7 +417,7 @@ export function WorkspaceFrameV2({
                   <IconButton
                     label="Buscar comandos"
                     onClick={() => openCommandPalette(true)}
-                    className="gc-header-search-trigger hidden md:max-[1281px]:inline-flex"
+                    className="gc-header-search-trigger hidden md:inline-flex"
                   >
                     <Search className="size-4" />
                   </IconButton>
@@ -392,7 +434,7 @@ export function WorkspaceFrameV2({
                   <IconButton
                     label="Painel contextual"
                     onClick={() => setContextOpen(!contextOpen)}
-                    className="relative hidden md:max-[1907px]:inline-flex"
+                    className="relative hidden md:max-[1280px]:inline-flex"
                   >
                     <PanelRightOpen className="size-4" />
                     {!!artifactCount && artifactCount > 0 && (
@@ -404,13 +446,13 @@ export function WorkspaceFrameV2({
                 </div>
               </div>
 
-              <div className="gc-clinical-subheader border-t border-[color:var(--gc-border-soft)] px-[0.575rem] pb-[0.575rem] pt-[0.115rem] md:flex md:min-h-[2.15rem] md:items-center md:justify-between md:px-4 md:py-1">
-                <div data-mobile-primary-nav className="grid h-[var(--gc-mobile-primary-nav-height)] min-h-[3.375rem] grid-cols-[minmax(0,1.3fr)_repeat(4,minmax(0,1fr))] items-center gap-[0.23rem] rounded-[1.15rem] border border-[color:var(--gc-border-soft)] bg-background/84 p-[0.23rem] shadow-[0_9px_22px_rgba(15,23,42,0.07)] md:hidden">
+              <div className="gc-clinical-subheader border-t border-[color:var(--gc-border-soft)] px-[0.575rem] pb-[0.575rem] pt-[0.115rem] md:hidden">
+                <div data-mobile-primary-nav className="grid h-[var(--gc-mobile-primary-nav-height)] min-h-[3.375rem] grid-cols-[minmax(0,1.3fr)_repeat(4,minmax(0,1fr))] items-center gap-[0.23rem] rounded-[1.15rem] border border-[color:var(--gc-border-soft)] bg-background/84 p-[0.23rem] shadow-[0_9px_22px_rgba(2,24,38,0.12)]">
                   <button
                     type="button"
                     onClick={onNewConversation}
                     aria-label="Nova conversa"
-                    className="flex h-full min-w-0 flex-col items-center justify-center gap-0.25 rounded-[0.875rem] bg-primary px-1 text-[length:var(--gc-mobile-tab-font-size)] font-semibold text-primary-foreground shadow-[0_9px_20px_rgba(15,118,110,0.18)]"
+                    className="flex h-full min-w-0 flex-col items-center justify-center gap-0.25 rounded-[0.875rem] bg-primary px-1 text-[length:var(--gc-mobile-tab-font-size)] font-semibold text-primary-foreground shadow-[0_9px_20px_rgba(0,70,113,0.22)]"
                   >
                     <Plus className="size-[1.035rem]" />
                     <span className="text-center leading-tight">Nova<span className="gc-new-conversation-suffix"> conversa</span></span>
@@ -449,20 +491,6 @@ export function WorkspaceFrameV2({
                     Rotinas
                   </button>
                 </div>
-
-                <div className="hidden min-w-0 items-center gap-1.5 md:flex">
-                  <div className="min-w-0 flex-wrap items-center gap-1.5 md:flex">
-                    <ContextChip label="Workspace" value="Anders" />
-                    <ContextChip label="Modelo" value={currentModelName} />
-                    {reasoningLabel && reasoningLabel !== "—" && (
-                      <ContextChip label="Reasoning" value={reasoningLabel} />
-                    )}
-                    <ContextChip
-                      label="Modo"
-                      value={RESPONSE_MODE_LABELS[activeResponseMode ?? "default"]}
-                    />
-                  </div>
-                </div>
               </div>
             </header>
 
@@ -485,8 +513,8 @@ export function WorkspaceFrameV2({
               data-expanded={contextExpanded}
               data-context-mode={desktopContext ? "docked" : "floating"}
               className={cn(
-                // O trilho recolhido aparece desde 1907px; aberto, o encaixe considera também a ampliação.
-                "gc-clinical-panel min-h-0 overflow-hidden min-[1907px]:block min-[1907px]:shrink-0 min-[1907px]:border-l min-[1907px]:border-[color:var(--gc-border)] min-[1907px]:transition-[width] min-[1907px]:duration-200",
+                // O trilho recolhido aparece desde 1280px; aberto, o encaixe considera também a ampliação (1440px).
+                "gc-clinical-panel min-h-0 overflow-hidden min-[1280px]:block min-[1280px]:shrink-0 min-[1280px]:border-l min-[1280px]:border-[color:var(--gc-border)] min-[1280px]:transition-[width] min-[1280px]:duration-200",
                 contextCollapsed
                   ? "hidden w-[2.85rem]"
                   : cn(
@@ -547,7 +575,7 @@ export function WorkspaceFrameV2({
         <SheetContent
           side="left"
           showCloseButton={false}
-          className="gc-chat-ui gc-clinical-rail w-[92vw] max-w-[20rem] gap-0 border-[color:var(--gc-border)] p-0 gc-safe-top gc-safe-left"
+          className="gc-chat-ui gc-workspace-sheet gc-clinical-rail w-[92vw] max-w-[20rem] gap-0 border-[color:var(--gc-border)] p-0 gc-safe-top gc-safe-left"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Conversas</SheetTitle>
@@ -563,7 +591,7 @@ export function WorkspaceFrameV2({
             side="right"
             showCloseButton={false}
             overlayClassName="gc-context-drawer-overlay"
-            className="gc-context-drawer gc-chat-ui gc-clinical-panel w-full max-w-none gap-0 border-0 p-0 gc-safe-top gc-safe-right sm:max-w-none"
+            className="gc-context-drawer gc-chat-ui gc-workspace-sheet gc-clinical-panel w-full max-w-none gap-0 border-0 p-0 gc-safe-top gc-safe-right sm:max-w-none"
           >
             <SheetHeader className="sr-only">
               <SheetTitle>Painel contextual</SheetTitle>
@@ -634,7 +662,7 @@ export function CommandComposerV2({
   ));
 
   return (
-    <footer className="gc-composer-dock shrink-0 border-t border-[color:var(--gc-border-soft)] bg-background/80 px-[var(--gc-mobile-composer-footer-x)] pb-[var(--gc-mobile-composer-footer-bottom)] pt-[var(--gc-mobile-composer-footer-top)] backdrop-blur-xl md:border-t-0 md:bg-transparent md:px-5 md:pb-4 md:pt-0">
+    <footer className="gc-composer-dock shrink-0 border-t border-[color:var(--gc-border-soft)] bg-background/80 px-[var(--gc-mobile-composer-footer-x)] pb-[var(--gc-mobile-composer-footer-bottom)] pt-[var(--gc-mobile-composer-footer-top)] md:border-t-0 md:bg-transparent md:px-5 md:pb-4 md:pt-0">
       <div className="gc-composer-width mx-auto">
         {statusMessage && (
           <div className="mb-2 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
@@ -881,7 +909,7 @@ export function CommandComposerV2({
                   <ChevronDown className="ml-1 size-3.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" side="top" className="gc-chat-ui min-w-[14rem]">
+              <DropdownMenuContent align="start" side="top" className="gc-chat-ui gc-workspace-type min-w-[14rem]">
                 {modeMenuItems}
               </DropdownMenuContent>
             </DropdownMenu>

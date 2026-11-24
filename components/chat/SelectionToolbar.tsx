@@ -61,7 +61,7 @@ export function SelectionToolbar({ selection }: SelectionToolbarProps) {
       }}
     >
       <SlideIn from="bottom" distance={4} duration={0.15}>
-        <div className="gc-chat-ui flex items-center gap-0.5 rounded-lg border border-white/12 bg-popover px-1 py-1 shadow-lg">
+        <div className="gc-chat-ui gc-workspace-type flex items-center gap-0.5 rounded-lg border border-white/12 bg-popover px-1 py-1 shadow-lg">
           <button
             type="button"
             className="gc-touch-target flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"

@@ -428,7 +428,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
       <SheetContent
         side="right"
         showCloseButton={false}
-        className="gc-chat-ui gc-clinical-panel !w-screen !max-w-none gap-0 !border-l-0 border-[color:var(--gc-border-soft)] p-0 pt-[env(safe-area-inset-top)] pb-[max(var(--gc-mobile-panel-content-pad),env(safe-area-inset-bottom))] shadow-none sm:!w-[26.5rem] sm:!max-w-[26.5rem] sm:!border-l sm:shadow-[0_28px_80px_rgba(15,23,42,0.18)]"
+        className="gc-chat-ui gc-clinical-panel gc-workspace-type !w-screen !max-w-none gap-0 !border-l-0 border-[color:var(--gc-border-soft)] p-0 pt-[env(safe-area-inset-top)] pb-[max(var(--gc-mobile-panel-content-pad),env(safe-area-inset-bottom))] shadow-none sm:!w-[26.5rem] sm:!max-w-[26.5rem] sm:!border-l sm:shadow-[0_28px_80px_rgba(15,23,42,0.18)]"
       >
         <SheetHeader className="sr-only">
           <SheetTitle>Configurações</SheetTitle>
@@ -438,7 +438,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
           <div className="gc-clinical-section-header border-b border-[color:var(--gc-border-soft)] px-[var(--gc-mobile-context-header-x)] pb-[var(--gc-mobile-context-header-y)] sm:border-[color:var(--gc-border)]">
             <div className="flex items-start justify-between gap-2 px-0 pt-[var(--gc-mobile-context-header-y)] sm:px-1">
               <div className="min-w-0">
-                <h2 className="text-[1rem] font-semibold tracking-[-0.02em] text-foreground sm:text-lg sm:tracking-[-0.03em]">
+                <h2 className="text-h3 font-semibold tracking-[-0.02em] text-foreground">
                   Configurações
                 </h2>
                 <p className="mt-0.5 text-micro uppercase tracking-eyebrow text-muted-foreground/70 sm:mt-1">

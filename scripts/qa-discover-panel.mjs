@@ -13,7 +13,7 @@ const data = path.join(repo, 'data');
 try { await access(data); throw new Error('QA exige data inexistente'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
 const out = process.env.DISCOVER_QA_OUTPUT || '/root/.cache/gaucho-discover-context/evidence/browser';
 const port = process.env.DISCOVER_QA_PORT || '3148';
-const DOCK = 1907; // espelha CONTEXT_SIDEBAR_BREAKPOINT
+const DOCK = 1280; // espelha CONTEXT_SIDEBAR_BREAKPOINT
 const base = `http://127.0.0.1:${port}/chat`;
 const env = { PATH: '/usr/bin:/bin', NODE_ENV: 'production', NEXT_PUBLIC_BASE_PATH: '/chat',
   AUTH_ENABLED: 'true', AUTH_USERNAME: 'synthetic-user', AUTH_PASSWORD: 'synthetic-password',
@@ -219,16 +219,16 @@ try {
     await panel.getByRole('tab', { name: 'Notas', exact: true }).click();
     await panel.getByRole('tab', { name: 'Rotinas', exact: true }).click();
     await panel.getByRole('heading', { name: 'Nova rotina Pulse', exact: true }).waitFor();
-    if (width === 1907) {
+    if (width === DOCK) {
       // Uma abertura sobrevive a encaixado → flutuante → encaixado, sem gaveta nem véu.
-      await page.setViewportSize({ width: 1906, height });
+      await page.setViewportSize({ width: DOCK - 1, height });
       await until(async () => await panel.getAttribute('data-context-mode') === 'floating', 'flutuante ao reduzir');
       assert.equal(await panel.getByRole('tab', { name: 'Rotinas', exact: true }).getAttribute('aria-selected'), 'true');
       assert.equal(await page.locator('[role="dialog"], .gc-context-drawer-overlay').count(), 0);
       await composer.fill('Rascunho preservado');
-      await page.setViewportSize({ width: 1907, height });
+      await page.setViewportSize({ width: DOCK, height });
       await until(async () => await panel.getAttribute('data-context-mode') === 'docked', 'encaixado ao ampliar');
-      await until(async () => Math.abs((await panel.boundingBox()).width - 600) < 1, 'lateral aberta ao redimensionar');
+      await until(async () => Math.abs((await panel.boundingBox()).width - normalWidth) < 1, 'lateral aberta ao redimensionar');
       assert.equal(await panel.getByRole('tab', { name: 'Rotinas', exact: true }).getAttribute('aria-selected'), 'true');
     }
     if (desktop) await panel.getByRole('button', { name: 'Recolher painel', exact: true }).click();
@@ -240,7 +240,7 @@ try {
     await panel.getByRole('heading', { name: articles[0].title, exact: true }).waitFor();
     assert.equal(await page.locator('[data-discover-scroll-root]').count(), 1);
     assert.equal(await page.locator('nextjs-portal').count(), 0);
-    if (width === 1907) {
+    if (width === DOCK) {
       // Criar conversa mantém a lateral aberta, como antes da unificação do estado.
       await page.keyboard.press('Control+Shift+n');
       await page.getByRole('heading', { name: 'Nova conversa', exact: true }).waitFor();
@@ -248,7 +248,7 @@ try {
       assert.equal(await panel.getByRole('tab', { name: 'Descobrir IA', exact: true }).getAttribute('aria-selected'), 'true');
     }
     assert.deepEqual(errors, []); assert.deepEqual(external, []);
-    results.push({ width, height, theme, mobile, desktop, panelWidth, cover, columns, mode: mobile ? 'mobile' : docked ? 'docked' : 'floating', normalWidth: mobile ? width : normalWidth, expandedWidth: desktop ? expandedWidth : null, navigation: true, cards: true, audio: true, resize: desktop, breakpointResize: width === 1907, draft: true, console: true });
+    results.push({ width, height, theme, mobile, desktop, panelWidth, cover, columns, mode: mobile ? 'mobile' : docked ? 'docked' : 'floating', normalWidth: mobile ? width : normalWidth, expandedWidth: desktop ? expandedWidth : null, navigation: true, cards: true, audio: true, resize: desktop, breakpointResize: width === DOCK, draft: true, console: true });
     await context.close();
   }
   await writeFile(`${out}/results.json`, JSON.stringify(results, null, 2)); console.log(JSON.stringify(results));

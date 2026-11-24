@@ -652,3 +652,40 @@ Smoke real com o Google (rodado por Anders em 2026-11-20, via `gemini-smoke.sh` 
 Pedido de Anders: reduzir de leve a fonte dos balões. Token `--gc-text-body` em `.gc-message-card` (desktop) passou de 15–16px para 14,5–15,5px com a mesma inclinação; mobile e paisagem com toque intactos (14px). RED: teste de contrato em `app/globals.visual.test.ts` falhou antes do CSS (1 failed/41 passed); GREEN 42/42. `qa-chat-column.mjs` passou a exigir 14,5–15,5px.
 
 Gates na mesma worktree do Gemini: tsc 0, lint 0 (1 aviso preexistente), vitest 1.315 testes, build `Mj7zxrfqGjoUiG5GImL_o` com basePath `/chat`, `qa-chat-column` exit 0 (de 390 a 3440px; 15,5px a partir de 1920px, 14px no mobile, larguras inalteradas). Logs em `/root/.cache/gaucho-gemini4-20261119/`.
+
+
+## 2026-11-23 — Repaginação Visual (Abyssal Ocean & Polar Fjord) e Layout Reativo (1280px+)
+
+- **Worktree isolada:** `/root/worktrees/gaucho-ocean-layout` (branch `feat/ocean-layout-redesign`, base `77cb98f`)
+- **Testes focados (primeira bateria após ajuste de seletor):**
+  - `npx vitest run app/globals.visual.test.ts lib/layout/breakpoints.test.ts components/workspace-v2/WorkspaceLayoutV2.test.tsx components/workspace-v2/ConversationRailV2.test.tsx components/chat/MessageBubble.avatar.test.tsx components/chat/MessageBubble.edit.test.tsx lib/server/soundcase/jobs.test.ts` → `7 passed (7)`, `85 passed (85)` em `13.63s`.
+- **Suíte unitária completa:**
+  - `npx vitest run --maxWorkers=2` → `Test Files 237 passed (237)`, `Tests 1321 passed (1321)` em `104.03s`.
+- **Typegen, TypeScript e Lint:**
+  - `npx next typegen` → `✓ Types generated successfully`
+  - `npx tsc --noEmit` → `exit 0` (0 erros)
+  - `npm run lint` → `exit 0` (0 erros, 1 warning preexistente em `CommandComposerContainerV2.test.tsx`)
+- **Build de produção isolada:**
+  - `NEXT_PUBLIC_BASE_PATH=/chat NEXT_PUBLIC_APP_URL=https://sonaris.us/chat npm run build` → `exit 0`, `44/44` rotas compiladas.
+- **Suítes Playwright Chrome (6/6 aprovadas):**
+  - `node scripts/qa-chat-column.mjs` → `17/17` cenários aprovados (`390×844` a `3440×1440`, encaixe `1280px` normal e `1440px` expandido).
+  - `node scripts/qa-discover-panel.mjs` → `14/14` cenários aprovados (Dark/Light, `320px` a `6880px`, `breakpointResize: true` em `1280px`).
+  - `node scripts/qa-message-longpress.mjs` → `12/12` cenários aprovados (`390×844`, `956×440`, `1440×1000`; `short`, `top`, `middle`, `bottom`).
+  - `node scripts/qa-discover-controls.mjs` → `7/7` cenários aprovados (`1440px`, `390px`, `320px` Dark/Light).
+  - `node scripts/qa-discover-delete.mjs` → `5/5` cenários aprovados (página e painel embutido).
+  - `node scripts/qa-security-runtime.mjs` → `9/9` verificações aprovadas.
+
+## 2026-11-24 15h30 BRT — Roboto, respiro desktop e linha de leitura (Claude)
+
+Cópia de trabalho `/root/worktrees/gaucho-desktop-type`, partindo da fonte viva `qYzjpuWm0K0-Ja_nbb6ne` (`/root/.cache/gaucho-mobile-flush/release/source`, intocada).
+
+Unitários (TDD, primeira execução):
+- `app/globals.visual.test.ts` › "carrega a Roboto local no escopo do chat, sem Lexend no corpo nem no chat": RED (1ª execução, sem @font-face Roboto) → GREEN.
+- `app/globals.visual.test.ts` › "dá respiro de placas flutuantes no desktop e limita a linha de leitura": RED (tokens antigos 68rem/56rem, vão 8/12 px) → GREEN; asserção da barra de ações `min(88%, …)` adicionada depois, RED → GREEN.
+- Removido o contrato antigo "balões desktop entre 13,5 e 14,5px" (substituído pela régua 14–15 px acima). `DiscoverPage.test.tsx` só renomeou o título do caso.
+
+Gates: typegen 0 · tsc 0 · lint 0 (1 aviso pré-existente em `CommandComposerContainerV2.test.tsx:120`) · Vitest 1.321/1.321 em 237 arquivos (`--maxWorkers=2`) · build 0 (base `/chat`, URL de QA local).
+
+Chrome (headless, dados sintéticos): qa-chat-column 0 (contrato atualizado: resposta 697 px, mensagem 602 px, fonte 14–15 px; 1ª execução falhou no teto antigo de 896 px, esperado) · qa-discover-panel 0 · qa-discover-controls 0 · qa-discover-delete 0 · qa-runtime-ownership 0 · qa-message-longpress 0 (12 cenários; 1ª execução sem servidor na 3158, repetida com servidor isolado).
+
+Sonda nova `scripts/qa-desktop-type.mjs`: balão 14,0 px em 1024–1436, 14,7 em 1920, 15 em 2560; celular 390 px idêntico ao antes (13,5 px, bordas 0). Capturas antes/depois em `/root/.cache/gaucho-desktop-type/evidence`, logs em `/root/.cache/gaucho-desktop-type/gates`.
