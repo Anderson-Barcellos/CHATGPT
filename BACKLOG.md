@@ -2,7 +2,31 @@
 
 ## Estado operacional
 
-#### Instruções unificadas do Gaúcho (pronta para revisão, publicada em 2026-11-23)
+Publicada em 24/11/2026 às 13h48 BRT a moldura de ponta a ponta no celular em retrato e paisagem curta com toque. Tablets e desktops usam o espaçamento fluido. Build `qYzjpuWm0K0-Ja_nbb6ne`, origem `/root/.cache/gaucho-mobile-flush/release/source`, backup `/root/.cache/gaucho-mobile-flush/release/deploy/20261124T164835Z/next-before`. Chrome público mediu zero nas quatro bordas em 390×844 e 956×440. Os 1.321 testes passaram.
+
+Publicada em 24/11/2026 às 13h41 BRT a Lexend Deca local, com fontes menores e espaçamento externo fluido nas quatro bordas. Build `NIALIa2a5xYSElDKVMTd2`, origem `/root/.cache/gaucho-chat-deca/release/source` (preservar), anterior `N0vF2tDzcE59ybWw1zigI` em `/root/.cache/gaucho-chat-deca/release/deploy/20261124T164100Z/next-before`. Passaram 1.321 testes, build e quatro cenários Chrome públicos. Em 390 px, as quatro bordas mediram 10 px. Saúde local e pública 200.
+
+#### Tipografia responsiva e respiro do Gaúcho Chat (publicada em 2026-11-24 às 13h25 BRT)
+
+O título do cabeçalho cabe numa linha e a busca alterna entre lupa e campo de acordo com a largura da coluna. A escala tipográfica acompanha o espaço do chat, da lateral, dos menus e do painel. A margem externa é de 8 px no desktop e a caixa de mensagem recua 10 px no celular em retrato. Os balões mantêm 14 px em telas de toque compactas e o campo editável mantém 16 px.
+
+Build `N0vF2tDzcE59ybWw1zigI` publicada em `https://sonaris.us/chat`. Worktree `/root/worktrees/gaucho-chat-type-scale`, origem `/root/.cache/gaucho-chat-type-scale/release/source` (**preservar**), backup da build `G6M6n5TIM5GAntFr2sw8P` em `/root/.cache/gaucho-chat-type-scale/release/deploy/20261124T162500Z/next-before`. Passaram 1.321 testes, build 44/44 e 28 cenários Chrome da prévia, além de quatro cenários Chrome isolados e quatro públicos da build oficial. Saúde local e pública HTTP 200, acesso anônimo a conversas 401 e CSS e JavaScript públicos idênticos aos da candidata. Somente `chatgpt.service` reiniciou. Os 12 JSON de runtime monitorados conservaram os hashes. Evidências em `/root/.cache/gaucho-chat-type-scale/release`.
+
+#### Vidro fosco e painéis flutuantes no Gaúcho Chat (publicada em 2026-11-24 às 10h24 BRT)
+
+Abyssal Ocean e Polar Fjord com fundo de duas formas, placas independentes no desktop e geometria de leitura preservada no celular. Plano e código na worktree `/root/worktrees/gaucho-glassmorphism`. Comparativos em `/mnt/data/gaucho-glassmorphism`.
+
+Build `G6M6n5TIM5GAntFr2sw8P` publicada em `https://sonaris.us/chat` a partir de `/root/.cache/gaucho-glassmorphism/release/source` (**preservar**). Backup `/root/.cache/gaucho-glassmorphism/release/deploy/20261124T132415Z/next-before`, build `x181rYVKuPICoBVw54RqS`. Typegen, tsc, lint, 1.321 testes em 237 arquivos, build 44/44 e 19 verificações Chrome isoladas aprovados. Chrome público autenticado conferiu ambos os temas e o painel em desktop e celular. Saúde local/pública 200, conversas anônimas 401 e assets novos idênticos à candidata. Só `chatgpt.service` reiniciou, os 12 JSON de runtime conservaram os hashes e os agendadores seguem ativos. Evidências em `/root/.cache/gaucho-glassmorphism/release`.
+
+#### Repaginação visual Abyssal Ocean & Polar Fjord + layout reativo 1280px+ (publicada em 2026-11-23 às 16h08 BRT)
+
+Anders aprovou o plano de repaginação do layout e paleta de 6 cores (`#EAFFFF`, `#C2E8FF`, `#7298AF`, `#365C73`, `#042A41`, `#004671` sobre base `#021826` no modo escuro **Abyssal Ocean**, espelhada no modo claro **Polar Fjord**). O corte de encaixe lateral (`docked`) do Painel Operacional passou a `1280px` (`1440px` ampliado), com Sidebar esquerda colapsável no desktop e auto-recolhimento inteligente para `52px` entre `1280px` e `1679px` quando o painel abre (3 colunas completas simultâneas a partir de `1680px`). Cabeçalho desktop unificado (sem a sub-barra redundante de chips), topo da Sidebar enxuto (sem cartões de contadores `Hoje/Fixadas`) e balões com cabeçalho interno sem `float`.
+
+A build `x181rYVKuPICoBVw54RqS` em `/root/worktrees/gaucho-ocean-layout` (**preservar**, branch `feat/ocean-layout-redesign`, base `77cb98f`) passou em `1.321` testes de `237` arquivos, `next typegen`, `tsc --noEmit`, `eslint` e build `44/44`. As seis suítes Chrome (`qa-chat-column` 17/17, `qa-discover-panel` 14/14, `qa-message-longpress` 12/12, `qa-discover-controls` 7/7, `qa-discover-delete` 5/5 e `qa-security-runtime` 9/9) aprovaram com exit 0.
+
+Publicado às 16h08 BRT via `scripts/deploy.sh --from /root/worktrees/gaucho-ocean-layout`, substituindo `03Aclu2dLUwJE0rr4-b4A`, com backup em `/root/.cache/gaucho-deploy/20261123T190820Z/next-before`. Só `chatgpt.service` reiniciou (`PID 982253`). Health local e público `200`, rota anônima `/api/conversations` `401`, todos os 12 arquivos em `data/*.json` idênticos por SHA-256, `apache2` (`PID 1067`), `chatgpt-transcription.service` (`PID 758`) e `chatgpt-pulse.timer` ativos.
+
+#### Instruções unificadas do Gaúcho (fechada por Anders, publicada em 2026-11-23)
 
 Anders aprovou a persona editável, inclusive com tom caricato, com a condição de preservar as instruções de chamadas de ferramentas. O código está no commit `b9cfb30`, base `7f60c3c`. O editor usa salvamento explícito com proteção contra versão obsoleta. O chat lê o texto salvo a cada envio. A prévia usa a montagem do chat e permite selecionar o modo. A base e a política das ferramentas de memória seguem copiáveis como regras do sistema. Os campos legados compõem o texto inicial e continuam disponíveis ao Pulse.
 

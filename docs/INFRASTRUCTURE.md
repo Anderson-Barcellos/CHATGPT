@@ -1,14 +1,22 @@
 # Infraestrutura
 
-**Última atualização:** 2026-11-23 (instruções unificadas do Gaúcho publicadas)
+**Última atualização:** 2026-11-24 (tipografia responsiva e respiro publicados)
 **Produção:** `https://sonaris.us/chat` — host `srv1927271`
 **Porta local:** `3040`
 
 ## Topologia
 
+Publicada em 24/11/2026 às 13h48 BRT a moldura de ponta a ponta no celular em retrato e paisagem curta com toque. Tablets e desktops usam o espaçamento fluido. Build `qYzjpuWm0K0-Ja_nbb6ne`, origem `/root/.cache/gaucho-mobile-flush/release/source`, backup `/root/.cache/gaucho-mobile-flush/release/deploy/20261124T164835Z/next-before`. Chrome público mediu zero nas quatro bordas em 390×844 e 956×440. Os 1.321 testes passaram.
+
+Publicada em 24/11/2026 às 13h41 BRT a Lexend Deca local, com fontes menores e espaçamento externo fluido nas quatro bordas. Build `NIALIa2a5xYSElDKVMTd2`, origem `/root/.cache/gaucho-chat-deca/release/source` (preservar), anterior `N0vF2tDzcE59ybWw1zigI` em `/root/.cache/gaucho-chat-deca/release/deploy/20261124T164100Z/next-before`. Passaram 1.321 testes, build e quatro cenários Chrome públicos. Em 390 px, as quatro bordas mediram 10 px. Saúde local e pública 200.
+
+Publicação em 24/11 às 13h25 BRT com o ajuste de tipografia e espaçamento do Gaúcho Chat. Build `N0vF2tDzcE59ybWw1zigI`, origem `/root/.cache/gaucho-chat-type-scale/release/source` (**preservar**), build anterior `G6M6n5TIM5GAntFr2sw8P` guardada em `/root/.cache/gaucho-chat-type-scale/release/deploy/20261124T162500Z/next-before`. Somente `chatgpt.service` reiniciou. Saúde local e pública 200, conversas anônimas 401 e Chrome público autenticado em quatro tamanhos com dados sintéticos. Os hashes de 12 JSON de runtime, os PIDs de Apache e ditado, o estado dos agendadores e a configuração do vhost e do proxy foram conferidos. Evidências em `/root/.cache/gaucho-chat-type-scale/release`.
+
+Publicação em 23/11 às 16h08 BRT com a repaginação visual (**Abyssal Ocean** Dark & **Polar Fjord** Light) e o layout reativo (`1280px+` encaixe lateral do painel operacional, sidebar esquerda colapsável e auto-recolhida entre `1280–1679px`, cabeçalho desktop único e balões com cabeçalho interno sem `float`). Build `x181rYVKuPICoBVw54RqS`, origem `/root/worktrees/gaucho-ocean-layout` (**preservar**), anterior `03Aclu2dLUwJE0rr4-b4A` guardada em `/root/.cache/gaucho-deploy/20261123T190820Z/next-before`. Reiniciou apenas `chatgpt.service` após 1.321 testes (237 arquivos), typegen, tsc, lint, build 44/44 e 6 suítes Chrome (64 cenários). Health local e público 200, conversas anônimas 401, 12 arquivos `data/*.json` conferidos por SHA-256 sem alteração, Apache (`PID 1067`) e ditado (`PID 758`) preservados e `chatgpt-pulse.timer` ativo.
+
 Publicação em 23/11 às 00h21 BRT com a Persona unificada. Build `03Aclu2dLUwJE0rr4-b4A`, commit de código `b9cfb30`, origem `/root/worktrees/gaucho-unified-instructions` (**preservar**), anterior `ZcV65Zq0C6w_RI6p7XBSP` guardada em `/root/.cache/gaucho-deploy/20261123T032153Z/next-before`. A cópia da build anterior iniciou em isolamento e respondeu health 200 e Persona 401/200 antes da promoção. Reiniciou apenas `chatgpt.service`. Health local e público 200, Persona anônima 401 e autenticada 200, Chrome público em desktop e mobile e dois chunks públicos idênticos. Arquivos privados monitorados idênticos, Apache e ditado com os mesmos PIDs e agendadores ativos.
 
-O `apache2ctl configtest` anterior à publicação encontrou `Include snippets/pulso.conf` em vhost legado com arquivo ausente. A troca da build do Gaúcho opera apenas em `.next` e `chatgpt.service`. O Apache ativo continuou servindo a rota. O include legado permaneceu fora do escopo.
+O `apache2ctl configtest` anterior à publicação encontrou `Include snippets/pulso.conf` em vhost legado com arquivo ausente. Anders autorizou a limpeza no fechamento. Às 00h28 BRT, saíram as duas referências restantes ao snippet, uma no vhost legado habilitado e outra na cópia inativa do vhost do Sonaris. Configtest `Syntax OK` e reload gracioso. `/api/pulso/` 404, saúde do Gaúcho 200 e Persona anônima 401, local e público. Os PIDs do Apache, Gaúcho e ditado persistiram, e `chatgpt-pulse.timer` ficou ativo. Backup e evidências em `/root/backups/pulso-apache-20261123T032832Z-vrKjsU`.
 
 Publicação em 21/11 às 19h19 BRT com a busca web em modelos OpenAI. Build `ZcV65Zq0C6w_RI6p7XBSP`, commit de código `92ed9c6`, origem histórica `/root/worktrees/gaucho-openai-web-search` ausente na conferência de 23/11. Build anterior `Mj7zxrfqGjoUiG5GImL_o` em `/root/.cache/gaucho-deploy/20261121T221949Z/next-before`. Só `chatgpt.service` reiniciou. Health local e público 200, catálogo anônimo 401 e autenticado 200. A ponte de ditado e os agendadores permaneceram ativos. Porta, proxy e credenciais ficaram iguais.
 
