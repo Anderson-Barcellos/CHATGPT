@@ -1,10 +1,12 @@
 # Infraestrutura
 
-**Última atualização:** 2026-11-24 (tipografia responsiva e respiro publicados)
+**Última atualização:** 2026-11-24 (Roboto e respiro de placas publicados)
 **Produção:** `https://sonaris.us/chat` — host `srv1927271`
 **Porta local:** `3040`
 
 ## Topologia
+
+Publicada em 24/11/2026 às 15h31 BRT a Roboto variável local no lugar da Lexend, com placas flutuando com folga no desktop (margem 16–28 px, vão 14–20 px), vidro mais translúcido e linha de leitura de 697 px (balão de 14 a 15 px). Celular inalterado. Código commitado na `main` (`45103b2`), consolidando as publicações do dia que estavam sem commit. Build `C04WID3eIX2yfs43Et_sK` via `scripts/deploy.sh` a partir da `main`, origem `/root/.cache/gaucho-deploy/20261124T183131Z/build` (não apagar), anterior `qYzjpuWm0K0-Ja_nbb6ne` em `/root/.cache/gaucho-deploy/20261124T183131Z/next-before`. Passaram 1.321 testes (dois workers; com todos, o worker do SoundCase estoura 15 s), build e seis suítes Chrome. Saúde local e pública 200, anônimo 401, CSS público com Roboto e `data/*.json` intactos.
 
 Publicada em 24/11/2026 às 13h48 BRT a moldura de ponta a ponta no celular em retrato e paisagem curta com toque. Tablets e desktops usam o espaçamento fluido. Build `qYzjpuWm0K0-Ja_nbb6ne`, origem `/root/.cache/gaucho-mobile-flush/release/source`, backup `/root/.cache/gaucho-mobile-flush/release/deploy/20261124T164835Z/next-before`. Chrome público mediu zero nas quatro bordas em 390×844 e 956×440. Os 1.321 testes passaram.
 
