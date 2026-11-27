@@ -24,6 +24,8 @@ Principais areas:
 
 ## Estado atual do projeto
 
+Publicada em 27/11/2026 às 19h45 BRT a build `NyLSM1egAAmEukkVNPmvo` (commit `1229650`), também da worktree `/root/worktrees/gaucho-gemini-live` (**preservar**): leitura Gemini em partes, Charon no TTS do arquivo do SoundCase e Media Session. Backup da build anterior em `/root/.cache/gaucho-deploy/20261127T224522Z/next-before`. Tocar com a tela bloqueada segue sem prova em aparelho.
+
 Publicada em 27/11/2026 às 11h32 BRT a build `CLM9RIb8kK1WpdkOZwrF3`, da worktree `/root/worktrees/gaucho-gemini-live` (**preservar**). Chat, Pulse e Descobrir oferecem Grok TTS · Orion e Gemini TTS · Charon. SoundCase também oferece Charon para escuta. Configurações → Voz concentra cadência e expressividade do perfil Fronteira Técnica. O checkout fonte continua na base `54f0043`. Backup da build anterior em `/root/.cache/gaucho-deploy/20261127T143242Z/next-before`. Detalhes no BACKLOG e no diário.
 
 Publicada em 24/11/2026 às 15h31 BRT a Roboto variável local no lugar da Lexend, com placas flutuando com folga no desktop (margem 16–28 px, vão 14–20 px), vidro mais translúcido e linha de leitura de 697 px (balão de 14 a 15 px). Celular inalterado. Código commitado na `main` (`45103b2`), consolidando as publicações do dia que estavam sem commit. Build `C04WID3eIX2yfs43Et_sK` via `scripts/deploy.sh` a partir da `main`, origem `/root/.cache/gaucho-deploy/20261124T183131Z/build` (não apagar), anterior `qYzjpuWm0K0-Ja_nbb6ne` em `/root/.cache/gaucho-deploy/20261124T183131Z/next-before`. Passaram 1.321 testes (dois workers; com todos, o worker do SoundCase estoura 15 s), build e seis suítes Chrome. Saúde local e pública 200, anônimo 401, CSS público com Roboto e `data/*.json` intactos.

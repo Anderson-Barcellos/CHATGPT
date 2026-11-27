@@ -746,3 +746,5 @@ Chrome (xvfb, dados sintéticos): gemini-tts-settings 0 (2 cenários; aba oculta
 Prova real paga: `synthesizeSoundCaseChunk` com `ttsProvider: "gemini"`, cadência calma e expressividade alta, ffmpeg real e `SOUNDCASE_DATA_DIR` temporário: `chunks/0000.flac` com 7,0 s de áudio (FLAC 24 kHz mono, 205.743 bytes) em 4,3 s; cliente OpenAI não chamado.
 
 Não coberto: geração de arquivo SoundCase completa pela interface com Gemini (worker, montagem e download) só passou pelos unitários e pela prova do trecho; leitura em segundo plano no celular depende de teste no aparelho.
+
+Publicação 19h45 BRT: deploy 0, build `NyLSM1egAAmEukkVNPmvo`; saúde local 200, pública 200, `POST /api/tts/gemini` anônimo 401, chunk público com "· parte" e "Gemini TTS · Charon" no seletor do arquivo. Log em `/root/.cache/gaucho-gemini-tts/progressivo/deploy.log`.
