@@ -1,5 +1,13 @@
 # BACKLOG
 
+## Escuro Grafite — pronta para revisão, não publicada
+
+Anders pediu em 27/11/2026 trocar o escuro pelo conjunto de cores de um print de referência (grafite-azulado), por achar o índigo atual carregado. Worktree `/root/worktrees/gaucho-grafite`, branch `feat/dark-grafite`, base `9ab2c5b`, build candidata `-pYNHBig_t4TeO3qzHYP5`. Só `app/globals.css` e o contrato visual mudaram: o bloco `.dark` global (antes Abyssal Ocean, que alimenta menus, cartões e portals), o bloco escuro do shell (palco, orbe, disco, placas, composer e balões) e cinco regras soltas do escuro. Claro, geometria e theme-color inalterados.
+
+DECISÃO: dois desvios do print. O balão ficou um degrau mais claro que a placa (1,15:1 → 1,25:1 ou mais) e o orbe e o disco continuam atrás do vidro, dessaturados, para o desfoque ter o que refratar. O nome Midnight Glass fica; Grafite é o nome da paleta. Como os tokens são globais, Studio, Descobrir, login e Configurações acompanham.
+
+Passaram 1.360 testes, TypeScript, lint, build e sete suítes Chrome. Capturas em `/root/.cache/gaucho-grafite/evidence`. Pendente: aprovação visual de Anders, commit e publicação. Não conferidos nesta rodada: Studio (Monaco e terminal têm cores próprias) e aparelho físico.
+
 ## Gemini TTS · Charon — publicada
 
 **Correção publicada em 27/11/2026 às 19h45 BRT** (commit `1229650`, build `NyLSM1egAAmEukkVNPmvo` via `scripts/deploy.sh --from /root/worktrees/gaucho-gemini-live`, origem a preservar; backup da `CLM9RIb8kK1WpdkOZwrF3` em `/root/.cache/gaucho-deploy/20261127T224522Z/next-before`): leitura Gemini em partes (som em ~7 s), Charon como "TTS do arquivo" do SoundCase e Media Session. 1.357 testes e sete sondas Chrome aprovadas; saúde local e pública 200, rota anônima 401. Em aberto: leitura com celular bloqueado ou navegador minimizado nunca foi provada (sonda 0/2), depende de teste de Anders no aparelho; arquivo SoundCase completo com Gemini pela interface ainda sem prova de ponta a ponta. Detalhes no diário e no TEST_LOGS.md.

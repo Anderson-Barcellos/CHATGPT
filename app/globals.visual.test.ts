@@ -350,6 +350,79 @@ describe("Gaucho Chat visual contract", () => {
     });
   });
 
+  describe("escuro Grafite: ardósia de croma baixo, camadas separadas e orbe discreto", () => {
+    const globalDark = (css.match(/^\.dark \{\n([\s\S]*?)\n\}/gm) ?? []).at(-1) ?? "";
+    const shellDark = css.match(/^\.dark :is\(\.gc-atmosphere-shell, \.gc-workspace-sheet\) \{\n([\s\S]*?)\n\}/m)?.[1] ?? "";
+    const looseDark = (css.match(/^ *\.dark \.gc-atmosphere-shell [^{]*\{[^}]*\}/gm) ?? []).join("\n");
+
+    type Rgb = [number, number, number];
+    const colorsIn = (text: string): Rgb[] => [
+      ...[...text.matchAll(/#([0-9a-f]{6})\b/gi)].map((m): Rgb => [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16)) as Rgb),
+      ...[...text.matchAll(/rgb\((\d+) (\d+) (\d+)/g)].map((m): Rgb => [Number(m[1]), Number(m[2]), Number(m[3])]),
+    ];
+    const linear = (channel: number) => {
+      const c = channel / 255;
+      return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    };
+    const luminance = ([r, g, b]: Rgb) => 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+    const oklch = ([r, g, b]: Rgb) => {
+      const [lr, lg, lb] = [linear(r), linear(g), linear(b)];
+      const l = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
+      const m = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
+      const s = Math.cbrt(0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb);
+      const a = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
+      const b2 = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+      return { chroma: Math.hypot(a, b2), hue: ((Math.atan2(b2, a) * 180) / Math.PI + 360) % 360 };
+    };
+    const token = (block: string, name: string) => block.match(new RegExp(`${name}:\\s*([^;]+);`))?.[1] ?? "";
+    // Luminância média das paradas do gradiente: a superfície como o olho a lê.
+    const surface = (block: string, name: string) => {
+      const stops = colorsIn(token(block, name));
+      return stops.reduce((sum, color) => sum + luminance(color), 0) / Math.max(stops.length, 1);
+    };
+    const contrast = (a: number, b: number) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+
+    it("mantém toda cor do escuro abaixo do croma do azulão e no matiz ardósia", () => {
+      const painted = colorsIn([globalDark, shellDark, looseDark].join("\n"));
+
+      expect(painted.length).toBeGreaterThan(120);
+      for (const color of painted) {
+        const { chroma, hue } = oklch(color);
+        expect(chroma, `croma de rgb(${color.join(" ")})`).toBeLessThanOrEqual(0.055);
+        if (chroma > 0.012) {
+          expect(hue, `matiz de rgb(${color.join(" ")})`).toBeGreaterThanOrEqual(235);
+          expect(hue, `matiz de rgb(${color.join(" ")})`).toBeLessThanOrEqual(270);
+        }
+      }
+    });
+
+    it("destaca os balões da placa do chat e mantém o texto legível sobre eles", () => {
+      const plate = surface(shellDark, "--gc-workspace-plate-fallback");
+      const assistant = surface(shellDark, "--gc-bubble-assistant");
+      const user = surface(shellDark, "--gc-bubble-user");
+      const foreground = surface(globalDark, "--foreground");
+      const muted = surface(shellDark, "--muted-foreground");
+
+      expect(contrast(assistant, plate)).toBeGreaterThanOrEqual(1.25);
+      expect(contrast(user, plate)).toBeGreaterThanOrEqual(1.5);
+      expect(user).toBeGreaterThan(assistant);
+      expect(contrast(foreground, user)).toBeGreaterThanOrEqual(7);
+      expect(contrast(foreground, assistant)).toBeGreaterThanOrEqual(7);
+      expect(contrast(muted, assistant)).toBeGreaterThanOrEqual(4.5);
+    });
+
+    it("preserva o orbe e o disco atrás do vidro, sem brilho que dispute com o texto", () => {
+      for (const name of ["--gc-workspace-orb", "--gc-workspace-disc"]) {
+        const stops = colorsIn(token(shellDark, name));
+
+        expect(stops.length, name).toBeGreaterThanOrEqual(3);
+        expect(Math.max(...stops.map(luminance)), name).toBeLessThanOrEqual(0.3);
+        // Ainda é uma forma: a parada mais clara se destaca do palco.
+        expect(contrast(Math.max(...stops.map(luminance)), surface(shellDark, "--gc-workspace-stage")), name).toBeGreaterThanOrEqual(2.5);
+      }
+    });
+  });
+
   describe("polimentos de leitura", () => {
     it("equilibra títulos sem corte de linhas e deixa de fora o texto em streaming", () => {
       const rule = css.match(/\.gc-chat-ui :is\(h1, h2, h3\):not\(([^{]*)\)\s*\{\s*text-wrap:\s*balance;\s*\}/)?.[1] ?? "";

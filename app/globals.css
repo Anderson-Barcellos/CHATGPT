@@ -1270,143 +1270,143 @@ body {
 }
 
 .dark {
-  /* ── Abyssal Ocean Dark Mode (#EAFFFF · #C2E8FF · #7298AF · #365C73 · #042A41 · #004671) ── */
-  --background: #021826;
-  --foreground: #eaffff;
-  --card: #042a41;
-  --card-foreground: #eaffff;
-  --popover: #042a41;
-  --popover-foreground: #eaffff;
-  --primary: #c2e8ff;
-  --primary-foreground: #021826;
-  --secondary: #004671;
-  --secondary-foreground: #eaffff;
-  --muted: #063552;
-  --muted-foreground: #7298af;
-  --accent: #365c73;
-  --accent-foreground: #eaffff;
-  --border: rgb(114 152 175 / 22%);
-  --input: rgb(114 152 175 / 26%);
-  --ring: #c2e8ff;
-  --sidebar: #032135;
-  --sidebar-foreground: #eaffff;
-  --sidebar-accent: #004671;
-  --sidebar-accent-foreground: #eaffff;
-  --sidebar-border: rgb(114 152 175 / 18%);
+  /* ── Grafite Dark Mode: ardósia de croma baixo (#E9EEF5 · #C4D6E8 · #8699AD · #3E5369 · #2A3F57 · #1A2431 sobre #0D121B) ── */
+  --background: #0d121b;
+  --foreground: #e9eef5;
+  --card: #1a2431;
+  --card-foreground: #e9eef5;
+  --popover: #1a2431;
+  --popover-foreground: #e9eef5;
+  --primary: #c4d6e8;
+  --primary-foreground: #0d121b;
+  --secondary: #2a3f57;
+  --secondary-foreground: #e9eef5;
+  --muted: #232f3f;
+  --muted-foreground: #8699ad;
+  --accent: #3e5369;
+  --accent-foreground: #e9eef5;
+  --border: rgb(134 153 173 / 22%);
+  --input: rgb(134 153 173 / 26%);
+  --ring: #c4d6e8;
+  --sidebar: #121a25;
+  --sidebar-foreground: #e9eef5;
+  --sidebar-accent: #2a3f57;
+  --sidebar-accent-foreground: #e9eef5;
+  --sidebar-border: rgb(134 153 173 / 18%);
 
-  --gc-bg: #021826;
-  --gc-bg-page: #021826;
-  --gc-surface-shell: rgb(3 28 45 / 98%);
-  --gc-surface-panel: rgb(4 42 65 / 96%);
-  --gc-surface-panel-strong: rgb(5 48 74 / 98%);
-  --gc-surface-composer: rgb(4 42 65 / 97%);
-  --gc-surface-control: rgb(54 92 115 / 24%);
-  --gc-surface-control-hover: rgb(54 92 115 / 42%);
-  --gc-surface-canvas: rgb(2 24 38 / 96%);
-  --gc-surface-canvas-soft: rgb(4 42 65 / 84%);
-  --gc-composer-control-bg: rgb(54 92 115 / 28%);
-  --gc-composer-control-border: rgb(114 152 175 / 32%);
-  --gc-composer-control-fg: #c2e8ff;
+  --gc-bg: #0d121b;
+  --gc-bg-page: #0d121b;
+  --gc-surface-shell: rgb(16 23 33 / 98%);
+  --gc-surface-panel: rgb(26 36 49 / 96%);
+  --gc-surface-panel-strong: rgb(31 42 57 / 98%);
+  --gc-surface-composer: rgb(26 36 49 / 97%);
+  --gc-surface-control: rgb(62 83 105 / 24%);
+  --gc-surface-control-hover: rgb(62 83 105 / 42%);
+  --gc-surface-canvas: rgb(13 18 27 / 96%);
+  --gc-surface-canvas-soft: rgb(26 36 49 / 84%);
+  --gc-composer-control-bg: rgb(62 83 105 / 28%);
+  --gc-composer-control-border: rgb(134 153 173 / 32%);
+  --gc-composer-control-fg: #c4d6e8;
   --gc-overlay-gradient:
-    radial-gradient(ellipse 56% 62% at 92% 92%, rgb(0 70 113 / 48%), transparent 68%),
-    linear-gradient(135deg, rgb(2 21 34 / 96%), rgb(4 42 65 / 90%) 60%, rgb(0 70 113 / 44%));
+    radial-gradient(ellipse 56% 62% at 92% 92%, rgb(42 63 87 / 48%), transparent 68%),
+    linear-gradient(135deg, rgb(11 16 24 / 96%), rgb(26 36 49 / 90%) 60%, rgb(42 63 87 / 44%));
   --gc-ambient-aura:
-    radial-gradient(ellipse 50% 42% at 91% 84%, rgb(0 70 113 / 45%), transparent 70%),
-    radial-gradient(ellipse 36% 30% at 38% 9%, rgb(54 92 115 / 24%), transparent 72%);
+    radial-gradient(ellipse 50% 42% at 91% 84%, rgb(42 63 87 / 45%), transparent 70%),
+    radial-gradient(ellipse 36% 30% at 38% 9%, rgb(62 83 105 / 24%), transparent 72%);
   --gc-ambient-mesh:
-    radial-gradient(ellipse 46% 58% at 88% 78%, rgb(0 70 113 / 32%), transparent 70%),
-    linear-gradient(180deg, rgb(194 232 255 / 3%), transparent 28%);
+    radial-gradient(ellipse 46% 58% at 88% 78%, rgb(42 63 87 / 32%), transparent 70%),
+    linear-gradient(180deg, rgb(196 214 232 / 3%), transparent 28%);
 
-  --gc-border: rgb(114 152 175 / 22%);
-  --gc-border-soft: rgb(114 152 175 / 14%);
+  --gc-border: rgb(134 153 173 / 22%);
+  --gc-border-soft: rgb(134 153 173 / 14%);
   --gc-bubble-user:
-    linear-gradient(142deg, #365c73 0%, #004671 58%, #042a41 100%);
-  --gc-bubble-user-fg: #eaffff;
-  --gc-bubble-user-border: rgb(194 232 255 / 28%);
+    linear-gradient(142deg, #3e5369 0%, #2a3f57 58%, #1a2431 100%);
+  --gc-bubble-user-fg: #e9eef5;
+  --gc-bubble-user-border: rgb(196 214 232 / 28%);
   --gc-bubble-user-shadow:
-    0 20px 56px rgb(1 10 18 / 54%),
-    0 1px 0 rgb(234 255 255 / 14%) inset;
+    0 20px 56px rgb(4 7 12 / 54%),
+    0 1px 0 rgb(233 238 245 / 14%) inset;
   --gc-bubble-assistant:
-    linear-gradient(155deg, rgb(6 52 80 / 95%), rgb(4 42 65 / 97%));
-  --gc-bubble-assistant-border: rgb(114 152 175 / 24%);
-  --gc-bubble-assistant-accent: linear-gradient(180deg, #c2e8ff 0%, #7298af 52%, #004671 100%);
+    linear-gradient(155deg, rgb(35 47 63 / 95%), rgb(26 36 49 / 97%));
+  --gc-bubble-assistant-border: rgb(134 153 173 / 24%);
+  --gc-bubble-assistant-accent: linear-gradient(180deg, #c4d6e8 0%, #8699ad 52%, #2a3f57 100%);
   --gc-bubble-assistant-shadow:
-    0 20px 56px rgb(1 10 18 / 46%),
-    0 1px 0 rgb(194 232 255 / 10%) inset;
-  --gc-glass-bg: rgb(4 42 65 / 82%);
-  --gc-glass-bg-strong: rgb(6 52 80 / 92%);
-  --gc-glass-border: rgb(114 152 175 / 20%);
-  --gc-glass-highlight: rgb(194 232 255 / 10%);
+    0 20px 56px rgb(4 7 12 / 46%),
+    0 1px 0 rgb(196 214 232 / 10%) inset;
+  --gc-glass-bg: rgb(26 36 49 / 82%);
+  --gc-glass-bg-strong: rgb(35 47 63 / 92%);
+  --gc-glass-border: rgb(134 153 173 / 20%);
+  --gc-glass-highlight: rgb(196 214 232 / 10%);
 
   --gc-clinical-shell-bg:
-    linear-gradient(145deg, rgb(4 42 65 / 97%), rgb(2 24 38 / 98%)),
+    linear-gradient(145deg, rgb(26 36 49 / 97%), rgb(13 18 27 / 98%)),
     var(--gc-surface-shell);
   --gc-clinical-shell-shadow:
-    0 26px 80px rgb(1 8 15 / 64%),
-    0 0 0 1px rgb(194 232 255 / 10%) inset;
+    0 26px 80px rgb(3 6 10 / 64%),
+    0 0 0 1px rgb(196 214 232 / 10%) inset;
   --gc-clinical-panel-bg:
-    linear-gradient(180deg, rgb(4 42 65 / 97%), rgb(3 31 48 / 98%)),
+    linear-gradient(180deg, rgb(26 36 49 / 97%), rgb(18 26 37 / 98%)),
     var(--gc-surface-panel);
   --gc-clinical-header-bg:
-    linear-gradient(180deg, rgb(5 48 74 / 97%), rgb(4 38 58 / 98%)),
+    linear-gradient(180deg, rgb(31 42 57 / 97%), rgb(23 32 44 / 98%)),
     var(--gc-surface-panel-strong);
-  --gc-clinical-header-shadow: 0 1px 0 rgb(194 232 255 / 8%) inset;
+  --gc-clinical-header-shadow: 0 1px 0 rgb(196 214 232 / 8%) inset;
   --gc-clinical-canvas-bg:
-    radial-gradient(ellipse 58% 64% at 91% 90%, rgb(0 70 113 / 38%), transparent 68%),
-    radial-gradient(ellipse 44% 34% at 42% 3%, rgb(54 92 115 / 18%), transparent 74%),
-    linear-gradient(145deg, #021522 0%, #031e30 54%, #042a41 100%);
+    radial-gradient(ellipse 58% 64% at 91% 90%, rgb(42 63 87 / 38%), transparent 68%),
+    radial-gradient(ellipse 44% 34% at 42% 3%, rgb(62 83 105 / 18%), transparent 74%),
+    linear-gradient(145deg, #0b1018 0%, #111823 54%, #1a2431 100%);
   --gc-clinical-composer-bg:
-    linear-gradient(180deg, rgb(6 52 80 / 97%), rgb(4 42 65 / 98%)),
+    linear-gradient(180deg, rgb(35 47 63 / 97%), rgb(26 36 49 / 98%)),
     var(--gc-surface-composer);
-  --gc-clinical-composer-border: rgb(114 152 175 / 30%);
+  --gc-clinical-composer-border: rgb(134 153 173 / 30%);
   --gc-clinical-composer-shadow:
-    0 24px 68px rgb(1 8 15 / 56%),
-    0 1px 0 rgb(194 232 255 / 12%) inset,
-    0 0 0 1px rgb(114 152 175 / 8%);
+    0 24px 68px rgb(3 6 10 / 56%),
+    0 1px 0 rgb(196 214 232 / 12%) inset,
+    0 0 0 1px rgb(134 153 173 / 8%);
   --gc-clinical-subheader-bg:
-    linear-gradient(90deg, rgb(4 42 65 / 96%), rgb(3 30 47 / 96%) 52%, rgb(0 70 113 / 88%));
+    linear-gradient(90deg, rgb(26 36 49 / 96%), rgb(18 25 36 / 96%) 52%, rgb(42 63 87 / 88%));
   --gc-clinical-section-header-bg:
-    linear-gradient(180deg, rgb(5 48 74 / 97%), rgb(4 38 58 / 98%));
+    linear-gradient(180deg, rgb(31 42 57 / 97%), rgb(23 32 44 / 98%));
   --gc-clinical-card-bg:
-    linear-gradient(180deg, rgb(6 52 80 / 82%), rgb(4 42 65 / 88%));
-  --gc-clinical-card-shadow: 0 1px 0 rgb(194 232 255 / 8%) inset;
+    linear-gradient(180deg, rgb(35 47 63 / 82%), rgb(26 36 49 / 88%));
+  --gc-clinical-card-shadow: 0 1px 0 rgb(196 214 232 / 8%) inset;
   --gc-clinical-row-bg:
-    linear-gradient(135deg, rgb(6 52 80 / 82%), rgb(4 42 65 / 88%));
+    linear-gradient(135deg, rgb(35 47 63 / 82%), rgb(26 36 49 / 88%));
   --gc-workspace-note-bg:
-    linear-gradient(145deg, rgb(6 52 80 / 96%), rgb(4 42 65 / 98%));
-  --gc-workspace-note-border: rgb(194 232 255 / 28%);
-  --gc-workspace-note-body: #c2e8ff;
+    linear-gradient(145deg, rgb(35 47 63 / 96%), rgb(26 36 49 / 98%));
+  --gc-workspace-note-border: rgb(196 214 232 / 28%);
+  --gc-workspace-note-body: #c4d6e8;
   --gc-workspace-note-shadow:
-    0 12px 30px rgb(1 10 18 / 38%),
-    0 1px 0 rgb(194 232 255 / 10%) inset;
+    0 12px 30px rgb(4 7 12 / 38%),
+    0 1px 0 rgb(196 214 232 / 10%) inset;
   --gc-clinical-active-bg:
-    linear-gradient(135deg, rgb(0 70 113 / 72%), rgb(54 92 115 / 44%));
+    linear-gradient(135deg, rgb(42 63 87 / 72%), rgb(62 83 105 / 44%));
   --gc-clinical-active-shadow:
-    0 12px 34px rgb(1 10 18 / 38%),
-    0 1px 0 rgb(194 232 255 / 12%) inset;
-  --gc-clinical-input-shadow: 0 1px 0 rgb(194 232 255 / 7%) inset;
+    0 12px 34px rgb(4 7 12 / 38%),
+    0 1px 0 rgb(196 214 232 / 12%) inset;
+  --gc-clinical-input-shadow: 0 1px 0 rgb(196 214 232 / 7%) inset;
 
   --gc-refined-panel-bg:
-    linear-gradient(180deg, rgb(6 52 80 / 92%), rgb(4 42 65 / 95%));
-  --gc-refined-panel-border: rgb(114 152 175 / 20%);
+    linear-gradient(180deg, rgb(35 47 63 / 92%), rgb(26 36 49 / 95%));
+  --gc-refined-panel-border: rgb(134 153 173 / 20%);
   --gc-refined-panel-shadow:
-    0 24px 64px rgb(1 10 18 / 46%),
-    0 1px 0 rgb(194 232 255 / 9%) inset;
+    0 24px 64px rgb(4 7 12 / 46%),
+    0 1px 0 rgb(196 214 232 / 9%) inset;
   --gc-refined-soft-bg:
-    linear-gradient(180deg, rgb(6 52 80 / 86%), rgb(4 42 65 / 92%));
-  --gc-refined-soft-border: rgb(114 152 175 / 18%);
+    linear-gradient(180deg, rgb(35 47 63 / 86%), rgb(26 36 49 / 92%));
+  --gc-refined-soft-border: rgb(134 153 173 / 18%);
   --gc-refined-accent-bg:
-    linear-gradient(145deg, rgb(0 70 113 / 78%), rgb(4 42 65 / 95%));
-  --gc-refined-accent-border: rgb(194 232 255 / 26%);
+    linear-gradient(145deg, rgb(42 63 87 / 78%), rgb(26 36 49 / 95%));
+  --gc-refined-accent-border: rgb(196 214 232 / 26%);
   --gc-refined-citation-bg:
-    linear-gradient(180deg, rgb(6 50 76 / 90%), rgb(4 42 65 / 94%));
-  --gc-refined-citation-border: rgb(114 152 175 / 18%);
+    linear-gradient(180deg, rgb(33 45 60 / 90%), rgb(26 36 49 / 94%));
+  --gc-refined-citation-border: rgb(134 153 173 / 18%);
   --gc-refined-action-bg:
-    linear-gradient(180deg, rgb(6 50 76 / 82%), rgb(4 42 65 / 88%));
-  --gc-refined-action-border: rgb(114 152 175 / 18%);
-  --gc-refined-chip-bg: rgb(54 92 115 / 38%);
-  --gc-refined-chip-border: rgb(114 152 175 / 22%);
-  --gc-refined-chip-text: #c2e8ff;
+    linear-gradient(180deg, rgb(33 45 60 / 82%), rgb(26 36 49 / 88%));
+  --gc-refined-action-border: rgb(134 153 173 / 18%);
+  --gc-refined-chip-bg: rgb(62 83 105 / 38%);
+  --gc-refined-chip-border: rgb(134 153 173 / 22%);
+  --gc-refined-chip-text: #c4d6e8;
 }
 
 .gc-atmosphere-shell,
@@ -1429,23 +1429,23 @@ body {
 }
 
 .dark :is(.gc-atmosphere-shell, .gc-workspace-sheet) {
-  --muted-foreground: #a1bdd7;
-  --gc-workspace-stage: linear-gradient(148deg, #142a67, #091a43 52%, #09132e 83%, #142b62);
-  --gc-workspace-orb: radial-gradient(circle at 24% 21%, #8fe7ff, #3676e6 28%, #1d3eac 58%, #14256d 88%);
-  --gc-workspace-disc: linear-gradient(162deg, #94ddff 2%, #487bfa 34%, #263fbc 68%, #172a82);
-  --gc-workspace-reflection: rgb(151 221 255 / 60%);
-  --gc-workspace-disc-rim: #17276e;
-  --gc-workspace-edge: rgb(176 221 255 / 24%);
-  --gc-workspace-rim: rgb(139 183 247 / 28%);
-  --gc-workspace-shadow: rgb(3 7 30 / 55%);
-  --gc-workspace-plate-fallback: linear-gradient(148deg, #15264e, #101e42);
-  --gc-workspace-plate: linear-gradient(148deg, rgb(14 30 76 / 62%), rgb(10 23 53 / 74%) 54%, rgb(12 26 63 / 66%));
-  --gc-workspace-overlay: linear-gradient(148deg, rgb(17 32 69 / 96%), rgb(11 24 53 / 96%));
-  --gc-workspace-chrome: linear-gradient(155deg, rgb(36 60 111 / 63%), rgb(14 28 60 / 67%));
-  --gc-clinical-composer-bg: linear-gradient(155deg, rgb(31 53 102 / 97%), rgb(13 27 56 / 98%));
-  --gc-clinical-composer-border: rgb(145 186 250 / 35%);
-  --gc-bubble-assistant: linear-gradient(155deg, #1a3464, #11264c);
-  --gc-bubble-user: linear-gradient(142deg, #294984, #1b3b72 58%, #172c58);
+  --muted-foreground: #a3b5c8;
+  --gc-workspace-stage: linear-gradient(148deg, #141d2a, #0d131c 52%, #0b1018 83%, #131c29);
+  --gc-workspace-orb: radial-gradient(circle at 24% 21%, #6a839c, #40566e 28%, #27374a 58%, #17212d 88%);
+  --gc-workspace-disc: linear-gradient(162deg, #6f88a1 2%, #455c75 34%, #2b3c50 68%, #1b2734);
+  --gc-workspace-reflection: rgb(186 207 227 / 30%);
+  --gc-workspace-disc-rim: #151e2a;
+  --gc-workspace-edge: rgb(196 214 232 / 16%);
+  --gc-workspace-rim: rgb(150 172 196 / 24%);
+  --gc-workspace-shadow: rgb(3 6 10 / 55%);
+  --gc-workspace-plate-fallback: linear-gradient(148deg, #151e2a, #111924);
+  --gc-workspace-plate: linear-gradient(148deg, rgb(22 31 43 / 64%), rgb(15 22 32 / 76%) 54%, rgb(19 27 38 / 68%));
+  --gc-workspace-overlay: linear-gradient(148deg, rgb(26 36 49 / 96%), rgb(18 26 37 / 96%));
+  --gc-workspace-chrome: linear-gradient(155deg, rgb(46 60 79 / 63%), rgb(22 31 43 / 67%));
+  --gc-clinical-composer-bg: linear-gradient(155deg, rgb(39 52 69 / 97%), rgb(25 34 47 / 98%));
+  --gc-clinical-composer-border: rgb(150 172 196 / 32%);
+  --gc-bubble-assistant: linear-gradient(155deg, #27374b, #212f40);
+  --gc-bubble-user: linear-gradient(142deg, #354c65, #2c4158 58%, #26374b);
 }
 
 .gc-atmosphere-shell {
@@ -1666,9 +1666,9 @@ body {
 }
 
 .dark .gc-atmosphere-shell .gc-user-meta-chip {
-  border-color: rgb(114 152 175 / 26%);
-  background: rgb(4 42 65 / 86%);
-  color: #c2e8ff;
+  border-color: rgb(134 153 173 / 26%);
+  background: rgb(26 36 49 / 86%);
+  color: #c4d6e8;
 }
 
 .gc-atmosphere-shell .gc-assistant-bubble {
@@ -1707,7 +1707,7 @@ body {
 }
 
 .dark .gc-atmosphere-shell .gc-message-quick-actions {
-  background: rgb(4 42 65 / 76%);
+  background: rgb(26 36 49 / 76%);
 }
 
 .gc-atmosphere-shell .gc-composer-dock {
@@ -1741,7 +1741,7 @@ body {
 }
 
 .dark .gc-atmosphere-shell .gc-clinical-composer > div:last-child {
-  background: rgb(5 16 30 / 42%);
+  background: rgb(9 13 20 / 42%);
 }
 
 .gc-atmosphere-shell [data-workspace-region="context"] > div {
@@ -2014,7 +2014,7 @@ body {
   }
 
   .dark .gc-atmosphere-shell .gc-composer-dock {
-    background: rgb(3 10 19 / 86%);
+    background: rgb(8 11 17 / 86%);
   }
 }
 

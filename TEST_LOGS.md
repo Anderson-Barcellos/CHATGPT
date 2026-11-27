@@ -748,3 +748,20 @@ Prova real paga: `synthesizeSoundCaseChunk` com `ttsProvider: "gemini"`, cadênc
 Não coberto: geração de arquivo SoundCase completa pela interface com Gemini (worker, montagem e download) só passou pelos unitários e pela prova do trecho; leitura em segundo plano no celular depende de teste no aparelho.
 
 Publicação 19h45 BRT: deploy 0, build `NyLSM1egAAmEukkVNPmvo`; saúde local 200, pública 200, `POST /api/tts/gemini` anônimo 401, chunk público com "· parte" e "Gemini TTS · Charon" no seletor do arquivo. Log em `/root/.cache/gaucho-gemini-tts/progressivo/deploy.log`.
+
+## 2026-11-27 20h10 BRT — Escuro Grafite: repintura do modo escuro (Claude)
+
+Worktree `/root/worktrees/gaucho-grafite` (branch `feat/dark-grafite`, base `9ab2c5b`, sem commit). Pedido de Anders: trocar o escuro pelo conjunto de cores de um print de referência. Amostragem do print: croma OKLCH até 0,051 e matiz 242–268; o escuro anterior chegava a 0,198 (disco do shell) e 0,095 (`#004671`).
+
+Unitários (TDD, primeira execução), `app/globals.visual.test.ts` › "escuro Grafite: ardósia de croma baixo, camadas separadas e orbe discreto":
+- "mantém toda cor do escuro abaixo do croma do azulão e no matiz ardósia": RED (`matiz de rgb(234 255 255): expected 196.8 to be greater than or equal to 235`) → GREEN na 3ª execução. A 2ª acusou croma 0,0569 em `rgb(51 77 105)`, primeira parada do balão do usuário, escolha minha acima do teto de 0,055; corrigida a cor, não o teste.
+- "destaca os balões da placa do chat e mantém o texto legível sobre eles": RED (`expected 1.1548 to be greater than or equal to 1.25`) → GREEN.
+- "preserva o orbe e o disco atrás do vidro, sem brilho que dispute com o texto": RED (`--gc-workspace-orb: expected 0.7021 to be less than or equal to 0.3`) → GREEN.
+
+Gates finais: Vitest 1.360/1.360 em 244 arquivos (`--maxWorkers=2`) · tsc 0 · lint 0 erros (1 aviso pré-existente em `CommandComposerContainerV2.test.tsx:120`) · build 0, `-pYNHBig_t4TeO3qzHYP5` (base `/chat`).
+
+Chrome (dados sintéticos, servidores isolados): chat-column 0 · discover-panel 0 · discover-controls 0 · discover-delete 0 · runtime-ownership 0 · message-longpress 0 (12 cenários, servidor temporário na 3158, sem `data/` residual) · gemini-tts-settings 0 (xvfb, provedor simulado). Logs em `/root/.cache/gaucho-grafite/chrome`.
+
+Capturas (`/root/.cache/gaucho-grafite/evidence`): `qa-desktop-type` em 390×844, 1436×760@1,3375 e 1920×1080, escuro e claro; sonda descartável com balão do usuário, código, citação, tabela e menu de modelo aberto em 1436×760.
+
+Não coberto: Studio (Monaco e terminal com cores próprias), Configurações e Descobrir não foram fotografados; captura do claro gerada e não inspecionada (o diff só toca blocos `.dark`); sem teste em aparelho físico. Não publicado: produção segue na build `NyLSM1egAAmEukkVNPmvo`.

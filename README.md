@@ -63,7 +63,7 @@ data/
 O tema padrão vive em `app/globals.css` e é identificado por
 `data-visual-theme="atmosphere-glass"` no `WorkspaceFrameV2`.
 
-- **Midnight Glass**: modo escuro em navy profundo, superfícies translúcidas e acentos azul-frio.
+- **Midnight Glass**: modo escuro na paleta Grafite, uma ardósia azulada de croma baixo, com superfícies translúcidas e orbe discreto ao fundo.
 - **Daybreak**: interpretação clara da mesma linguagem, com fundos clínicos azulados e contraste documental.
 - Tokens de cor compartilhados ficam em `:root` e `.dark` para também alcançar `Sheet`, dropdowns e outros portais Radix montados diretamente sob `body`.
 - Geometria, ambientação e tratamentos próprios do shell continuam restritos a `.gc-atmosphere-shell`, preservando o restante da aplicação.
