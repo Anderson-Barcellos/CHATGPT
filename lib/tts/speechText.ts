@@ -116,8 +116,8 @@ export function normalizeTtsPreferences(
   };
 }
 
-export function sanitizeSpeechText(input: string): string {
-  return input
+export function sanitizeSpeechText(input: string, options?: { preserveParagraphs?: boolean }): string {
+  const text = input
     .replace(/```[\s\S]*?```/g, " bloco de código omitido. ")
     .replace(/`([^`]+)`/g, "$1")
     .replace(/!\[[^\]]*]\([^)]+\)/g, "")
@@ -126,9 +126,10 @@ export function sanitizeSpeechText(input: string): string {
     .replace(/^#{1,6}\s+/gm, "")
     .replace(/^[-*+]\s+/gm, "")
     .replace(/^\d+\.\s+/gm, "")
-    .replace(/\|/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+    .replace(/\|/g, " ");
+  return options?.preserveParagraphs
+    ? text.split(/\r?\n[^\S\r\n]*\r?\n/).map((paragraph) => paragraph.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n\n")
+    : text.replace(/\s+/g, " ").trim();
 }
 
 function splitOversizedSegment(

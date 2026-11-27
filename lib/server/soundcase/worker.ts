@@ -90,6 +90,8 @@ function isRetryableChunkError(error: unknown): boolean {
     error.message === "soundcase_grok_tts_unavailable" ||
     error.message === "soundcase_grok_tts_wav_invalid" ||
     error.message === "soundcase_grok_tts_conversion" ||
+    error.message === "soundcase_gemini_tts_unavailable" ||
+    error.message === "soundcase_gemini_tts_conversion" ||
     error.message === "soundcase_audio_probe_invalid" ||
     error.message === "soundcase_audio_probe_mismatch" ||
     error.name === "SoundCaseFileError"
@@ -339,6 +341,10 @@ export async function runNextSoundCaseJob(
               synthesizeSoundCaseChunk({
                 ttsProvider: version.requestedSettings.ttsProvider ?? "openai",
                 grokVoice: version.requestedSettings.grokVoice ?? "orion",
+                geminiSettings: {
+                  pace: version.requestedSettings.geminiPace ?? "natural",
+                  expressiveness: version.requestedSettings.geminiExpressiveness ?? "equilibrada",
+                },
                 projectId: version.projectId,
                 versionId: version.id,
                 chunk,

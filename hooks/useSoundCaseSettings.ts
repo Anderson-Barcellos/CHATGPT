@@ -37,7 +37,7 @@ export function normalizeSoundCaseSettings(raw: string | null): SoundCaseGenerat
     const value = JSON.parse(raw ?? "null");
     if (!value || typeof value !== "object" || Array.isArray(value)) return DEFAULT_SOUNDCASE_SETTINGS;
     return {
-      ttsProvider: value.ttsProvider === "grok" || value.ttsProvider === "openai" ? value.ttsProvider : "openai",
+      ttsProvider: value.ttsProvider === "grok" || value.ttsProvider === "openai" || value.ttsProvider === "gemini" ? value.ttsProvider : "openai",
       grokVoice: typeof value.grokVoice === "string" && /^[a-z][a-z0-9_-]{0,63}$/i.test(value.grokVoice) ? value.grokVoice : "orion",
       automatic: typeof value.automatic === "boolean" ? value.automatic : true,
       playbackMode: value.playbackMode === "silent" ? "silent" : "realtime",

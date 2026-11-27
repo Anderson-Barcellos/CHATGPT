@@ -7,6 +7,11 @@ describe("SoundCase file TTS preferences", () => {
     expect(DEFAULT_SOUNDCASE_SETTINGS).toMatchObject({ ttsProvider: "grok", grokVoice: "orion" });
   });
 
+  it("guarda Gemini como TTS do arquivo", () => {
+    expect(normalizeSoundCaseSettings(JSON.stringify({ ttsProvider: "gemini", automatic: true, format: "mp3" })))
+      .toMatchObject({ ttsProvider: "gemini" });
+  });
+
   it("preserves OpenAI for a legacy saved preference", () => {
     expect(normalizeSoundCaseSettings(JSON.stringify({ automatic: true, format: "mp3" })))
       .toMatchObject({ ttsProvider: "openai", grokVoice: "orion" });

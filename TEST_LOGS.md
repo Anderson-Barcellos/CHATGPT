@@ -708,3 +708,41 @@ Prova real paga (servidor Live direto): Bossa/calmo 3,83 s de áudio pronto em 8
 Chrome (sonda nova `scripts/qa-openai-live-settings.mjs`, dados sintéticos, rota Live interceptada): 1440 dark e 390 light aprovados — seção nas Configurações salva Bossa/calmo, três motores no player, escolher o motor não inicia leitura, Tocar envia `voice`/`pace`, sem rolagem horizontal nem pageerror. Capturas em `/root/.cache/gaucho-live-voice/evidence`.
 
 Rodada final após o ajuste do texto ocioso do player (Live: "Pronto · cada trecho é conferido antes de tocar"): tsc 0 · lint 0 erros · Vitest 1.334/1.334 em 240 arquivos · build 0 · Chrome do projeto 6/6 (chat-column, discover-panel, discover-controls, discover-delete, runtime-ownership, message-longpress 12 cenários com servidor temporário na 3158 e `data/` sintética removida) · sonda Live 2/2. Logs em `/root/.cache/gaucho-live-voice/`.
+
+
+## 2026-11-27 19h20 BRT — Gemini TTS · Charon em leitura progressiva (Claude)
+
+Worktree `/root/worktrees/gaucho-gemini-live` (branch `feat/gemini-live-voice`, base `54f0043`, sem commit). Queixa de Anders: o Charon não funcionava. Diagnóstico: a rota gerava a mensagem inteira antes de devolver o WAV; no Apache, a tentativa das 18h46 (Chrome Android) saiu `200` com 0 bytes, abortada ao trocar de tela após mais de 20 s de "Gerando áudio…". Medido no Google: 300 caracteres em 6,6 s e 1.500 em 28,7 s (~19 ms por caractere).
+
+Unitários (TDD, primeira execução):
+- `lib/tts/geminiTts.test.ts` (5 casos: texto curto, partes 320/800/1.200 em fim de frase, parágrafo, par substituto, união de WAVs): RED (`splitGeminiSpeechText`/`joinGeminiWavs` inexistentes) → GREEN.
+- `hooks/useGeminiTtsSpeech.test.tsx` › "toca a primeira parte curta enquanto as seguintes ainda são geradas", "emenda as partes na ordem e libera o WAV completo no fim", "mantém o que já toca quando uma parte adiante falha", "lê texto curto em um pedido só": RED (um pedido único com o texto inteiro) → GREEN. "cancela as gerações em andamento ao parar": verde desde a 1ª execução (contrato preservado).
+- `hooks/useGeminiTtsSpeech.test.tsx` › "recarrega a parte quando o destrave de áudio interrompe a reprodução": RED (`play` chamado 1 vez) → GREEN. Defeito meu, achado pela sonda de Chrome: `primeBrowserAudio` limpava o elemento quando a parte chegava antes de o destrave terminar (`AbortError`). "não trata como falha a pausa feita enquanto a parte ainda carregava": verde na 1ª execução, escrito junto com o conserto.
+- `MiniAudioPlayer.test.tsx` e `SoundCaseRealtimeBar.test.tsx`: só ganharam `clipIndex`/`totalClips` nos dublês (o segundo acusava TS2739).
+
+Gates finais: Vitest 1.349/1.349 em 243 arquivos (`--maxWorkers=2`) · tsc 0 · lint 0 erros (1 aviso pré-existente em `CommandComposerContainerV2.test.tsx:120`) · build 0, `WHrPu-9xFnr7saRfOVo9h` (base `/chat`).
+
+Chrome (xvfb, dados sintéticos, servidores isolados): `qa-gemini-tts-settings` 0 com 2 cenários (1440 e 390 px; 1ª execução parou em "Pausar" pelo `AbortError` acima; 2ª parou no rastreador da sonda, que só via `new Audio(url)` e foi ajustado para identificar o áudio pelo `play` de um blob; áudio em aba oculta 0/2, igual à rodada da publicação) · chat-column 0 · discover-panel 0 · discover-controls 0 · discover-delete 0 · runtime-ownership 0 · message-longpress 0 (12 cenários, servidor temporário na 3158, `data/` sintética removida).
+
+Prova real paga (Google direto, fatiador novo, duas gerações em paralelo, texto de 2.171 caracteres em partes de 288, 796 e 1.085): parte 1 pronta aos 7,0 s (19,1 s de áudio), parte 2 aos 13,3 s (45,9 s), parte 3 aos 25,0 s (62,2 s). Sem espera entre partes. Logs em `/root/.cache/gaucho-gemini-tts/progressivo`.
+
+Não publicado: produção segue na build `CLM9RIb8kK1WpdkOZwrF3`.
+
+### 19h35 BRT — Charon no arquivo final do SoundCase e Media Session (Claude)
+
+Pedido de Anders: o Gemini devia estar onde já existe gerar arquivo ou ouvir. Pulse e Descobrir já usam o mini-player com Charon; faltava o "TTS do arquivo" do SoundCase, que só oferecia OpenAI e Grok.
+
+Unitários (TDD, primeira execução):
+- `lib/server/soundcase/audio.test.ts` › "gera o trecho do arquivo com Gemini Charon e converte o WAV para FLAC" e "repassa a recusa do Gemini com o status, sem cair para a OpenAI": RED (provedor desconhecido caía na OpenAI) → GREEN.
+- `lib/server/soundcase/http.test.ts` (novo) › "aceita Gemini como TTS do arquivo com cadência e expressividade": RED → GREEN; "recusa cadência desconhecida e provedor inexistente" e "mantém OpenAI e Grok como antes": verdes desde a 1ª execução (contrato preservado).
+- `hooks/useSoundCaseSettings.test.ts` › "guarda Gemini como TTS do arquivo": RED → GREEN.
+- `components/soundcase/DirectionSidebar.test.tsx` › "oferece Gemini Charon no arquivo com cadência e expressividade no lugar dos ajustes da OpenAI": RED → GREEN.
+- `hooks/useGeminiTtsSpeech.test.tsx` › "registra a leitura na Media Session para a tela de bloqueio controlar e solta ao parar": RED (metadata nula) → GREEN.
+
+Gates finais: Vitest 1.357/1.357 em 244 arquivos (`--maxWorkers=2`) · tsc 0 · lint 0 erros (mesmo aviso pré-existente) · build 0, `NyLSM1egAAmEukkVNPmvo`.
+
+Chrome (xvfb, dados sintéticos): gemini-tts-settings 0 (2 cenários; aba oculta e janela minimizada seguem 0/2, nunca comprovadas neste host) · chat-column 0 · discover-panel 0 · discover-controls 0 · discover-delete 0 · runtime-ownership 0 · message-longpress 0 (12 cenários).
+
+Prova real paga: `synthesizeSoundCaseChunk` com `ttsProvider: "gemini"`, cadência calma e expressividade alta, ffmpeg real e `SOUNDCASE_DATA_DIR` temporário: `chunks/0000.flac` com 7,0 s de áudio (FLAC 24 kHz mono, 205.743 bytes) em 4,3 s; cliente OpenAI não chamado.
+
+Não coberto: geração de arquivo SoundCase completa pela interface com Gemini (worker, montagem e download) só passou pelos unitários e pela prova do trecho; leitura em segundo plano no celular depende de teste no aparelho.

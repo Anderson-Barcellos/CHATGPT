@@ -1,4 +1,5 @@
 import type { TtsAudioFormat } from "@/types";
+import type { GeminiTtsSettings } from "@/lib/tts/geminiTts";
 import type { TtsVoice } from "@/lib/tts/speechText";
 
 export const SOUNDCASE_DEFAULT_AUDIO_FORMAT = "mp3" satisfies TtsAudioFormat;
@@ -6,7 +7,7 @@ export const SOUNDCASE_AUDIO_FORMAT_OVERRIDES = ["flac", "wav"] as const satisfi
 export const SOUNDCASE_INTERMEDIATE_AUDIO_FORMAT = "flac" satisfies TtsAudioFormat;
 
 export type SoundCasePlaybackMode = "realtime" | "silent";
-export type SoundCaseTtsProvider = "openai" | "grok";
+export type SoundCaseTtsProvider = "openai" | "grok" | "gemini";
 export type SoundCaseChoiceSource = "automatic" | "override" | "fallback";
 
 export type SoundCaseVersionStatus =
@@ -71,6 +72,9 @@ export interface SoundCaseDirection {
 export interface SoundCaseGenerationSettings {
   ttsProvider?: SoundCaseTtsProvider;
   grokVoice?: string;
+  /** Só com `ttsProvider: "gemini"`: cadência e expressividade do perfil Fronteira Técnica. */
+  geminiPace?: GeminiTtsSettings["pace"];
+  geminiExpressiveness?: GeminiTtsSettings["expressiveness"];
   automatic: boolean;
   playbackMode: SoundCasePlaybackMode;
   format: TtsAudioFormat;

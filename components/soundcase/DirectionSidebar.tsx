@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { apiUrl } from "@/lib/utils";
 
 import { Gauge, Headphones, Mic2, SlidersHorizontal, Sparkles, Volume2 } from "lucide-react";
+import { GeminiTtsSettingsFields } from "@/components/settings/GeminiTtsSettingsFields";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import type { SoundCaseGenerationSettings } from "@/lib/soundcase/types";
+import { useGeminiTtsSettings } from "@/hooks/useGeminiTtsSettings";
 import { TTS_VOICES } from "@/lib/tts/speechText";
 import styles from "./SoundCase.module.css";
 
@@ -39,6 +41,8 @@ export function DirectionSidebar({ settings, disabled, busy, showActions = true,
   const update = (patch: Partial<SoundCaseGenerationSettings>, override = false) => {
     onChange({ ...settings, ...patch, ...(override ? { automatic: false } : {}) });
   };
+  const gemini = useGeminiTtsSettings();
+  const provider = settings.ttsProvider ?? "openai";
   const voice = settings.voiceOverride ?? "";
   const speed = settings.speedOverride ?? 1;
 
@@ -65,10 +69,17 @@ export function DirectionSidebar({ settings, disabled, busy, showActions = true,
         <span className={styles.controlIcon}><Volume2 /></span>
         <span className={styles.controlCopy}><strong>TTS do arquivo</strong><small>Escolha para a próxima narração</small></span>
         <select className={styles.compactSelect} aria-label="TTS do arquivo" disabled={busy} value={settings.ttsProvider ?? "openai"}
-          onChange={(event) => update({ ttsProvider: event.target.value === "grok" ? "grok" : "openai", grokVoice: settings.grokVoice ?? "orion" })}>
-          <option value="grok">Grok TTS</option><option value="openai">OpenAI TTS</option>
+          onChange={(event) => update({
+            ttsProvider: event.target.value === "grok" || event.target.value === "gemini" ? event.target.value : "openai",
+            grokVoice: settings.grokVoice ?? "orion",
+          })}>
+          <option value="grok">Grok TTS</option><option value="gemini">Gemini TTS · Charon</option><option value="openai">OpenAI TTS</option>
         </select>
       </label>
+
+      {provider === "gemini" ? <div className={styles.geminiFileFields}>
+        <GeminiTtsSettingsFields settings={gemini.settings} onChange={gemini.setSettings} fieldClassName={styles.realtimeField} selectClassName={styles.realtimeSelect} />
+      </div> : null}
 
       {settings.ttsProvider === "grok" ? <label className={styles.controlCard}>
         <span className={styles.controlIcon}><Mic2 /></span>
@@ -82,7 +93,7 @@ export function DirectionSidebar({ settings, disabled, busy, showActions = true,
         </select>
       </label> : null}
 
-      {settings.ttsProvider !== "grok" ? <label className={styles.controlCard}>
+      {provider === "openai" ? <label className={styles.controlCard}>
         <span className={styles.controlIcon}><Mic2 /></span>
         <span className={styles.controlCopy}><strong>Voz</strong><small>{settings.automatic ? "Luna escolhe ao gerar" : "Escolha manual"}</small></span>
         <select
@@ -97,13 +108,13 @@ export function DirectionSidebar({ settings, disabled, busy, showActions = true,
         </select>
       </label> : null}
 
-      <div className={styles.sliderCard}>
+      {provider !== "gemini" ? <div className={styles.sliderCard}>
         <span className={styles.controlIcon}><Gauge /></span>
         <div className={styles.sliderBody}>
           <div><strong>Ritmo · {settings.automatic && settings.speedOverride === null ? "Luna escolhe" : speed === 1 ? "Natural" : `${speed.toFixed(2)}×`}</strong></div>
           <Slider aria-label="Velocidade da narração" disabled={busy} min={0.75} max={1.5} step={0.05} value={[speed]} onValueChange={([value]) => update({ speedOverride: value }, true)} />
         </div>
-      </div>
+      </div> : null}
 
       <label className={styles.controlCard}>
         <span className={styles.controlIcon}><SlidersHorizontal /></span>
@@ -113,7 +124,7 @@ export function DirectionSidebar({ settings, disabled, busy, showActions = true,
         </select>
       </label>
 
-      {settings.ttsProvider !== "grok" ? <label className={styles.instructionsLabel}>
+      {provider === "openai" ? <label className={styles.instructionsLabel}>
         <span>Direção personalizada</span>
         <textarea
           aria-label="Instruções de leitura"

@@ -67,7 +67,7 @@ audio.writeUInt16LE(16, 34); audio.write('data', 36); audio.writeUInt32LE(audio.
       assert.equal(enabled.status(), 200);
       assert.deepEqual((await enabled.json()).schedule, { enabled: true });
       const page = await context.newPage();
-      const errors = []; const consoleErrors = []; const spoken = []; const external = [];
+      const errors = []; const consoleErrors = []; const spoken = []; const gemini = []; const external = [];
       page.on('pageerror', e => errors.push(e.message));
       page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()); });
       await page.route('**/*', async route => {
@@ -75,6 +75,10 @@ audio.writeUInt16LE(16, 34); audio.write('data', 36); audio.writeUInt32LE(audio.
         if (url.origin !== new URL(base).origin) { external.push(url.origin); return route.abort(); }
         if (url.pathname === '/chat/api/tts/xai') {
           spoken.push(route.request().postDataJSON());
+          return route.fulfill({ status: 200, contentType: 'audio/wav', body: audio });
+        }
+        if (url.pathname === '/chat/api/tts/gemini') {
+          gemini.push(route.request().postDataJSON());
           return route.fulfill({ status: 200, contentType: 'audio/wav', body: audio });
         }
         if (url.pathname.includes('/api/realtime/')) throw new Error('Realtime não deve ser chamado');
@@ -101,6 +105,7 @@ audio.writeUInt16LE(16, 34); audio.write('data', 36); audio.writeUInt32LE(audio.
       await listen.first().click();
       assert.equal(spoken.length, 0);
       assert.equal(await page.getByRole('button', { name: 'Escolher Grok Realtime' }).count(), 0);
+      await page.getByRole('button', { name: 'Escolher Gemini TTS com voz Charon' }).waitFor();
       await page.getByRole('button', { name: 'Tocar', exact: true }).click();
       await until(async () => spoken.length > 0, 'TTS solicitado');
       assert.ok(JSON.stringify(spoken).includes('Notícia sintética 1'));
@@ -111,6 +116,11 @@ audio.writeUInt16LE(16, 34); audio.write('data', 36); audio.writeUInt32LE(audio.
       if ((width === 1440 && theme === 'dark') || (width === 320 && theme === 'light')) {
         await page.locator('[data-discover-article="synthetic-1"]').screenshot({ path: path.join(output, `tts-${width}-${theme}.png`) });
       }
+      await page.getByRole('button', { name: 'Escolher Gemini TTS com voz Charon' }).click();
+      assert.equal(gemini.length, 0);
+      await page.getByRole('button', { name: 'Tocar', exact: true }).click();
+      await page.getByText('Charon está lendo', { exact: true }).waitFor();
+      assert.equal(gemini[0].text, 'Notícia sintética 1\n\nConteúdo completo da matéria 1. Uma explicação curta para testar a leitura por voz.');
       await listen.nth(1).click();
       assert.equal(await page.locator('[data-audio-engine]').count(), 1);
       await page.getByRole('button', { name: 'Fechar player de áudio' }).click();

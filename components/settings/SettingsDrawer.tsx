@@ -1,7 +1,7 @@
 "use client";
 
-import { OpenAILiveSettingsFields } from "@/components/settings/OpenAILiveSettingsFields";
-import { useOpenAILiveSettings } from "@/hooks/useOpenAILiveSettings";
+import { GeminiTtsSettingsFields } from "@/components/settings/GeminiTtsSettingsFields";
+import { useGeminiTtsSettings } from "@/hooks/useGeminiTtsSettings";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -322,7 +322,7 @@ function MemorySuggestionCard({
 
 export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   const { parameters, updateParameters, chatModelCatalog } = useSettingsStore();
-  const openAILive = useOpenAILiveSettings();
+  const geminiTts = useGeminiTtsSettings();
   const activeMode = useUIStore((state) => state.activeMode);
   const imageQuality = useUIStore((state) => state.imageQuality);
   const imageSize = useUIStore((state) => state.imageSize);
@@ -651,10 +651,9 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                       </h3>
                       <div className="gc-refined-panel space-y-4 rounded-[1.35rem] border p-[var(--gc-mobile-settings-card-pad)]">
                         <p className="text-micro leading-relaxed text-muted-foreground">
-                          Chat e Pulse usam Grok TTS com voz Orion no MP3 e
-                          Orion no Grok Realtime. O modo e a velocidade abaixo
-                          afetam o TTS MP3; o Realtime segue sua própria cadência.
-                          O OpenAI Live 1.1 tem voz e ritmo próprios, mais abaixo.
+                          Chat, Pulse e Descobrir usam Grok TTS com voz Orion no MP3.
+                          O modo e a velocidade abaixo são do Grok. O Gemini TTS
+                          tem cadência e expressividade próprias.
                         </p>
                         <label className="flex flex-col gap-1 text-xs">
                           <span className="text-muted-foreground">
@@ -700,15 +699,15 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                           />
                         </div>
 
-                        <div data-slot="openai-live-settings" className="space-y-3 border-t border-[color:var(--gc-border)] pt-4">
+                        <div data-slot="gemini-tts-settings" className="space-y-3 border-t border-[color:var(--gc-border)] pt-4">
                           <div>
-                            <p className="text-xs font-medium">OpenAI Live 1.1</p>
+                            <p className="text-xs font-medium">Gemini TTS · Charon</p>
                             <p className="text-micro text-muted-foreground">
-                              Vale no player das mensagens, no Pulse e no SoundCase.
-                              O ritmo é um pedido ao modelo, não um controle exato.
+                              Vale no player das mensagens, no Pulse, no Descobrir e no SoundCase.
+                              Usa o perfil Fronteira Técnica com a cadência e a expressividade que tu escolheres.
                             </p>
                           </div>
-                          <OpenAILiveSettingsFields settings={openAILive.settings} onChange={openAILive.setSettings} />
+                          <GeminiTtsSettingsFields settings={geminiTts.settings} onChange={geminiTts.setSettings} />
                         </div>
 
                       </div>

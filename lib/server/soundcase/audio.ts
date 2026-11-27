@@ -11,6 +11,8 @@ import type {
   SoundCaseTtsProvider,
 } from "@/lib/soundcase/types";
 import { TTS_MODEL } from "@/lib/tts/speechText";
+import { normalizeGeminiTtsSettings, type GeminiTtsSettings } from "@/lib/tts/geminiTts";
+import { GeminiTtsError, synthesizeGeminiTts } from "@/lib/server/geminiTts";
 import {
   assertRegularSoundCaseFile,
   promoteSoundCaseFile,
@@ -113,6 +115,16 @@ async function synthesizeGrokFlac(input: {
   if (wav.length < 44 || wav.toString("ascii", 0, 4) !== "RIFF" || wav.toString("ascii", 8, 12) !== "WAVE") {
     throw new Error("soundcase_grok_tts_wav_invalid");
   }
+  return convertWavToFlac(input, wav, "soundcase_grok_tts_conversion");
+}
+
+/** O pipeline retoma por trechos FLAC; provedores que devolvem WAV passam por aqui. */
+async function convertWavToFlac(input: {
+  projectId: string;
+  versionId: string;
+  execFile?: SoundCaseExecFile;
+  signal?: AbortSignal;
+}, wav: Buffer, conversionError: string): Promise<Buffer> {
   const base = resolveSoundCasePath("projects", input.projectId, "versions", input.versionId, "chunks", randomUUID());
   const wavPath = `${base}.wav.part`;
   const flacPath = `${base}.flac.part`;
@@ -125,11 +137,42 @@ async function synthesizeGrokFlac(input: {
       ], { signal: input.signal });
       return await fs.readFile(flacPath);
     } catch (cause) {
-      throw new Error("soundcase_grok_tts_conversion", { cause });
+      throw new Error(conversionError, { cause });
     }
   } finally {
     await Promise.all([fs.rm(wavPath, { force: true }), fs.rm(flacPath, { force: true })]);
   }
+}
+
+/**
+ * Charon com o perfil Fronteira Técnica. A direção da Luna e as instruções
+ * personalizadas foram escritas para as vozes da OpenAI e não entram no estilo.
+ */
+async function synthesizeGeminiFlac(input: {
+  projectId: string;
+  versionId: string;
+  segment: SoundCaseSegment;
+  geminiSettings?: GeminiTtsSettings;
+  execFile?: SoundCaseExecFile;
+  signal?: AbortSignal;
+}): Promise<Buffer> {
+  const key = process.env.GEMINI_API_KEY?.trim();
+  if (!key) throw new Error("soundcase_gemini_tts_unavailable");
+  const timeout = AbortSignal.timeout(270_000);
+  let wav: Buffer;
+  try {
+    wav = Buffer.from(await synthesizeGeminiTts(
+      input.segment.text, key, normalizeGeminiTtsSettings(input.geminiSettings),
+      input.signal ? AbortSignal.any([input.signal, timeout]) : timeout,
+    ));
+  } catch (cause) {
+    if (!(cause instanceof GeminiTtsError)) throw cause;
+    // 429 e 502 voltam para a fila de tentativas do worker.
+    const error = new Error("soundcase_gemini_tts_provider", { cause }) as Error & { status?: number };
+    error.status = cause.status;
+    throw error;
+  }
+  return convertWavToFlac(input, wav, "soundcase_gemini_tts_conversion");
 }
 
 export async function probeSoundCaseAudio(
@@ -189,6 +232,7 @@ async function probePacketDuration(
 export async function synthesizeSoundCaseChunk(input: {
   ttsProvider?: SoundCaseTtsProvider;
   grokVoice?: string;
+  geminiSettings?: GeminiTtsSettings;
   projectId: string;
   versionId: string;
   chunk: SoundCaseChunk;
@@ -214,6 +258,8 @@ export async function synthesizeSoundCaseChunk(input: {
   try {
     if (input.ttsProvider === "grok") {
       bytes = await synthesizeGrokFlac(input);
+    } else if (input.ttsProvider === "gemini") {
+      bytes = await synthesizeGeminiFlac(input);
     } else {
       const response = await input.client.audio.speech.create({
         model: TTS_MODEL,

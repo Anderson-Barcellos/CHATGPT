@@ -12,19 +12,16 @@ import {
   X,
 } from "lucide-react";
 import { useAssistantTts } from "@/hooks/useAssistantTts";
-import { useGrokMessageRealtime } from "@/hooks/useGrokMessageRealtime";
-import { useOpenAILiveSpeech } from "@/hooks/useOpenAILiveSpeech";
+import { useGeminiTtsSpeech } from "@/hooks/useGeminiTtsSpeech";
 import { cn } from "@/lib/utils";
 
-export type AudioEngine = "standard" | "realtime" | "openai-live";
+export type AudioEngine = "standard" | "gemini-tts";
 
 interface MiniAudioPlayerProps {
   content: string;
   messageId: string;
   onClose: () => void;
-  /** Mantém o Realtime disponível nas superfícies de conversa; o feed é TTS de arquivo. */
-  allowRealtime?: boolean;
-  allowOpenAILive?: boolean;
+  allowGeminiTts?: boolean;
   className?: string;
 }
 
@@ -57,21 +54,17 @@ export function MiniAudioPlayer({
   content,
   messageId,
   onClose,
-  allowRealtime = true,
-  allowOpenAILive = allowRealtime,
+  allowGeminiTts = true,
   className,
 }: MiniAudioPlayerProps) {
   const [engine, setEngine] = useState<AudioEngine>("standard");
   const tts = useAssistantTts(content, messageId);
-  const realtime = useGrokMessageRealtime(content);
-  const live = useOpenAILiveSpeech();
-  const activeRealtime = engine === "openai-live" ? live : realtime;
+  const gemini = useGeminiTtsSpeech();
 
   const stopAll = useCallback(() => {
     tts.stop();
-    realtime.stop();
-    live.stop();
-  }, [live, realtime, tts]);
+    gemini.stop();
+  }, [gemini, tts]);
 
   const selectEngine = useCallback(
     (nextEngine: AudioEngine) => {
@@ -83,21 +76,17 @@ export function MiniAudioPlayer({
   );
 
   const toggleSelectedEngine = useCallback(() => {
-    if (engine === "standard" || !allowRealtime) {
-      realtime.stop();
-      live.stop();
+    if (engine === "standard" || !allowGeminiTts) {
+      gemini.stop();
       tts.togglePlay();
       return;
     }
 
     tts.stop();
-    if (activeRealtime.isActive) {
-      activeRealtime.stop();
-      return;
-    }
-    if (engine === "openai-live") void live.start({ text: content });
-    else void realtime.start();
-  }, [activeRealtime, allowRealtime, content, engine, live, realtime, tts]);
+    if (gemini.status === "connecting") gemini.stop();
+    else if (gemini.isActive || gemini.canResume) gemini.toggle();
+    else void gemini.start({ text: content });
+  }, [allowGeminiTts, content, engine, gemini, tts]);
 
   const close = useCallback(() => {
     stopAll();
@@ -107,23 +96,19 @@ export function MiniAudioPlayer({
   const isStandard = engine === "standard";
   const isLoading = isStandard
     ? tts.status === "loading"
-    : activeRealtime.status === "connecting" || activeRealtime.status === "ready";
-  const isPlaying = isStandard ? tts.isPlaying : activeRealtime.isActive;
-  const realtimeStatus = activeRealtime.error
-    ? activeRealtime.error
-    : activeRealtime.status === "completed"
-      ? "Leitura concluída"
-      : activeRealtime.firstAudioMs
-        ? `Primeiro áudio em ${activeRealtime.firstAudioMs}ms`
-        : activeRealtime.status === "idle"
-        ? engine === "openai-live" ? "Pronto · cada trecho é conferido antes de tocar" : "Pronto para baixa latência"
-        : activeRealtime.status === "connecting"
-          ? "Conectando sessão..."
-          : activeRealtime.status === "ready"
-            ? "Sessão pronta..."
-            : activeRealtime.status === "speaking"
-              ? "Recebendo áudio ao vivo"
-              : "Não foi possível iniciar o Realtime";
+    : gemini.status === "connecting";
+  const isPlaying = isStandard ? tts.isPlaying : gemini.status === "speaking";
+  const playLabel = !isStandard && isLoading ? "Cancelar geração" : isPlaying ? "Pausar" : "Tocar";
+  const geminiPart = gemini.totalClips > 1 ? ` · parte ${gemini.clipIndex + 1}/${gemini.totalClips}` : "";
+  const geminiStatus = gemini.error ?? {
+    idle: "Pronto · Fronteira Técnica",
+    connecting: `Gerando áudio…${geminiPart}`,
+    ready: "Áudio pronto · toque para ouvir",
+    speaking: `Charon está lendo${geminiPart}`,
+    paused: `Leitura pausada${geminiPart}`,
+    completed: "Leitura concluída",
+    error: "Falha na leitura",
+  }[gemini.status];
 
   return (
     <div
@@ -134,7 +119,7 @@ export function MiniAudioPlayer({
       data-audio-engine={engine}
     >
       <div className="mb-1.5 flex items-center justify-between gap-2 border-b border-[color:var(--gc-border-soft)] pb-1.5">
-        {allowRealtime ? (
+        {allowGeminiTts ? (
           <div
             role="group"
             aria-label="Motor de áudio"
@@ -156,34 +141,18 @@ export function MiniAudioPlayer({
             </button>
             <button
               type="button"
-              aria-label="Escolher Grok Realtime"
-              aria-pressed={engine === "realtime"}
-              onClick={() => selectEngine("realtime")}
+              aria-label="Escolher Gemini TTS com voz Charon"
+              aria-pressed={engine === "gemini-tts"}
+              onClick={() => selectEngine("gemini-tts")}
               className={cn(
                 "h-6 whitespace-nowrap rounded-md px-1.5 transition-colors",
-                engine === "realtime"
+                engine === "gemini-tts"
                   ? "bg-background font-medium text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              Grok Realtime
+              Gemini TTS · Charon
             </button>
-            {allowOpenAILive && (
-              <button
-                type="button"
-                aria-label="Escolher OpenAI Live 1.1"
-                aria-pressed={engine === "openai-live"}
-                onClick={() => selectEngine("openai-live")}
-                className={cn(
-                  "h-6 whitespace-nowrap rounded-md px-1.5 transition-colors",
-                  engine === "openai-live"
-                    ? "bg-background font-medium text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                OpenAI Live 1.1
-              </button>
-            )}
           </div>
         ) : (
           <span className="text-micro font-medium text-foreground">
@@ -200,19 +169,15 @@ export function MiniAudioPlayer({
         <button
           type="button"
           onClick={toggleSelectedEngine}
-          disabled={(isLoading && !isPlaying) || !tts.canPlay}
+          disabled={isStandard && ((isLoading && !isPlaying) || !tts.canPlay)}
           className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-background/80 text-foreground hover:bg-background disabled:opacity-50"
-          title={isPlaying ? (isStandard ? "Pausar" : "Parar") : "Tocar"}
-          aria-label={isPlaying ? (isStandard ? "Pausar" : "Parar") : "Tocar"}
+          title={playLabel}
+          aria-label={playLabel}
         >
           {isLoading ? (
             <LoaderCircle className="size-3.5 animate-spin" />
           ) : isPlaying ? (
-            isStandard ? (
-              <Pause className="size-3.5" />
-            ) : (
-              <Square className="size-3.5" />
-            )
+            <Pause className="size-3.5" />
           ) : (
             <Play className="size-3.5" />
           )}
@@ -262,15 +227,17 @@ export function MiniAudioPlayer({
             </PlayerButton>
           </>
         ) : (
-          <p
-            className={cn(
-              "min-w-0 flex-1 truncate text-micro md:text-nano",
-              activeRealtime.error && "text-rose-600 dark:text-rose-300"
+          <>
+            <p className={cn("min-w-0 flex-1 text-micro md:text-nano", gemini.error && "text-rose-600 dark:text-rose-300")} aria-live="polite">
+              {geminiStatus}
+            </p>
+            {gemini.audioUrl && (
+              <a className="flex size-7 shrink-0 items-center justify-center rounded-lg hover:bg-background/70"
+                href={gemini.audioUrl} download="leitura-charon.wav" aria-label="Baixar áudio Gemini WAV">
+                <Download className="size-3.5" />
+              </a>
             )}
-            aria-live="polite"
-          >
-            {realtimeStatus}
-          </p>
+          </>
         )}
       </div>
     </div>

@@ -8,13 +8,13 @@ import { DiscoverFeed, DiscoverPage } from "./DiscoverPage";
 vi.mock("@/components/chat/ChatMarkdown", () => ({ ChatMarkdown: ({ content }: { content: string }) => <div>{content}</div> }));
 vi.mock("@/components/navigation/ProductNav", () => ({ ProductNav: () => <nav>Produtos</nav> }));
 vi.mock("@/components/chat/MiniAudioPlayer", () => ({
-  MiniAudioPlayer: ({ content, messageId, allowRealtime, onClose }: {
+  MiniAudioPlayer: ({ content, messageId, allowGeminiTts = true, onClose }: {
     content: string;
     messageId: string;
-    allowRealtime?: boolean;
+    allowGeminiTts?: boolean;
     onClose: () => void;
   }) => (
-    <div data-mini-audio-player data-message-id={messageId} data-allow-realtime={String(allowRealtime)}>
+    <div data-mini-audio-player data-message-id={messageId} data-allow-gemini-tts={String(allowGeminiTts)}>
       {content}
       <button type="button" onClick={onClose}>Fechar player</button>
     </div>
@@ -458,7 +458,7 @@ describe("Descobrir IA", () => {
     await act(async () => firstAudio.click());
     const firstPlayer = container.querySelector("[data-mini-audio-player]")!;
     expect(firstPlayer.getAttribute("data-message-id")).toBe("discover-primeira");
-    expect(firstPlayer.getAttribute("data-allow-realtime")).toBe("false");
+    expect(firstPlayer.getAttribute("data-allow-gemini-tts")).toBe("true");
     expect(firstPlayer.textContent).toContain("Matéria 1");
     expect(firstPlayer.textContent).toContain("Conteúdo 1");
     expect(firstPlayer.textContent).not.toContain("Resumo suficientemente claro");

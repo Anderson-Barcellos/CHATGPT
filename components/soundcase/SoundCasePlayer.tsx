@@ -24,6 +24,7 @@ export interface SoundCasePlayerProps {
     stop: () => void;
     error?: string | null;
     label?: string;
+    generatedAudioReady?: boolean;
   };
   onStartRealtime?: () => void;
   /** Avisa o acervo quando o arquivo final começa ou para de tocar. */
@@ -80,7 +81,7 @@ export function SoundCasePlayer({ version, audioUrl, realtime, onStartRealtime, 
       </button>
       <div className={styles.playerNow}>
         <strong>{realtime.isActive ? <><Radio /> {realtime.label ?? "Realtime"}</> : <><FileAudio /> Arquivo final</>}</strong>
-        <span>{realtime.isActive ? (realtime.status === "connecting" ? "Conectando…" : "Leitura em andamento") : readyAudio ? `${readyAudio.format.toUpperCase()} · ${Math.ceil(readyAudio.durationSeconds / 60)} min` : "Em preparação"}</span>
+        <span>{realtime.isActive ? (realtime.status === "connecting" ? (realtime.label ? "Gerando áudio…" : "Conectando…") : "Leitura em andamento") : readyAudio ? `${readyAudio.format.toUpperCase()} · ${Math.ceil(readyAudio.durationSeconds / 60)} min` : "Em preparação"}</span>
       </div>
       {finalReady && realtime.isActive ? (
         <button className={styles.switchFinal} type="button" onClick={() => void switchToFinalAudio({ stopRealtime: realtime.stop, playFinal })}>
@@ -95,9 +96,9 @@ export function SoundCasePlayer({ version, audioUrl, realtime, onStartRealtime, 
             setPlayingFinal(false);
             setPlayError(null);
             onStartRealtime();
-          }}><Radio /> Ouvir com Realtime</button>
+          }}><Radio /> {realtime.generatedAudioReady ? "Tocar áudio Gemini" : realtime.label ? "Ouvir com Gemini TTS" : "Ouvir com Realtime"}</button>
           <span>{version.direction && version.effectiveSettings
-            ? realtime.label ? "Leitura ao vivo com a voz Marin." : "Leitura ao vivo com os ajustes desta narração. Não cria outro arquivo."
+            ? realtime.label ? "Leitura com Charon e o perfil Fronteira Técnica." : "Leitura ao vivo com os ajustes desta narração. Não cria outro arquivo."
             : "Realtime disponível quando a direção de leitura estiver pronta."}</span>
         </div>
       ) : null}

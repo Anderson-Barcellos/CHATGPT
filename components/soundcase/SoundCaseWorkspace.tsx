@@ -14,6 +14,7 @@ import { useSoundCase } from "@/hooks/useSoundCase";
 import { useSoundCaseLibrary } from "@/hooks/useSoundCaseLibrary";
 import { useSoundCaseSettings } from "@/hooks/useSoundCaseSettings";
 import { useSoundCaseGrokSettings } from "@/hooks/useSoundCaseGrokSettings";
+import { readGeminiTtsSettings } from "@/hooks/useGeminiTtsSettings";
 import { soundCaseApi } from "@/lib/soundcase/api";
 import styles from "./SoundCase.module.css";
 
@@ -42,13 +43,13 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
   const realtime = useSoundCaseRealtimeSession();
   // Os testes legados mockam somente a sessão OpenAI; em produto o provider sempre entrega Grok.
   const grokRealtime = realtime.grok ?? null;
-  const liveRealtime = realtime.live ?? null;
+  const geminiRealtime = realtime.gemini ?? null;
   const isPanel = variant === "panel";
 
   const stopRealtimeContext = () => {
     realtime.stop();
     grokRealtime?.stop();
-    liveRealtime?.stop();
+    geminiRealtime?.stop();
     setPendingRealtimeVersionId(null);
     startedRealtimeVersionRef.current = null;
   };
@@ -66,16 +67,23 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
   const actionsDisabled = !words || overLimit || Boolean(soundcase.conflict);
   const selectedVersionId = soundcase.selectedVersion?.id ?? null;
   const activeRealtime = grokSettings.engine === "grok" ? grokRealtime ?? realtime
-    : grokSettings.engine === "openai-live" ? liveRealtime ?? realtime : realtime;
+    : grokSettings.engine === "gemini-tts" ? geminiRealtime ?? realtime : realtime;
   const startRealtime = (version: { projectId: string; id: string }) => {
     if (grokSettings.engine === "grok") {
       return grokRealtime?.start({ projectId: version.projectId, versionId: version.id, voice: grokSettings.voice, speed: grokSettings.speed });
     }
-    if (grokSettings.engine === "openai-live") return liveRealtime?.start({ projectId: version.projectId, versionId: version.id });
+    if (grokSettings.engine === "gemini-tts") return geminiRealtime?.start({ projectId: version.projectId, versionId: version.id });
     return realtime.start({ projectId: version.projectId, versionId: version.id });
   };
+  const prepareReading = () => {
+    if (grokSettings.engine === "openai") prepareSoundCaseRealtimeGeneration(stopRealtimeContext, realtime.prime);
+    else {
+      stopRealtimeContext();
+      if (grokSettings.engine === "grok") grokRealtime?.prime();
+    }
+  };
   // Realtime tem precedência: o player interrompe o arquivo antes de iniciar a leitura ao vivo.
-  const playingRealtime = realtime.isActive ? realtime : grokRealtime?.isActive ? grokRealtime : liveRealtime;
+  const playingRealtime = realtime.isActive ? realtime : grokRealtime?.isActive ? grokRealtime : geminiRealtime;
   const playback = playingRealtime?.isActive && playingRealtime.versionId
     ? { versionId: playingRealtime.versionId, source: "realtime" as const }
     : playingFinalVersionId && playingFinalVersionId === selectedVersionId
@@ -83,6 +91,7 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
       : null;
   const selectedVoice = soundcase.selectedVersion?.requestedSettings.ttsProvider === "grok"
     ? soundcase.selectedVersion.requestedSettings.grokVoice ?? "orion"
+    : soundcase.selectedVersion?.requestedSettings.ttsProvider === "gemini" ? "Charon"
     : soundcase.selectedVersion?.effectiveSettings?.voice.value ?? soundcase.selectedVersion?.direction?.voice ?? null;
 
   useEffect(() => {
@@ -97,15 +106,19 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
 
   const generate = async (playbackMode: "realtime" | "silent") => {
     if (playbackMode === "realtime") {
-      if (grokSettings.engine === "openai") prepareSoundCaseRealtimeGeneration(stopRealtimeContext, realtime.prime);
-      else { stopRealtimeContext(); activeRealtime.prime(); }
+      prepareReading();
       startedRealtimeVersionRef.current = null;
     } else {
       stopRealtimeContext();
     }
     setGenerating(true);
     try {
-      const version = await soundcase.generate({ ...settings, playbackMode });
+      // Cadência e expressividade do Charon ficam na preferência única de voz e viajam com o pedido.
+      const gemini = settings.ttsProvider === "gemini" ? readGeminiTtsSettings() : null;
+      const version = await soundcase.generate({
+        ...settings, playbackMode,
+        ...(gemini ? { geminiPace: gemini.pace, geminiExpressiveness: gemini.expressiveness } : {}),
+      });
       setPendingRealtimeVersionId(playbackMode === "realtime" ? version.id : null);
       setExpandedVersionId(version.id);
       setEditorOpen(false);
@@ -146,11 +159,15 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
       audioUrl={soundCaseApi.audioUrl(soundcase.selectedVersion.projectId, soundcase.selectedVersion.id)}
       realtime={{ ...activeRealtime, isActive: activeRealtime.isActive && activeRealtime.versionId === selectedVersionId,
         error: activeRealtime.errorVersionId === selectedVersionId ? activeRealtime.error : null,
-        label: grokSettings.engine === "openai-live" ? "OpenAI Live 1.1" : undefined,
+        label: grokSettings.engine === "gemini-tts" ? "Gemini TTS · Charon" : undefined,
+        generatedAudioReady: grokSettings.engine === "gemini-tts" && Boolean(geminiRealtime?.canResume && geminiRealtime.versionId === selectedVersionId),
         stop: stopRealtimeContext }}
       onStartRealtime={() => {
-        if (grokSettings.engine === "openai") prepareSoundCaseRealtimeGeneration(stopRealtimeContext, realtime.prime);
-        else { stopRealtimeContext(); activeRealtime.prime(); }
+        if (grokSettings.engine === "gemini-tts" && geminiRealtime?.canResume && geminiRealtime.versionId === selectedVersionId) {
+          geminiRealtime.toggle();
+          return;
+        }
+        prepareReading();
         void startRealtime(soundcase.selectedVersion!);
       }}
       onPlaybackChange={(playing) => setPlayingFinalVersionId(playing ? selectedVersionId : null)}
@@ -165,7 +182,7 @@ export function SoundCaseWorkspace({ variant = "page" }: { variant?: SoundCaseWo
         <Collapsible className={styles.settingsSection} open={directionOpen} onOpenChange={setDirectionOpen}>
           <CollapsibleTrigger className={styles.settingsTrigger} aria-label="Configurações do Soundcase" disabled={generating}>
             <SlidersHorizontal />
-            <span><strong>Configurações do Soundcase</strong><small>{settings.automatic ? "Direção automática · Luna" : "Direção manual"} · {settings.ttsProvider === "grok" ? "Grok TTS" : "OpenAI TTS"} · {settings.format.toUpperCase()}</small></span>
+            <span><strong>Configurações do Soundcase</strong><small>{settings.automatic ? "Direção automática · Luna" : "Direção manual"} · {settings.ttsProvider === "grok" ? "Grok TTS" : settings.ttsProvider === "gemini" ? "Gemini TTS · Charon" : "OpenAI TTS"} · {settings.format.toUpperCase()}</small></span>
             <ChevronDown />
           </CollapsibleTrigger>
           <CollapsibleContent>

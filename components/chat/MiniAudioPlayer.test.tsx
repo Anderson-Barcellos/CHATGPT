@@ -27,6 +27,8 @@ const realtimeTts = {
   status: "idle" as const,
   error: null,
   firstAudioMs: null,
+  clipIndex: 0,
+  totalClips: 0,
   isActive: false,
   start: vi.fn(),
   stop: vi.fn(),
@@ -36,8 +38,8 @@ vi.mock("@/hooks/useAssistantTts", () => ({
   useAssistantTts: () => assistantTts,
 }));
 
-vi.mock("@/hooks/useGrokMessageRealtime", () => ({
-  useGrokMessageRealtime: () => realtimeTts,
+vi.mock("@/hooks/useGeminiTtsSpeech", () => ({
+  useGeminiTtsSpeech: () => realtimeTts,
 }));
 
 describe("MiniAudioPlayer", () => {
@@ -54,27 +56,27 @@ describe("MiniAudioPlayer", () => {
     expect(markup).toContain('aria-label="Escolher Grok TTS com voz Orion"');
     expect(markup).toContain("Grok TTS · Orion");
     expect(markup).toContain('aria-pressed="true"');
-    expect(markup).toContain("Grok Realtime");
-    expect(markup).toContain("OpenAI Live 1.1");
+    expect(markup).toContain("Gemini TTS · Charon");
+    expect(markup).not.toContain("Grok Realtime");
+    expect(markup).not.toContain("OpenAI Live 1.1");
     expect(markup).toContain('aria-label="Tocar"');
     expect(markup).toContain("text-micro");
     expect(assistantTts.togglePlay).not.toHaveBeenCalled();
     expect(realtimeTts.start).not.toHaveBeenCalled();
   });
 
-  it("oculta Realtime quando a superfície permite apenas TTS de arquivo", () => {
+  it("permite ocultar o Gemini mantendo Grok TTS", () => {
     const markup = renderToStaticMarkup(
       <MiniAudioPlayer
         content="Texto para leitura."
         messageId="discover-article-1"
-        allowRealtime={false}
+        allowGeminiTts={false}
         onClose={() => undefined}
       />
     );
 
     expect(markup).toContain("Grok TTS · Orion");
-    expect(markup).not.toContain("Grok Realtime");
-    expect(markup).not.toContain("OpenAI Live 1.1");
+    expect(markup).not.toContain("Gemini TTS · Charon");
     expect(realtimeTts.start).not.toHaveBeenCalled();
   });
 });

@@ -291,6 +291,7 @@
 .settingsSection .direction { max-width: 680px; padding: 18px; border: 0; background: transparent; }
 .settingsSection .sideHeading { display: none; }
 .realtimeSettings { display: grid; gap: 14px; padding: 18px; border-top: 1px solid var(--sc-line); }
+.geminiFileFields { display: grid; gap: 12px; }
 .realtimeField { display: grid; min-width: 0; gap: 7px; font-size: 13px; color: var(--sc-text); }
 .realtimeSelect { width: 100%; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--sc-line); border-radius: 8px; color: var(--sc-text); background: var(--gc-surface-control); font: inherit; cursor: pointer; }
 .realtimeHint { margin: 0; color: var(--sc-muted); font-size: 12px; line-height: 1.5; }

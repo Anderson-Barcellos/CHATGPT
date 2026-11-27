@@ -3,11 +3,11 @@
 import { createContext, useContext, type ReactNode } from "react";
 import { useSoundCaseRealtime } from "@/hooks/useSoundCaseRealtime";
 import { useSoundCaseGrokRealtime } from "@/hooks/useSoundCaseGrokRealtime";
-import { useOpenAILiveSpeech } from "@/hooks/useOpenAILiveSpeech";
+import { useGeminiTtsSpeech } from "@/hooks/useGeminiTtsSpeech";
 
 export type SoundCaseRealtimeSession = ReturnType<typeof useSoundCaseRealtime> & {
   grok: ReturnType<typeof useSoundCaseGrokRealtime>;
-  live: ReturnType<typeof useOpenAILiveSpeech>;
+  gemini: ReturnType<typeof useGeminiTtsSpeech>;
 };
 
 export const SoundCaseRealtimeContext = createContext<SoundCaseRealtimeSession | null>(null);
@@ -20,8 +20,8 @@ export const SoundCaseRealtimeContext = createContext<SoundCaseRealtimeSession |
 export function SoundCaseRealtimeProvider({ children }: { children: ReactNode }) {
   const openai = useSoundCaseRealtime();
   const grok = useSoundCaseGrokRealtime();
-  const live = useOpenAILiveSpeech();
-  const session: SoundCaseRealtimeSession = { ...openai, grok, live };
+  const gemini = useGeminiTtsSpeech();
+  const session: SoundCaseRealtimeSession = { ...openai, grok, gemini };
 
   return (
     <SoundCaseRealtimeContext.Provider value={session}>

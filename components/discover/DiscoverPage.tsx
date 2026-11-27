@@ -397,7 +397,6 @@ export function DiscoverFeed({ embedded = false }: DiscoverFeedProps) {
                     <MiniAudioPlayer
                       content={`${article.title}\n\n${article.content}`}
                       messageId={`discover-${article.id}`}
-                      allowRealtime={false}
                       onClose={() => setAudioArticleId(null)}
                     />
                   )}

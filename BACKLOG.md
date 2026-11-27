@@ -1,6 +1,16 @@
 # BACKLOG
 
+## Gemini TTS · Charon — publicada
+
+**Correção pendente de publicação (27/11/2026 19h20 BRT):** a build publicada gera a mensagem inteira antes de tocar e parece travada em respostas comuns. A worktree já tem a leitura em partes (som em ~7 s), sete sondas Chrome aprovadas; falta Anders autorizar `scripts/deploy.sh --from /root/worktrees/gaucho-gemini-live` e o commit. Às 19h35 entraram também o Charon como "TTS do arquivo" do SoundCase e o registro da leitura na Media Session; build candidata final `NyLSM1egAAmEukkVNPmvo`, 1.357 testes. Em aberto: leitura com celular bloqueado ou navegador minimizado nunca foi provada (sonda 0/2 desde a publicação), depende de teste de Anders no aparelho. Detalhes no diário e no TEST_LOGS.md.
+
+Anders aprovou em 27/11/2026 trocar a candidata Live por Gemini TTS dedicado e portar o perfil Fronteira Técnica do Pampa com cadência e expressividade. Chat, Pulse e Descobrir oferecem Grok TTS · Orion e Gemini TTS · Charon. SoundCase usa a mesma preferência do Gemini para escuta e conserva os dois motores Realtime e o pipeline de arquivo final.
+
+Worktree `/root/worktrees/gaucho-gemini-live`, base `54f0043`, build `CLM9RIb8kK1WpdkOZwrF3` publicada em 27/11/2026 às 11h32 BRT. Passaram 1.337 testes, TypeScript, lint, build e oito cenários Chrome isolados. Saúde local e pública 200, escuta Gemini real confirmada no Chrome público. Reprodução com a janela minimizada segue inconclusiva no ambiente virtual. Backup em `/root/.cache/gaucho-deploy/20261127T143242Z/next-before` e evidências em `/root/.cache/gaucho-gemini-tts/publication-m8db07`. Preservar esta worktree enquanto a build a referenciar.
+
 ## Estado operacional
+
+Publicada em 27/11/2026 às 11h32 BRT a integração Gemini TTS · Charon com o perfil Fronteira Técnica. Build `CLM9RIb8kK1WpdkOZwrF3`, origem `/root/worktrees/gaucho-gemini-live` (**preservar**), backup da build `zRmfUR8TtC9C-wYRAM7gf` em `/root/.cache/gaucho-deploy/20261127T143242Z/next-before`. Saúde local e pública 200, rota anônima 401 e escuta Gemini real autenticada verificada no Chrome público. Só `chatgpt.service` reiniciado. Evidências em `/root/.cache/gaucho-gemini-tts/publication-m8db07`.
 
 Publicado em 24/11/2026 às 17h17 BRT (commit `15b34c1`, build `zRmfUR8TtC9C-wYRAM7gf` via `scripts/deploy.sh`, origem `/root/.cache/gaucho-deploy/20261124T201544Z/build` — não apagar; backup `next-before` no mesmo diretório): OpenAI Live 1.1 (`gpt-live-1.1`) como terceira caixinha do player de mensagens e Pulse, ao lado de Grok TTS e Grok Realtime, e no seletor de leitura ao vivo do SoundCase. Seção nova de voz (Marin, Bossa, Tempo) e ritmo (natural, calmo, ágil) em Configurações → Voz e no SoundCase, numa preferência única. Resgata a implementação do Codex que ficou só na worktree `/root/worktrees/gaucho-live-11`, sem a CSS antiga dela. Branch `feat/openai-live-voice` integrada por fast-forward. Health local/público 200, rota Live anônima 401, chunks públicos com a caixinha e a seção. Cada trecho de 240 caracteres leva ~8 s até tocar porque o servidor confere a fala inteira antes de liberar; acelerar exige streaming com conferência posterior (decisão de Anders). Gates no TEST_LOGS.md.
 

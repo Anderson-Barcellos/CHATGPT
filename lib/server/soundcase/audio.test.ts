@@ -79,6 +79,79 @@ describe("SoundCase audio pipeline", () => {
     }
   });
 
+  it("gera o trecho do arquivo com Gemini Charon e converte o WAV para FLAC", async () => {
+    const oldKey = process.env.GEMINI_API_KEY;
+    process.env.GEMINI_API_KEY = "chave-sintetica";
+    const originalFetch = globalThis.fetch;
+    const wav = Buffer.alloc(46);
+    wav.write("RIFF", 0); wav.writeUInt32LE(38, 4); wav.write("WAVEfmt ", 8); wav.writeUInt32LE(16, 16);
+    wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22); wav.writeUInt32LE(24000, 24); wav.writeUInt32LE(48000, 28);
+    wav.writeUInt16LE(2, 32); wav.writeUInt16LE(16, 34); wav.write("data", 36); wav.writeUInt32LE(2, 40);
+    const fetchMock = vi.fn(async () => Response.json({ status: "completed",
+      steps: [{ type: "model_output", content: [{ type: "audio", data: wav.toString("base64") }] }] }));
+    globalThis.fetch = fetchMock as typeof fetch;
+    try {
+      const [segment] = segmentSoundCaseText("Texto para a voz Charon.");
+      const direction = buildFallbackSoundCaseDirection({ sourceText: segment.text, segments: [segment] });
+      const openaiCreate = vi.fn();
+      const execFile: SoundCaseExecFile = vi.fn(async (file, args) => {
+        if (file.endsWith("ffmpeg")) await fs.writeFile(args.at(-1)!, Buffer.from("fLaCdata"));
+        return { stdout: file.endsWith("ffprobe")
+          ? JSON.stringify({ streams: [{ codec_name: "flac", duration: "2.5" }] }) : "", stderr: "" };
+      });
+      const artifact = await synthesizeSoundCaseChunk({
+        ttsProvider: "gemini", geminiSettings: { pace: "calmo", expressiveness: "alta" },
+        projectId: "project-a", versionId: "version-a",
+        chunk: { id: segment.id, index: 0, segmentId: segment.id, start: segment.start, end: segment.end,
+          textHash: segment.textHash, status: "synthesizing", attempts: 1 },
+        segment, direction,
+        effectiveSettings: { ttsProvider: "gemini",
+          format: { value: "mp3", source: "automatic" }, voice: { value: "marin", source: "fallback" },
+          speed: { value: 1, source: "fallback" }, instructions: { value: "Não enviar", source: "fallback" } },
+        client: { audio: { speech: { create: openaiCreate } } }, execFile,
+      });
+      expect(openaiCreate).not.toHaveBeenCalled();
+      const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toMatch(/generativelanguage\.googleapis\.com.*\/interactions$/);
+      const body = JSON.parse(String(init.body));
+      expect(body.generation_config).toEqual({ speech_config: [{ voice: "Charon" }] });
+      expect(body.input[0].content[0].text).toBe(segment.text);
+      expect(body.input[0].content[0].annotations[0].style).toMatch(/Ritmo calmo e pausado/);
+      expect(body.input[0].content[0].annotations[0].style).not.toMatch(/Não enviar/);
+      expect(artifact).toMatchObject({ fileName: "chunks/0000.flac", durationSeconds: 2.5 });
+    } finally {
+      globalThis.fetch = originalFetch;
+      if (oldKey === undefined) delete process.env.GEMINI_API_KEY; else process.env.GEMINI_API_KEY = oldKey;
+    }
+  });
+
+  it("repassa a recusa do Gemini com o status, sem cair para a OpenAI", async () => {
+    const oldKey = process.env.GEMINI_API_KEY;
+    process.env.GEMINI_API_KEY = "chave-sintetica";
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn(async () => new Response("rejected", { status: 429 })) as typeof fetch;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    try {
+      const [segment] = segmentSoundCaseText("Texto que falhou.");
+      const direction = buildFallbackSoundCaseDirection({ sourceText: segment.text, segments: [segment] });
+      const create = vi.fn();
+      await expect(synthesizeSoundCaseChunk({
+        ttsProvider: "gemini", projectId: "project-a", versionId: "version-a",
+        chunk: { id: segment.id, index: 0, segmentId: segment.id, start: segment.start, end: segment.end,
+          textHash: segment.textHash, status: "synthesizing", attempts: 1 },
+        segment, direction,
+        effectiveSettings: { format: { value: "mp3", source: "automatic" }, voice: { value: "marin", source: "fallback" },
+          speed: { value: 1, source: "fallback" }, instructions: { value: "ignored", source: "fallback" } },
+        client: { audio: { speech: { create } } },
+      })).rejects.toMatchObject({ message: "soundcase_gemini_tts_provider", status: 429 });
+      expect(create).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+      globalThis.fetch = originalFetch;
+      if (oldKey === undefined) delete process.env.GEMINI_API_KEY; else process.env.GEMINI_API_KEY = oldKey;
+    }
+  });
+
   it("reports a Grok rejection without falling back to OpenAI", async () => {
     const oldKey = process.env.XAI_API_KEY;
     process.env.XAI_API_KEY = "test-key";

@@ -250,6 +250,9 @@ function settingsHash(settings: SoundCaseGenerationSettings): string {
     JSON.stringify({
       automatic: settings.automatic,
       ...(settings.ttsProvider === "grok" ? { ttsProvider: "grok", grokVoice: settings.grokVoice ?? "orion" } : {}),
+      ...(settings.ttsProvider === "gemini" ? {
+        ttsProvider: "gemini", geminiPace: settings.geminiPace ?? "natural", geminiExpressiveness: settings.geminiExpressiveness ?? "equilibrada",
+      } : {}),
       playbackMode: settings.playbackMode,
       format: settings.format,
       voiceOverride: settings.voiceOverride,

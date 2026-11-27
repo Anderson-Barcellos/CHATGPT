@@ -14,6 +14,19 @@ describe("SoundCase direction sidebar", () => {
     expect(markup).not.toContain('aria-label="Instruções de leitura"');
     expect(markup).toContain("Gerar silenciosamente");
   });
+  it("oferece Gemini Charon no arquivo com cadência e expressividade no lugar dos ajustes da OpenAI", () => {
+    const markup = renderToStaticMarkup(<DirectionSidebar
+      settings={{ ttsProvider: "gemini", automatic: true, playbackMode: "silent", format: "mp3",
+        voiceOverride: null, speedOverride: null, instructionsOverride: null }}
+      onChange={vi.fn()} onGenerate={vi.fn()}
+    />);
+    expect(markup).toContain('<option value="gemini" selected="">Gemini TTS · Charon</option>');
+    expect(markup).toContain('aria-label="Cadência Gemini TTS"');
+    expect(markup).not.toContain('aria-label="Voz da narração"');
+    expect(markup).not.toContain('aria-label="Voz Grok do arquivo"');
+    expect(markup).not.toContain('aria-label="Velocidade da narração"');
+    expect(markup).not.toContain('aria-label="Instruções de leitura"');
+  });
   it("exposes Luna automatic direction and both generation modes", () => {
     const markup = renderToStaticMarkup(<DirectionSidebar
       settings={{ automatic: true, playbackMode: "realtime", format: "mp3", voiceOverride: null, speedOverride: null, instructionsOverride: null }}
