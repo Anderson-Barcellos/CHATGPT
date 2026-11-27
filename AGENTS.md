@@ -24,6 +24,8 @@ Principais areas:
 
 ## Estado atual do projeto
 
+Publicada em 27/11/2026 às 20h45 BRT a build `-pYNHBig_t4TeO3qzHYP5` (commit `c93bd70`), da worktree `/root/worktrees/gaucho-grafite` (**preservar**): escuro na paleta Grafite. Backup da anterior em `/root/.cache/gaucho-deploy/20261127T234539Z/next-before`. A splash (`--gc-bg-splash`) segue no azul-petróleo antigo.
+
 Publicada em 27/11/2026 às 19h45 BRT a build `NyLSM1egAAmEukkVNPmvo` (commit `1229650`), também da worktree `/root/worktrees/gaucho-gemini-live` (**preservar**): leitura Gemini em partes, Charon no TTS do arquivo do SoundCase e Media Session. Backup da build anterior em `/root/.cache/gaucho-deploy/20261127T224522Z/next-before`. Tocar com a tela bloqueada segue sem prova em aparelho.
 
 Publicada em 27/11/2026 às 11h32 BRT a build `CLM9RIb8kK1WpdkOZwrF3`, da worktree `/root/worktrees/gaucho-gemini-live` (**preservar**). Chat, Pulse e Descobrir oferecem Grok TTS · Orion e Gemini TTS · Charon. SoundCase também oferece Charon para escuta. Configurações → Voz concentra cadência e expressividade do perfil Fronteira Técnica. O checkout fonte continua na base `54f0043`. Backup da build anterior em `/root/.cache/gaucho-deploy/20261127T143242Z/next-before`. Detalhes no BACKLOG e no diário.

@@ -2231,3 +2231,5 @@ Anders mostrou um print do chat em grafite-azulado e pediu o escuro nesse conjun
 DECISÃO: repintar por tabela de conversão cor a cor o bloco `.dark` global e as regras soltas do shell, e reescrever o bloco escuro do shell, na worktree `/root/worktrees/gaucho-grafite` (`feat/dark-grafite`). Balão um degrau acima da placa e orbe mantido, dessaturado. Contrato novo em `app/globals.visual.test.ts` mede croma, matiz, contraste e brilho do orbe; quem repintar o escuro ajusta as cores dentro dele em vez de fixar hex.
 
 Gates, suítes Chrome e lacunas no TEST_LOGS.md; estado da frente no BACKLOG. Build candidata `-pYNHBig_t4TeO3qzHYP5`. Aguardando aprovação visual de Anders para commit e publicação.
+
+Publicação 20h45 BRT com autorização de Anders: commit `c93bd70` (fast-forward na `main`), `bash scripts/deploy.sh --from /root/worktrees/gaucho-grafite` saiu 0, build `-pYNHBig_t4TeO3qzHYP5`, backup em `/root/.cache/gaucho-deploy/20261127T234539Z/next-before`. Só `chatgpt.service` reiniciado; sem reload do Apache. A conferência do CSS público mostrou que a splash tem gradiente próprio em `:root` e ficou na paleta antiga; registrado no BACKLOG para decisão.

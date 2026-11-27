@@ -764,4 +764,6 @@ Chrome (dados sintéticos, servidores isolados): chat-column 0 · discover-panel
 
 Capturas (`/root/.cache/gaucho-grafite/evidence`): `qa-desktop-type` em 390×844, 1436×760@1,3375 e 1920×1080, escuro e claro; sonda descartável com balão do usuário, código, citação, tabela e menu de modelo aberto em 1436×760.
 
-Não coberto: Studio (Monaco e terminal com cores próprias), Configurações e Descobrir não foram fotografados; captura do claro gerada e não inspecionada (o diff só toca blocos `.dark`); sem teste em aparelho físico. Não publicado: produção segue na build `NyLSM1egAAmEukkVNPmvo`.
+Não coberto: Studio (Monaco e terminal com cores próprias), Configurações e Descobrir não foram fotografados; captura do claro gerada e não inspecionada (o diff só toca blocos `.dark`); sem teste em aparelho físico.
+
+Publicação 20h45 BRT: deploy 0, build `-pYNHBig_t4TeO3qzHYP5` (antes `NyLSM1egAAmEukkVNPmvo`); saúde local 200, pública 200, `GET /api/conversations` anônimo 401, unidades do chat ativas. CSS público: `#142a67`, `#091a43`, `#1a3464`, `#294984` e `#3676e6` com 0 ocorrências; `#27374b` e `#354c65` presentes. Achado da conferência: `--gc-bg-splash` (bloco `:root`, fora do escopo repintado) mantém o gradiente `#365C73 → #021826`. Log em `/root/.cache/gaucho-grafite/deploy.log`.
