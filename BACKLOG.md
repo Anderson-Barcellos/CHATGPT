@@ -1,6 +1,8 @@
 # BACKLOG
 
-## Gemini TTS · controles do player e voz gaúcha — em andamento
+## Gemini TTS · controles do player publicados; voz gaúcha em andamento
+
+**Publicada em 28/11/2026 às 00h13 BRT** com autorização de Anders: commit `2b30a9a` (fast-forward na `main`), `scripts/deploy.sh --from /root/worktrees/gaucho-gemini-player` (origem a **preservar**), build `bqYxQp7T8wGJ-NrUAgo3S`, backup da `-pYNHBig_t4TeO3qzHYP5` em `/root/.cache/gaucho-deploy/20261128T031307Z/next-before`. Saúde local e pública 200, rota anônima 401, chunk público com os controles. Anders confirmou no aparelho que a leitura Gemini segue com a tela desligada, o que fecha a pendência da entrega de 27/11. Segue aberto: voz remixada (depende de Anders liberar a chave do serviço) e salvar em MP3.
 
 ### 2026-11-28 00:10 - Controles do player prontos para revisão; sotaque aguarda decisão
 

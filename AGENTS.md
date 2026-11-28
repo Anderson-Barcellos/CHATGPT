@@ -24,6 +24,8 @@ Principais areas:
 
 ## Estado atual do projeto
 
+Publicada em 28/11/2026 às 00h13 BRT a build `bqYxQp7T8wGJ-NrUAgo3S` (commit `2b30a9a`), da worktree `/root/worktrees/gaucho-gemini-player` (**preservar**): player do Gemini TTS com parar (só a escuta; a geração continua), voltar e avançar 15 s, barra com tempo e salvar WAV. Backup da anterior em `/root/.cache/gaucho-deploy/20261128T031307Z/next-before`. Anders confirmou no aparelho, em 28/11, que a leitura Gemini segue com a tela desligada. Sotaque por voz remixada aguarda liberação da chave (BACKLOG).
+
 Publicada em 27/11/2026 às 20h45 BRT a build `-pYNHBig_t4TeO3qzHYP5` (commit `c93bd70`), da worktree `/root/worktrees/gaucho-grafite` (**preservar**): escuro na paleta Grafite. Backup da anterior em `/root/.cache/gaucho-deploy/20261127T234539Z/next-before`. A splash (`--gc-bg-splash`) segue no azul-petróleo antigo.
 
 Publicada em 27/11/2026 às 19h45 BRT a build `NyLSM1egAAmEukkVNPmvo` (commit `1229650`), também da worktree `/root/worktrees/gaucho-gemini-live` (**preservar**): leitura Gemini em partes, Charon no TTS do arquivo do SoundCase e Media Session. Backup da build anterior em `/root/.cache/gaucho-deploy/20261127T224522Z/next-before`. Tocar com a tela bloqueada segue sem prova em aparelho.
