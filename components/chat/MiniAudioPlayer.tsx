@@ -25,6 +25,11 @@ interface MiniAudioPlayerProps {
   className?: string;
 }
 
+function formatClock(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return "0:00";
+  return `${Math.floor(value / 60)}:${Math.floor(value % 60).toString().padStart(2, "0")}`;
+}
+
 function PlayerButton({
   title,
   onClick,
@@ -100,7 +105,12 @@ export function MiniAudioPlayer({
   const isPlaying = isStandard ? tts.isPlaying : gemini.status === "speaking";
   const playLabel = !isStandard && isLoading ? "Cancelar geração" : isPlaying ? "Pausar" : "Tocar";
   const geminiPart = gemini.totalClips > 1 ? ` · parte ${gemini.clipIndex + 1}/${gemini.totalClips}` : "";
-  const geminiStatus = gemini.error ?? {
+  // A geração segue com a escuta pausada ou parada; enquanto faltar parte, o status diz quantas já chegaram.
+  const geminiGenerating = gemini.status !== "connecting" && gemini.generatedClips > 0
+    && gemini.generatedClips < gemini.totalClips && !gemini.generationError
+    ? ` · gerando ${gemini.generatedClips}/${gemini.totalClips}` : "";
+  const geminiFailure = gemini.error ?? (gemini.generationError ? `Geração interrompida · ${gemini.generationError}` : null);
+  const geminiStatus = geminiFailure ?? `${{
     idle: "Pronto · Fronteira Técnica",
     connecting: `Gerando áudio…${geminiPart}`,
     ready: "Áudio pronto · toque para ouvir",
@@ -108,7 +118,9 @@ export function MiniAudioPlayer({
     paused: `Leitura pausada${geminiPart}`,
     completed: "Leitura concluída",
     error: "Falha na leitura",
-  }[gemini.status];
+  }[gemini.status]}${geminiGenerating}`;
+  const geminiShare = (seconds: number) => (gemini.duration > 0 ? Math.min((seconds / gemini.duration) * 100, 100) : 0);
+  const geminiHasAudio = gemini.bufferedTime > 0;
 
   return (
     <div
@@ -228,18 +240,54 @@ export function MiniAudioPlayer({
           </>
         ) : (
           <>
-            <p className={cn("min-w-0 flex-1 text-micro md:text-nano", gemini.error && "text-rose-600 dark:text-rose-300")} aria-live="polite">
-              {geminiStatus}
-            </p>
-            {gemini.audioUrl && (
+            <PlayerButton title="Voltar 15s" onClick={() => gemini.seekBy(-15)} disabled={!geminiHasAudio}>
+              <RotateCcw className="size-3.5" />
+            </PlayerButton>
+            <PlayerButton title="Avançar 15s" onClick={() => gemini.seekBy(15)} disabled={!geminiHasAudio}>
+              <RotateCw className="size-3.5" />
+            </PlayerButton>
+
+            <div className="min-w-0 flex-1">
+              <div className="relative h-1.5 overflow-hidden rounded-full bg-background/80">
+                <div
+                  data-slot="gemini-buffered"
+                  className="absolute inset-y-0 left-0 rounded-full bg-primary/25 transition-[width]"
+                  style={{ width: `${geminiShare(gemini.bufferedTime)}%` }}
+                />
+                <div
+                  data-slot="gemini-progress"
+                  className="absolute inset-y-0 left-0 rounded-full bg-primary transition-[width]"
+                  style={{ width: `${geminiShare(gemini.currentTime)}%` }}
+                />
+              </div>
+              <div className="mt-1 flex items-center justify-between gap-2 text-nano leading-none">
+                <span>{formatClock(gemini.currentTime)}</span>
+                <span>{gemini.durationEstimated && gemini.duration > 0 ? "~" : ""}{formatClock(gemini.duration)}</span>
+              </div>
+            </div>
+
+            <PlayerButton title="Parar" onClick={gemini.stopPlayback} disabled={gemini.status === "idle" || gemini.status === "error"}>
+              <Square className="size-3.5" />
+            </PlayerButton>
+            {gemini.audioUrl ? (
               <a className="flex size-7 shrink-0 items-center justify-center rounded-lg hover:bg-background/70"
-                href={gemini.audioUrl} download="leitura-charon.wav" aria-label="Baixar áudio Gemini WAV">
+                href={gemini.audioUrl} download="leitura-charon.wav" title="Baixar áudio completo" aria-label="Baixar áudio Gemini WAV">
                 <Download className="size-3.5" />
               </a>
+            ) : (
+              <PlayerButton title="Salvar WAV após a geração completa" onClick={() => undefined} disabled>
+                <Download className="size-3.5" />
+              </PlayerButton>
             )}
           </>
         )}
       </div>
+
+      {!isStandard && (
+        <p className={cn("mt-1.5 text-micro md:text-nano", geminiFailure && "text-rose-600 dark:text-rose-300")} aria-live="polite">
+          {geminiStatus}
+        </p>
+      )}
     </div>
   );
 }

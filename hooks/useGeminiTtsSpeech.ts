@@ -26,10 +26,27 @@ type SpeechState = {
   audioUrl: string | null;
   clipIndex: number;
   totalClips: number;
+  /** Partes já geradas; a geração segue mesmo com a escuta parada ou pausada. */
+  generatedClips: number;
+  /** Falha de geração que a reprodução ainda não alcançou. */
+  generationError: string | null;
+  /** Posição e duração da leitura inteira, em segundos. */
+  currentTime: number;
+  duration: number;
+  /** A duração inclui uma estimativa das partes que ainda não chegaram. */
+  durationEstimated: boolean;
+  /** Segundos já gerados em sequência a partir do início; é até onde dá para avançar. */
+  bufferedTime: number;
 };
 const idle: SpeechState = {
   status: "idle", versionId: null, firstAudioMs: null, error: null, audioUrl: null, clipIndex: 0, totalClips: 0,
+  generatedClips: 0, generationError: null, currentTime: 0, duration: 0, durationEstimated: false, bufferedTime: 0,
 };
+/** A rota devolve PCM 16 bits mono a 24 kHz depois de um cabeçalho de 44 bytes. */
+const WAV_HEADER_BYTES = 44;
+const WAV_BYTES_PER_SECOND = 48_000;
+/** Folga para o avanço não cair exatamente no fim do que já foi gerado. */
+const SEEK_END_MARGIN = 0.25;
 
 /**
  * Uma leitura em andamento. O texto é gerado em partes (ver `splitGeminiSpeechText`)
@@ -42,12 +59,19 @@ type Session = {
   startedAt: number;
   blobs: Blob[];
   urls: (string | undefined)[];
+  /** Duração de cada parte gerada e tamanho do texto de todas, para estimar o total. */
+  durations: (number | undefined)[];
+  chars: number[];
   mergedUrl: string | null;
   index: number;
   /** A reprodução chegou numa parte que ainda não foi gerada. */
   waiting: boolean;
   /** Já há uma parte carregada no elemento de áudio. */
   live: boolean;
+  /** A pessoa quer a leitura tocando; parar ou pausar a escuta não interrompe a geração. */
+  wantsPlay: boolean;
+  /** Posição a aplicar quando a parte recém-carregada tiver metadados. */
+  pendingSeek: number | null;
   completed: boolean;
   /** Falha numa parte adiante; só interrompe quando a reprodução chegar nela. */
   failure: string | null;
@@ -76,6 +100,35 @@ async function fetchPart(text: string, settings: GeminiTtsSettings, signal: Abor
  */
 function mediaSession(): MediaSession | null {
   return typeof navigator !== "undefined" && "mediaSession" in navigator ? navigator.mediaSession : null;
+}
+
+function partOffset(session: Session, index: number): number {
+  let offset = 0;
+  for (let part = 0; part < index; part += 1) offset += session.durations[part] ?? 0;
+  return offset;
+}
+
+/** Duração total (estimada pelo ritmo das partes prontas enquanto faltar alguma) e trecho contínuo já gerado. */
+function timeline(session: Session) {
+  let known = 0;
+  let knownChars = 0;
+  let missingChars = 0;
+  let buffered = 0;
+  let contiguous = true;
+  session.chars.forEach((chars, index) => {
+    const duration = session.durations[index];
+    if (duration === undefined) {
+      missingChars += chars;
+      contiguous = false;
+      return;
+    }
+    known += duration;
+    knownChars += chars;
+    if (contiguous) buffered += duration;
+  });
+  const estimated = missingChars > 0;
+  const duration = estimated && knownChars ? known + missingChars * (known / knownChars) : known;
+  return { duration, durationEstimated: estimated, bufferedTime: buffered };
 }
 
 function describeFailure(error: unknown): string {
@@ -165,8 +218,9 @@ export function useGeminiTtsSpeech() {
     }
     session.waiting = false;
     session.live = true;
+    session.pendingSeek = null;
     audio.src = url;
-    setState((current) => ({ ...current, clipIndex: index }));
+    setState((current) => ({ ...current, clipIndex: index, currentTime: partOffset(session, index) }));
     void play(session, audio);
   }, [fail, play]);
 
@@ -190,6 +244,7 @@ export function useGeminiTtsSpeech() {
     audio.onplaying = () => {
       const session = live();
       if (!session) return;
+      session.wantsPlay = true;
       const media = mediaSession();
       if (media) {
         if (!media.metadata && typeof MediaMetadata !== "undefined") {
@@ -207,9 +262,22 @@ export function useGeminiTtsSpeech() {
     audio.onpause = () => {
       const session = live();
       if (!session || session.waiting || audio.ended) return;
+      session.wantsPlay = false;
       const media = mediaSession();
       if (media) media.playbackState = "paused";
       setState((current) => ({ ...current, status: "paused" }));
+    };
+    audio.onloadedmetadata = () => {
+      const session = live();
+      if (!session || session.pendingSeek === null) return;
+      audio.currentTime = session.pendingSeek;
+      session.pendingSeek = null;
+    };
+    audio.ontimeupdate = () => {
+      const session = live();
+      if (!session || session.waiting || session.pendingSeek !== null) return;
+      const currentTime = partOffset(session, session.index) + audio.currentTime;
+      setState((current) => (current.currentTime === currentTime ? current : { ...current, currentTime }));
     };
     audio.onended = () => {
       const session = live();
@@ -219,7 +287,8 @@ export function useGeminiTtsSpeech() {
         return;
       }
       session.completed = true;
-      setState((current) => ({ ...current, status: "completed" }));
+      session.wantsPlay = false;
+      setState((current) => ({ ...current, status: "completed", currentTime: partOffset(session, session.blobs.length) }));
     };
     audio.onerror = () => {
       const session = live();
@@ -235,7 +304,8 @@ export function useGeminiTtsSpeech() {
     const versionId = "versionId" in input ? input.versionId : null;
     const session: Session = {
       request: new AbortController(), versionId, startedAt: performance.now(),
-      blobs: [], urls: [], mergedUrl: null, index: 0, waiting: true, live: false, completed: false, failure: null,
+      blobs: [], urls: [], durations: [], chars: [], mergedUrl: null, index: 0, waiting: true, live: false,
+      wantsPlay: true, pendingSeek: null, completed: false, failure: null,
     };
     sessionRef.current = session;
     const { signal } = session.request;
@@ -253,6 +323,7 @@ export function useGeminiTtsSpeech() {
 
       const parts = splitGeminiSpeechText(text);
       session.blobs.length = parts.length;
+      session.chars = parts.map((part) => part.length);
       setState((current) => ({ ...current, totalClips: parts.length }));
 
       let next = 0;
@@ -264,6 +335,8 @@ export function useGeminiTtsSpeech() {
           if (signal.aborted) return;
           session.blobs[index] = wav;
           session.urls[index] = URL.createObjectURL(wav);
+          session.durations[index] = (wav.size - WAV_HEADER_BYTES) / WAV_BYTES_PER_SECOND;
+          setState((current) => ({ ...current, ...timeline(session), generatedClips: current.generatedClips + 1 }));
           if (session.waiting && session.index === index) playPart(session, index);
         }
       };
@@ -278,17 +351,78 @@ export function useGeminiTtsSpeech() {
       const message = describeFailure(error);
       session.failure = message;
       if (session.waiting) fail(session, message);
+      else setState((current) => ({ ...current, generationError: message }));
     }
   }, [ensureAudio, fail, playPart, release]);
 
   const toggle = useCallback(() => {
     const session = sessionRef.current;
     const audio = audioRef.current;
-    if (!session || !audio || !session.live) return;
-    if (session.completed) playPart(session, 0);
-    else if (audio.paused) void play(session, audio);
-    else audio.pause();
+    if (!session || !audio) return;
+    if (session.completed || !session.live) {
+      // Depois do fim recomeça da primeira parte; parada antes do primeiro áudio, toca a parte atual quando chegar.
+      session.wantsPlay = true;
+      playPart(session, session.completed ? 0 : session.index);
+    } else if (audio.paused) {
+      session.wantsPlay = true;
+      void play(session, audio);
+    } else audio.pause();
   }, [play, playPart]);
+
+  /**
+   * Para a escuta e volta ao início sem descartar nada: as partes seguem sendo
+   * geradas e o arquivo completo fica disponível para salvar. `stop` é quem descarta.
+   */
+  const stopPlayback = useCallback(() => {
+    const session = sessionRef.current;
+    const audio = audioRef.current;
+    if (!session) return;
+    session.wantsPlay = false;
+    session.waiting = false;
+    session.completed = false;
+    session.pendingSeek = null;
+    session.index = 0;
+    if (audio && session.live) {
+      audio.pause();
+      const first = session.urls[0]!;
+      if (audio.getAttribute("src") === first) audio.currentTime = 0;
+      else audio.src = first;
+    }
+    setState((current) => ({ ...current, status: "paused", clipIndex: 0, currentTime: 0 }));
+  }, []);
+
+  /** Avança ou volta dentro do que já foi gerado, trocando de parte quando preciso. */
+  const seekBy = useCallback((seconds: number) => {
+    const session = sessionRef.current;
+    const audio = audioRef.current;
+    if (!session || !audio || !session.live) return;
+    const { bufferedTime } = timeline(session);
+    const position = partOffset(session, session.index) + (session.waiting ? 0 : audio.currentTime);
+    const target = Math.min(Math.max(position + seconds, 0), Math.max(bufferedTime - SEEK_END_MARGIN, 0));
+    let index = 0;
+    let offset = 0;
+    while (session.urls[index + 1] && target >= offset + session.durations[index]!) {
+      offset += session.durations[index]!;
+      index += 1;
+    }
+    const url = session.urls[index]!;
+    const local = target - offset;
+    const resume = session.wantsPlay;
+    session.index = index;
+    session.waiting = false;
+    session.completed = false;
+    if (audio.getAttribute("src") === url) {
+      session.pendingSeek = null;
+      audio.currentTime = local;
+    } else {
+      session.pendingSeek = local;
+      audio.src = url;
+    }
+    setState((current) => ({
+      ...current, clipIndex: index, currentTime: target, status: resume ? current.status : "paused",
+    }));
+    if (resume) void play(session, audio);
+  }, [play]);
 
   useEffect(() => release, [release]);
 
@@ -300,5 +434,7 @@ export function useGeminiTtsSpeech() {
     toggle,
     start,
     stop,
+    stopPlayback,
+    seekBy,
   };
 }

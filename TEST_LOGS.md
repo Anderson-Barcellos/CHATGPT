@@ -767,3 +767,26 @@ Capturas (`/root/.cache/gaucho-grafite/evidence`): `qa-desktop-type` em 390×844
 Não coberto: Studio (Monaco e terminal com cores próprias), Configurações e Descobrir não foram fotografados; captura do claro gerada e não inspecionada (o diff só toca blocos `.dark`); sem teste em aparelho físico.
 
 Publicação 20h45 BRT: deploy 0, build `-pYNHBig_t4TeO3qzHYP5` (antes `NyLSM1egAAmEukkVNPmvo`); saúde local 200, pública 200, `GET /api/conversations` anônimo 401, unidades do chat ativas. CSS público: `#142a67`, `#091a43`, `#1a3464`, `#294984` e `#3676e6` com 0 ocorrências; `#27374b` e `#354c65` presentes. Achado da conferência: `--gc-bg-splash` (bloco `:root`, fora do escopo repintado) mantém o gradiente `#365C73 → #021826`. Log em `/root/.cache/gaucho-grafite/deploy.log`.
+
+## 2026-11-28 00h10 BRT — Player do Gemini TTS com parar, avançar, tempo e salvar (Claude)
+
+Worktree `/root/worktrees/gaucho-gemini-player` (branch `feat/gemini-player-controles`, base `67f27a9`, sem commit). Pedido de Anders: dar ao Gemini TTS os mesmos controles do Grok (tocar, parar e salvar) e poder gerar, escutar e continuar gerando. `useGeminiTtsSpeech` ganhou `stopPlayback` (para a escuta e volta ao início sem cancelar a geração; `stop` segue descartando), `seekBy`, posição, duração (estimada enquanto falta parte), trecho já gerado e falha de geração visível com a escuta parada. O mini-player do Gemini passou a ter voltar e avançar 15 s, barra com tempo, parar e salvar WAV, com o status numa linha própria.
+
+Unitários (RED → GREEN na primeira execução, `npx vitest --run hooks/useGeminiTtsSpeech.test.tsx components/chat/MiniAudioPlayer.gemini.test.tsx`: 10 falhas e 8 aprovados antes da implementação; 20 aprovados depois, contando os 2 do `MiniAudioPlayer.test.tsx`):
+
+- `hooks/useGeminiTtsSpeech.test.tsx` › "parar a escuta volta ao início sem cancelar a geração nem perder o arquivo": RED (`stopPlayback is not a function`) → GREEN.
+- `hooks/useGeminiTtsSpeech.test.tsx` › "parar antes do primeiro áudio segue gerando e só toca quando pedirem": RED → GREEN.
+- `hooks/useGeminiTtsSpeech.test.tsx` › "informa posição e duração, estimando o que ainda falta gerar": RED (`durationEstimated` indefinido) → GREEN.
+- `hooks/useGeminiTtsSpeech.test.tsx` › "avança e volta entre partes já geradas, mantendo tocando ou pausado": RED (`seekBy is not a function`) → GREEN.
+- `hooks/useGeminiTtsSpeech.test.tsx` › "avisa quando a geração falha com a escuta parada": RED → GREEN.
+- `components/chat/MiniAudioPlayer.gemini.test.tsx` › "mostra tempo, progresso e o que ainda está sendo gerado": RED → GREEN.
+- `components/chat/MiniAudioPlayer.gemini.test.tsx` › "volta e avança 15 segundos": RED (botão ausente) → GREEN.
+- `components/chat/MiniAudioPlayer.gemini.test.tsx` › "para a escuta sem descartar a geração; fechar descarta": RED (botão ausente) → GREEN na segunda rodada; a primeira falhou porque o teste contava o `stop` da troca de motor, corrigido no teste.
+- `components/chat/MiniAudioPlayer.gemini.test.tsx` › "deixa salvar só depois da geração completa": RED → GREEN.
+- `components/chat/MiniAudioPlayer.gemini.test.tsx` › "mostra a falha de geração quando a escuta está parada": RED → GREEN.
+
+Gates finais: Vitest 1.370/1.370 em 245 arquivos (`VITEST_MAX_WORKERS=2`) · typegen 0 · tsc 0 (a primeira rodada acusou o mock do Gemini em `SoundCaseRealtimeBar.test.tsx` sem os campos novos; completado) · lint 0 erros (mesmo aviso pré-existente em `CommandComposerContainerV2.test.tsx`) · build 0, `bqYxQp7T8wGJ-NrUAgo3S`, 44 rotas.
+
+Chrome (xvfb, dados sintéticos, servidores isolados): gemini-tts-settings 0 (2 cenários, agora com voltar 15 s, parar com posição zerada, link de salvar preservado e retomada sem novo pedido; aba oculta e janela minimizada seguem 0/2) · chat-column 0 · discover-panel 0 · discover-controls 0 · discover-delete 0 · runtime-ownership 0 · message-longpress 0 (12 cenários, servidor temporário na 3158 derrubado ao fim, sem `data/` residual; a primeira tentativa saiu 1 por falta desse servidor). Capturas em `/root/.cache/gaucho-gemini-player/browser`, logs em `/root/.cache/gaucho-gemini-player/logs`.
+
+Não coberto: troca de parte durante o avanço em navegador real (a sonda usa um WAV de parte única; o salto entre partes só tem unitário em jsdom); Safari do iPhone; nenhuma chamada paga ao Google nesta rodada. Sem publicação.

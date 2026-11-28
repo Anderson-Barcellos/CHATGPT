@@ -2233,3 +2233,11 @@ DECISÃO: repintar por tabela de conversão cor a cor o bloco `.dark` global e a
 Gates, suítes Chrome e lacunas no TEST_LOGS.md; estado da frente no BACKLOG. Build candidata `-pYNHBig_t4TeO3qzHYP5`. Aguardando aprovação visual de Anders para commit e publicação.
 
 Publicação 20h45 BRT com autorização de Anders: commit `c93bd70` (fast-forward na `main`), `bash scripts/deploy.sh --from /root/worktrees/gaucho-grafite` saiu 0, build `-pYNHBig_t4TeO3qzHYP5`, backup em `/root/.cache/gaucho-deploy/20261127T234539Z/next-before`. Só `chatgpt.service` reiniciado; sem reload do Apache. A conferência do CSS público mostrou que a splash tem gradiente próprio em `:root` e ficou na paleta antiga; registrado no BACKLOG para decisão.
+
+### 2026-11-28 00:10 - Player do Gemini TTS com os controles do Grok e estudo do sotaque
+
+**Contexto.** Anders pediu sotaque mais fiel (Alegrete, cadência de causo), a persona científica do Pampa e os controles do Grok no player do Gemini. A parte do player não dependia de decisão e foi implementada; o sotaque ficou no estudo.
+
+**Detalhes.** `useGeminiTtsSpeech` separa parar a escuta (`stopPlayback`, a geração continua e o arquivo fica para salvar) de descartar (`stop`), e expõe `seekBy`, posição, duração estimada, trecho gerado e falha de geração. A intenção de tocar vive em `wantsPlay` na sessão, para o avanço entre partes não depender de `audio.paused`. O mini-player mostra barra com o trecho já gerado ao fundo, tempos e o status numa linha própria, para o erro não ser cortado. Worktree `/root/worktrees/gaucho-gemini-player`, sem commit nem publicação. Sobre o sotaque, a doc atual do Google contraria o guia do 3.1 que inspirou o perfil do Pampa: sotaque permanente vai na voz (design ou remix), e `style` fica curto.
+
+Gates e lacunas no TEST_LOGS.md; estado da frente e a pendência da chave no BACKLOG.

@@ -286,7 +286,7 @@ A aba Rotinas substitui a superfície visível de Agenda. Ela cria rotinas recor
 - O prompt de execução do Pulse usa um contexto enxuto proprio: instruções da rotina, preferencias uteis de `persona.json`, ate 5 memorias ativas compactadas e 3 trechos relevantes do histórico via `searchMemoryContext`. Ele evita injetar o prompt global completo do chat para reduzir latencia e tokens.
 - Se a resposta principal não trouxer `image_generation`, o runner tenta uma segunda chamada curta para gerar a imagem conceitual de abertura do card.
 - Resultados de Pulse e balões do chat reutilizam `MiniAudioPlayer`, que abre com `useAssistantTts` e `/api/tts/xai` (Orion, MP3) selecionados, mas não inicia áudio automaticamente.
-- O mini-player também é usado no Descobrir e oferece Gemini TTS com Charon (`/api/tts/gemini`). Trocar de motor interrompe a reprodução anterior.
+- O mini-player também é usado no Descobrir e oferece Gemini TTS com Charon (`/api/tts/gemini`). Trocar de motor interrompe a reprodução anterior. No Gemini, parar (■) interrompe só a escuta: as partes seguem sendo geradas e o WAV completo fica disponível para salvar; fechar o player ou trocar de motor descarta a geração. Voltar e avançar 15 s andam dentro do trecho já gerado.
 
 ## Agenda Google e Notas Locais Legadas
 

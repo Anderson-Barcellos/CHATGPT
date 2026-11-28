@@ -172,6 +172,21 @@ try {
     await player.getByText('Charon está lendo').waitFor();
     assert.equal(speechBodies.length, 1, 'pausar e retomar reaproveita o WAV');
 
+    // Controles iguais aos do Grok: parar volta ao início sem descartar o áudio nem pedir nova geração.
+    await page.waitForFunction(() => window.geminiQaAudio.currentTime > 0.3, undefined, { polling: 100, timeout: 5000 });
+    await player.getByRole('button', { name: 'Avançar 15s', exact: true }).waitFor();
+    await player.getByRole('button', { name: 'Voltar 15s', exact: true }).click();
+    await page.waitForFunction(() => window.geminiQaAudio.currentTime < 0.3, undefined, { polling: 50, timeout: 3000 });
+    await player.getByRole('button', { name: 'Parar', exact: true }).click();
+    await player.getByText('Leitura pausada').waitFor();
+    assert.equal(await page.evaluate(() => window.geminiQaAudio.paused), true);
+    assert.equal(await page.evaluate(() => window.geminiQaAudio.currentTime), 0);
+    await player.getByRole('link', { name: 'Baixar áudio Gemini WAV' }).waitFor();
+    await page.screenshot({ path: path.join(out, `player-parado-${width}.png`) });
+    await player.getByRole('button', { name: 'Tocar', exact: true }).click();
+    await player.getByText('Charon está lendo').waitFor();
+    assert.equal(speechBodies.length, 1, 'parar e tocar de novo reaproveita o WAV');
+
     const [otherTab] = await Promise.all([
       page.waitForEvent('popup'),
       page.evaluate(() => { window.open('about:blank', '_blank'); }),

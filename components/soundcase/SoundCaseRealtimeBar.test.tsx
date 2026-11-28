@@ -29,6 +29,8 @@ function makeSession(overrides: Partial<SoundCaseRealtimeSession> = {}): SoundCa
     gemini: {
       status: "idle", versionId: null, firstAudioMs: null, error: null, errorVersionId: null,
       isActive: false, canResume: false, audioUrl: null, clipIndex: 0, totalClips: 0, toggle: vi.fn(), start: vi.fn(async () => undefined), stop: vi.fn(),
+      generatedClips: 0, generationError: null, currentTime: 0, duration: 0, durationEstimated: false, bufferedTime: 0,
+      stopPlayback: vi.fn(), seekBy: vi.fn(),
     },
     ...overrides,
   };

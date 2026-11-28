@@ -1,5 +1,13 @@
 # BACKLOG
 
+## Gemini TTS · controles do player e voz gaúcha — em andamento
+
+### 2026-11-28 00:10 - Controles do player prontos para revisão; sotaque aguarda decisão
+
+Context: Anders pediu em 27/11/2026 (noite) três coisas para o Gemini TTS: afinar o sotaque (gaúcho dos lados do Alegrete, cadência de causo em roda de mate), trazer a persona de leitura científica do Pampa e dar ao player os mesmos controles do Grok, podendo gerar, escutar e seguir gerando.
+Details: controles implementados na worktree `/root/worktrees/gaucho-gemini-player` (branch `feat/gemini-player-controles`, base `67f27a9`, sem commit, sem publicação), build candidata `bqYxQp7T8wGJ-NrUAgo3S`. O ■ para a escuta e mantém a geração (`stopPlayback`); fechar o player ou trocar de motor descarta (`stop`). Voltar e avançar 15 s andam só dentro do que já foi gerado. Salvar continua sendo WAV e só acende com a geração completa. 1.370 testes, tsc, lint, build e sete sondas Chrome aprovados (TEST_LOGS.md). Estudo do sotaque: a doc do `gemini-3.8-flash-tts` manda o sotaque morar na voz (Voice design ou remix de uma voz pronta, `POST /v1beta/voices`, ID `voice_...` em `speech_config`) e deixar em `speech_metadata.style` só a entrega do turno, curta; parágrafos longos de perfil são apontados como a causa mais comum de deriva de voz, e o estilo atual tem cerca de 600 caracteres repetidos a cada parte. A persona científica do Pampa é a própria Fronteira Técnica, já em uso.
+Notes: a `GEMINI_API_KEY` do shell é do formato `AQ.` e a API pública do Gemini responde 401 para ela (`models.get` e `voices`); a chave que funciona é a do serviço, em `.env.production`, que não foi lida. Criar a voz remixada exige essa chave, projeto no Paid Tier e o ouvido de Anders para escolher entre candidatas. A voz guardada vence um ano depois do último uso. Em aberto: converter o arquivo salvo para MP3 (hoje WAV, cerca de 2,9 MB por minuto).
+
 ## Escuro Grafite — publicada
 
 Anders pediu em 27/11/2026 trocar o escuro pelo conjunto de cores de um print de referência (grafite-azulado), por achar o índigo atual carregado. Worktree `/root/worktrees/gaucho-grafite`, branch `feat/dark-grafite`, base `9ab2c5b`, build candidata `-pYNHBig_t4TeO3qzHYP5`. Só `app/globals.css` e o contrato visual mudaram: o bloco `.dark` global (antes Abyssal Ocean, que alimenta menus, cartões e portals), o bloco escuro do shell (palco, orbe, disco, placas, composer e balões) e cinco regras soltas do escuro. Claro, geometria e theme-color inalterados.

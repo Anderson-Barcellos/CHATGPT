@@ -202,3 +202,117 @@ describe("leitura Gemini em partes", () => {
     expect(created).toHaveLength(1);
   });
 });
+
+const seconds = (value: number) => wavResponse(value * 24_000);
+const limitReached = { ok: false, json: async () => ({ error: "O limite do Gemini TTS foi atingido. Tente em instantes." }) };
+
+describe("controles da leitura Gemini", () => {
+  it("parar a escuta volta ao início sem cancelar a geração nem perder o arquivo", async () => {
+    await act(async () => { void latest!.start({ text: longText }); });
+    await flush();
+    await answer(0, seconds(2));
+    await emit("playing");
+    await act(async () => latest!.stopPlayback());
+
+    expect(pending.some((item) => item.signal.aborted)).toBe(false);
+    expect(latest!.status).toBe("paused");
+    expect(latest!.clipIndex).toBe(0);
+    expect(latest!.currentTime).toBe(0);
+    expect(latest!.canResume).toBe(true);
+
+    for (let index = 1; index < pending.length; index += 1) await answer(index, seconds(2));
+    expect(playSpy).toHaveBeenCalledTimes(1);
+    expect(latest!.generatedClips).toBe(latest!.totalClips);
+    expect(latest!.audioUrl).not.toBeNull();
+
+    await act(async () => latest!.toggle());
+    expect(playSpy).toHaveBeenCalledTimes(2);
+    expect(audio().src).toBe("blob:clip-1");
+  });
+
+  it("parar antes do primeiro áudio segue gerando e só toca quando pedirem", async () => {
+    await act(async () => { void latest!.start({ text: longText }); });
+    await flush();
+    await act(async () => latest!.stopPlayback());
+    expect(latest!.status).toBe("paused");
+    expect(pending.some((item) => item.signal.aborted)).toBe(false);
+
+    await answer(0, seconds(2));
+    expect(playSpy).not.toHaveBeenCalled();
+    expect(latest!.generatedClips).toBe(1);
+
+    await act(async () => latest!.toggle());
+    expect(playSpy).toHaveBeenCalledTimes(1);
+    expect(audio().src).toBe("blob:clip-1");
+  });
+
+  it("informa posição e duração, estimando o que ainda falta gerar", async () => {
+    await act(async () => { void latest!.start({ text: longText }); });
+    await flush();
+    await answer(0, seconds(20));
+    await emit("playing");
+    expect(latest!.durationEstimated).toBe(true);
+    expect(latest!.duration).toBeGreaterThan(20);
+    expect(latest!.bufferedTime).toBe(20);
+
+    audio().currentTime = 5;
+    await emit("timeupdate");
+    expect(latest!.currentTime).toBe(5);
+
+    for (let index = 1; index < pending.length; index += 1) await answer(index, seconds(20));
+    expect(latest!.durationEstimated).toBe(false);
+    expect(latest!.duration).toBe(20 * latest!.totalClips);
+    expect(latest!.bufferedTime).toBe(latest!.duration);
+
+    await emit("ended");
+    audio().currentTime = 3;
+    await emit("timeupdate");
+    expect(latest!.clipIndex).toBe(1);
+    expect(latest!.currentTime).toBe(23);
+  });
+
+  it("avança e volta entre partes já geradas, mantendo tocando ou pausado", async () => {
+    await act(async () => { void latest!.start({ text: longText }); });
+    await flush();
+    await answer(0, seconds(20));
+    await emit("playing");
+    await answer(1, seconds(20));
+    audio().currentTime = 10;
+    await emit("timeupdate");
+
+    await act(async () => latest!.seekBy(15));
+    expect(audio().src).toBe("blob:clip-2");
+    await emit("loadedmetadata");
+    expect(audio().currentTime).toBe(5);
+    expect(latest!.clipIndex).toBe(1);
+    expect(latest!.currentTime).toBe(25);
+    expect(playSpy).toHaveBeenCalledTimes(2);
+
+    await emit("pause");
+    await act(async () => latest!.seekBy(-15));
+    expect(audio().src).toBe("blob:clip-1");
+    await emit("loadedmetadata");
+    expect(audio().currentTime).toBe(10);
+    expect(latest!.status).toBe("paused");
+    expect(playSpy).toHaveBeenCalledTimes(2);
+
+    // Além do que já foi gerado: fica dentro do áudio existente.
+    await act(async () => latest!.seekBy(600));
+    expect(latest!.clipIndex).toBe(1);
+    expect(latest!.currentTime).toBeLessThan(40);
+    expect(latest!.currentTime).toBeGreaterThan(39);
+  });
+
+  it("avisa quando a geração falha com a escuta parada", async () => {
+    await act(async () => { void latest!.start({ text: longText }); });
+    await flush();
+    await answer(0, seconds(2));
+    await emit("playing");
+    await act(async () => latest!.stopPlayback());
+    await answer(1, limitReached);
+
+    expect(latest!.status).toBe("paused");
+    expect(latest!.generationError).toMatch(/limite do Gemini TTS/);
+    expect(latest!.audioUrl).toBeNull();
+  });
+});
